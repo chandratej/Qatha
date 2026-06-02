@@ -3,8 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// Import league config after defining Color helper to avoid circular dependency issues
 import 'package:storyverse/domain/league/league_config.dart' as league;
 
 class AppTheme {
@@ -47,84 +45,84 @@ class AppTheme {
   
   // League Colors (13 Leagues)
   static Map<league.LeagueTier, Color> get leagueColors => {
-    league.LeagueTier.archive: const Color(0xFF9E9E9E),        // Gray
-    league.LeagueTier.manuscript: const Color(0xFF8D6E63),     // Brown
-    league.LeagueTier.published: const Color(0xFF4FC3F7),      // Light Blue
-    league.LeagueTier.acclaimed: const Color(0xFF81C784),      // Green
-    league.LeagueTier.celebrated: const Color(0xFFFFB74D),     // Orange
-    league.LeagueTier.distinguished: const Color(0xFFBA68C8),  // Purple
-    league.LeagueTier.masterwork: const Color(0xFF64B5F6),     // Blue
-    league.LeagueTier.legendary: const Color(0xFFFF7043),      // Deep Orange
-    league.LeagueTier.hallOfFame: const Color(0xFFFFD700),     // Gold
-    league.LeagueTier.heritage: const Color(0xFF8D6E63),       // Bronze
-    league.LeagueTier.classic: const Color(0xFFE0E0E0),        // Silver
-    league.LeagueTier.timeless: const Color(0xFF9FA8DA),       // Indigo
-    league.LeagueTier.immortal: const Color(0xFFFFD700),       // Platinum/Gold
+    league.LeagueTier.archive: const Color(0xFF9E9E9E),
+    league.LeagueTier.manuscript: const Color(0xFF8D6E63),
+    league.LeagueTier.published: const Color(0xFF4FC3F7),
+    league.LeagueTier.acclaimed: const Color(0xFF81C784),
+    league.LeagueTier.celebrated: const Color(0xFFFFB74D),
+    league.LeagueTier.distinguished: const Color(0xFFBA68C8),
+    league.LeagueTier.masterwork: const Color(0xFF64B5F6),
+    league.LeagueTier.legendary: const Color(0xFFFF7043),
+    league.LeagueTier.hallOfFame: const Color(0xFFFFD700),
+    league.LeagueTier.heritage: const Color(0xFF8D6E63),
+    league.LeagueTier.classic: const Color(0xFFE0E0E0),
+    league.LeagueTier.timeless: const Color(0xFF9FA8DA),
+    league.LeagueTier.immortal: const Color(0xFFFFD700),
   };
 
-  static const Map<String, LinearGradient> leagueGradients = {
+  static Map<String, LinearGradient> get leagueGradients => {
     'archive': LinearGradient(
-      colors: [Color(0xFF9E9E9E), Color(0xFF757575)],
+      colors: [const Color(0xFF9E9E9E), const Color(0xFF757575)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'manuscript': LinearGradient(
-      colors: [Color(0xFF8D6E63), Color(0xFF5D4037)],
+      colors: [const Color(0xFF8D6E63), const Color(0xFF5D4037)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'published': LinearGradient(
-      colors: [Color(0xFF4FC3F7), Color(0xFF0288D1)],
+      colors: [const Color(0xFF4FC3F7), const Color(0xFF0288D1)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'acclaimed': LinearGradient(
-      colors: [Color(0xFF81C784), Color(0xFF388E3C)],
+      colors: [const Color(0xFF81C784), const Color(0xFF388E3C)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'celebrated': LinearGradient(
-      colors: [Color(0xFFFFB74D), Color(0xFFF57C00)],
+      colors: [const Color(0xFFFFB74D), const Color(0xFFF57C00)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'distinguished': LinearGradient(
-      colors: [Color(0xFFBA68C8), Color(0xFF7B1FA2)],
+      colors: [const Color(0xFFBA68C8), const Color(0xFF7B1FA2)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'masterwork': LinearGradient(
-      colors: [Color(0xFF64B5F6), Color(0xFF1976D2)],
+      colors: [const Color(0xFF64B5F6), const Color(0xFF1976D2)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'legendary': LinearGradient(
-      colors: [Color(0xFFFF7043), Color(0xFFD84315)],
+      colors: [const Color(0xFFFF7043), const Color(0xFFD84315)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'hall_of_fame': LinearGradient(
-      colors: [Color(0xFFFFD700), Color(0xFFFF8F00)],
+      colors: [const Color(0xFFFFD700), const Color(0xFFFF8F00)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'heritage': LinearGradient(
-      colors: [Color(0xFFCD7F32), Color(0xFF8D6E63)],
+      colors: [const Color(0xFFCD7F32), const Color(0xFF8D6E63)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'classic': LinearGradient(
-      colors: [Color(0xFFE0E0E0), Color(0xFF9E9E9E)],
+      colors: [const Color(0xFFE0E0E0), const Color(0xFF9E9E9E)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'timeless': LinearGradient(
-      colors: [Color(0xFF9FA8DA), Color(0xFF3F51B5)],
+      colors: [const Color(0xFF9FA8DA), const Color(0xFF3F51B5)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     'immortal': LinearGradient(
-      colors: [Color(0xFFFFD700), Color(0xFFB8941F), Color(0xFFFFE082)],
+      colors: [const Color(0xFFFFD700), const Color(0xFFB8941F), const Color(0xFFFFE082)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
