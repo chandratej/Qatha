@@ -3,7 +3,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:storyverse/domain/league/league_config.dart';
+
+// Import league config after defining Color helper to avoid circular dependency issues
+import 'package:storyverse/domain/league/league_config.dart' as league;
 
 class AppTheme {
   AppTheme._();
@@ -44,20 +46,20 @@ class AppTheme {
   }
   
   // League Colors (13 Leagues)
-  static Map<LeagueTier, Color> get leagueColors => {
-    LeagueTier.archive: const Color(0xFF9E9E9E),        // Gray
-    LeagueTier.manuscript: const Color(0xFF8D6E63),     // Brown
-    LeagueTier.published: const Color(0xFF4FC3F7),      // Light Blue
-    LeagueTier.acclaimed: const Color(0xFF81C784),      // Green
-    LeagueTier.celebrated: const Color(0xFFFFB74D),     // Orange
-    LeagueTier.distinguished: const Color(0xFFBA68C8),  // Purple
-    LeagueTier.masterwork: const Color(0xFF64B5F6),     // Blue
-    LeagueTier.legendary: const Color(0xFFFF7043),      // Deep Orange
-    LeagueTier.hallOfFame: const Color(0xFFFFD700),     // Gold
-    LeagueTier.heritage: const Color(0xFF8D6E63),       // Bronze
-    LeagueTier.classic: const Color(0xFFE0E0E0),        // Silver
-    LeagueTier.timeless: const Color(0xFF9FA8DA),       // Indigo
-    LeagueTier.immortal: const Color(0xFFFFD700),       // Platinum/Gold
+  static Map<league.LeagueTier, Color> get leagueColors => {
+    league.LeagueTier.archive: const Color(0xFF9E9E9E),        // Gray
+    league.LeagueTier.manuscript: const Color(0xFF8D6E63),     // Brown
+    league.LeagueTier.published: const Color(0xFF4FC3F7),      // Light Blue
+    league.LeagueTier.acclaimed: const Color(0xFF81C784),      // Green
+    league.LeagueTier.celebrated: const Color(0xFFFFB74D),     // Orange
+    league.LeagueTier.distinguished: const Color(0xFFBA68C8),  // Purple
+    league.LeagueTier.masterwork: const Color(0xFF64B5F6),     // Blue
+    league.LeagueTier.legendary: const Color(0xFFFF7043),      // Deep Orange
+    league.LeagueTier.hallOfFame: const Color(0xFFFFD700),     // Gold
+    league.LeagueTier.heritage: const Color(0xFF8D6E63),       // Bronze
+    league.LeagueTier.classic: const Color(0xFFE0E0E0),        // Silver
+    league.LeagueTier.timeless: const Color(0xFF9FA8DA),       // Indigo
+    league.LeagueTier.immortal: const Color(0xFFFFD700),       // Platinum/Gold
   };
 
   static const Map<String, LinearGradient> leagueGradients = {
@@ -172,7 +174,7 @@ class AppTheme {
         surfaceContainerHighest: neutralLightGray,
         onSurfaceVariant: neutralDarkGray,
         outline: neutralGray,
-        shadow: neutralBlack.withOpacity(0.1),
+        shadow: neutralBlack.withValues(alpha: 0.1),
       ),
       
       appBarTheme: AppBarTheme(
@@ -377,9 +379,9 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.15),
+        shadowColor: neutralBlack.withValues(alpha: 0.15),
         backgroundColor: neutralWhite,
-        indicatorColor: primaryGold.withOpacity(0.2),
+        indicatorColor: primaryGold.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.lato(
@@ -412,7 +414,7 @@ class AppTheme {
         backgroundColor: neutralWhite,
         modalBackgroundColor: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.15),
+        shadowColor: neutralBlack.withValues(alpha: 0.15),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -464,7 +466,7 @@ class AppTheme {
         activeTrackColor: primaryGold,
         inactiveTrackColor: neutralLightGray,
         thumbColor: primaryGold,
-        overlayColor: primaryGold.withOpacity(0.2),
+        overlayColor: primaryGold.withValues(alpha: 0.2),
         trackHeight: 4,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
       ),
@@ -478,7 +480,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return primaryGold.withOpacity(0.5);
+            return primaryGold.withValues(alpha: 0.5);
           }
           return neutralLightGray;
         }),
@@ -535,7 +537,7 @@ class AppTheme {
       drawerTheme: DrawerThemeData(
         backgroundColor: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.15),
+        shadowColor: neutralBlack.withValues(alpha: 0.15),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
         ),
@@ -605,7 +607,7 @@ class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.15),
+        shadowColor: neutralBlack.withValues(alpha: 0.15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -621,7 +623,7 @@ class AppTheme {
       menuBarTheme: MenuBarThemeData(
         backgroundColor: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.15),
+        shadowColor: neutralBlack.withValues(alpha: 0.15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -695,7 +697,7 @@ class AppTheme {
         surfaceContainerHighest: neutralDarkGray,
         onSurfaceVariant: darkModeSecondaryText,
         outline: neutralGray,
-        shadow: neutralBlack.withOpacity(0.3),
+        shadow: neutralBlack.withValues(alpha: 0.3),
       ),
       
       appBarTheme: AppBarTheme(
@@ -721,7 +723,7 @@ class AppTheme {
       
       cardTheme: CardThemeData(
         elevation: 2,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         color: darkModeSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -900,9 +902,9 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         backgroundColor: darkModeSurface,
-        indicatorColor: primaryGold.withOpacity(0.2),
+        indicatorColor: primaryGold.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.lato(
@@ -935,7 +937,7 @@ class AppTheme {
         backgroundColor: darkModeSurface,
         modalBackgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -944,7 +946,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -997,7 +999,7 @@ class AppTheme {
         activeTrackColor: primaryGold,
         inactiveTrackColor: neutralDarkGray,
         thumbColor: primaryGold,
-        overlayColor: primaryGold.withOpacity(0.2),
+        overlayColor: primaryGold.withValues(alpha: 0.2),
         trackHeight: 4,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
       ),
@@ -1011,7 +1013,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return primaryGold.withOpacity(0.5);
+            return primaryGold.withValues(alpha: 0.5);
           }
           return neutralDarkGray;
         }),
@@ -1068,7 +1070,7 @@ class AppTheme {
       drawerTheme: DrawerThemeData(
         backgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
         ),
@@ -1138,7 +1140,7 @@ class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -1154,7 +1156,7 @@ class AppTheme {
       menuBarTheme: MenuBarThemeData(
         backgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.withOpacity(0.3),
+        shadowColor: neutralBlack.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -1228,7 +1230,7 @@ class AppTheme {
         surfaceContainerHighest: Color(0xFFE8D5B5),
         onSurfaceVariant: sepiaModeSecondaryText,
         outline: sepiaModeSecondaryText,
-        shadow: sepiaModeText.withOpacity(0.1),
+        shadow: sepiaModeText.withValues(alpha: 0.1),
       ),
       
       appBarTheme: AppBarTheme(
@@ -1294,7 +1296,7 @@ class AppTheme {
       
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Color(0xFFFDF6E3),
-        indicatorColor: accentBronze.withOpacity(0.2),
+        indicatorColor: accentBronze.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.lato(

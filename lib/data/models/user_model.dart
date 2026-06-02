@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import '../../../domain/entities/user.dart' as domain;
-import '../../../domain/repositories/user_repository.dart';
+
+// Remove unused import causing compilation errors
+// import '../../../domain/repositories/user_repository.dart';
 
 class UserModel extends domain.User {
   const UserModel({
@@ -105,7 +107,7 @@ class UserModel extends domain.User {
     String? email,
     String? displayName,
     String? photoUrl,
-    UserType? userType,
+    domain.UserType? userType,
     DateTime? createdAt,
     String? subscriptionStatus,
     DateTime? subscriptionExpiry,
