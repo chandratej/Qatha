@@ -1,11 +1,10 @@
 ```
 # Dependencies
 .dart_tool/
-.packages
 .pub/
 build/
 
-# Environment
+# Environment variables
 .env
 .env.local
 .env.*
@@ -13,17 +12,38 @@ build/
 # Logs
 *.log
 
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
 # Coverage
 coverage/
-lcov.info
+htmlcov/
+.coverage
 
-# VS Code
-.vscode/
-
-# macOS
-.DS_Store
-
-# Temporary files
-*.tmp
-*.temp
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
 ```
