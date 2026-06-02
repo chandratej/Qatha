@@ -26,7 +26,7 @@ class StoryCard extends StatelessWidget {
     
     return Card(
       elevation: 2,
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -34,7 +34,7 @@ class StoryCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         splashFactory: InkRipple.splashFactory,
-        highlightColor: theme.colorScheme.primaryContainer.withOpacity(0.1),
+        highlightColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.1),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -59,7 +59,7 @@ class StoryCard extends StatelessWidget {
                   ? Icon(
                       Icons.menu_book_rounded,
                       size: isCompact ? 32 : 40,
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     )
                   : null,
             ),
@@ -150,7 +150,7 @@ class StoryCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _getCompletionColor(theme).withOpacity(0.1),
+                              color: _getCompletionColor(theme).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -212,7 +212,7 @@ class StoryGridCard extends StatelessWidget {
     
     return Card(
       elevation: 2,
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -239,7 +239,7 @@ class StoryGridCard extends StatelessWidget {
                           child: Icon(
                             Icons.menu_book_rounded,
                             size: 40,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                           ),
                         );
                       },
@@ -265,7 +265,7 @@ class StoryGridCard extends StatelessWidget {
                       child: Icon(
                         Icons.menu_book_rounded,
                         size: 40,
-                        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
                     ),
                   

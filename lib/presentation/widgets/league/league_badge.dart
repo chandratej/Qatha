@@ -36,7 +36,7 @@ class LeagueBadge extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             league.primaryColor,
-            league.primaryColor.withOpacity(0.7),
+            league.primaryColor.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -44,7 +44,7 @@ class LeagueBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: league.primaryColor.withOpacity(0.3),
+            color: league.primaryColor.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -125,7 +125,7 @@ class LeagueProgression extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+        color: theme.colorScheme.surfaceVariant.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -256,7 +256,7 @@ class LeagueProgression extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: progressToNext.clamp(0.0, 1.0),
-                  backgroundColor: theme.colorScheme.outline.withOpacity(0.2),
+                  backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.2),
                   valueColor: AlwaysStoppedAnimation<Color>(
                     nextLeague?.primaryColor ?? theme.colorScheme.primary,
                   ),
@@ -275,7 +275,7 @@ class LeagueProgression extends StatelessWidget {
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: theme.colorScheme.outline.withOpacity(0.2),
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
                 ),
               ),
               child: Column(
@@ -411,10 +411,10 @@ class LeagueGrid extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isSelected
-                    ? [league.primaryColor, league.primaryColor.withOpacity(0.7)]
+                    ? [league.primaryColor, league.primaryColor.withValues(alpha: 0.7)]
                     : [
-                        league.primaryColor.withOpacity(0.1),
-                        league.primaryColor.withOpacity(0.05),
+                        league.primaryColor.withValues(alpha: 0.1),
+                        league.primaryColor.withValues(alpha: 0.05),
                       ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -423,7 +423,7 @@ class LeagueGrid extends StatelessWidget {
               border: Border.all(
                 color: isSelected
                     ? league.primaryColor
-                    : theme.colorScheme.outline.withOpacity(0.2),
+                    : theme.colorScheme.outline.withValues(alpha: 0.2),
                 width: isSelected ? 2 : 1,
               ),
             ),

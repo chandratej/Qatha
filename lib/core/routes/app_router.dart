@@ -2,7 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/constants/app_constants.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/routes/app_routes.dart';
+import '../features/auth/presentation/screens/login_screen.dart';
+import '../features/auth/presentation/screens/signup_screen.dart';
+import '../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../presentation/screens/home/home_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -21,9 +26,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: AppRoutes.splash, builder: (c, s) => const SplashPage()),
       GoRoute(path: AppRoutes.onboarding, builder: (c, s) => const OnboardingPage()),
-      GoRoute(path: AppRoutes.login, builder: (c, s) => const LoginPage()),
-      GoRoute(path: AppRoutes.signup, builder: (c, s) => const SignupPage()),
-      GoRoute(path: AppRoutes.home, builder: (c, s) => const HomePage()),
+      GoRoute(path: AppRoutes.login, builder: (c, s) => const LoginScreen()),
+      GoRoute(path: AppRoutes.signup, builder: (c, s) => const SignupScreen()),
+      GoRoute(path: AppRoutes.home, builder: (c, s) => const HomeScreen()),
+      GoRoute(path: AppRoutes.forgotPassword, builder: (c, s) => const ForgotPasswordScreen()),
     ],
   );
 });

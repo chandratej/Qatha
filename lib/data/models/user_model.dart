@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../../domain/entities/user.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import '../../../domain/entities/user.dart' as domain;
 import '../../../domain/repositories/user_repository.dart';
 
-class UserModel extends User {
+class UserModel extends domain.User {
   const UserModel({
     required super.id,
     required super.email,
@@ -32,9 +32,9 @@ class UserModel extends User {
       email: data['email'] ?? '',
       displayName: data['displayName'] ?? 'Reader',
       photoUrl: data['photoUrl'] ?? '',
-      userType: UserType.values.firstWhere(
+      userType: domain.UserType.values.firstWhere(
         (e) => e.name == data['userType'],
-        orElse: () => UserType.reader,
+        orElse: () => domain.UserType.reader,
       ),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       subscriptionStatus: data['subscriptionStatus'] ?? 'free',
@@ -52,13 +52,13 @@ class UserModel extends User {
     );
   }
 
-  factory UserModel.fromUser(User user) {
+  factory UserModel.fromFirebaseUser(firebase_auth.User user) {
     return UserModel(
       id: user.uid,
       email: user.email ?? '',
       displayName: user.displayName ?? 'Reader',
       photoUrl: user.photoURL ?? '',
-      userType: UserType.reader,
+      userType: domain.UserType.reader,
       createdAt: DateTime.now(),
       subscriptionStatus: 'free',
       subscriptionExpiry: null,

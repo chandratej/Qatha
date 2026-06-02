@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/app_router.dart';
-import 'core/di/service_locator.dart';
+import 'core/di/dependency_injection.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,17 +14,8 @@ void main() async {
   // Initialize Firebase
   await Firebase.initializeApp();
 
-  // Initialize Hive
-  await Hive.initFlutter();
-  await Hive.openBox(AppConstants.userBox);
-  await Hive.openBox(AppConstants.settingsBox);
-  await Hive.openBox(AppConstants.cacheBox);
-  await Hive.openBox(AppConstants.offlineStoriesBox);
-  await Hive.openBox(AppConstants.audioCacheBox);
-  await Hive.openBox(AppConstants.onboardingBox);
-
-  // Initialize Dependency Injection
-  await configureDependencies();
+  // Initialize Dependency Injection (includes Hive initialization)
+  await initDependencies();
 
   // Configure system UI
   SystemChrome.setSystemUIOverlayStyle(

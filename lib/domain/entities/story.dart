@@ -190,4 +190,153 @@ class Story extends Equatable {
     final remainingMinutes = minutes % 60;
     return '$hours hr ${remainingMinutes > 0 ? '$remainingMinutes min' : ''} read';
   }
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'authorId': authorId,
+      'authorName': authorName,
+      'coverUrl': coverUrl,
+      'genres': genres,
+      'tags': tags,
+      'league': league,
+      'status': status.name,
+      'language': language,
+      'wordCount': wordCount,
+      'chapterCount': chapterCount,
+      'readerCount': readerCount,
+      'completionRate': completionRate,
+      'averageRating': averageRating,
+      'ratingCount': ratingCount,
+      'reviewCount': reviewCount,
+      'favoriteCount': favoriteCount,
+      'commentCount': commentCount,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'publishedAt': publishedAt?.toIso8601String(),
+      'lastReadAt': lastReadAt?.toIso8601String(),
+      'isPremium': isPremium,
+      'unlockPrice': unlockPrice,
+      'audioAvailable': audioAvailable,
+      'qualityScore': qualityScore,
+      'promotionHistory': promotionHistory,
+      'metrics': metrics.toMap(),
+    };
+  }
+  
+  factory Story.fromMap(Map<String, dynamic> map, {String? documentId}) {
+    return Story(
+      id: documentId ?? map['id'] as String,
+      title: map['title'] as String,
+      description: map['description'] as String,
+      authorId: map['authorId'] as String,
+      authorName: map['authorName'] as String,
+      coverUrl: map['coverUrl'] as String,
+      genres: List<String>.from(map['genres'] ?? []),
+      tags: List<String>.from(map['tags'] ?? []),
+      league: map['league'] as String? ?? 'manuscript',
+      status: StoryStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => StoryStatus.draft,
+      ),
+      language: map['language'] as String? ?? 'en',
+      wordCount: map['wordCount'] as int? ?? 0,
+      chapterCount: map['chapterCount'] as int? ?? 0,
+      readerCount: map['readerCount'] as int? ?? 0,
+      completionRate: (map['completionRate'] as num?)?.toDouble() ?? 0.0,
+      averageRating: (map['averageRating'] as num?)?.toDouble() ?? 0.0,
+      ratingCount: map['ratingCount'] as int? ?? 0,
+      reviewCount: map['reviewCount'] as int? ?? 0,
+      favoriteCount: map['favoriteCount'] as int? ?? 0,
+      commentCount: map['commentCount'] as int? ?? 0,
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      publishedAt: map['publishedAt'] != null 
+          ? DateTime.parse(map['publishedAt'] as String) 
+          : null,
+      lastReadAt: map['lastReadAt'] != null 
+          ? DateTime.parse(map['lastReadAt'] as String) 
+          : null,
+      isPremium: map['isPremium'] as bool? ?? false,
+      unlockPrice: (map['unlockPrice'] as num?)?.toDouble() ?? 0.0,
+      audioAvailable: map['audioAvailable'] as bool? ?? false,
+      qualityScore: (map['qualityScore'] as num?)?.toDouble() ?? 0.0,
+      promotionHistory: List<String>.from(map['promotionHistory'] ?? []),
+      metrics: map['metrics'] != null 
+          ? StoryMetrics.fromMap(map['metrics'] as Map<String, dynamic>)
+          : StoryMetrics.empty(),
+    );
+  }
+  
+  Story copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? authorId,
+    String? authorName,
+    String? coverUrl,
+    List<String>? genres,
+    List<String>? tags,
+    String? league,
+    StoryStatus? status,
+    String? language,
+    int? wordCount,
+    int? chapterCount,
+    int? readerCount,
+    double? completionRate,
+    double? averageRating,
+    int? ratingCount,
+    int? reviewCount,
+    int? favoriteCount,
+    int? commentCount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? publishedAt,
+    DateTime? lastReadAt,
+    bool? isPremium,
+    double? unlockPrice,
+    bool? audioAvailable,
+    double? qualityScore,
+    List<String>? promotionHistory,
+    StoryMetrics? metrics,
+  }) {
+    return Story(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      coverUrl: coverUrl ?? this.coverUrl,
+      genres: genres ?? this.genres,
+      tags: tags ?? this.tags,
+      league: league ?? this.league,
+      status: status ?? this.status,
+      language: language ?? this.language,
+      wordCount: wordCount ?? this.wordCount,
+      chapterCount: chapterCount ?? this.chapterCount,
+      readerCount: readerCount ?? this.readerCount,
+      completionRate: completionRate ?? this.completionRate,
+      averageRating: averageRating ?? this.averageRating,
+      ratingCount: ratingCount ?? this.ratingCount,
+      reviewCount: reviewCount ?? this.reviewCount,
+      favoriteCount: favoriteCount ?? this.favoriteCount,
+      commentCount: commentCount ?? this.commentCount,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      publishedAt: publishedAt ?? this.publishedAt,
+      lastReadAt: lastReadAt ?? this.lastReadAt,
+      isPremium: isPremium ?? this.isPremium,
+      unlockPrice: unlockPrice ?? this.unlockPrice,
+      audioAvailable: audioAvailable ?? this.audioAvailable,
+      qualityScore: qualityScore ?? this.qualityScore,
+      promotionHistory: promotionHistory ?? this.promotionHistory,
+      metrics: metrics ?? this.metrics,
+    );
+  }
+  
+  factory Story.fromFirestore(DocumentSnapshot doc) {
+    return Story.fromMap(doc.data() as Map<String, dynamic>, documentId: doc.id);
+  }
 }

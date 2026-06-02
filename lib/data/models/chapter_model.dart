@@ -134,6 +134,4 @@ class ChapterModel extends Chapter {
       commentCount: chapter.commentCount,
     );
   }
-
-  double get estimatedReadingTimeMinutes => readingTime / 200;
 }

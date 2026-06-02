@@ -293,6 +293,12 @@ class AppConstants {
   // Reading Streak Configuration
   static const int streakResetHour = 4; // 4 AM local time
   static const List<int> streakMilestones = [1, 3, 7, 14, 30, 60, 90, 180, 365];
+  
+  // Pagination & Limits
+  static const int storiesPerPage = 20;
+  static const int chaptersPerPage = 50;
+  static const int commentsPerPage = 30;
+  static const int reviewsPerPage = 10;
 
   // Achievement IDs
   static const String achievementFirstStory = 'first_story';
@@ -327,5 +333,46 @@ class AppConstants {
   static const int maxCachedStories = 50;
   static const int maxHistoryItems = 500;
   static const int maxBookmarks = 1000;
-  static const int maxFollowing = 500;
+
+  // Additional Storage Keys
+  static const String hiveChaptersPrefix = 'chapter_';
+  static const String hiveStoriesPrefix = 'story_';
+  static const String hiveUsersBox = 'user_box';
+  static const String currentUserKey = 'current_user';
+  
+  // Firestore Collection Names (for direct access)
+  static const String firestoreUsers = 'users';
+  static const String firestoreStories = 'stories';
+  static const String firestoreChapters = 'chapters';
+  static const String firestoreReadingProgress = 'reading_progress';
+  static const String firestoreLeagues = 'leagues';
+  static const String firestoreSubscriptions = 'subscriptions';
+  static const String firestoreAudioTracks = 'audio_tracks';
+  static const String firestoreReviews = 'reviews';
+  static const String firestoreComments = 'comments';
+  static const String firestoreReactions = 'reactions';
+  static const String firestoreNotifications = 'notifications';
+  static const String firestoreAchievements = 'achievements';
+  
+  // Firestore Path Helpers
+  static String storyPath(String storyId) => 
+      '$storiesCollection/$storyId';
+  static String chaptersPath(String storyId) => 
+      '$storiesCollection/$storyId/$chaptersCollection';
+  static String readingProgressPath(String userId, String storyId) => 
+      '$usersCollection/$userId/readingHistory/$storyId';
+}
+
+// Storage Keys Helper Class
+class StorageKeys {
+  StorageKeys._();
+  
+  static const String userBox = 'user_box';
+  static const String settingsBox = 'settings_box';
+  static const String cacheBox = 'cache_box';
+  static const String offlineStoriesBox = 'offline_stories_box';
+  static const String audioCacheBox = 'audio_cache_box';
+  static const String onboardingBox = 'onboarding_box';
+  static const String hiveChaptersPrefix = 'chapter_';
+  static const String hiveStoriesPrefix = 'story_';
 }

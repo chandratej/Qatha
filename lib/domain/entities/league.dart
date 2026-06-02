@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 enum LeagueVisibility {
@@ -160,4 +161,53 @@ class League extends Equatable {
   bool get canBePromoted => maxQualityScore < 100;
   
   bool get isEntryLevel => order == 0;
+  
+  factory League.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return League(
+      id: doc.id,
+      name: data['name'] ?? '',
+      displayName: data['displayName'] ?? '',
+      description: data['description'] ?? '',
+      badgeIcon: data['badgeIcon'] ?? '',
+      colorHex: data['colorHex'] ?? '',
+      minQualityScore: (data['minQualityScore'] ?? 0.0).toDouble(),
+      maxQualityScore: (data['maxQualityScore'] ?? 0.0).toDouble(),
+      promotionRequirements: PromotionRequirements.fromMap(
+        Map<String, dynamic>.from(data['promotionRequirements'] ?? {}),
+      ),
+      demotionRequirements: DemotionRequirements.fromMap(
+        Map<String, dynamic>.from(data['demotionRequirements'] ?? {}),
+      ),
+      benefits: List<String>.from(data['benefits'] ?? []),
+      visibility: LeagueVisibility.values.firstWhere(
+        (e) => e.toString().split('.').last == data['visibility'],
+        orElse: () => LeagueVisibility.public,
+      ),
+      isPremium: data['isPremium'] ?? false,
+      order: data['order'] ?? 0,
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'displayName': displayName,
+      'description': description,
+      'badgeIcon': badgeIcon,
+      'colorHex': colorHex,
+      'minQualityScore': minQualityScore,
+      'maxQualityScore': maxQualityScore,
+      'promotionRequirements': promotionRequirements.toMap(),
+      'demotionRequirements': demotionRequirements.toMap(),
+      'benefits': benefits,
+      'visibility': visibility.toString().split('.').last,
+      'isPremium': isPremium,
+      'order': order,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    };
+  }
 }

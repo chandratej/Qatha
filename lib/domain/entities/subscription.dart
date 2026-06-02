@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
 
 enum SubscriptionPlan {
@@ -104,4 +105,59 @@ class Subscription extends Equatable {
   }
   
   bool get canAccessPremium => isActive || isTrial || isInGracePeriod;
+  
+  factory Subscription.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Subscription(
+      id: doc.id,
+      userId: data['userId'] ?? '',
+      planType: SubscriptionPlan.values.firstWhere(
+        (e) => e.toString().split('.').last == data['planType'],
+        orElse: () => SubscriptionPlan.monthly,
+      ),
+      status: SubscriptionStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == data['status'],
+        orElse: () => SubscriptionStatus.inactive,
+      ),
+      startDate: (data['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      endDate: (data['endDate'] as Timestamp?)?.toDate(),
+      trialEndDate: (data['trialEndDate'] as Timestamp?)?.toDate(),
+      cancelDate: (data['cancelDate'] as Timestamp?)?.toDate(),
+      autoRenew: data['autoRenew'] ?? false,
+      paymentProvider: PaymentProvider.values.firstWhere(
+        (e) => e.toString().split('.').last == data['paymentProvider'],
+        orElse: () => PaymentProvider.web,
+      ),
+      productId: data['productId'] ?? '',
+      receiptData: data['receiptData'] ?? '',
+      price: (data['price'] ?? 0.0).toDouble(),
+      currency: data['currency'] ?? 'USD',
+      billingCycle: data['billingCycle'] ?? 1,
+      gracePeriodEndsAt: (data['gracePeriodEndsAt'] as Timestamp?)?.toDate(),
+      pausedAt: (data['pausedAt'] as Timestamp?)?.toDate(),
+      resumedAt: (data['resumedAt'] as Timestamp?)?.toDate(),
+    );
+  }
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'userId': userId,
+      'planType': planType.toString().split('.').last,
+      'status': status.toString().split('.').last,
+      'startDate': Timestamp.fromDate(startDate),
+      'endDate': endDate != null ? Timestamp.fromDate(endDate!) : null,
+      'trialEndDate': trialEndDate != null ? Timestamp.fromDate(trialEndDate!) : null,
+      'cancelDate': cancelDate != null ? Timestamp.fromDate(cancelDate!) : null,
+      'autoRenew': autoRenew,
+      'paymentProvider': paymentProvider.toString().split('.').last,
+      'productId': productId,
+      'receiptData': receiptData,
+      'price': price,
+      'currency': currency,
+      'billingCycle': billingCycle,
+      'gracePeriodEndsAt': gracePeriodEndsAt != null ? Timestamp.fromDate(gracePeriodEndsAt!) : null,
+      'pausedAt': pausedAt != null ? Timestamp.fromDate(pausedAt!) : null,
+      'resumedAt': resumedAt != null ? Timestamp.fromDate(resumedAt!) : null,
+    };
+  }
 }

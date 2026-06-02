@@ -348,7 +348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         gradient: LinearGradient(
           colors: [
             theme.colorScheme.primaryContainer,
-            theme.colorScheme.primaryContainer.withOpacity(0.5),
+            theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -364,7 +364,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Icon(
               Icons.auto_stories_rounded,
               size: 120,
-              color: theme.colorScheme.primary.withOpacity(0.1),
+              color: theme.colorScheme.primary.withValues(alpha: 0.1),
             ),
           ),
 
