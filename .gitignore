@@ -1,29 +1,29 @@
 ```
-# Build artifacts
-build/
-.dart_tool/
-*.g.dart
-
 # Dependencies
-.pub/
+.dart_tool/
 .packages
-
-# Logs
-*.log
-**/logs
+.pub/
+build/
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
-# IDE
+# Logs
+*.log
+
+# Coverage
+coverage/
+lcov.info
+
+# VS Code
 .vscode/
-.idea/
-*.swp
-*.swo
 
-# OS
+# macOS
 .DS_Store
-Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
 ```
