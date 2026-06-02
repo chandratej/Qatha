@@ -172,7 +172,7 @@ class AppTheme {
         surfaceContainerHighest: neutralLightGray,
         onSurfaceVariant: neutralDarkGray,
         outline: neutralGray,
-        shadow: neutralBlack.colorWithOpacity(0.1),
+        shadow: neutralBlack.withOpacity(0.1),
       ),
       
       appBarTheme: AppBarTheme(
@@ -377,9 +377,9 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.15),
+        shadowColor: neutralBlack.withOpacity(0.15),
         backgroundColor: neutralWhite,
-        indicatorColor: primaryGold.colorWithOpacity(0.2),
+        indicatorColor: primaryGold.withOpacity(0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.lato(
@@ -412,7 +412,7 @@ class AppTheme {
         backgroundColor: neutralWhite,
         modalBackgroundColor: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.15),
+        shadowColor: neutralBlack.withOpacity(0.15),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -464,7 +464,7 @@ class AppTheme {
         activeTrackColor: primaryGold,
         inactiveTrackColor: neutralLightGray,
         thumbColor: primaryGold,
-        overlayColor: primaryGold.colorWithOpacity(0.2),
+        overlayColor: primaryGold.withOpacity(0.2),
         trackHeight: 4,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
       ),
@@ -478,7 +478,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return primaryGold.colorWithOpacity(0.5);
+            return primaryGold.withOpacity(0.5);
           }
           return neutralLightGray;
         }),
@@ -535,7 +535,7 @@ class AppTheme {
       drawerTheme: DrawerThemeData(
         backgroundColor: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.15),
+        shadowColor: neutralBlack.withOpacity(0.15),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
         ),
@@ -605,7 +605,7 @@ class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.15),
+        shadowColor: neutralBlack.withOpacity(0.15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -621,7 +621,7 @@ class AppTheme {
       menuBarTheme: MenuBarThemeData(
         backgroundColor: neutralWhite,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.15),
+        shadowColor: neutralBlack.withOpacity(0.15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -695,7 +695,7 @@ class AppTheme {
         surfaceContainerHighest: neutralDarkGray,
         onSurfaceVariant: darkModeSecondaryText,
         outline: neutralGray,
-        shadow: neutralBlack.colorWithOpacity(0.3),
+        shadow: neutralBlack.withOpacity(0.3),
       ),
       
       appBarTheme: AppBarTheme(
@@ -721,7 +721,7 @@ class AppTheme {
       
       cardTheme: CardThemeData(
         elevation: 2,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         color: darkModeSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -900,9 +900,9 @@ class AppTheme {
       navigationBarTheme: NavigationBarThemeData(
         height: 64,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         backgroundColor: darkModeSurface,
-        indicatorColor: primaryGold.colorWithOpacity(0.2),
+        indicatorColor: primaryGold.withOpacity(0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.lato(
@@ -935,7 +935,7 @@ class AppTheme {
         backgroundColor: darkModeSurface,
         modalBackgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -944,7 +944,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -997,7 +997,7 @@ class AppTheme {
         activeTrackColor: primaryGold,
         inactiveTrackColor: neutralDarkGray,
         thumbColor: primaryGold,
-        overlayColor: primaryGold.colorWithOpacity(0.2),
+        overlayColor: primaryGold.withOpacity(0.2),
         trackHeight: 4,
         thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
       ),
@@ -1011,7 +1011,7 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return primaryGold.colorWithOpacity(0.5);
+            return primaryGold.withOpacity(0.5);
           }
           return neutralDarkGray;
         }),
@@ -1068,7 +1068,7 @@ class AppTheme {
       drawerTheme: DrawerThemeData(
         backgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.horizontal(right: Radius.circular(16)),
         ),
@@ -1138,7 +1138,7 @@ class AppTheme {
       popupMenuTheme: PopupMenuThemeData(
         color: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -1154,7 +1154,7 @@ class AppTheme {
       menuBarTheme: MenuBarThemeData(
         backgroundColor: darkModeSurface,
         elevation: 8,
-        shadowColor: neutralBlack.colorWithOpacity(0.3),
+        shadowColor: neutralBlack.withOpacity(0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -1228,7 +1228,7 @@ class AppTheme {
         surfaceContainerHighest: Color(0xFFE8D5B5),
         onSurfaceVariant: sepiaModeSecondaryText,
         outline: sepiaModeSecondaryText,
-        shadow: sepiaModeText.colorWithOpacity(0.1),
+        shadow: sepiaModeText.withOpacity(0.1),
       ),
       
       appBarTheme: AppBarTheme(
@@ -1294,7 +1294,7 @@ class AppTheme {
       
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Color(0xFFFDF6E3),
-        indicatorColor: accentBronze.colorWithOpacity(0.2),
+        indicatorColor: accentBronze.withOpacity(0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return GoogleFonts.lato(
