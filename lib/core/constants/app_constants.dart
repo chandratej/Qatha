@@ -376,6 +376,7 @@ class AppConstants {
 class StorageKeys {
   StorageKeys._();
   
+  // Hive Boxes
   static const String userBox = 'user_box';
   static const String settingsBox = 'settings_box';
   static const String cacheBox = 'cache_box';
@@ -384,4 +385,10 @@ class StorageKeys {
   static const String onboardingBox = 'onboarding_box';
   static const String hiveChaptersPrefix = 'chapter_';
   static const String hiveStoriesPrefix = 'story_';
+  
+  // Shared Preferences Keys
+  static const String currentUser = 'current_user';
+  static const String authToken = 'auth_token';
+  static const String refreshToken = 'refresh_token';
+  static const String userId = 'user_id';
 }

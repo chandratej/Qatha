@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../domain/entities/story.dart';
-import '../models/author_model.dart';
 
 class StoryModel extends Story {
   const StoryModel({
@@ -12,8 +11,9 @@ class StoryModel extends Story {
     required super.coverUrl,
     required super.genres,
     required super.tags,
-    required super.league,
+    required super.leagueId,
     required super.status,
+    required super.isCompleted,
     required super.language,
     required super.wordCount,
     required super.chapterCount,
@@ -47,11 +47,12 @@ class StoryModel extends Story {
       coverUrl: data['coverUrl'] ?? '',
       genres: List<String>.from(data['genres'] ?? []),
       tags: List<String>.from(data['tags'] ?? []),
-      league: data['league'] ?? 'manuscript',
+      leagueId: data['leagueId'] ?? 'manuscript',
       status: StoryStatus.values.firstWhere(
         (e) => e.name == data['status'],
         orElse: () => StoryStatus.ongoing,
       ),
+      isCompleted: data['isCompleted'] ?? false,
       language: data['language'] ?? 'en',
       wordCount: data['wordCount'] ?? 0,
       chapterCount: data['chapterCount'] ?? 0,
@@ -85,8 +86,9 @@ class StoryModel extends Story {
       coverUrl: story.coverUrl,
       genres: story.genres,
       tags: story.tags,
-      league: story.league,
+      leagueId: story.leagueId,
       status: story.status,
+      isCompleted: story.isCompleted,
       language: story.language,
       wordCount: story.wordCount,
       chapterCount: story.chapterCount,

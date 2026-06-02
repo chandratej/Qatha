@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:storyverse/core/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import '../../../domain/entities/reading_theme.dart';
 
 class ReaderScreen extends ConsumerStatefulWidget {
   final String storyId;
@@ -21,9 +22,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   double fontSize = 18;
   ReadingTheme currentTheme = ReadingTheme.light;
   bool showControls = true;
-
-  enum ReadingTheme { light, dark, sepia }
-
+  
   @override
   Widget build(BuildContext context) {
     Color backgroundColor = _getBackgroundColor();

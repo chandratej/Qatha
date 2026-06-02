@@ -438,6 +438,11 @@ class LeagueSystem {
     return _leagues[tier]!;
   }
 
+  static LeagueConfig getLeagueByTier(LeagueTier tier) {
+    return _leagues[tier]!;
+  }
+  }
+
   static LeagueConfig getLeagueById(String id) {
     return _leagues.values.firstWhere(
       (league) => league.id == id,

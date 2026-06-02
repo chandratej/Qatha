@@ -1,6 +1,5 @@
 ```
 # Build artifacts
-build/
 *.o
 *.obj
 *.a
@@ -11,33 +10,94 @@ build/
 
 # Dependencies
 **/node_modules/
-**/.pub-cache/
-**/.dart_tool/
-
-# Logs
-*.log
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Environment variables
-.env
-.env.local
-*.env*
+**/.venv/
+**/venv/
+**/.env
+**/.env.*
+**/.python-version
+**/.nvmrc
+**/.ruby-version
+**/.tool-versions
 
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+**/logs/
 
 # Coverage reports
 coverage/
-*.lcov
-*.profdata
+htmlcov/
+.coverage
 
 # Temporary files
 *.tmp
 *.temp
+*.bak
+
+# Flutter/Dart specific
+.dart_tool/
+.packages
+.pub-cache/
+pubspec.lock
+build/
+ios/.symlinks/
+**/ios/Pods/
+**/android/.gradle/
+**/android/app/build/
+**/android/build/
+**/android/gradle.properties
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/key.properties
+**/android/app/key.properties
+**/android/app/google-services.json
+**/android/app/src/main/res/drawable*/
+**/android/app/src/main/res/mipmap*/
+**/android/app/src/profile/
+**/android/app/src/debug/
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/App.framework/
+**/ios/Flutter/flutter_assets/
+**/ios/Runner.xcworkspace/
+**/ios/Runner.xcodeproj/
+**/ios/Podfile.lock
+**/ios/Pods/
+**/ios/build/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/AppFrameworkInfo.plist
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/Assets.xcassets/
+**/ios/Runner/Base.lproj/
+**/ios/Runner.xcodeproj/
+**/ios/Runner.xcworkspace/
+**/ios/RunnerTests/
+**/ios/RunnerUITests/
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Podfile.lock
+**/ios/Pods/
+**/ios/build/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/AppFrameworkInfo.plist
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/ephemeral/.symlinks/
+**/ios/Flutter/ephemeral/Flutter.podspec
+**/ios/Flutter/ephemeral/Flutter-Debug.xcconfig
+**/ios/Flutter/ephemeral/Flutter-Release.xcconfig
+**/ios/Flutter/ephemeral/Flutter-Profile.xcconfig
+**/ios/Flutter/ephemeral/Flutter.podspec
+**/ios/Flutter/ephemeral/Flutter-Debug.xcconfig
+**/ios/Flutter/ephemeral/Flutter-Release.xcconfig
+**/ios/Flutter/ephemeral/Flutter-Profile.xcconfig
 ```

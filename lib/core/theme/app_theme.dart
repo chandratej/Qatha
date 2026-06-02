@@ -1152,9 +1152,8 @@ class AppTheme {
       ),
       
       menuBarTheme: MenuBarThemeData(
-        backgroundColor: darkModeSurface,
-        elevation: 8,
-        shadowColor: neutralBlack.withValues(alpha: 0.3),
+        backgroundColor: WidgetStatePropertyAll(darkModeSurface),
+        surfaceTintColor: neutralBlack.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -1188,9 +1187,9 @@ class AppTheme {
           fontWeight: FontWeight.normal,
           color: darkModeText,
         ),
-        todayForegroundColor: primaryGold,
-        selectedDayBackgroundColor: primaryGold,
-        selectedDayForegroundColor: neutralBlack,
+        todayForegroundColor: WidgetStatePropertyAll(primaryGold),
+        selectedDayBackgroundColor: WidgetStatePropertyAll(primaryGold),
+        selectedDayForegroundColor: WidgetStatePropertyAll(neutralBlack),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
