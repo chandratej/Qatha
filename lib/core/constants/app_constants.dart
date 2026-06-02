@@ -10,10 +10,13 @@ class AppConstants {
   static const String appTagline = 'Stories Earn Their Place';
 
   // API Configuration
+  static const String apiBaseUrl = 'https://api.storyverse.app';
   static const String baseUrl = 'https://api.storyverse.com';
   static const String apiVersion = 'v1';
+  static const int apiTimeoutSeconds = 30;
   static const int connectionTimeout = 30000;
   static const int receiveTimeout = 30000;
+  static const int maxRetryAttempts = 3;
 
   // Firebase Collections
   static const String usersCollection = 'users';
@@ -36,6 +39,9 @@ class AppConstants {
 
   // Storage Keys (Hive)
   static const String userBox = 'user_box';
+  static const String hiveStoriesBox = 'stories_box';
+  static const String hiveChaptersBox = 'chapters_box';
+  static const String hiveProgressBox = 'progress_box';
   static const String settingsBox = 'settings_box';
   static const String cacheBox = 'cache_box';
   static const String offlineStoriesBox = 'offline_stories_box';
@@ -70,6 +76,9 @@ class AppConstants {
   
   // Promotion Configuration
   static const int minReadersForPromotion = 100;
+  // Thresholds
+  static const double highCompletionThreshold = 0.8;
+  static const double mediumCompletionThreshold = 0.5;
   static const double minCompletionRateForPromotion = 0.60;
   static const double minAverageRatingForPromotion = 4.0;
   static const int minDaysInCurrentLeague = 7;

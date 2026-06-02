@@ -84,8 +84,9 @@ class Story extends Equatable {
   final String coverUrl;
   final List<String> genres;
   final List<String> tags;
-  final String league;
+  final String leagueId;
   final StoryStatus status;
+  final bool isCompleted;
   final String language;
   final int wordCount;
   final int chapterCount;
@@ -116,8 +117,9 @@ class Story extends Equatable {
     required this.coverUrl,
     required this.genres,
     required this.tags,
-    required this.league,
+    required this.leagueId,
     required this.status,
+    required this.isCompleted,
     required this.language,
     required this.wordCount,
     required this.chapterCount,
@@ -201,8 +203,9 @@ class Story extends Equatable {
       'coverUrl': coverUrl,
       'genres': genres,
       'tags': tags,
-      'league': league,
+      'leagueId': leagueId,
       'status': status.name,
+      'isCompleted': isCompleted,
       'language': language,
       'wordCount': wordCount,
       'chapterCount': chapterCount,
@@ -236,11 +239,12 @@ class Story extends Equatable {
       coverUrl: map['coverUrl'] as String,
       genres: List<String>.from(map['genres'] ?? []),
       tags: List<String>.from(map['tags'] ?? []),
-      league: map['league'] as String? ?? 'manuscript',
+      leagueId: map['leagueId'] as String? ?? 'manuscript',
       status: StoryStatus.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => StoryStatus.draft,
       ),
+      isCompleted: map['isCompleted'] as bool? ?? false,
       language: map['language'] as String? ?? 'en',
       wordCount: map['wordCount'] as int? ?? 0,
       chapterCount: map['chapterCount'] as int? ?? 0,
