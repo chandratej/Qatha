@@ -845,8 +845,14 @@ export function getSemanticAlternatives(word: string): Suggestion[] {
   return [];
 }
 
-// Personal phonetic correction dictionary (per-creator, persisted in localStorage)
+// Personal phonetic correction dictionary (per-creator; Supabase is source of truth, localStorage is cache)
 let personalCorrections: Record<string, string> = {};
+
+function cachePersonalCorrections() {
+  try {
+    localStorage.setItem('katha-phonetic-corrections', JSON.stringify(personalCorrections));
+  } catch {}
+}
 
 export function loadPersonalCorrections() {
   try {
@@ -855,12 +861,27 @@ export function loadPersonalCorrections() {
   } catch {}
 }
 
+/** Merge cloud corrections after login (Priority 3 cross-device sync). */
+export async function syncPhoneticCorrectionsFromCloud() {
+  try {
+    const { sbLoadPhoneticCorrections } = await import('./supabaseData');
+    const remote = await sbLoadPhoneticCorrections();
+    if (Object.keys(remote).length) {
+      personalCorrections = { ...personalCorrections, ...remote };
+      cachePersonalCorrections();
+    }
+  } catch {
+    // Non-blocking
+  }
+}
+
 export function setPersonalCorrection(phoneticInput: string, correctedTelugu: string) {
   const key = phoneticInput.toLowerCase().trim();
   personalCorrections[key] = correctedTelugu;
-  try {
-    localStorage.setItem('katha-phonetic-corrections', JSON.stringify(personalCorrections));
-  } catch {}
+  cachePersonalCorrections();
+  import('./supabaseData')
+    .then(({ sbUpsertPhoneticCorrection }) => sbUpsertPhoneticCorrection(key, correctedTelugu))
+    .catch(() => {});
 }
 
 export function getPersonalCorrections() {

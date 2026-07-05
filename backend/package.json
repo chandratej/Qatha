@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "stop": "node scripts/free-port.mjs 3001",
     "dev:restart": "npm run stop && npm run dev",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "test": "node --test src/middleware/authenticate.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

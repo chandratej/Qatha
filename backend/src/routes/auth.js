@@ -4,6 +4,7 @@ import { createAppError } from '../middleware/errorHandler.js';
 import { getLaunchOfferConfig, grantLaunchTrial } from '../services/launchOffer.js';
 import { getSupabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
+import { requireAuth, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 // Pure Supabase Auth (per katha-auth-architecture-decision_auth.md)
 // OTP delivery: Supabase Send SMS Hook → MSG91 (₹0.12–0.15/OTP). No Firebase. No custom token bridge.
@@ -192,11 +193,11 @@ authRouter.post('/verify-otp', async (req, res, next) => {
 });
 
 // Optional: endpoint to allow client to refresh FCM token (future-proof for Phase 2)
-authRouter.post('/fcm-token', async (req, res, next) => {
+authRouter.post('/fcm-token', requireAuth(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'];
+    const userId = getAuthenticatedUserId(req);
     const { fcm_token, device_fingerprint } = req.body;
-    if (!userId || !fcm_token) {
+    if (!fcm_token) {
       return res.json({ ok: false });
     }
     const sb = getSupabase();
@@ -215,16 +216,29 @@ authRouter.post('/fcm-token', async (req, res, next) => {
   }
 });
 
-authRouter.get('/me', async (req, res, next) => {
+authRouter.get('/me', requireAuth(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'];
-    if (!userId) throw createAppError('OTP_REQUIRED', null, 401);
+    const userId = getAuthenticatedUserId(req);
+    const sb = getSupabase();
+    let role = req.auth?.role || 'reader';
+    let subscription_status = 'free';
+
+    if (sb) {
+      const { data: profile } = await sb.from('profiles')
+        .select('role, subscription_status')
+        .eq('id', userId)
+        .maybeSingle();
+      if (profile) {
+        role = profile.role || role;
+        subscription_status = profile.subscription_status || subscription_status;
+      }
+    }
 
     res.json({
       user: {
         id: userId,
-        role: req.headers['x-user-role'] || 'reader',
-        subscription_status: req.headers['x-subscription-status'] || 'free',
+        role,
+        subscription_status,
       },
     });
   } catch (err) {

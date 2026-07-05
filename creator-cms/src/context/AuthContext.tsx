@@ -63,6 +63,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(t);
     setApiAuth(u, t);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, token: t }));
+    if (!isMockMode) {
+      import('../lib/device').then(({ getDeviceId }) => {
+        import('../lib/supabaseData').then(({ sbMigrateLocalPhoneticCorrections, sbRegisterDevice }) => {
+          sbMigrateLocalPhoneticCorrections().catch(() => {});
+          sbRegisterDevice(getDeviceId()).catch(() => {});
+        });
+      });
+      import('../lib/phonetic').then(({ syncPhoneticCorrectionsFromCloud }) => {
+        syncPhoneticCorrectionsFromCloud().catch(() => {});
+      });
+    }
   };
 
   const clearSession = () => {

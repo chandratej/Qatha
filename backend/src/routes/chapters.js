@@ -1,27 +1,28 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
-import { getSeedChapter, DEMO_USER_ID, mockChapterStore, countDraftWords } from '../data/seed.js';
+import { getSeedChapter, mockChapterStore, countDraftWords } from '../data/seed.js';
 import { addToMockQueue } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
 import { resolveMockUser } from '../services/launchOffer.js';
 import { moderateChapter, scoreHeuristicToxicity, analyzeWithPerspective } from '../services/moderation.js';
 import { notifyNewChapter } from '../services/notifications.js';
+import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
 
 export const chaptersRouter = Router();
 
-chaptersRouter.get('/:storyId/:chapterNumber', async (req, res, next) => {
+chaptersRouter.get('/:storyId/:chapterNumber', requireAuth({ optional: true }), async (req, res, next) => {
   try {
     const { storyId, chapterNumber } = req.params;
-    const userId = req.headers['x-user-id'];
+    const userId = req.auth?.userId || (isMockMode() ? req.headers['x-user-id'] : null);
 
     let user = null;
     if (userId) {
-      if (isMockMode()) {
+      if (isMockMode() && !req.auth) {
         user = resolveMockUser(userId, req.headers);
       } else {
         const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
@@ -72,10 +73,10 @@ chaptersRouter.get('/:storyId/:chapterNumber', async (req, res, next) => {
   }
 });
 
-chaptersRouter.post('/:storyId/draft', async (req, res, next) => {
+chaptersRouter.post('/:storyId/draft', requireAuth(), async (req, res, next) => {
   try {
     const { storyId } = req.params;
-    const creatorId = req.headers['x-creator-id'] || 'demo-creator-001';
+    const creatorId = getAuthenticatedUserId(req);
     const { chapter_number, title, content, content_delta } = req.body;
 
     if (!chapter_number) {
@@ -129,10 +130,10 @@ chaptersRouter.post('/:storyId/draft', async (req, res, next) => {
   }
 });
 
-chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
+chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) => {
   try {
     const { storyId } = req.params;
-    const creatorId = req.headers['x-creator-id'] || 'demo-creator-001';
+    const creatorId = getAuthenticatedUserId(req);
     const { chapter_number, title, content, content_delta, appeal_note } = req.body;
 
     if (!content || content.length > 50000) {
@@ -209,9 +210,9 @@ chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
   }
 });
 
-chaptersRouter.post('/progress', async (req, res, next) => {
+chaptersRouter.post('/progress', requireAuthOrMockLegacyUser(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'] || DEMO_USER_ID;
+    const userId = getAuthenticatedUserId(req);
     const { story_id, chapter_id, scroll_position_pct, is_completed, last_read_char_offset } = req.body;
 
     if (isMockMode()) return res.json({ saved: true, mock: true });

@@ -15,12 +15,13 @@ import {
   countDraftWords,
 } from '../data/seed.js';
 import { createAppError } from '../middleware/errorHandler.js';
+import { getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 export const creatorsRouter = Router();
 
 creatorsRouter.get('/dashboard', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const revenue = getRevenueConfig();
 
     if (isMockMode()) {
@@ -66,7 +67,7 @@ creatorsRouter.get('/dashboard', async (req, res, next) => {
 
 creatorsRouter.get('/stories', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
 
     if (isMockMode()) {
       const stories = getCreatorSeedStories(creatorId).map((s) => {
@@ -112,7 +113,7 @@ creatorsRouter.get('/stories', async (req, res, next) => {
 
 creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
 
     if (isMockMode()) {
@@ -170,7 +171,7 @@ creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
 
 creatorsRouter.get('/stories/:storyId/chapters/:chapterNumber', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
     const num = Number(chapterNumber);
 
@@ -233,7 +234,7 @@ creatorsRouter.get('/stories/:storyId/chapters/:chapterNumber', async (req, res,
 
 creatorsRouter.patch('/stories/:storyId', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
     const { title, description, genre, cover_url, release_schedule } = req.body;
 
@@ -268,7 +269,7 @@ creatorsRouter.patch('/stories/:storyId', async (req, res, next) => {
 
 creatorsRouter.delete('/stories/:storyId', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
 
     if (isMockMode()) {
@@ -297,7 +298,7 @@ creatorsRouter.delete('/stories/:storyId', async (req, res, next) => {
 
 creatorsRouter.patch('/stories/:storyId/chapters/:chapterNumber', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
     const num = Number(chapterNumber);
     const { title } = req.body;
@@ -336,7 +337,7 @@ creatorsRouter.patch('/stories/:storyId/chapters/:chapterNumber', async (req, re
 
 creatorsRouter.delete('/stories/:storyId/chapters/:chapterNumber', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
     const num = Number(chapterNumber);
 
@@ -361,7 +362,7 @@ creatorsRouter.delete('/stories/:storyId/chapters/:chapterNumber', async (req, r
 
 creatorsRouter.post('/stories/:storyId/chapters/:chapterNumber/duplicate', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
     const num = Number(chapterNumber);
 
@@ -414,7 +415,7 @@ creatorsRouter.post('/stories/:storyId/chapters/:chapterNumber/duplicate', async
 
 creatorsRouter.post('/stories', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { title, description, genre, cover_url, release_schedule, release_day_of_week, release_time_of_day } = req.body;
 
     if (isMockMode()) {
@@ -443,7 +444,7 @@ creatorsRouter.post('/stories', async (req, res, next) => {
 
 creatorsRouter.get('/analytics/:storyId', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || DEMO_CREATOR_ID;
+    const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
 
     if (isMockMode()) {

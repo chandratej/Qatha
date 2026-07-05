@@ -1,0 +1,679 @@
+/**
+ * Direct Supabase Data API layer (Wave B).
+ * RLS-authorized reads/writes + Edge Function invokes for privileged flows.
+ */
+import { supabase, isMockMode } from './supabase';
+import type {
+  StoryData,
+  ChapterListItem,
+  ChapterDraftData,
+  CreatorMilestone,
+  DashboardData,
+  AnalyticsData,
+  DropOffInsight,
+  ModerationItem,
+} from './api';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function assertSession() {
+  if (isMockMode) {
+    throw new Error('Supabase direct mode requires VITE_MOCK_MODE=false and a configured Supabase project');
+  }
+}
+
+async function requireUser() {
+  assertSession();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) throw new Error('Authentication required');
+  return user;
+}
+
+async function assertStoryOwner(storyId: string, userId: string) {
+  const { data: story, error } = await supabase
+    .from('stories')
+    .select('id, title, author_id')
+    .eq('id', storyId)
+    .single();
+  if (error || !story || story.author_id !== userId) {
+    throw new Error('Story not found');
+  }
+  return story;
+}
+
+async function assertModerator(userId: string) {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .single();
+  if (!profile || !['admin', 'moderator'].includes(profile.role)) {
+    throw new Error('Insufficient permissions');
+  }
+}
+
+function deriveStoryModerationStatus(chapters: Array<{ status?: string }>): StoryData['moderation_status'] {
+  if (!chapters?.length) return 'draft';
+  const statuses = chapters.map((c) => c.status || 'draft');
+  if (statuses.some((s) => s === 'pending_review')) return 'pending_review';
+  if (statuses.some((s) => s === 'needs_revision' || s === 'rejected')) return 'needs_revision';
+  if (statuses.every((s) => s === 'published')) return 'published';
+  if (statuses.some((s) => s === 'published')) return 'published';
+  return 'draft';
+}
+
+function buildDropOffInsights(
+  chapters: Array<{ chapter_number: number; total_views: number; completion_rate: number; avg_scroll_pct: number }>,
+): DropOffInsight[] {
+  const insights: DropOffInsight[] = [];
+  for (let i = 1; i < chapters.length; i++) {
+    const prev = chapters[i - 1];
+    const curr = chapters[i];
+    const viewDrop = prev.total_views > 0
+      ? Math.round(100 * (prev.total_views - curr.total_views) / prev.total_views)
+      : 0;
+    const completionDrop = prev.completion_rate - curr.completion_rate;
+    if (viewDrop >= 15 || completionDrop >= 12) {
+      insights.push({
+        chapter_number: curr.chapter_number,
+        view_drop_pct: viewDrop,
+        completion_drop_pct: completionDrop,
+        avg_scroll_pct: curr.avg_scroll_pct,
+        suggestion: curr.avg_scroll_pct < 70
+          ? `Most readers stopped around ${100 - curr.avg_scroll_pct}% into Chapter ${curr.chapter_number}. Consider shorter paragraphs or a stronger hook.`
+          : `Chapter ${curr.chapter_number} loses ${viewDrop}% of readers vs. the previous chapter. Review pacing and cliffhanger strength.`,
+      });
+    }
+  }
+  return insights;
+}
+
+function getNextPayoutDate() {
+  const now = new Date();
+  const payout = new Date(now.getFullYear(), now.getMonth(), 15);
+  if (now.getDate() >= 15) payout.setMonth(payout.getMonth() + 1);
+  return payout.toISOString().split('T')[0];
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard & wallet (Wave C — SVC-MONEY-03)
+// ---------------------------------------------------------------------------
+
+export async function sbGetDashboard(): Promise<DashboardData> {
+  await requireUser();
+
+  const { data, error } = await supabase.rpc('get_creator_dashboard');
+  if (error) throw new Error(error.message);
+
+  const payload = data as DashboardData & {
+    revenue_share_pct?: number;
+    platform_share_pct?: number;
+    creator_earnings_per_subscription_inr?: number;
+    payout_schedule?: string;
+  };
+
+  return {
+    earnings_this_month: Number(payload.earnings_this_month) || 0,
+    total_earnings: Number(payload.total_earnings) || 0,
+    total_subscribers: payload.total_subscribers || 0,
+    expected_payout_date: payload.expected_payout_date || getNextPayoutDate(),
+    expected_payout_amount: Number(payload.expected_payout_amount) || 0,
+    week_over_week_growth_pct: payload.week_over_week_growth_pct,
+    revenue_share_pct: payload.revenue_share_pct ?? 60,
+    platform_share_pct: payload.platform_share_pct ?? 40,
+    creator_earnings_per_subscription_inr: Number(payload.creator_earnings_per_subscription_inr) || 59.4,
+    payout_schedule: payload.payout_schedule || '15th of each month',
+    earnings_by_story: payload.earnings_by_story || [],
+    stories: payload.stories || [],
+    subscriber_history: payload.subscriber_history || [],
+  };
+}
+
+export async function sbGetWallet(): Promise<{
+  balance: number;
+  pending_payout: number;
+  last_payout_at: string | null;
+}> {
+  const user = await requireUser();
+  const { data, error } = await supabase
+    .from('wallets')
+    .select('balance, pending_payout, last_payout_at')
+    .eq('creator_id', user.id)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return {
+    balance: Number(data?.balance) || 0,
+    pending_payout: Number(data?.pending_payout) || 0,
+    last_payout_at: data?.last_payout_at || null,
+  };
+}
+
+/** Register device post-login (Wave C — SVC-AUTH-05). */
+export async function sbRegisterDevice(deviceId: string, deviceLabel?: string) {
+  if (isMockMode) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+
+  await supabase.functions.invoke('register-device', {
+    body: {
+      device_id: deviceId,
+      device_label: deviceLabel || navigator.userAgent.slice(0, 80),
+      session_id: session.access_token,
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Stories & chapters (SVC-STORY-01..05)
+// ---------------------------------------------------------------------------
+
+export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
+  const user = await requireUser();
+
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at')
+    .eq('author_id', user.id)
+    .eq('is_published', true)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  const storiesWithStatus = await Promise.all((data || []).map(async (s) => {
+    const [{ data: chapters }, { data: drafts }] = await Promise.all([
+      supabase.from('chapters').select('status').eq('story_id', s.id),
+      supabase.from('chapter_drafts').select('status').eq('story_id', s.id).eq('creator_id', user.id),
+    ]);
+    return {
+      ...s,
+      moderation_status: deriveStoryModerationStatus([...(chapters || []), ...(drafts || [])]),
+    } as StoryData;
+  }));
+
+  return { stories: storiesWithStatus };
+}
+
+export async function sbCreateStory(body: {
+  title: string;
+  description?: string;
+  genre: string;
+  cover_url?: string;
+  release_schedule?: string;
+}): Promise<{ story: { id: string } }> {
+  const user = await requireUser();
+
+  const { data, error } = await supabase.from('stories').insert({
+    author_id: user.id,
+    title: body.title,
+    description: body.description,
+    genre: body.genre,
+    cover_url: body.cover_url,
+    release_schedule: body.release_schedule || 'irregular',
+    is_published: true,
+  }).select('id').single();
+
+  if (error) throw new Error(error.message);
+  return { story: { id: data.id } };
+}
+
+export async function sbUpdateStory(
+  storyId: string,
+  body: {
+    title?: string;
+    description?: string;
+    genre?: string;
+    cover_url?: string;
+    release_schedule?: string;
+  },
+): Promise<{ story: StoryData }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const updates: Record<string, unknown> = {};
+  if (body.title !== undefined) updates.title = body.title;
+  if (body.description !== undefined) updates.description = body.description;
+  if (body.genre !== undefined) updates.genre = body.genre;
+  if (body.cover_url !== undefined) updates.cover_url = body.cover_url;
+  if (body.release_schedule !== undefined) updates.release_schedule = body.release_schedule;
+
+  const { data, error } = await supabase.from('stories').update(updates).eq('id', storyId).select().single();
+  if (error) throw new Error(error.message);
+  return { story: data as StoryData };
+}
+
+export async function sbDeleteStory(storyId: string): Promise<{ archived: boolean }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { error } = await supabase.from('stories').update({ is_published: false }).eq('id', storyId);
+  if (error) throw new Error(error.message);
+  return { archived: true };
+}
+
+export async function sbGetStoryChapters(storyId: string): Promise<{
+  story?: { id: string; title: string };
+  chapters: ChapterListItem[];
+}> {
+  const user = await requireUser();
+  const story = await assertStoryOwner(storyId, user.id);
+
+  const [{ data: chapters }, { data: drafts }] = await Promise.all([
+    supabase
+      .from('chapters')
+      .select('id, chapter_number, title, status, view_count, updated_at, content_delta')
+      .eq('story_id', storyId)
+      .order('chapter_number'),
+    supabase
+      .from('chapter_drafts')
+      .select('id, chapter_number, title, content, content_delta, last_saved_at, status')
+      .eq('story_id', storyId)
+      .eq('creator_id', user.id),
+  ]);
+
+  const byNum = new Map<number, ChapterListItem & { updated_at?: string }>();
+  for (const ch of chapters || []) {
+    const delta = ch.content_delta as { scenes?: Array<{ content?: string }> } | null;
+    byNum.set(ch.chapter_number, {
+      ...ch,
+      word_count: delta?.scenes?.reduce((s, sc) => s + (sc.content?.length || 0), 0) || 0,
+      scene_count: delta?.scenes?.length || 1,
+    });
+  }
+  for (const d of drafts || []) {
+    const existing = byNum.get(d.chapter_number);
+    if (!existing || new Date(d.last_saved_at) > new Date(existing.updated_at || 0)) {
+      const delta = d.content_delta as { scenes?: Array<{ content?: string }> } | null;
+      byNum.set(d.chapter_number, {
+        id: d.id,
+        chapter_number: d.chapter_number,
+        title: d.title,
+        status: d.status || 'draft',
+        word_count: d.content?.length || 0,
+        scene_count: delta?.scenes?.length || 1,
+        updated_at: d.last_saved_at,
+      });
+    }
+  }
+
+  return {
+    story: { id: story.id, title: story.title },
+    chapters: Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number),
+  };
+}
+
+export async function sbGetChapter(storyId: string, chapterNumber: number): Promise<{ chapter: ChapterDraftData }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { data: draft } = await supabase
+    .from('chapter_drafts')
+    .select('*')
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .eq('creator_id', user.id)
+    .maybeSingle();
+
+  if (draft) return { chapter: draft as ChapterDraftData };
+
+  const { data: chapter } = await supabase
+    .from('chapters')
+    .select('id, story_id, chapter_number, title, content, content_delta, status, moderation_status, moderation_notes')
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .maybeSingle();
+
+  if (chapter) return { chapter: chapter as ChapterDraftData };
+
+  return {
+    chapter: {
+      story_id: storyId,
+      chapter_number: chapterNumber,
+      title: `Chapter ${chapterNumber}`,
+      content: '',
+      content_delta: { scenes: [{ id: 'scene-1', title: 'Opening Scene', content: '<p>Start writing…</p>' }] },
+      status: 'draft',
+    },
+  };
+}
+
+export async function sbRenameChapter(storyId: string, chapterNumber: number, title: string) {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { data: draft, error } = await supabase
+    .from('chapter_drafts')
+    .update({ title, last_saved_at: new Date().toISOString() })
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .eq('creator_id', user.id)
+    .select()
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (draft) return { chapter: draft };
+
+  const { data: ch, error: chErr } = await supabase
+    .from('chapters')
+    .update({ title })
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .select()
+    .maybeSingle();
+
+  if (chErr) throw new Error(chErr.message);
+  return { chapter: ch };
+}
+
+export async function sbDeleteChapter(storyId: string, chapterNumber: number) {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  await supabase.from('chapter_drafts').delete()
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .eq('creator_id', user.id);
+  await supabase.from('chapters').delete()
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber);
+
+  return { deleted: true };
+}
+
+export async function sbDuplicateChapter(storyId: string, chapterNumber: number): Promise<{ chapter: ChapterListItem }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { data: source } = await supabase
+    .from('chapter_drafts')
+    .select('*')
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .eq('creator_id', user.id)
+    .maybeSingle();
+
+  const [{ data: maxDraft }, { data: maxChapter }] = await Promise.all([
+    supabase.from('chapter_drafts').select('chapter_number').eq('story_id', storyId)
+      .order('chapter_number', { ascending: false }).limit(1).maybeSingle(),
+    supabase.from('chapters').select('chapter_number').eq('story_id', storyId)
+      .order('chapter_number', { ascending: false }).limit(1).maybeSingle(),
+  ]);
+
+  const nextNum = Math.max(maxDraft?.chapter_number || 0, maxChapter?.chapter_number || chapterNumber) + 1;
+
+  const { data: dup, error } = await supabase.from('chapter_drafts').insert({
+    creator_id: user.id,
+    story_id: storyId,
+    chapter_number: nextNum,
+    title: `${source?.title || `Chapter ${chapterNumber}`} (Copy)`,
+    content: source?.content || '',
+    content_delta: source?.content_delta,
+    status: 'draft',
+    last_saved_at: new Date().toISOString(),
+  }).select().single();
+
+  if (error) throw new Error(error.message);
+  return { chapter: dup as ChapterListItem };
+}
+
+export async function sbSaveDraft(
+  storyId: string,
+  body: {
+    chapter_number: number;
+    title?: string;
+    content: string;
+    content_delta?: { scenes: Array<{ id: string; title: string; content: string }> };
+  },
+): Promise<{ saved: boolean; draft: ChapterDraftData }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const word_count = body.content?.length || 0;
+  const scene_count = body.content_delta?.scenes?.length || 1;
+  const enrichedDelta = body.content_delta
+    ? { ...body.content_delta, word_count, scene_count }
+    : { scenes: [], word_count, scene_count };
+
+  const { data: draft, error } = await supabase
+    .from('chapter_drafts')
+    .upsert({
+      creator_id: user.id,
+      story_id: storyId,
+      chapter_number: body.chapter_number,
+      title: body.title,
+      content: body.content,
+      content_delta: enrichedDelta,
+      last_saved_at: new Date().toISOString(),
+    }, { onConflict: 'creator_id,story_id,chapter_number' })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return { saved: true, draft: draft as ChapterDraftData };
+}
+
+// ---------------------------------------------------------------------------
+// Publish (SVC-PUB-01 via Edge Function)
+// ---------------------------------------------------------------------------
+
+export async function sbPublishChapter(
+  storyId: string,
+  body: {
+    chapter_number: number;
+    title?: string;
+    content: string;
+    appeal_note?: string;
+  },
+): Promise<{ chapter: ChapterDraftData; moderation: { status: string; toxicity_score?: number; note?: string } }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { data, error } = await supabase.functions.invoke('publish-chapter', {
+    body: {
+      story_id: storyId,
+      chapter_number: body.chapter_number,
+      title: body.title,
+      content: body.content,
+      appeal_note: body.appeal_note,
+    },
+  });
+
+  if (error) throw new Error(error.message || 'Publish failed');
+  if (data?.error) throw new Error(data.error);
+
+  return {
+    chapter: data.chapter as ChapterDraftData,
+    moderation: {
+      status: data.moderation?.status || data.chapter?.status || 'pending_review',
+      toxicity_score: data.moderation?.toxicity_score,
+      note: data.moderation?.note,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Analytics (SVC-ANALYTICS-02)
+// ---------------------------------------------------------------------------
+
+export async function sbGetAnalytics(storyId: string): Promise<AnalyticsData> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { data, error } = await supabase.rpc('get_story_analytics', { p_story_id: storyId });
+  if (error) throw new Error(error.message);
+
+  const payload = data as {
+    story: { id: string; title: string };
+    chapters: AnalyticsData['chapters'];
+    subscribers_gained: number;
+  };
+
+  return {
+    ...payload,
+    drop_off_insights: buildDropOffInsights(payload.chapters || []),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Moderation (SVC-MOD-02/03)
+// ---------------------------------------------------------------------------
+
+export async function sbGetModerationQueue(): Promise<{ queue: ModerationItem[] }> {
+  const user = await requireUser();
+  await assertModerator(user.id);
+
+  const { data, error } = await supabase
+    .from('moderation_queue')
+    .select(`
+      id, status, reason, toxicity_score, created_at,
+      chapters(id, title, chapter_number, content),
+      creators(pen_name)
+    `)
+    .eq('status', 'pending')
+    .order('created_at');
+
+  if (error) throw new Error(error.message);
+  return { queue: (data || []) as unknown as ModerationItem[] };
+}
+
+export async function sbReviewModeration(id: string, decision: string, notes?: string) {
+  const user = await requireUser();
+  await assertModerator(user.id);
+
+  const { data, error } = await supabase.functions.invoke('review-chapter', {
+    body: { queue_id: id, decision, notes },
+  });
+
+  if (error) throw new Error(error.message || 'Review failed');
+  if (data?.error) throw new Error(data.error);
+  return { reviewed: true, decision };
+}
+
+// ---------------------------------------------------------------------------
+// Engagement milestones (SVC-ENG-01/02)
+// ---------------------------------------------------------------------------
+
+export async function sbGetMilestones(): Promise<{ milestones: CreatorMilestone[] }> {
+  const user = await requireUser();
+
+  const { data, error } = await supabase
+    .from('creator_milestones')
+    .select('*')
+    .eq('creator_id', user.id)
+    .eq('acknowledged', false)
+    .order('achieved_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return { milestones: (data || []) as CreatorMilestone[] };
+}
+
+export async function sbAcknowledgeMilestone(id: string): Promise<{ success: boolean }> {
+  const user = await requireUser();
+
+  const { error } = await supabase
+    .from('creator_milestones')
+    .update({ acknowledged: true })
+    .eq('id', id)
+    .eq('creator_id', user.id);
+
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Media upload (SVC-MEDIA-01 direct Storage)
+// ---------------------------------------------------------------------------
+
+const MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export async function sbUploadImage(file: File): Promise<{ url: string }> {
+  const user = await requireUser();
+
+  const mime = file.type || 'image/jpeg';
+  if (!ALLOWED_TYPES.has(mime)) {
+    throw new Error('Only JPEG, PNG, and WebP images are allowed');
+  }
+  if (file.size > MAX_BYTES) {
+    throw new Error('Image must be under 5MB');
+  }
+
+  const ext = (file.name.split('.').pop() || mime.split('/')[1] || 'jpg').toLowerCase();
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from('story-covers')
+    .upload(path, file, { contentType: mime, upsert: true });
+
+  if (error) throw new Error(error.message);
+
+  const { data } = supabase.storage.from('story-covers').getPublicUrl(path);
+  return { url: data.publicUrl };
+}
+
+export async function sbCheckHealth() {
+  const { error } = await supabase.from('platform_config').select('key').limit(1);
+  return {
+    status: error ? 'degraded' : 'ok',
+    service: 'katha-cms-supabase',
+    mock_mode: false,
+    supabase_error: error?.message,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Phonetic corrections (Priority 3)
+// ---------------------------------------------------------------------------
+
+export async function sbUpsertPhoneticCorrection(phoneticInput: string, correctedTelugu: string) {
+  const user = await requireUser();
+  const key = phoneticInput.toLowerCase().trim();
+  await supabase.from('phonetic_corrections').upsert({
+    creator_id: user.id,
+    phonetic_input: key,
+    corrected_telugu: correctedTelugu,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'creator_id,phonetic_input' });
+}
+
+export async function sbLoadPhoneticCorrections(): Promise<Record<string, string>> {
+  if (isMockMode) return {};
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const { data, error } = await supabase
+    .from('phonetic_corrections')
+    .select('phonetic_input, corrected_telugu')
+    .eq('creator_id', user.id);
+
+  if (error || !data) return {};
+  return Object.fromEntries(data.map((r) => [r.phonetic_input, r.corrected_telugu]));
+}
+
+export async function sbMigrateLocalPhoneticCorrections() {
+  if (isMockMode) return;
+  try {
+    const saved = localStorage.getItem('katha-phonetic-corrections');
+    if (!saved) return;
+    const local: Record<string, string> = JSON.parse(saved);
+    const entries = Object.entries(local);
+    if (!entries.length) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from('phonetic_corrections').upsert(
+      entries.map(([phonetic_input, corrected_telugu]) => ({
+        creator_id: user.id,
+        phonetic_input: phonetic_input.toLowerCase().trim(),
+        corrected_telugu,
+        updated_at: new Date().toISOString(),
+      })),
+      { onConflict: 'creator_id,phonetic_input', ignoreDuplicates: false },
+    );
+  } catch {
+    // Non-blocking
+  }
+}

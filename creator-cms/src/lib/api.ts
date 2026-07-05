@@ -1,21 +1,25 @@
 import type { AuthUser } from '../context/AuthContext';
+import { isMockMode } from './supabase';
+import * as sb from './supabaseData';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
-let _authUser: AuthUser | null = null;
+/** Wave B: auto-enable Supabase direct when not in mock mode (set VITE_USE_SUPABASE_DIRECT=false to force Node). */
+export function useSupabaseDirect(): boolean {
+  if (import.meta.env.VITE_USE_SUPABASE_DIRECT === 'false') return false;
+  if (import.meta.env.VITE_USE_SUPABASE_DIRECT === 'true') return true;
+  return !isMockMode;
+}
+
 let _authToken: string | null = null;
 
-export function setApiAuth(user: AuthUser | null, token: string | null = null) {
-  _authUser = user;
+export function setApiAuth(_user: AuthUser | null, token: string | null = null) {
   _authToken = token;
 }
 
 function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'x-creator-id': _authUser?.id || 'demo-creator-001',
-    'x-user-id': _authUser?.id || '',
-    'x-user-role': _authUser?.role || 'creator',
     ...extra,
   };
   if (_authToken) {
@@ -144,76 +148,119 @@ export interface CreatorMilestone {
 }
 
 export const api = {
-  getDashboard: () => request<DashboardData>('/creators/dashboard'),
-  getCreatorStories: () => request<{ stories: StoryData[] }>('/creators/stories'),
+  getDashboard: () =>
+    useSupabaseDirect() ? sb.sbGetDashboard() : request<DashboardData>('/creators/dashboard'),
+  getCreatorStories: () =>
+    useSupabaseDirect() ? sb.sbGetCreatorStories() : request<{ stories: StoryData[] }>('/creators/stories'),
   getStoryChapters: (storyId: string) =>
-    request<{ story?: { id: string; title: string }; chapters: ChapterListItem[] }>(`/creators/stories/${storyId}/chapters`),
+    useSupabaseDirect()
+      ? sb.sbGetStoryChapters(storyId)
+      : request<{ story?: { id: string; title: string }; chapters: ChapterListItem[] }>(`/creators/stories/${storyId}/chapters`),
   getChapter: (storyId: string, chapterNumber: number) =>
-    request<{ chapter: ChapterDraftData }>(`/creators/stories/${storyId}/chapters/${chapterNumber}`),
+    useSupabaseDirect()
+      ? sb.sbGetChapter(storyId, chapterNumber)
+      : request<{ chapter: ChapterDraftData }>(`/creators/stories/${storyId}/chapters/${chapterNumber}`),
   createStory: (body: {
     title: string;
     description?: string;
     genre: string;
     cover_url?: string;
     release_schedule?: string;
-  }) => request<{ story: { id: string } }>('/creators/stories', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    useSupabaseDirect()
+      ? sb.sbCreateStory(body)
+      : request<{ story: { id: string } }>('/creators/stories', { method: 'POST', body: JSON.stringify(body) }),
   updateStory: (storyId: string, body: {
     title?: string;
     description?: string;
     genre?: string;
     cover_url?: string;
     release_schedule?: string;
-  }) => request<{ story: StoryData }>(`/creators/stories/${storyId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  }) =>
+    useSupabaseDirect()
+      ? sb.sbUpdateStory(storyId, body)
+      : request<{ story: StoryData }>(`/creators/stories/${storyId}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteStory: (storyId: string) =>
-    request<{ archived: boolean }>(`/creators/stories/${storyId}`, { method: 'DELETE' }),
+    useSupabaseDirect()
+      ? sb.sbDeleteStory(storyId)
+      : request<{ archived: boolean }>(`/creators/stories/${storyId}`, { method: 'DELETE' }),
   renameChapter: (storyId: string, chapterNumber: number, title: string) =>
-    request(`/creators/stories/${storyId}/chapters/${chapterNumber}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ title }),
-    }),
+    useSupabaseDirect()
+      ? sb.sbRenameChapter(storyId, chapterNumber, title)
+      : request(`/creators/stories/${storyId}/chapters/${chapterNumber}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ title }),
+        }),
   deleteChapter: (storyId: string, chapterNumber: number) =>
-    request(`/creators/stories/${storyId}/chapters/${chapterNumber}`, { method: 'DELETE' }),
+    useSupabaseDirect()
+      ? sb.sbDeleteChapter(storyId, chapterNumber)
+      : request(`/creators/stories/${storyId}/chapters/${chapterNumber}`, { method: 'DELETE' }),
   duplicateChapter: (storyId: string, chapterNumber: number) =>
-    request<{ chapter: ChapterListItem }>(`/creators/stories/${storyId}/chapters/${chapterNumber}/duplicate`, { method: 'POST' }),
+    useSupabaseDirect()
+      ? sb.sbDuplicateChapter(storyId, chapterNumber)
+      : request<{ chapter: ChapterListItem }>(`/creators/stories/${storyId}/chapters/${chapterNumber}/duplicate`, { method: 'POST' }),
   saveDraft: (storyId: string, body: {
     chapter_number: number;
     title?: string;
     content: string;
     content_delta?: { scenes: Array<{ id: string; title: string; content: string }> };
-  }) => request(`/chapters/${storyId}/draft`, { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    useSupabaseDirect()
+      ? sb.sbSaveDraft(storyId, body)
+      : request(`/chapters/${storyId}/draft`, { method: 'POST', body: JSON.stringify(body) }),
   publishChapter: (storyId: string, body: {
     chapter_number: number;
     title?: string;
     content: string;
     appeal_note?: string;
-  }) => request(`/chapters/${storyId}/publish`, { method: 'POST', body: JSON.stringify(body) }),
-  getAnalytics: (storyId: string) => request<AnalyticsData>(`/creators/analytics/${storyId}`),
-  getModerationQueue: () => request<{ queue: ModerationItem[] }>('/moderation/queue'),
+  }) =>
+    useSupabaseDirect()
+      ? sb.sbPublishChapter(storyId, body)
+      : request(`/chapters/${storyId}/publish`, { method: 'POST', body: JSON.stringify(body) }),
+  getAnalytics: (storyId: string) =>
+    useSupabaseDirect()
+      ? sb.sbGetAnalytics(storyId)
+      : request<AnalyticsData>(`/creators/analytics/${storyId}`),
+  getModerationQueue: () =>
+    useSupabaseDirect()
+      ? sb.sbGetModerationQueue()
+      : request<{ queue: ModerationItem[] }>('/moderation/queue'),
   reviewModeration: (id: string, decision: string, notes?: string) =>
-    request(`/moderation/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, notes }) }),
-  getMilestones: () => request<{ milestones: CreatorMilestone[] }>('/engagement/creator-milestones'),
-  acknowledgeMilestone: (id: string) => request(`/engagement/creator-milestones/${id}/acknowledge`, { method: 'POST' }),
-  uploadImage: async (file: File) => {
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    const image_base64 = btoa(binary);
-
-    const res = await fetch(`${API_BASE}/upload`, {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify({
-        image_base64,
-        filename: file.name,
-        content_type: file.type || 'image/jpeg',
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Upload failed');
-    return data as { url: string };
-  },
+    useSupabaseDirect()
+      ? sb.sbReviewModeration(id, decision, notes)
+      : request(`/moderation/${id}/review`, { method: 'POST', body: JSON.stringify({ decision, notes }) }),
+  getMilestones: () =>
+    useSupabaseDirect()
+      ? sb.sbGetMilestones()
+      : request<{ milestones: CreatorMilestone[] }>('/engagement/creator-milestones'),
+  acknowledgeMilestone: (id: string) =>
+    useSupabaseDirect()
+      ? sb.sbAcknowledgeMilestone(id)
+      : request(`/engagement/creator-milestones/${id}/acknowledge`, { method: 'POST' }),
+  uploadImage: (file: File) =>
+    useSupabaseDirect() ? sb.sbUploadImage(file) : uploadImageViaNode(file),
 };
+
+async function uploadImageViaNode(file: File): Promise<{ url: string }> {
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const image_base64 = btoa(binary);
+
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({
+      image_base64,
+      filename: file.name,
+      content_type: file.type || 'image/jpeg',
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Upload failed');
+  return data as { url: string };
+}
 
 export interface ModerationItem {
   id: string;
@@ -226,6 +273,7 @@ export interface ModerationItem {
 }
 
 export async function checkHealth() {
+  if (useSupabaseDirect()) return sb.sbCheckHealth();
   const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
   const res = await fetch(`${base}/health`);
   return res.json();

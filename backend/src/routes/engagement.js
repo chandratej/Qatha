@@ -2,13 +2,13 @@ import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { getSeedMilestones, acknowledgeSeedMilestone } from '../data/seed.js';
+import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 export const engagementRouter = Router();
 
-engagementRouter.post('/ping-streak', async (req, res, next) => {
+engagementRouter.post('/ping-streak', requireAuthOrMockLegacyUser(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'];
-    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+    const userId = getAuthenticatedUserId(req);
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
@@ -77,9 +77,9 @@ engagementRouter.post('/ping-streak', async (req, res, next) => {
   }
 });
 
-engagementRouter.get('/creator-milestones', async (req, res, next) => {
+engagementRouter.get('/creator-milestones', requireAuth(), async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || 'demo-creator-001';
+    const creatorId = getAuthenticatedUserId(req);
 
     if (isMockMode()) {
       return res.json({ milestones: getSeedMilestones(creatorId), mock: true });
@@ -100,9 +100,9 @@ engagementRouter.get('/creator-milestones', async (req, res, next) => {
   }
 });
 
-engagementRouter.post('/creator-milestones/:id/acknowledge', async (req, res, next) => {
+engagementRouter.post('/creator-milestones/:id/acknowledge', requireAuth(), async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'] || 'demo-creator-001';
+    const creatorId = getAuthenticatedUserId(req);
     const milestoneId = req.params.id;
 
     if (isMockMode()) {

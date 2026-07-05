@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { getSupabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { createAppError } from '../middleware/errorHandler.js';
+import { getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 export const uploadRouter = Router();
 
@@ -10,8 +11,7 @@ const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 uploadRouter.post('/', async (req, res, next) => {
   try {
-    const creatorId = req.headers['x-creator-id'];
-    if (!creatorId) throw createAppError('OTP_REQUIRED', 'Authentication required', 401);
+    const creatorId = getAuthenticatedUserId(req);
 
     const { image_base64, filename, content_type } = req.body;
     if (!image_base64) throw createAppError('INTERNAL_ERROR', 'image_base64 is required', 400);

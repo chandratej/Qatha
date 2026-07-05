@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { api, setApiAuth } from './api';
+import { api, setApiAuth, useSupabaseDirect } from './api';
 
 describe('api client', () => {
   beforeEach(() => {
@@ -13,7 +13,11 @@ describe('api client', () => {
     await expect(api.getDashboard()).rejects.toThrow(/Cannot reach the API/);
   });
 
-  it('sends creator auth headers on getCreatorStories', async () => {
+  it('defaults to Node API path in mock mode', () => {
+    expect(useSupabaseDirect()).toBe(false);
+  });
+
+  it('sends Bearer token on getCreatorStories (no spoofable identity headers)', async () => {
     const mockFetch = vi.mocked(fetch);
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -22,14 +26,10 @@ describe('api client', () => {
 
     await api.getCreatorStories();
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/creators/stories'),
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          'x-creator-id': 'test-creator',
-          Authorization: 'Bearer token-1',
-        }),
-      }),
-    );
+    const [, options] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const headers = options.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer token-1');
+    expect(headers['x-creator-id']).toBeUndefined();
+    expect(headers['x-user-id']).toBeUndefined();
   });
 });

@@ -20,8 +20,10 @@ import { engagementRouter } from './routes/engagement.js';
 import { uploadRouter } from './routes/upload.js';
 import { getLaunchOfferConfig } from './services/launchOffer.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { requireAuth } from './middleware/authenticate.js';
 import { scheduleNotifications } from './services/notifications.js';
 import { isMockMode } from './lib/mockMode.js';
+import { deprecationHeaders } from './middleware/deprecation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -33,6 +35,7 @@ app.use(helmet());
 app.use(compression()); // Gzip/Brotli for all responses - big win for chapter text
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
+app.use(deprecationHeaders());
 
 app.get('/health', (_, res) => {
   res.json({
@@ -47,14 +50,14 @@ app.get('/health', (_, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/stories', storiesRouter);
 app.use('/api/chapters', chaptersRouter);
-app.use('/api/creators', creatorsRouter);
+app.use('/api/creators', requireAuth(), creatorsRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
-app.use('/api/moderation', moderationRouter);
+app.use('/api/moderation', requireAuth(), moderationRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/waitlist', waitlistRouter);
 app.use('/api/config', configRouter);
 app.use('/api/engagement', engagementRouter);
-app.use('/api/upload', uploadRouter);
+app.use('/api/upload', requireAuth(), uploadRouter);
 
 app.use(express.static(path.join(__dirname, '../../landing')));
 

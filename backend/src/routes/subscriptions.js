@@ -4,6 +4,7 @@ import { supabase as sbClient, getSupabase } from '../lib/supabase.js';
 import { getRevenueConfig, creatorShareFromPaise } from '../config/revenue.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { registerMockSubscription } from '../services/launchOffer.js';
+import { requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 export const subscriptionsRouter = Router();
 
@@ -59,10 +60,9 @@ async function isWebhookAlreadyProcessed(webhookId) {
   return false;
 }
 
-subscriptionsRouter.post('/create', async (req, res, next) => {
+subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'];
-    if (!userId) throw createAppError('OTP_REQUIRED', null, 401);
+    const userId = getAuthenticatedUserId(req);
 
     const { story_id_source, creator_id_source } = req.body;
 
@@ -84,10 +84,9 @@ subscriptionsRouter.post('/create', async (req, res, next) => {
   }
 });
 
-subscriptionsRouter.post('/confirm', async (req, res, next) => {
+subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'];
-    if (!userId) throw createAppError('OTP_REQUIRED', null, 401);
+    const userId = getAuthenticatedUserId(req);
 
     res.json({ subscription_status: 'active' });
   } catch (err) {
@@ -95,10 +94,9 @@ subscriptionsRouter.post('/confirm', async (req, res, next) => {
   }
 });
 
-subscriptionsRouter.get('/status', async (req, res, next) => {
+subscriptionsRouter.get('/status', requireAuthOrMockLegacyUser(), async (req, res, next) => {
   try {
-    const userId = req.headers['x-user-id'];
-    if (!userId) throw createAppError('OTP_REQUIRED', null, 401);
+    const userId = getAuthenticatedUserId(req);
 
     res.json({ subscription_status: 'free' });
   } catch (err) {
@@ -106,6 +104,7 @@ subscriptionsRouter.get('/status', async (req, res, next) => {
   }
 });
 
+// @deprecated Wave C — use Supabase Edge Function `payment-webhook` in production.
 subscriptionsRouter.post('/webhook', async (req, res, next) => {
   try {
     const signature = req.headers['x-razorpay-signature'];
