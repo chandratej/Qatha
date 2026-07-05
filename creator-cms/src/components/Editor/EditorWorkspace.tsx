@@ -11,6 +11,7 @@ import {
 } from '../../lib/phonetic';
 import type { SceneBlock } from './SceneSidebar';
 import { FormatToolbar } from './FormatToolbar';
+import { PhoneticTextInput } from './PhoneticTextInput';
 import { formatRelativeTime } from '../../lib/relativeTime';
 
 function applyLivePhoneticToHtml(html: string): { html: string; trailingWord: string } {
@@ -260,12 +261,12 @@ export function EditorWorkspace({
     <main ref={containerRef} className="katha-proto-editor">
       <div className="katha-proto-editor-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span>Ch {chapterNum}</span>
-        <input
-          type="text"
+        <PhoneticTextInput
           className="katha-proto-chapter-title-input"
           style={{ fontSize: '1rem', margin: 0, flex: 1, minWidth: 180 }}
           value={chapterTitle}
-          onChange={(e) => onChapterTitleChange(e.target.value)}
+          onChange={onChapterTitleChange}
+          phoneticLive={phoneticLive}
           placeholder="Chapter title"
           maxLength={60}
         />
@@ -291,11 +292,11 @@ export function EditorWorkspace({
       <div ref={scrollRef} className="katha-proto-editor-body">
         <div className="katha-proto-editor-card">
           <div className="katha-proto-scene-label">Scene {activeSceneIndex + 1}</div>
-          <input
-            type="text"
+          <PhoneticTextInput
             className="katha-proto-scene-title-input"
             value={activeScene.title}
-            onChange={e => updateSceneTitle(activeScene.id, e.target.value)}
+            onChange={(v) => updateSceneTitle(activeScene.id, v)}
+            phoneticLive={phoneticLive}
             placeholder="Scene title"
           />
           <ReactQuill

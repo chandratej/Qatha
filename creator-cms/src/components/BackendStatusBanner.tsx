@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
-import { checkHealth } from '../lib/api';
+import { checkHealth, useSupabaseDirect } from '../lib/api';
 
 export function BackendStatusBanner() {
   const [down, setDown] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const supabaseDirect = useSupabaseDirect();
 
   useEffect(() => {
     let cancelled = false;
@@ -44,8 +45,15 @@ export function BackendStatusBanner() {
     >
       <AlertTriangle size={16} />
       <span style={{ flex: 1 }}>
-        Backend API is unreachable. Start it with{' '}
-        <code>cd backend && npm run dev</code> (port 3001).
+        {supabaseDirect
+          ? 'Cannot reach Supabase. Check VITE_SUPABASE_URL, project status, and network connectivity.'
+          : (
+            <>
+              Backend API is unreachable. Start it with{' '}
+              <code>cd backend && npm run dev</code> (port 3001), or set{' '}
+              <code>VITE_MOCK_MODE=false</code> with Supabase configured for direct access.
+            </>
+          )}
       </span>
       <button
         type="button"

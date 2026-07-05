@@ -6,71 +6,17 @@ import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from
 
 export const engagementRouter = Router();
 
+// @deprecated Architecture V2 §11 — breakable streaks rejected. Retained for reader backward compat; no gamification.
 engagementRouter.post('/ping-streak', requireAuthOrMockLegacyUser(), async (req, res, next) => {
   try {
-    const userId = getAuthenticatedUserId(req);
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    const { data: streak, error: fetchError } = await supabase
-      .from('reading_streaks')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      throw fetchError;
-    }
-
-    let newCurrent = 1;
-    let newLongest = 1;
-    let milestoneUnlocked = false;
-
-    if (streak) {
-      if (streak.last_read_date === today) {
-        return res.json({
-          current_streak: streak.current_streak,
-          longest_streak: streak.longest_streak,
-          milestone_unlocked: false,
-          message: 'Already read today',
-        });
-      }
-
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-      if (streak.last_read_date === yesterdayStr) {
-        newCurrent = streak.current_streak + 1;
-      } else {
-        newCurrent = 1;
-      }
-      newLongest = Math.max(streak.longest_streak, newCurrent);
-
-      if (newCurrent === 3 || newCurrent === 7 || newCurrent === 30) {
-        milestoneUnlocked = true;
-      }
-    }
-
-    const { data: updated, error: upsertError } = await supabase
-      .from('reading_streaks')
-      .upsert({
-        user_id: userId,
-        current_streak: newCurrent,
-        longest_streak: newLongest,
-        last_read_date: today,
-        updated_at: now.toISOString(),
-      }, { onConflict: 'user_id' })
-      .select()
-      .single();
-
-    if (upsertError) throw upsertError;
-
+    res.setHeader('Deprecation', 'true');
+    res.setHeader('X-Katha-Architecture', 'V2 §11 — streak gamification disabled');
     res.json({
-      current_streak: updated.current_streak,
-      longest_streak: updated.longest_streak,
-      milestone_unlocked: milestoneUnlocked,
-      message: milestoneUnlocked ? `You hit a ${newCurrent} day streak!` : 'Streak updated',
+      current_streak: 0,
+      longest_streak: 0,
+      milestone_unlocked: false,
+      message: 'Reading streak tracking is deprecated per architecture V2',
+      deprecated: true,
     });
   } catch (error) {
     next(error);

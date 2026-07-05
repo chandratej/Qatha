@@ -1,8 +1,11 @@
 /**
- * Direct Supabase Data API layer (Wave B).
+ * Direct Supabase Data API layer (§4 + §7.1 services backing).
  * RLS-authorized reads/writes + Edge Function invokes for privileged flows.
  */
 import { supabase, isMockMode } from './supabase';
+import { deriveStoryModerationStatus } from '../business/moderationStatus';
+import { buildDropOffInsights } from '../business/dropOffInsights';
+import { getNextPayoutDate } from '../business/payout';
 import type {
   StoryData,
   ChapterListItem,
@@ -10,9 +13,9 @@ import type {
   CreatorMilestone,
   DashboardData,
   AnalyticsData,
-  DropOffInsight,
   ModerationItem,
-} from './api';
+  UserDevice,
+} from '../types/database';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -52,49 +55,6 @@ async function assertModerator(userId: string) {
   if (!profile || !['admin', 'moderator'].includes(profile.role)) {
     throw new Error('Insufficient permissions');
   }
-}
-
-function deriveStoryModerationStatus(chapters: Array<{ status?: string }>): StoryData['moderation_status'] {
-  if (!chapters?.length) return 'draft';
-  const statuses = chapters.map((c) => c.status || 'draft');
-  if (statuses.some((s) => s === 'pending_review')) return 'pending_review';
-  if (statuses.some((s) => s === 'needs_revision' || s === 'rejected')) return 'needs_revision';
-  if (statuses.every((s) => s === 'published')) return 'published';
-  if (statuses.some((s) => s === 'published')) return 'published';
-  return 'draft';
-}
-
-function buildDropOffInsights(
-  chapters: Array<{ chapter_number: number; total_views: number; completion_rate: number; avg_scroll_pct: number }>,
-): DropOffInsight[] {
-  const insights: DropOffInsight[] = [];
-  for (let i = 1; i < chapters.length; i++) {
-    const prev = chapters[i - 1];
-    const curr = chapters[i];
-    const viewDrop = prev.total_views > 0
-      ? Math.round(100 * (prev.total_views - curr.total_views) / prev.total_views)
-      : 0;
-    const completionDrop = prev.completion_rate - curr.completion_rate;
-    if (viewDrop >= 15 || completionDrop >= 12) {
-      insights.push({
-        chapter_number: curr.chapter_number,
-        view_drop_pct: viewDrop,
-        completion_drop_pct: completionDrop,
-        avg_scroll_pct: curr.avg_scroll_pct,
-        suggestion: curr.avg_scroll_pct < 70
-          ? `Most readers stopped around ${100 - curr.avg_scroll_pct}% into Chapter ${curr.chapter_number}. Consider shorter paragraphs or a stronger hook.`
-          : `Chapter ${curr.chapter_number} loses ${viewDrop}% of readers vs. the previous chapter. Review pacing and cliffhanger strength.`,
-      });
-    }
-  }
-  return insights;
-}
-
-function getNextPayoutDate() {
-  const now = new Date();
-  const payout = new Date(now.getFullYear(), now.getMonth(), 15);
-  if (now.getDate() >= 15) payout.setMonth(payout.getMonth() + 1);
-  return payout.toISOString().split('T')[0];
 }
 
 // ---------------------------------------------------------------------------
@@ -151,18 +111,62 @@ export async function sbGetWallet(): Promise<{
   };
 }
 
-/** Register device post-login (Wave C — SVC-AUTH-05). */
-export async function sbRegisterDevice(deviceId: string, deviceLabel?: string) {
+/** Register device post-login (§6 — staleness-based 2-device limit). */
+export async function sbRegisterDevice(deviceId: string, deviceLabel?: string): Promise<{
+  evicted_devices?: string[];
+} | void> {
   if (isMockMode) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
-  await supabase.functions.invoke('register-device', {
+  const { data, error } = await supabase.functions.invoke('register-device', {
     body: {
       device_id: deviceId,
       device_label: deviceLabel || navigator.userAgent.slice(0, 80),
       session_id: session.access_token,
     },
+  });
+
+  if (error) return;
+  if (data?.evicted_devices?.length) {
+    sessionStorage.setItem('katha_device_eviction_notice', JSON.stringify({
+      at: Date.now(),
+      count: data.evicted_devices.length,
+    }));
+  }
+  return data;
+}
+
+export async function sbListUserDevices(): Promise<UserDevice[]> {
+  const user = await requireUser();
+  const { data, error } = await supabase
+    .from('user_devices')
+    .select('id, device_id, device_label, last_seen')
+    .eq('user_id', user.id)
+    .order('last_seen', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data || []) as UserDevice[];
+}
+
+export async function sbRemoveUserDevice(deviceId: string): Promise<void> {
+  const user = await requireUser();
+  const { error } = await supabase
+    .from('user_devices')
+    .delete()
+    .eq('user_id', user.id)
+    .eq('device_id', deviceId);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function sbTrackAnalyticsEvent(event: string, properties: Record<string, unknown> = {}) {
+  if (isMockMode) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  await supabase.from('analytics_events').insert({
+    user_id: user?.id ?? null,
+    event,
+    properties: { source: 'creator_cms', ...properties },
   });
 }
 

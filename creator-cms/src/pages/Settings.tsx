@@ -1,18 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Database, LogOut } from 'lucide-react';
+import { User, Bell, Database, LogOut, Smartphone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { clearDraftCache } from '../lib/draftCache';
 import { BRAND } from '../lib/constants';
+import { useSupabaseDirect } from '../lib/api';
+import { sbListUserDevices, sbRemoveUserDevice } from '../services';
+import { getDeviceId } from '../lib/device';
+import type { UserDevice } from '../types/database';
 
 export function Settings() {
-  const { user, logout } = useAuth();
+  const { user, logout, isMockMode } = useAuth();
   const navigate = useNavigate();
+  const supabaseDirect = useSupabaseDirect();
   const [clearOnLogout, setClearOnLogout] = useState(
     () => localStorage.getItem('katha_clear_cache_on_logout') === 'true',
   );
   const [cacheMsg, setCacheMsg] = useState<string | null>(null);
+  const [devices, setDevices] = useState<UserDevice[]>([]);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+  const currentDeviceId = getDeviceId();
+
+  useEffect(() => {
+    if (!supabaseDirect || isMockMode) return;
+    sbListUserDevices()
+      .then(setDevices)
+      .catch((e) => setDevicesError(e instanceof Error ? e.message : 'Could not load devices'));
+  }, [supabaseDirect, isMockMode]);
 
   const handleClearCache = async () => {
     await clearDraftCache();
@@ -77,7 +92,7 @@ export function Settings() {
           </h3>
         </div>
         <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>
-          Version history is stored in your browser (IndexedDB, 72-hour window). Cloud drafts sync when the backend is running.
+          Drafts autosave to IndexedDB offline and sync to Supabase when connected (72-hour version history).
         </p>
         <button type="button" className="btn btn-secondary" onClick={handleClearCache}>
           Clear local version history
@@ -88,6 +103,63 @@ export function Settings() {
           Clear local version history on sign out
         </label>
       </div>
+
+      {supabaseDirect && !isMockMode && (
+        <div className="cms-panel cms-panel--flat" style={{ marginBottom: 20 }}>
+          <div className="cms-panel__head">
+            <h3 className="cms-panel__title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Smartphone size={18} />
+              Manage devices
+            </h3>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 12, lineHeight: 1.55 }}>
+            Up to 2 active devices. Oldest inactive sessions are signed out automatically (§6 staleness policy).
+          </p>
+          {devicesError && (
+            <p style={{ fontSize: '0.8125rem', color: 'var(--gold-dark)' }}>{devicesError}</p>
+          )}
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {devices.map((d) => (
+              <li
+                key={d.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 0',
+                  borderBottom: '1px solid var(--border)',
+                  fontSize: '0.875rem',
+                }}
+              >
+                <span>
+                  {d.device_label || 'Unknown device'}
+                  {d.device_id === currentDeviceId ? ' (this device)' : ''}
+                  <br />
+                  <span style={{ color: 'var(--ink-muted)', fontSize: '0.75rem' }}>
+                    Last active {new Date(d.last_seen).toLocaleString()}
+                  </span>
+                </span>
+                {d.device_id !== currentDeviceId && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ fontSize: '0.8125rem' }}
+                    onClick={async () => {
+                      await sbRemoveUserDevice(d.device_id);
+                      setDevices((prev) => prev.filter((x) => x.device_id !== d.device_id));
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          {!devices.length && !devicesError && (
+            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>No registered devices yet.</p>
+          )}
+        </div>
+      )}
 
       <div className="cms-panel cms-panel--flat" style={{ marginBottom: 20 }}>
         <div className="cms-panel__head">

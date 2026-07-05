@@ -15,6 +15,7 @@ import {
 } from '../lib/demoStorage';
 import { api } from '../lib/api';
 import { aggregateScenesToHtml, scenesFromChapterPayload, scenesToContentDelta } from '../lib/sceneUtils';
+import { saveDraftToCache, loadDraftFromCache } from '../lib/draftCache';
 import { useAutosave } from '../hooks/useAutosave';
 import { useVersionHistory } from '../hooks/useVersionHistory';
 import {
@@ -89,13 +90,24 @@ export function ChapterEditor() {
   useEffect(() => { chapterTitleRef.current = chapterTitle; }, [chapterTitle]);
 
   const persistDraft = useCallback(() => {
-    if (!storyId || !isDemo) return;
-    saveChapterScenes(storyId, chapterNumber, scenes);
-    updateChapterStats(storyId, chapterNumber, {
+    if (!storyId) return;
+    if (isDemo) {
+      saveChapterScenes(storyId, chapterNumber, scenes);
+      updateChapterStats(storyId, chapterNumber, {
+        title: chapterTitle,
+        wordCount: getWordCountFromScenes(scenes),
+        sceneCount: scenes.length,
+      });
+      return;
+    }
+    saveDraftToCache({
+      key: `${storyId}:${chapterNumber}`,
+      story_id: storyId,
+      chapter_number: chapterNumber,
       title: chapterTitle,
-      wordCount: getWordCountFromScenes(scenes),
-      sceneCount: scenes.length,
-    });
+      scenes,
+      updated_at: Date.now(),
+    }).catch(() => {});
   }, [storyId, chapterNumber, scenes, chapterTitle, isDemo]);
 
   const cloudSaveDraft = useCallback(async () => {
@@ -149,10 +161,13 @@ export function ChapterEditor() {
         ]);
         if (cancelled) return;
 
-        const loadedScenes = scenesFromChapterPayload(chapter);
+        const cached = await loadDraftFromCache(storyId, chapterNumber).catch(() => null);
+        const loadedScenes = cached?.scenes?.length
+          ? cached.scenes
+          : scenesFromChapterPayload(chapter);
         setScenes(loadedScenes);
         setActiveSceneId(loadedScenes[0]?.id || '');
-        setChapterTitle(chapter.title || `Chapter ${chapterNumber}`);
+        setChapterTitle(cached?.title || chapter.title || `Chapter ${chapterNumber}`);
         if (storyMeta.story?.title) setStoryLabel(storyMeta.story.title);
         setModerationStatus(chapter.moderation_status || chapter.status || null);
         setModerationNotes(chapter.moderation_notes || null);

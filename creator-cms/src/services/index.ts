@@ -1,0 +1,33 @@
+/**
+ * §7.1 Data access layer — thin Supabase wrappers (one place per concern).
+ * UI components import via api.ts, not supabase.from(...) directly.
+ */
+export {
+  sbGetDashboard,
+  sbGetWallet,
+  sbGetCreatorStories,
+  sbCreateStory,
+  sbUpdateStory,
+  sbDeleteStory,
+  sbGetStoryChapters,
+  sbGetChapter,
+  sbRenameChapter,
+  sbDeleteChapter,
+  sbDuplicateChapter,
+  sbSaveDraft,
+  sbPublishChapter,
+  sbGetAnalytics,
+  sbGetModerationQueue,
+  sbReviewModeration,
+  sbGetMilestones,
+  sbAcknowledgeMilestone,
+  sbUploadImage,
+  sbCheckHealth,
+  sbRegisterDevice,
+  sbListUserDevices,
+  sbRemoveUserDevice,
+  sbUpsertPhoneticCorrection,
+  sbLoadPhoneticCorrections,
+  sbMigrateLocalPhoneticCorrections,
+  sbTrackAnalyticsEvent,
+} from '../lib/supabaseData';

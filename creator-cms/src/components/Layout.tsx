@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { BackendStatusBanner } from './BackendStatusBanner';
+import { DeviceConflictNotice } from './DeviceConflictNotice';
 import { NotificationBell } from './NotificationBell';
 
 const PRIMARY_NAV = [
@@ -168,6 +169,7 @@ export function Layout() {
       </aside>
 
       <main className="premium-main">
+        <DeviceConflictNotice />
         <BackendStatusBanner />
         <header className="cms-topbar">
           <div className="cms-topbar__actions">
