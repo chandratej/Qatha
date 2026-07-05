@@ -760,3 +760,85 @@
 .katha-proto-layout.focus-mode .katha-proto-format-toolbar:hover {
   opacity: 1;
 }
+
+.katha-proto-nav-btn--menu {
+  border: none;
+  padding: 0 8px;
+}
+
+.katha-proto-nav-btn__label {
+  display: inline;
+}
+
+.katha-proto-breadcrumb__story,
+.katha-proto-breadcrumb__season {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.katha-proto-breadcrumb__chapter {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+  .katha-proto-breadcrumb__season,
+  .katha-proto-breadcrumb__sep:nth-of-type(2) {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .katha-proto-navbar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 52px;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .katha-proto-brand {
+    min-width: auto;
+  }
+
+  .katha-proto-brand-name {
+    display: none;
+  }
+
+  .katha-proto-breadcrumb {
+    order: 3;
+    width: 100%;
+    font-size: 0.8125rem;
+  }
+
+  .katha-proto-nav-actions {
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .katha-proto-nav-btn__label {
+    display: none;
+  }
+
+  .katha-proto-nav-btn--draft {
+    display: none;
+  }
+
+  .katha-proto-save-status__text {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .katha-proto-publish-btn span {
+    display: none;
+  }
+
+  .katha-proto-publish-btn {
+    padding: 0 12px;
+  }
+}

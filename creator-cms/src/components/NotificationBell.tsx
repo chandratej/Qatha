@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
@@ -6,54 +6,43 @@ import { api } from '../lib/api';
 export function NotificationBell() {
   const { data } = useApi(() => api.getMilestones().catch(() => ({ milestones: [] })));
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const unacknowledged = (data?.milestones ?? []).filter((m) => !m.acknowledged);
 
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [open]);
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="notification-bell" ref={rootRef}>
       <button
         type="button"
-        className="btn btn-ghost"
+        className="notification-bell__trigger"
         onClick={() => setOpen((v) => !v)}
         aria-label={`Notifications${unacknowledged.length ? ` (${unacknowledged.length} new)` : ''}`}
-        style={{ padding: '6px 10px' }}
+        aria-expanded={open}
       >
         <Bell size={18} />
-        {unacknowledged.length > 0 && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 4,
-              right: 4,
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: 'var(--dash-gold)',
-            }}
-          />
-        )}
+        {unacknowledged.length > 0 && <span className="notification-bell__dot" aria-hidden />}
       </button>
       {open && (
-        <div
-          className="cms-panel"
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: '100%',
-            marginTop: 8,
-            minWidth: 280,
-            zIndex: 50,
-            padding: 12,
-          }}
-        >
-          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: '0.875rem' }}>Notifications</div>
+        <div className="notification-bell__panel cms-panel" role="dialog" aria-label="Notifications">
+          <div className="notification-bell__title">Notifications</div>
           {unacknowledged.length === 0 ? (
-            <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+            <p className="notification-bell__empty">
               No new alerts. Milestones and moderation updates will appear here.
             </p>
           ) : (
             unacknowledged.map((m) => (
-              <div key={m.id} style={{ fontSize: '0.8125rem', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+              <div key={m.id} className="notification-bell__item">
                 {m.milestone_type === 'FIRST_READER' ? 'Your first reader is here!' : 'New milestone unlocked'}
               </div>
             ))

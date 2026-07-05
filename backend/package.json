@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
+    "stop": "node scripts/free-port.mjs 3001",
+    "dev:restart": "npm run stop && npm run dev",
     "lint": "eslint src/"
   },
   "dependencies": {

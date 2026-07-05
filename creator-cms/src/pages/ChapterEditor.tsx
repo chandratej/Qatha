@@ -304,6 +304,7 @@ export function ChapterEditor() {
           storyLabel={storyLabel}
           seasonLabel={seasonLabel}
           chapterLabel={chapterTitle || `Chapter ${chapterNumber}`}
+          backTo={`/stories/${storyId}`}
           saving={saving || publishing || savingDraft}
           onHistory={() => setHistoryOpen(true)}
           onFocus={() => setFocusMode(true)}

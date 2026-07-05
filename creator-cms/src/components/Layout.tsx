@@ -2,36 +2,26 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   BookOpen,
-  BarChart3,
-  IndianRupee,
-  Users,
-  Wallet,
-  Megaphone,
   User,
   Settings,
   LogOut,
   Shield,
   Menu,
+  X,
   Leaf,
   Crown,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
 import { BackendStatusBanner } from './BackendStatusBanner';
 import { NotificationBell } from './NotificationBell';
 
-
-const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, activeOn: (p: string) => p === '/' },
-  { to: '/stories', label: 'Stories', icon: BookOpen, activeOn: (p: string) => p === '/stories' || (p.startsWith('/stories/') && !p.startsWith('/stories/new') && !p.includes('/chapters/')) },
-  { to: '/stories', label: 'Analytics', icon: BarChart3, activeOn: (p: string) => p.startsWith('/analytics') },
-  { to: '/', label: 'Earnings', icon: IndianRupee, activeOn: () => false },
-  { to: '/', label: 'Subscribers', icon: Users, activeOn: () => false },
-  { to: '/', label: 'Payouts', icon: Wallet, activeOn: () => false },
-  { to: '/stories/new', label: 'Promotions', icon: Megaphone, activeOn: (p: string) => p === '/stories/new' },
-  { to: '/onboarding', label: 'Profile', icon: User, activeOn: (p: string) => p === '/onboarding' },
-  { to: '/settings', label: 'Settings', icon: Settings, activeOn: (p: string) => p === '/settings' },
+const PRIMARY_NAV = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/stories', label: 'Stories', icon: BookOpen },
+  { to: '/onboarding', label: 'Profile', icon: User },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 function userInitials(name: string) {
@@ -49,62 +39,92 @@ export function Layout() {
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
+  const toggleSidebar = useCallback(() => setIsSidebarOpen((v) => !v), []);
+
   useEffect(() => {
-    setIsSidebarOpen(false);
-  }, [location.pathname]);
+    closeSidebar();
+  }, [location.pathname, closeSidebar]);
+
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeSidebar();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isSidebarOpen, closeSidebar]);
 
   const displayName = user?.display_name || 'Creator';
+  const isModerator = user?.role === 'admin' || user?.role === 'moderator';
 
   return (
     <div className="app-shell">
       <button
         type="button"
-        className="mobile-menu-btn"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        aria-label="Toggle navigation menu"
+        className={`mobile-menu-btn${isSidebarOpen ? ' mobile-menu-btn--open' : ''}`}
+        onClick={toggleSidebar}
+        aria-label={isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-expanded={isSidebarOpen}
+        aria-controls="creator-sidebar"
       >
-        <Menu size={20} />
+        {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
       {isSidebarOpen && (
-        <div
+        <button
+          type="button"
           className="sidebar-backdrop"
-          onClick={() => setIsSidebarOpen(false)}
-          aria-hidden
+          onClick={closeSidebar}
+          aria-label="Close navigation menu"
         />
       )}
 
-      <aside className={`premium-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+      <aside
+        id="creator-sidebar"
+        className={`premium-sidebar${isSidebarOpen ? ' open' : ''}`}
+      >
         <div className="premium-sidebar__brand">
           <div className="premium-sidebar__brand-icon">
             <Leaf size={20} />
           </div>
           <span className="premium-sidebar__brand-name">Katha</span>
           {isMockMode && (
-            <span className="badge badge-gold" style={{ marginLeft: 4, fontSize: '0.625rem' }}>MOCK</span>
+            <span className="badge badge-gold premium-sidebar__mock-badge">MOCK</span>
           )}
+          <button
+            type="button"
+            className="sidebar-close-btn"
+            onClick={closeSidebar}
+            aria-label="Close menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         <nav className="premium-nav" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.activeOn(location.pathname);
-
-            return (
-              <NavLink
-                key={`${item.label}-${item.to}`}
-                to={item.to}
-                end={item.to === '/'}
-                className={() => `premium-nav__item${isActive ? ' active' : ''}`}
-              >
-                <item.icon size={18} />
-                {item.label}
-              </NavLink>
-            );
-          })}
-          {(user?.role === 'admin' || user?.role === 'moderator') && (
+          <div className="premium-nav__section-label">Workspace</div>
+          {PRIMARY_NAV.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) => `premium-nav__item${isActive ? ' active' : ''}`}
+              onClick={closeSidebar}
+            >
+              <item.icon size={18} />
+              {item.label}
+            </NavLink>
+          ))}
+          {isModerator && (
             <NavLink
               to="/moderation"
               className={({ isActive }) => `premium-nav__item${isActive ? ' active' : ''}`}
+              onClick={closeSidebar}
             >
               <Shield size={18} />
               Moderation
@@ -117,16 +137,16 @@ export function Layout() {
         <div className="premium-sidebar__pro">
           <div className="premium-sidebar__pro-title">
             <Crown size={16} color="var(--dash-gold)" />
-            Pro Plan
+            Creator plan
           </div>
-          <div className="premium-sidebar__pro-desc">You&apos;re on yearly plan</div>
+          <div className="premium-sidebar__pro-desc">60% revenue share on every subscription</div>
           <button
             type="button"
             className="btn btn-secondary"
             style={{ width: '100%', fontSize: '0.8125rem', padding: '8px 12px' }}
-            onClick={() => navigate('/onboarding')}
+            onClick={() => { navigate('/onboarding'); closeSidebar(); }}
           >
-            Manage plan
+            View onboarding
           </button>
         </div>
 
@@ -140,7 +160,7 @@ export function Layout() {
             type="button"
             onClick={() => { logout(); navigate('/login'); }}
             aria-label="Sign out"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-muted)', padding: 4 }}
+            className="premium-sidebar__logout"
           >
             <LogOut size={16} />
           </button>
@@ -149,9 +169,11 @@ export function Layout() {
 
       <main className="premium-main">
         <BackendStatusBanner />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 24px 0' }}>
-          <NotificationBell />
-        </div>
+        <header className="cms-topbar">
+          <div className="cms-topbar__actions">
+            <NotificationBell />
+          </div>
+        </header>
         <Outlet />
       </main>
     </div>

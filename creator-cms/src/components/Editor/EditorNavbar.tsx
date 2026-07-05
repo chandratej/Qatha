@@ -1,10 +1,12 @@
-import { Menu, Feather, Check, Clock, Focus, MoreHorizontal, Rocket } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Menu, Feather, Check, Clock, Focus, Rocket, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '../ThemeToggle';
 
 interface EditorNavbarProps {
   storyLabel: string;
   seasonLabel: string;
   chapterLabel: string;
+  backTo?: string;
   saving: boolean;
   onHistory: () => void;
   onFocus: () => void;
@@ -17,6 +19,7 @@ export function EditorNavbar({
   storyLabel,
   seasonLabel,
   chapterLabel,
+  backTo,
   saving,
   onHistory,
   onFocus,
@@ -24,44 +27,54 @@ export function EditorNavbar({
   onSaveDraft,
   publishLabel = 'Publish',
 }: EditorNavbarProps) {
+  const navigate = useNavigate();
+
   return (
     <header className="katha-proto-navbar">
       <div className="katha-proto-brand">
-        <button type="button" className="katha-proto-nav-btn" style={{ border: 'none', padding: '0 8px' }} aria-label="Menu">
-          <Menu size={18} />
+        <button
+          type="button"
+          className="katha-proto-nav-btn katha-proto-nav-btn--menu"
+          onClick={() => (backTo ? navigate(backTo) : navigate('/stories'))}
+          aria-label="Back to chapters"
+          title="Back to chapters"
+        >
+          {backTo ? <ArrowLeft size={18} /> : <Menu size={18} />}
         </button>
         <Feather size={20} className="katha-proto-brand-feather" />
         <span className="katha-proto-brand-name">Katha</span>
       </div>
 
       <nav className="katha-proto-breadcrumb" aria-label="Chapter location">
-        <span>{storyLabel}</span>
-        <span>›</span>
-        <span>{seasonLabel}</span>
-        <span>›</span>
-        <span>{chapterLabel}</span>
+        <span className="katha-proto-breadcrumb__story">{storyLabel}</span>
+        <span className="katha-proto-breadcrumb__sep" aria-hidden>›</span>
+        <span className="katha-proto-breadcrumb__season">{seasonLabel}</span>
+        <span className="katha-proto-breadcrumb__sep" aria-hidden>›</span>
+        <span className="katha-proto-breadcrumb__chapter">{chapterLabel}</span>
       </nav>
 
       <div className="katha-proto-nav-actions">
         <span className="katha-proto-save-status">
           {!saving && <Check size={14} />}
-          {saving ? 'Saving…' : 'All changes saved'}
+          <span className="katha-proto-save-status__text">
+            {saving ? 'Saving…' : 'Saved'}
+          </span>
         </span>
-        <button type="button" className="katha-proto-nav-btn" onClick={onHistory}>
-          <Clock size={15} /> History
+        <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--icon" onClick={onHistory} title="Version history">
+          <Clock size={15} />
+          <span className="katha-proto-nav-btn__label">History</span>
         </button>
-        <button type="button" className="katha-proto-nav-btn" onClick={onFocus}>
-          <Focus size={15} /> Focus
+        <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--icon" onClick={onFocus} title="Focus mode">
+          <Focus size={15} />
+          <span className="katha-proto-nav-btn__label">Focus</span>
         </button>
         <ThemeToggle compact />
-        <button type="button" className="katha-proto-nav-btn" style={{ padding: '0 10px' }} aria-label="More options">
-          <MoreHorizontal size={16} />
-        </button>
-        <button type="button" className="katha-proto-nav-btn" onClick={onSaveDraft}>
+        <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--draft" onClick={onSaveDraft}>
           Save draft
         </button>
         <button type="button" className="katha-proto-publish-btn" onClick={onPublish}>
-          <Rocket size={15} /> {publishLabel}
+          <Rocket size={15} />
+          <span>{publishLabel}</span>
         </button>
       </div>
     </header>
