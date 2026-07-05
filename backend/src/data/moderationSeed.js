@@ -28,12 +28,12 @@ export function reviewMockItem(id, decision, notes) {
   return item;
 }
 
-export function addToMockQueue(chapter, creatorName, reason) {
+export function addToMockQueue(chapter, creatorName, reason, toxicityScore = 0.5) {
   const entry = {
     id: `mod-${Date.now()}`,
     status: 'pending',
     reason: reason || 'Pending review',
-    toxicity_score: 0.5,
+    toxicity_score: toxicityScore,
     created_at: new Date().toISOString(),
     chapters: chapter,
     creators: { pen_name: creatorName || 'Creator' },

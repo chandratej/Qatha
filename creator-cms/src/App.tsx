@@ -15,6 +15,8 @@ import { Analytics } from './pages/Analytics';
 import { Onboarding } from './pages/Onboarding';
 import { Moderation } from './pages/Moderation';
 import { ModerationRoute } from './components/ModerationRoute';
+import { OnboardingGate } from './components/OnboardingGate';
+import { Settings } from './pages/Settings';
 import './styles/theme.css';
 import './styles/components.css';
 import './styles/dashboard.css';
@@ -28,8 +30,9 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/onboarding" element={<Onboarding />} />
               <Route element={<ProtectedRoute />}>
+                <Route element={<OnboardingGate />}>
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route element={<Layout />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/stories" element={<Stories />} />
@@ -39,9 +42,11 @@ function App() {
                     <Route path="/moderation" element={<Moderation />} />
                   </Route>
                   <Route path="/stories/:storyId" element={<StorySeasons />} />
+                  <Route path="/settings" element={<Settings />} />
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />
                 <Route path="/stories/:storyId/chapters/:chapterNum" element={<ChapterEditor />} />
+                </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit3, ArrowLeft, BookOpen, GripVertical, Loader2 } from 'lucide-react';
+import { Plus, Edit3, ArrowLeft, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil } from 'lucide-react';
 import { Reorder } from 'framer-motion';
 import {
   getOrInitDemoData,
@@ -29,6 +29,20 @@ export function StorySeasons() {
   const [loading, setLoading] = useState(!isDemo);
   const [error, setError] = useState<string | null>(null);
 
+  const loadProdChapters = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { story, chapters } = await api.getStoryChapters(storyId);
+      if (story?.title) setStoryTitle(story.title);
+      setApiChapters(chapters);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load chapters');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isDemo) {
       const data = getOrInitDemoData(storyId);
@@ -40,21 +54,10 @@ export function StorySeasons() {
     }
 
     let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const { story, chapters } = await api.getStoryChapters(storyId);
-        if (cancelled) return;
-        if (story?.title) setStoryTitle(story.title);
-        setApiChapters(chapters);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load chapters');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
+    (async () => {
+      await loadProdChapters();
+      if (cancelled) return;
+    })();
     return () => { cancelled = true; };
   }, [storyId, isDemo, selectedSeasonId]);
 
@@ -259,12 +262,14 @@ export function StorySeasons() {
               {apiChapters.map((ch) => (
                 <ChapterRow
                   key={ch.chapter_number}
+                  storyId={storyId}
                   chNum={ch.chapter_number}
                   title={ch.title || `Chapter ${ch.chapter_number}`}
                   words={ch.word_count || 0}
                   scenes={ch.scene_count || 1}
                   statusBadge={statusBadge(ch.status)}
                   editorLink={`/stories/${storyId}/chapters/${ch.chapter_number}`}
+                  onRefresh={loadProdChapters}
                 />
               ))}
             </div>
@@ -315,13 +320,16 @@ export function StorySeasons() {
 }
 
 function ChapterRow({
+  storyId,
   chNum,
   title,
   words,
   scenes,
   editorLink,
   statusBadge,
+  onRefresh,
 }: {
+  storyId?: string;
   chNum: number;
   title: string;
   words: number;
@@ -329,28 +337,97 @@ function ChapterRow({
   editorLink: string;
   status?: string;
   statusBadge?: ReactNode;
+  onRefresh?: () => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(title);
+  const [busy, setBusy] = useState(false);
   const displayWords = words > 0 ? words : '—';
   const displayScenes = scenes > 0 ? scenes : '—';
+
+  const handleRename = async () => {
+    if (!storyId || !onRefresh) return;
+    setBusy(true);
+    try {
+      await api.renameChapter(storyId, chNum, editTitle.trim() || title);
+      setEditing(false);
+      await onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!storyId || !onRefresh) return;
+    if (!confirm(`Delete Chapter ${chNum}? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await api.deleteChapter(storyId, chNum);
+      await onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (!storyId || !onRefresh) return;
+    setBusy(true);
+    try {
+      await api.duplicateChapter(storyId, chNum);
+      await onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="cms-chapter-row">
       <div className="cms-chapter-row__left">
         <div className="cms-chapter-row__num">Ch {chNum}</div>
-        <div>
-          <div className="cms-chapter-row__title">
-            {title}
-            {statusBadge}
-          </div>
-          <div className="cms-chapter-row__meta">
-            {displayWords} words • {displayScenes} scenes
-          </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {editing ? (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="cms-inline-form input"
+                style={{ flex: 1, padding: '6px 10px', fontSize: '0.875rem' }}
+              />
+              <button type="button" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={handleRename} disabled={busy}>Save</button>
+              <button type="button" className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => setEditing(false)}>Cancel</button>
+            </div>
+          ) : (
+            <>
+              <div className="cms-chapter-row__title">
+                {title}
+                {statusBadge}
+              </div>
+              <div className="cms-chapter-row__meta">
+                {displayWords} words • {displayScenes} scenes
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      <Link to={editorLink} className="btn btn-secondary">
-        <Edit3 size={14} /> Open Editor
-      </Link>
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+        {onRefresh && storyId && !editing && (
+          <>
+            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => { setEditTitle(title); setEditing(true); }} disabled={busy} aria-label="Rename">
+              <Pencil size={14} />
+            </button>
+            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={handleDuplicate} disabled={busy} aria-label="Duplicate">
+              <Copy size={14} />
+            </button>
+            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px', color: 'var(--ember)' }} onClick={handleDelete} disabled={busy} aria-label="Delete">
+              <Trash2 size={14} />
+            </button>
+          </>
+        )}
+        <Link to={editorLink} className="btn btn-secondary">
+          <Edit3 size={14} /> Open Editor
+        </Link>
+      </div>
     </div>
   );
 }

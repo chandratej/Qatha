@@ -154,8 +154,9 @@ export function getCreatorStoryChapters(storyId, creatorId) {
         content: d.content,
         content_delta: d.content_delta,
         status: d.status || 'draft',
-        word_count: d.content?.length || 0,
-        scene_count: d.content_delta?.scenes?.length || 1,
+        word_count: d.word_count ?? countDraftWords(d),
+        scene_count: d.scene_count ?? (d.content_delta?.scenes?.length || 1),
+        moderation_notes: d.moderation_notes,
         updated_at: d.last_saved_at,
       });
     }
@@ -212,6 +213,54 @@ export function getSeedDashboard() {
       { month: '2026-06', count: totalSubscribers },
     ],
   };
+}
+
+const mockMilestones = [
+  {
+    id: 'ms-001',
+    creator_id: DEMO_CREATOR_ID,
+    milestone_type: 'FIRST_READER',
+    achieved_at: '2026-06-15T10:00:00Z',
+    acknowledged: false,
+    metadata: { reader_count: 1 },
+  },
+  {
+    id: 'ms-002',
+    creator_id: DEMO_CREATOR_ID,
+    milestone_type: '100_READERS',
+    achieved_at: '2026-06-28T14:30:00Z',
+    acknowledged: false,
+    metadata: { reader_count: 100 },
+  },
+];
+
+export function getSeedMilestones(creatorId) {
+  return mockMilestones.filter((m) => m.creator_id === creatorId && !m.acknowledged);
+}
+
+export function acknowledgeSeedMilestone(milestoneId, creatorId) {
+  const m = mockMilestones.find((x) => x.id === milestoneId && x.creator_id === creatorId);
+  if (m) m.acknowledged = true;
+  return !!m;
+}
+
+export function deriveStoryModerationStatus(chapters) {
+  if (!chapters?.length) return 'draft';
+  const statuses = chapters.map((c) => c.status || 'draft');
+  if (statuses.some((s) => s === 'pending_review')) return 'pending_review';
+  if (statuses.some((s) => s === 'needs_revision' || s === 'rejected')) return 'needs_revision';
+  if (statuses.every((s) => s === 'published')) return 'published';
+  if (statuses.some((s) => s === 'published')) return 'published';
+  return 'draft';
+}
+
+export function countDraftWords({ content, content_delta }) {
+  const strip = (html) => (html || '').replace(/<[^>]+>/g, ' ').trim();
+  if (content_delta?.scenes?.length) {
+    const text = content_delta.scenes.map((s) => strip(s.content)).join(' ');
+    return text.split(/\s+/).filter(Boolean).length;
+  }
+  return strip(content).split(/\s+/).filter(Boolean).length;
 }
 
 export function getSeedAnalytics(storyId) {

@@ -1,21 +1,82 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, BookOpen, PenLine, Rocket, Leaf } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { useAuth } from '../context/AuthContext';
+import { ONBOARDING_KEY, BRAND } from '../lib/constants';
+import { trackCreatorEvent } from '../lib/analyticsEvents';
 
 export function Onboarding() {
+  const { user } = useAuth();
   const { data } = useApi(() => api.getCreatorStories());
+  const [hasPublished, setHasPublished] = useState(false);
 
   const hasStories = (data?.stories?.length ?? 0) > 0;
   const hasChapters = data?.stories?.some((s) => s.chapter_count > 0) ?? false;
+  const phoneVerified = Boolean(user?.phone && user.phone.length > 4);
+
+  useEffect(() => {
+    if (!data?.stories?.length) return;
+    let cancelled = false;
+    (async () => {
+      const results = await Promise.all(
+        data.stories.map((s) => api.getStoryChapters(s.id).catch(() => ({ chapters: [] }))),
+      );
+      if (cancelled) return;
+      const published = results.some((r) =>
+        r.chapters.some((c) => c.status === 'published' || c.status === 'pending_review'),
+      );
+      setHasPublished(published);
+    })();
+    return () => { cancelled = true; };
+  }, [data?.stories]);
 
   const steps = [
-    { num: 1, icon: Phone, title: 'Phone verification', desc: 'Verify your mobile for creator payouts and KYC.', done: true },
-    { num: 2, icon: BookOpen, title: 'Create your first story', desc: 'Title, genre, cover image, and release schedule.', done: hasStories, current: !hasStories },
-    { num: 3, icon: PenLine, title: 'Write chapter 1', desc: 'Scene-based editor with live preview. Max 50,000 characters.', done: hasChapters, current: hasStories && !hasChapters },
-    { num: 4, icon: Rocket, title: 'Publish & share', desc: 'Chapter goes live after moderation (1–2 hours).', done: false, current: hasChapters },
+    {
+      num: 1,
+      icon: Phone,
+      title: 'Phone verification',
+      desc: 'Verify your mobile for creator payouts and KYC.',
+      done: phoneVerified,
+      current: !phoneVerified,
+    },
+    {
+      num: 2,
+      icon: BookOpen,
+      title: 'Create your first story',
+      desc: 'Title, genre, cover image, and release schedule.',
+      done: hasStories,
+      current: phoneVerified && !hasStories,
+    },
+    {
+      num: 3,
+      icon: PenLine,
+      title: 'Write chapter 1',
+      desc: 'Scene-based editor with live preview. Max 50,000 characters.',
+      done: hasChapters,
+      current: hasStories && !hasChapters,
+    },
+    {
+      num: 4,
+      icon: Rocket,
+      title: 'Publish & share',
+      desc: 'Chapter goes live after moderation (1–2 hours).',
+      done: hasPublished,
+      current: hasChapters && !hasPublished,
+    },
   ];
+
+  useEffect(() => {
+    steps.forEach((step) => {
+      if (step.done) {
+        trackCreatorEvent('creator_onboarding_step_completed', { step: step.num, title: step.title });
+      }
+    });
+  }, [hasStories, hasChapters, hasPublished, phoneVerified]);
+
+  const markComplete = () => localStorage.setItem(ONBOARDING_KEY, 'true');
 
   return (
     <div className="cms-auth-page">
@@ -32,7 +93,7 @@ export function Onboarding() {
           <h1 className="cms-auth-card__logo">కథ</h1>
           <p className="cms-auth-card__tagline">Welcome to Katha Creator Studio</p>
           <p style={{ fontSize: '0.9375rem', marginTop: 12, color: 'var(--ink-soft)' }}>
-            Your stories. Your readers. <strong style={{ color: 'var(--ink)' }}>60% revenue share.</strong>
+            Your stories. Your readers. <strong style={{ color: 'var(--ink)' }}>{BRAND.creatorSharePct}% revenue share.</strong>
           </p>
         </div>
 
@@ -51,10 +112,15 @@ export function Onboarding() {
           </div>
         ))}
 
-        <Link to="/stories/new" className="dashboard-cta" style={{ width: '100%', justifyContent: 'center', marginTop: 28, border: 'none' }}>
+        <Link
+          to="/stories/new"
+          className="dashboard-cta"
+          style={{ width: '100%', justifyContent: 'center', marginTop: 28, border: 'none' }}
+          onClick={markComplete}
+        >
           Continue to Create Story
         </Link>
-        <Link to="/" className="btn btn-ghost" style={{ width: '100%', marginTop: 10 }}>
+        <Link to="/" className="btn btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={markComplete}>
           Skip to dashboard
         </Link>
       </div>

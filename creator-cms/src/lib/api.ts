@@ -24,13 +24,27 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
   return headers;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: authHeaders((options.headers as Record<string, string>) || {}),
-  });
+const BACKEND_HINT =
+  'Start the backend: cd backend && npm run dev (port 3001, MOCK_MODE=true in .env).';
 
-  const data = await res.json();
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: authHeaders((options.headers as Record<string, string>) || {}),
+    });
+  } catch {
+    throw new Error(`Cannot reach the API at ${API_BASE}. ${BACKEND_HINT}`);
+  }
+
+  let data: { user_message?: string; message?: string };
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(res.ok ? 'Invalid response from server' : `Request failed (${res.status})`);
+  }
+
   if (!res.ok) {
     throw new Error(data.user_message || data.message || 'Request failed');
   }
@@ -71,10 +85,13 @@ export interface StoryData {
   id: string;
   title: string;
   genre: string;
+  description?: string;
   chapter_count: number;
   total_readers: number;
   cover_url?: string | null;
   is_published?: boolean;
+  release_schedule?: string;
+  moderation_status?: 'draft' | 'pending_review' | 'published' | 'needs_revision';
 }
 
 export interface ChapterListItem {
@@ -84,6 +101,7 @@ export interface ChapterListItem {
   status?: string;
   word_count?: number;
   scene_count?: number;
+  moderation_notes?: string;
 }
 
 export interface ChapterDraftData {
@@ -93,6 +111,16 @@ export interface ChapterDraftData {
   content?: string;
   content_delta?: { scenes: Array<{ id: string; title: string; content: string }> } | null;
   status?: string;
+  moderation_status?: string;
+  moderation_notes?: string;
+}
+
+export interface DropOffInsight {
+  chapter_number: number;
+  view_drop_pct: number;
+  completion_drop_pct: number;
+  avg_scroll_pct: number;
+  suggestion: string;
 }
 
 export interface AnalyticsData {
@@ -104,6 +132,7 @@ export interface AnalyticsData {
     avg_scroll_pct: number;
   }>;
   subscribers_gained: number;
+  drop_off_insights?: DropOffInsight[];
 }
 
 export interface CreatorMilestone {
@@ -128,6 +157,24 @@ export const api = {
     cover_url?: string;
     release_schedule?: string;
   }) => request<{ story: { id: string } }>('/creators/stories', { method: 'POST', body: JSON.stringify(body) }),
+  updateStory: (storyId: string, body: {
+    title?: string;
+    description?: string;
+    genre?: string;
+    cover_url?: string;
+    release_schedule?: string;
+  }) => request<{ story: StoryData }>(`/creators/stories/${storyId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteStory: (storyId: string) =>
+    request<{ archived: boolean }>(`/creators/stories/${storyId}`, { method: 'DELETE' }),
+  renameChapter: (storyId: string, chapterNumber: number, title: string) =>
+    request(`/creators/stories/${storyId}/chapters/${chapterNumber}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title }),
+    }),
+  deleteChapter: (storyId: string, chapterNumber: number) =>
+    request(`/creators/stories/${storyId}/chapters/${chapterNumber}`, { method: 'DELETE' }),
+  duplicateChapter: (storyId: string, chapterNumber: number) =>
+    request<{ chapter: ChapterListItem }>(`/creators/stories/${storyId}/chapters/${chapterNumber}/duplicate`, { method: 'POST' }),
   saveDraft: (storyId: string, body: {
     chapter_number: number;
     title?: string;
@@ -138,6 +185,7 @@ export const api = {
     chapter_number: number;
     title?: string;
     content: string;
+    appeal_note?: string;
   }) => request(`/chapters/${storyId}/publish`, { method: 'POST', body: JSON.stringify(body) }),
   getAnalytics: (storyId: string) => request<AnalyticsData>(`/creators/analytics/${storyId}`),
   getModerationQueue: () => request<{ queue: ModerationItem[] }>('/moderation/queue'),

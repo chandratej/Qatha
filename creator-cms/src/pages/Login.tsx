@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, ArrowRight, Loader2, Leaf } from 'lucide-react';
+import { Phone, ArrowRight, Loader2, Leaf, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { api } from '../lib/api';
+import { ONBOARDING_KEY } from '../lib/constants';
+
+const RESEND_COOLDOWN_SEC = 60;
 
 export function Login() {
   const { sendOtp, verifyOtp, isMockMode } = useAuth();
@@ -13,16 +17,41 @@ export function Login() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendSecs, setResendSecs] = useState(0);
 
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (resendSecs <= 0) return;
+    const t = setInterval(() => setResendSecs((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendSecs]);
+
+  const startResendCooldown = useCallback(() => setResendSecs(RESEND_COOLDOWN_SEC), []);
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setLoading(true);
     setError(null);
     try {
       await sendOtp(phone);
       setStep('otp');
+      startResendCooldown();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendSecs > 0) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await sendOtp(phone);
+      setOtp('');
+      startResendCooldown();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to resend OTP');
     } finally {
       setLoading(false);
     }
@@ -34,6 +63,19 @@ export function Login() {
     setError(null);
     try {
       await verifyOtp(phone, otp, name || undefined);
+      const onboardingDone = localStorage.getItem(ONBOARDING_KEY) === 'true';
+      if (!onboardingDone) {
+        try {
+          const { stories } = await api.getCreatorStories();
+          if ((stories?.length ?? 0) === 0) {
+            navigate('/onboarding');
+            return;
+          }
+        } catch {
+          navigate('/onboarding');
+          return;
+        }
+      }
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid OTP');
@@ -103,15 +145,26 @@ export function Login() {
                 required
                 maxLength={6}
               />
+              <span className="input-hint">Sent to {phone}</span>
             </div>
             <button type="submit" className="dashboard-cta" style={{ width: '100%', justifyContent: 'center', border: 'none', marginBottom: 12 }} disabled={loading}>
               {loading ? 'Verifying…' : 'Sign in'}
             </button>
             <button
               type="button"
+              className="btn btn-secondary"
+              style={{ width: '100%', marginBottom: 8 }}
+              onClick={handleResendOtp}
+              disabled={loading || resendSecs > 0}
+            >
+              <RotateCcw size={16} />
+              {resendSecs > 0 ? `Resend OTP in ${resendSecs}s` : 'Resend OTP'}
+            </button>
+            <button
+              type="button"
               className="btn btn-ghost"
               style={{ width: '100%' }}
-              onClick={() => { setStep('phone'); setOtp(''); setError(null); }}
+              onClick={() => { setStep('phone'); setOtp(''); setError(null); setResendSecs(0); }}
             >
               Change number
             </button>

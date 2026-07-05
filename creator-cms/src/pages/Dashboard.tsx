@@ -31,18 +31,8 @@ import type { CreatorMilestone } from '../lib/api';
 import type { DashboardData } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
-
-
-async function trackEvent(event: string) {
-  try {
-    const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
-    await fetch(`${base}/api/analytics/events`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event, properties: { source: 'creator_cms' } }),
-    });
-  } catch (_) {}
-}
+import { BRAND } from '../lib/constants';
+import { trackCreatorEvent } from '../lib/analyticsEvents';
 
 function formatInr(n: number) {
   return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -155,11 +145,13 @@ function buildActivityFeed(d: DashboardData, milestones: CreatorMilestone[]): Ac
 export function Dashboard() {
   const { user } = useAuth();
   const { data: d, loading, error } = useApi(() => api.getDashboard());
-  const { data: milestonesData, mutate: mutateMilestones } = useApi(() => api.getMilestones());
+  const { data: milestonesData, mutate: mutateMilestones } = useApi(() =>
+    api.getMilestones().catch(() => ({ milestones: [] as CreatorMilestone[] })),
+  );
   const [activeMilestone, setActiveMilestone] = useState<CreatorMilestone | null>(null);
   const [chartRange, setChartRange] = useState<'3m' | '6m' | 'all'>('3m');
 
-  useEffect(() => { trackEvent('creator_dashboard_view'); }, []);
+  useEffect(() => { trackCreatorEvent('creator_dashboard_view'); }, []);
 
   useEffect(() => {
     if (milestonesData?.milestones?.length && !activeMilestone) {
@@ -218,7 +210,8 @@ export function Dashboard() {
     );
   }
 
-  const sharePct = d.revenue_share_pct ?? 60;
+  const sharePct = d.revenue_share_pct ?? BRAND.creatorSharePct;
+  const platformPct = d.platform_share_pct ?? BRAND.platformSharePct;
   const topStories = [...(d.earnings_by_story || [])]
     .sort((a, b) => b.earnings_this_month - a.earnings_this_month)
     .slice(0, 3);
@@ -313,7 +306,9 @@ export function Dashboard() {
           </div>
           <div className="kpi-card__value">{sharePct}%</div>
           <div className="kpi-card__label">Your Revenue Share</div>
-          <div className="kpi-card__sub">of every ₹99 subscription</div>
+          <div className="kpi-card__sub" title={`You keep ${sharePct}% of each ₹${BRAND.priceMonthly} subscription. Platform retains ${platformPct}%.`}>
+            {sharePct}/{platformPct} creator/platform · ₹{BRAND.priceMonthly}/sub
+          </div>
         </div>
       </div>
 
@@ -325,7 +320,10 @@ export function Dashboard() {
           <div className="earnings-strip__title">
             Total earnings (all time): {formatInr(d.total_earnings)}
           </div>
-          <div className="earnings-strip__meta">
+          <div
+            className="earnings-strip__meta"
+            title={`Expected payout of ${formatInr(d.expected_payout_amount)} on ${formatPayoutDate(d.expected_payout_date)}. Schedule: ${d.payout_schedule}.`}
+          >
             {formatInr(d.creator_earnings_per_subscription_inr)} per subscriber/month
             {' · '}
             Paid on {d.payout_schedule}

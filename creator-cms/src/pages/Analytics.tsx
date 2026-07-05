@@ -1,7 +1,9 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { AlertTriangle, Lightbulb, BarChart3 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import { trackCreatorEvent } from '../lib/analyticsEvents';
 
 type DropOffInsight = {
   chapter_number: number;
@@ -11,9 +13,23 @@ type DropOffInsight = {
   suggestion: string;
 };
 
+type DateRange = '7d' | '30d' | 'all';
+
 export function Analytics() {
   const { storyId } = useParams();
   const { data, loading, error } = useApi(() => api.getAnalytics(storyId!), [storyId]);
+  const [dateRange, setDateRange] = useState<DateRange>('all');
+
+  useEffect(() => {
+    if (storyId) trackCreatorEvent('creator_analytics_view', { story_id: storyId });
+  }, [storyId]);
+
+  const filteredChapters = useMemo(() => {
+    if (!data?.chapters) return [];
+    if (dateRange === 'all') return data.chapters;
+    const limit = dateRange === '7d' ? 7 : 30;
+    return data.chapters.slice(-limit);
+  }, [data, dateRange]);
 
   if (loading) {
     return (
@@ -36,12 +52,12 @@ export function Analytics() {
     );
   }
 
-  const totalReads = data.chapters.reduce((s, c) => s + c.total_views, 0);
-  const avgCompletion = data.chapters.length
-    ? Math.round(data.chapters.reduce((s, c) => s + c.completion_rate, 0) / data.chapters.length)
+  const totalReads = filteredChapters.reduce((s, c) => s + c.total_views, 0);
+  const avgCompletion = filteredChapters.length
+    ? Math.round(filteredChapters.reduce((s, c) => s + c.completion_rate, 0) / filteredChapters.length)
     : 0;
 
-  const insights: DropOffInsight[] = (data as { drop_off_insights?: DropOffInsight[] }).drop_off_insights
+  const insights: DropOffInsight[] = data.drop_off_insights
     ?? data.chapters.slice(1).flatMap((ch, i) => {
       const prev = data.chapters[i];
       const viewDrop = prev.total_views > 0
@@ -69,7 +85,18 @@ export function Analytics() {
             Understand where readers drop off and optimize your pacing for better retention.
           </p>
         </div>
-        <div className="cms-page-header__actions">
+        <div className="cms-page-header__actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select
+            className="cms-input"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value as DateRange)}
+            aria-label="Date range"
+            style={{ width: 'auto' }}
+          >
+            <option value="7d">Last 7 chapters</option>
+            <option value="30d">Last 30 chapters</option>
+            <option value="all">All chapters</option>
+          </select>
           <Link to={`/stories/${storyId}`} className="btn btn-secondary">Back to chapters</Link>
         </div>
       </header>
@@ -80,7 +107,7 @@ export function Analytics() {
           <div className="cms-kpi-card__label">Total reads</div>
         </div>
         <div className="cms-kpi-card">
-          <div className="cms-kpi-card__value">{data.chapters.length}</div>
+          <div className="cms-kpi-card__value">{filteredChapters.length}</div>
           <div className="cms-kpi-card__label">Chapters published</div>
         </div>
         <div className="cms-kpi-card">
@@ -132,12 +159,17 @@ export function Analytics() {
               </tr>
             </thead>
             <tbody>
-              {data.chapters.map((ch) => (
+              {filteredChapters.map((ch) => (
                 <tr key={ch.chapter_number}>
                   <td>
                     Ch {ch.chapter_number}
-                    <Link to={`/stories/${storyId}`} className="btn btn-ghost" style={{ marginLeft: 8, fontSize: '0.75rem', padding: '4px 8px' }}>
-                      Manage
+                    <Link
+                      to={`/stories/${storyId}/chapters/${ch.chapter_number}`}
+                      className="btn btn-ghost"
+                      style={{ marginLeft: 8, fontSize: '0.75rem', padding: '4px 8px' }}
+                      onClick={() => trackCreatorEvent('creator_chapter_edit_from_analytics', { story_id: storyId, chapter: ch.chapter_number })}
+                    >
+                      Edit
                     </Link>
                   </td>
                   <td>{ch.total_views.toLocaleString('en-IN')}</td>

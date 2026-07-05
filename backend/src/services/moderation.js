@@ -28,7 +28,10 @@ export async function moderateChapter(chapterId, content, creatorId) {
       toxicityScore = await analyzeWithPerspective(content);
     } catch (e) {
       console.warn('Perspective API unavailable, queuing for manual review');
+      toxicityScore = scoreHeuristicToxicity(content);
     }
+  } else {
+    toxicityScore = scoreHeuristicToxicity(content);
   }
 
   if (toxicityScore > 0.7) {
@@ -57,7 +60,22 @@ export async function moderateChapter(chapterId, content, creatorId) {
   return { status: 'approved' };
 }
 
-async function analyzeWithPerspective(content) {
+/** Heuristic toxicity score for mock/dev when Perspective API key is absent. */
+export function scoreHeuristicToxicity(content) {
+  const lower = (content || '').toLowerCase();
+  const toxicPatterns = [
+    /\b(kill|hate|stupid|idiot)\b/gi,
+    /\b(నువ్వు చంప|ద్వేష)/,
+  ];
+  let hits = 0;
+  for (const pattern of toxicPatterns) {
+    const matches = lower.match(pattern);
+    if (matches) hits += matches.length;
+  }
+  return Math.min(0.95, hits * 0.25);
+}
+
+export async function analyzeWithPerspective(content) {
   const res = await fetch(
     `https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=${process.env.PERSPECTIVE_API_KEY}`,
     {

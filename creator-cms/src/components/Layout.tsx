@@ -18,6 +18,8 @@ import {
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from './ThemeToggle';
+import { BackendStatusBanner } from './BackendStatusBanner';
+import { NotificationBell } from './NotificationBell';
 
 
 const NAV_ITEMS = [
@@ -29,7 +31,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Payouts', icon: Wallet, activeOn: () => false },
   { to: '/stories/new', label: 'Promotions', icon: Megaphone, activeOn: (p: string) => p === '/stories/new' },
   { to: '/onboarding', label: 'Profile', icon: User, activeOn: (p: string) => p === '/onboarding' },
-  { to: '/onboarding', label: 'Settings', icon: Settings, activeOn: () => false },
+  { to: '/settings', label: 'Settings', icon: Settings, activeOn: (p: string) => p === '/settings' },
 ];
 
 function userInitials(name: string) {
@@ -146,6 +148,10 @@ export function Layout() {
       </aside>
 
       <main className="premium-main">
+        <BackendStatusBanner />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 24px 0' }}>
+          <NotificationBell />
+        </div>
         <Outlet />
       </main>
     </div>

@@ -9,6 +9,8 @@ interface EditorNavbarProps {
   onHistory: () => void;
   onFocus: () => void;
   onPublish: () => void;
+  onSaveDraft: () => void;
+  publishLabel?: string;
 }
 
 export function EditorNavbar({
@@ -19,6 +21,8 @@ export function EditorNavbar({
   onHistory,
   onFocus,
   onPublish,
+  onSaveDraft,
+  publishLabel = 'Publish',
 }: EditorNavbarProps) {
   return (
     <header className="katha-proto-navbar">
@@ -53,8 +57,11 @@ export function EditorNavbar({
         <button type="button" className="katha-proto-nav-btn" style={{ padding: '0 10px' }} aria-label="More options">
           <MoreHorizontal size={16} />
         </button>
+        <button type="button" className="katha-proto-nav-btn" onClick={onSaveDraft}>
+          Save draft
+        </button>
         <button type="button" className="katha-proto-publish-btn" onClick={onPublish}>
-          <Rocket size={15} /> Publish
+          <Rocket size={15} /> {publishLabel}
         </button>
       </div>
     </header>

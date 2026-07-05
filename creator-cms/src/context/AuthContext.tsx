@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { supabase, isMockMode } from '../lib/supabase';
+import { setApiAuth } from '../lib/api';
 
 export interface AuthUser {
   id: string;
@@ -22,6 +23,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = 'katha_creator_auth';
+const MOCK_SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function parseMockToken(token: string): { userId: string; issuedAt: number } | null {
+  const match = /^mock-token-(.+)-(\d+)$/.exec(token || '');
+  if (!match) return null;
+  return { userId: match[1], issuedAt: Number(match[2]) };
+}
+
+function isValidMockSession(user: AuthUser | null, token: string | null): boolean {
+  if (!user?.id || !token) return false;
+  const parsed = parseMockToken(token);
+  if (!parsed || parsed.userId !== user.id) return false;
+  return Date.now() - parsed.issuedAt < MOCK_SESSION_MAX_AGE_MS;
+}
 
 async function profileToAuthUser(
   userId: string,
@@ -46,12 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const persist = (u: AuthUser, t: string) => {
     setUser(u);
     setToken(t);
+    setApiAuth(u, t);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, token: t }));
   };
 
   const clearSession = () => {
     setUser(null);
     setToken(null);
+    setApiAuth(null, null);
     localStorage.removeItem(STORAGE_KEY);
   };
 
@@ -64,9 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (saved) {
           try {
             const { user: u, token: t } = JSON.parse(saved);
-            if (!cancelled) {
-              setUser(u);
-              setToken(t);
+            if (isValidMockSession(u, t)) {
+              if (!cancelled) persist(u, t);
+            } else {
+              localStorage.removeItem(STORAGE_KEY);
             }
           } catch {
             localStorage.removeItem(STORAGE_KEY);

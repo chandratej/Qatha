@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
-import { getSeedChapter, DEMO_USER_ID, mockChapterStore } from '../data/seed.js';
+import { getSeedChapter, DEMO_USER_ID, mockChapterStore, countDraftWords } from '../data/seed.js';
 import { addToMockQueue } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
 import { resolveMockUser } from '../services/launchOffer.js';
-import { moderateChapter } from '../services/moderation.js';
+import { moderateChapter, scoreHeuristicToxicity, analyzeWithPerspective } from '../services/moderation.js';
 import { notifyNewChapter } from '../services/notifications.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
@@ -84,6 +84,8 @@ chaptersRouter.post('/:storyId/draft', async (req, res, next) => {
 
     if (isMockMode()) {
       const key = `${storyId}:${chapter_number}`;
+      const word_count = countDraftWords({ content, content_delta });
+      const scene_count = content_delta?.scenes?.length || 1;
       const draft = {
         id: `draft-${storyId}-${chapter_number}`,
         creator_id: creatorId,
@@ -93,6 +95,8 @@ chaptersRouter.post('/:storyId/draft', async (req, res, next) => {
         content: content || '',
         content_delta: content_delta || null,
         status: 'draft',
+        word_count,
+        scene_count,
         last_saved_at: new Date().toISOString(),
       };
       mockChapterStore.set(key, draft);
@@ -102,13 +106,19 @@ chaptersRouter.post('/:storyId/draft', async (req, res, next) => {
     const { data: story } = await supabase.from('stories').select('author_id').eq('id', storyId).single();
     if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
 
+    const word_count = countDraftWords({ content, content_delta });
+    const scene_count = content_delta?.scenes?.length || 1;
+    const enrichedDelta = content_delta
+      ? { ...content_delta, word_count, scene_count }
+      : { scenes: [], word_count, scene_count };
+
     const { data: draft, error } = await supabase.from('chapter_drafts').upsert({
       creator_id: creatorId,
       story_id: storyId,
       chapter_number,
       title,
       content,
-      content_delta,
+      content_delta: enrichedDelta,
       last_saved_at: new Date().toISOString(),
     }, { onConflict: 'creator_id,story_id,chapter_number' }).select().single();
 
@@ -123,20 +133,33 @@ chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const creatorId = req.headers['x-creator-id'] || 'demo-creator-001';
-    const { chapter_number, title, content, content_delta } = req.body;
+    const { chapter_number, title, content, content_delta, appeal_note } = req.body;
 
     if (!content || content.length > 50000) {
       throw createAppError('INTERNAL_ERROR', 'Chapter content invalid (max 50,000 chars)', 400);
     }
 
     if (isMockMode()) {
+      let toxicityScore = 0;
+      if (process.env.PERSPECTIVE_API_KEY) {
+        try {
+          toxicityScore = await analyzeWithPerspective(content);
+        } catch {
+          toxicityScore = scoreHeuristicToxicity(content);
+        }
+      } else {
+        toxicityScore = scoreHeuristicToxicity(content);
+      }
+
       const chapter = {
         id: `mock-ch-${chapter_number}`,
         story_id: storyId,
         chapter_number,
         title,
         content,
-        status: 'pending_review',
+        status: toxicityScore > 0.7 ? 'pending_review' : 'published',
+        moderation_status: toxicityScore > 0.7 ? 'pending' : 'approved',
+        moderation_notes: appeal_note || null,
       };
       mockChapterStore.set(`${storyId}:${chapter_number}`, {
         ...chapter,
@@ -144,10 +167,22 @@ chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
         last_saved_at: new Date().toISOString(),
       });
 
-      addToMockQueue(chapter, 'Creator', 'Submitted for review');
+      const queueNote = appeal_note
+        ? `Resubmitted: ${appeal_note}`
+        : toxicityScore > 0.7
+          ? `Auto-flagged (toxicity ${(toxicityScore * 100).toFixed(0)}%)`
+          : 'Submitted for review';
+      addToMockQueue(chapter, 'Creator', queueNote, toxicityScore);
+
       return res.json({
         chapter,
-        moderation: { status: 'pending_review', note: 'Queued for manual review (Perspective runs in production publish)' },
+        moderation: {
+          status: chapter.status,
+          toxicity_score: toxicityScore,
+          note: toxicityScore > 0.7
+            ? 'Queued for manual review — high toxicity score'
+            : 'Auto-approved (low toxicity score)',
+        },
         mock: true,
       });
     }
@@ -156,7 +191,13 @@ chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
     if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
 
     const { data: chapter, error } = await supabase.from('chapters').upsert({
-      story_id: storyId, chapter_number, title, content, content_delta, status: 'pending_review',
+      story_id: storyId,
+      chapter_number,
+      title,
+      content,
+      content_delta,
+      status: 'pending_review',
+      moderation_notes: appeal_note || null,
     }, { onConflict: 'story_id,chapter_number' }).select().single();
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);

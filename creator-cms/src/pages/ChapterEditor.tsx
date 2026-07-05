@@ -72,7 +72,12 @@ export function ChapterEditor() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loading, setLoading] = useState(!isDemo);
   const [publishing, setPublishing] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [moderationStatus, setModerationStatus] = useState<string | null>(null);
+  const [moderationNotes, setModerationNotes] = useState<string | null>(null);
+  const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
+  const [appealNote, setAppealNote] = useState('');
 
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -149,6 +154,8 @@ export function ChapterEditor() {
         setActiveSceneId(loadedScenes[0]?.id || '');
         setChapterTitle(chapter.title || `Chapter ${chapterNumber}`);
         if (storyMeta.story?.title) setStoryLabel(storyMeta.story.title);
+        setModerationStatus(chapter.moderation_status || chapter.status || null);
+        setModerationNotes(chapter.moderation_notes || null);
       } catch (err) {
         if (!cancelled) {
           const fallback = [createDefaultScene()];
@@ -214,9 +221,42 @@ export function ChapterEditor() {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, content } : s));
   };
 
+  const needsResubmit = moderationStatus === 'needs_revision' || moderationStatus === 'rejected';
+
+  const handleSaveDraft = async () => {
+    setSavingDraft(true);
+    setPublishError(null);
+    setPublishSuccess(null);
+    try {
+      if (isDemo) {
+        persistDraft();
+      } else {
+        await cloudSaveDraft();
+      }
+      setLastSaved(new Date());
+      setPublishSuccess('Draft saved');
+    } catch (err) {
+      setPublishError(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveDraft();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleSaveDraft]);
+
   const handlePublish = async () => {
     setPublishing(true);
     setPublishError(null);
+    setPublishSuccess(null);
     try {
       const content = aggregateScenesToHtml(scenes);
       if (!content.trim()) {
@@ -228,13 +268,17 @@ export function ChapterEditor() {
 
       if (!isDemo) {
         await cloudSaveDraft();
-        await api.publishChapter(storyId, {
+        const result = await api.publishChapter(storyId, {
           chapter_number: chapterNumber,
           title: chapterTitle,
           content,
-        });
+          appeal_note: needsResubmit && appealNote.trim() ? appealNote.trim() : undefined,
+        }) as { moderation?: { status?: string; note?: string } };
+        setModerationStatus(result.moderation?.status || 'pending_review');
+        setPublishSuccess('Submitted for moderation — typically reviewed within 1–2 hours.');
       } else {
         persistDraft();
+        setPublishSuccess('Demo draft saved locally');
       }
       setLastSaved(new Date());
       if (activeScene) saveSceneVersion(activeScene.id, activeScene.title, activeScene.content);
@@ -260,11 +304,40 @@ export function ChapterEditor() {
           storyLabel={storyLabel}
           seasonLabel={seasonLabel}
           chapterLabel={chapterTitle || `Chapter ${chapterNumber}`}
-          saving={saving || publishing}
+          saving={saving || publishing || savingDraft}
           onHistory={() => setHistoryOpen(true)}
           onFocus={() => setFocusMode(true)}
+          onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
+          publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
         />
+      )}
+
+      {!focusMode && (moderationStatus || publishSuccess) && (
+        <div className="cms-callout" style={{ margin: 0, borderRadius: 0, borderLeft: 'none', borderBottom: '1px solid var(--border)' }}>
+          {moderationStatus === 'pending_review' && (
+            <p className="cms-callout__body"><strong>Pending review</strong> — your chapter is in the moderation queue.</p>
+          )}
+          {needsResubmit && (
+            <>
+              <p className="cms-callout__body">
+                <strong>Edits requested.</strong> {moderationNotes || 'Review moderator notes, update your chapter, and resubmit.'}
+              </p>
+              <textarea
+                className="cms-input"
+                rows={2}
+                placeholder="Optional note to moderator (what you changed)"
+                value={appealNote}
+                onChange={(e) => setAppealNote(e.target.value)}
+                style={{ width: '100%', marginTop: 8, resize: 'vertical' }}
+              />
+            </>
+          )}
+          {moderationStatus === 'published' && (
+            <p className="cms-callout__body"><strong>Published</strong> — this chapter is live for readers.</p>
+          )}
+          {publishSuccess && <p className="cms-callout__body" style={{ color: 'var(--accent-sage)' }}>{publishSuccess}</p>}
+        </div>
       )}
 
       {publishError && !focusMode && (
@@ -299,6 +372,7 @@ export function ChapterEditor() {
           activeSceneIndex={activeSceneIndex}
           chapterNum={chapterNumber}
           chapterTitle={chapterTitle}
+          onChapterTitleChange={setChapterTitle}
           chapterWordCount={wordCount}
           updateSceneTitle={updateSceneTitle}
           updateSceneContent={updateSceneContent}

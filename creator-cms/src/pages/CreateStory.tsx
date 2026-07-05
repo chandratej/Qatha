@@ -2,19 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Image as ImageIcon } from 'lucide-react';
 import { api } from '../lib/api';
-
-const GENRES = [
-  { id: 'romance', label: 'Romance', telugu: 'ప్రేమ కథలు' },
-  { id: 'family_drama', label: 'Family Drama', telugu: 'కుటుంబ నాటకం' },
-  { id: 'suspense', label: 'Suspense', telugu: 'సస్పెన్స్' },
-];
-
-const SCHEDULES = [
-  { id: 'weekly', label: 'Every week' },
-  { id: 'biweekly', label: 'Every other week' },
-  { id: 'irregular', label: 'When ready' },
-  { id: 'complete', label: 'Story complete' },
-];
+import { GENRES, RELEASE_SCHEDULES, PAYWALL } from '../lib/constants';
 
 export function CreateStory() {
   const navigate = useNavigate();
@@ -37,16 +25,16 @@ export function CreateStory() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!coverFile) {
+      setError('Cover image is required before publishing your story.');
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
-      let cover_url: string | undefined;
-      if (coverFile) {
-        const res = await api.uploadImage(coverFile);
-        cover_url = res.url;
-      }
+      const { url: cover_url } = await api.uploadImage(coverFile);
       const { story } = await api.createStory({ title, description, genre, release_schedule: schedule, cover_url });
-      navigate(`/stories/${story.id}`);
+      navigate(`/stories/${story.id}/chapters/1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create story');
     } finally {
@@ -71,12 +59,12 @@ export function CreateStory() {
             <label>Story title *</label>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value.slice(0, 100))}
+              onChange={(e) => setTitle(e.target.value.slice(0, PAYWALL.maxStoryTitleChars))}
               placeholder="Enter your story title in Telugu or English"
               required
               minLength={3}
             />
-            <span className="input-counter">{title.length} / 100</span>
+            <span className="input-counter">{title.length} / {PAYWALL.maxStoryTitleChars}</span>
           </div>
 
           <div className="input-group">
@@ -84,7 +72,7 @@ export function CreateStory() {
             <select value={genre} onChange={(e) => setGenre(e.target.value)}>
               {GENRES.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.label} — {g.telugu}
+                  {g.label} — {g.labelTelugu}
                 </option>
               ))}
             </select>
@@ -95,17 +83,17 @@ export function CreateStory() {
             <label>Description</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value.slice(0, 300))}
+              onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))}
               placeholder="A brief hook for readers browsing stories..."
               rows={4}
             />
-            <span className="input-counter">{description.length} / 300</span>
+            <span className="input-counter">{description.length} / {PAYWALL.maxStoryDescChars}</span>
           </div>
 
           <div className="input-group">
             <label>Release schedule</label>
             <select value={schedule} onChange={(e) => setSchedule(e.target.value)}>
-              {SCHEDULES.map((s) => (
+              {RELEASE_SCHEDULES.map((s) => (
                 <option key={s.id} value={s.id}>{s.label}</option>
               ))}
             </select>
@@ -120,9 +108,9 @@ export function CreateStory() {
 
         <div>
           <label className="input-group" style={{ cursor: 'pointer' }}>
-            <span>Cover image</span>
+            <span>Cover image *</span>
             <div className="cms-cover-hint">
-              Recommended: 600×900 (2:3) or 3:4 ratio, JPG/PNG under 1MB. Looks great in story cards.
+              Required before your story goes live. 600×900 (2:3) recommended, JPG/PNG under 1MB.
             </div>
             <div className="cms-cover-zone">
               {coverPreview ? (
@@ -138,6 +126,7 @@ export function CreateStory() {
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 onChange={handleCoverUpload}
+                required
                 style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
               />
             </div>

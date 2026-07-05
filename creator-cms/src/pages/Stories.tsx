@@ -1,12 +1,43 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Loader2, PenLine } from 'lucide-react';
+import { Plus, Loader2, PenLine, Pencil, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
+import type { StoryData } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
+import { StoryEditModal } from '../components/StoryEditModal';
+import { storyStatusBadge } from '../lib/storyStatus';
+import { GENRES } from '../lib/constants';
 
 export function Stories() {
   const { isMockMode } = useAuth();
-  const { data, loading, error } = useApi(() => api.getCreatorStories());
+  const { data, loading, error, reload } = useApi(() => api.getCreatorStories());
+  const [editing, setEditing] = useState<StoryData | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [genreFilter, setGenreFilter] = useState('');
+
+  const filteredStories = useMemo(() => {
+    const list = data?.stories ?? [];
+    return list.filter((s) => {
+      const matchesSearch = !search.trim()
+        || s.title.toLowerCase().includes(search.toLowerCase())
+        || (s.description || '').toLowerCase().includes(search.toLowerCase());
+      const matchesGenre = !genreFilter || s.genre === genreFilter;
+      return matchesSearch && matchesGenre;
+    });
+  }, [data?.stories, search, genreFilter]);
+
+  const handleDelete = async (story: StoryData) => {
+    if (!confirm(`Archive "${story.title}"? Chapters will be hidden from readers.`)) return;
+    setDeleting(story.id);
+    try {
+      await api.deleteStory(story.id);
+      await reload();
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   return (
     <div className="cms-page">
@@ -30,8 +61,31 @@ export function Stories() {
         </div>
       )}
 
-      {error && (
-        <div className="cms-panel cms-error-text">{error}</div>
+      {error && <div className="cms-panel cms-error-text">{error}</div>}
+
+      {!loading && (data?.stories?.length ?? 0) > 0 && (
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <input
+            type="search"
+            className="cms-input"
+            placeholder="Search stories…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ flex: 1, minWidth: 200 }}
+          />
+          <select
+            className="cms-input"
+            value={genreFilter}
+            onChange={(e) => setGenreFilter(e.target.value)}
+            style={{ width: 'auto' }}
+            aria-label="Filter by genre"
+          >
+            <option value="">All genres</option>
+            {GENRES.map((g) => (
+              <option key={g.id} value={g.id}>{g.label}</option>
+            ))}
+          </select>
+        </div>
       )}
 
       <div className="cms-story-list">
@@ -58,23 +112,44 @@ export function Stories() {
           </div>
         )}
 
-        {(data?.stories || []).map((story) => (
-          <div key={story.id} className="cms-story-card">
-            <div className="cms-story-card__cover">కథ</div>
-            <div className="cms-story-card__body">
-              <h3 className="cms-story-card__title">{story.title}</h3>
-              <div className="cms-story-card__meta">
-                <span className="badge badge-gold">{story.genre}</span>
-                <span>{story.chapter_count} chapters</span>
-                <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
+        {filteredStories.map((story) => {
+          const badge = storyStatusBadge(story.moderation_status);
+          return (
+            <div key={story.id} className="cms-story-card">
+              {story.cover_url ? (
+                <img src={story.cover_url} alt="" className="cms-story-card__cover-img" />
+              ) : (
+                <div className="cms-story-card__cover">కథ</div>
+              )}
+              <div className="cms-story-card__body">
+                <h3 className="cms-story-card__title">{story.title}</h3>
+                <div className="cms-story-card__meta">
+                  <span className="badge badge-gold">{story.genre}</span>
+                  <span className={badge.className}>{badge.label}</span>
+                  <span>{story.chapter_count} chapters</span>
+                  <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
+                </div>
+              </div>
+              <div className="cms-story-card__actions">
+                <Link to={`/stories/${story.id}`} className="btn btn-secondary">Manage Chapters</Link>
+                <Link to={`/analytics/${story.id}`} className="btn btn-ghost">Analytics</Link>
+                <button type="button" className="btn btn-ghost" onClick={() => setEditing(story)} aria-label="Edit story">
+                  <Pencil size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => handleDelete(story)}
+                  disabled={deleting === story.id}
+                  aria-label="Archive story"
+                  style={{ color: 'var(--ember)' }}
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             </div>
-            <div className="cms-story-card__actions">
-              <Link to={`/stories/${story.id}`} className="btn btn-secondary">Manage Chapters</Link>
-              <Link to={`/analytics/${story.id}`} className="btn btn-ghost">Analytics</Link>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
           <div className="cms-empty">
@@ -88,6 +163,10 @@ export function Stories() {
           </div>
         )}
       </div>
+
+      {editing && (
+        <StoryEditModal story={editing} onClose={() => setEditing(null)} onSaved={reload} />
+      )}
     </div>
   );
 }

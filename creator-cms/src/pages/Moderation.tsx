@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Shield, Check, X, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
 import { api } from '../lib/api';
 import type { ModerationItem } from '../lib/api';
@@ -19,7 +19,17 @@ export function Moderation() {
     }
   };
 
-  const queue = data?.queue || [];
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'all'>('pending');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 5;
+
+  const queue = useMemo(() => {
+    const all = data?.queue || [];
+    return statusFilter === 'pending' ? all.filter((q) => q.status === 'pending') : all;
+  }, [data?.queue, statusFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(queue.length / PAGE_SIZE));
+  const pagedQueue = queue.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
     <div className="cms-page">
@@ -30,7 +40,16 @@ export function Moderation() {
             Review flagged chapters — target 15 min/day. Zero tolerance for hard blocks.
           </p>
         </div>
-        <div className="cms-page-header__actions">
+        <div className="cms-page-header__actions" style={{ display: 'flex', gap: 8 }}>
+          <select
+            className="cms-input"
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value as 'pending' | 'all'); setPage(0); }}
+            style={{ width: 'auto' }}
+          >
+            <option value="pending">Pending only</option>
+            <option value="all">All items</option>
+          </select>
           <button type="button" className="btn btn-secondary" onClick={reload} disabled={loading}>
             <RefreshCw size={16} />
             Refresh
@@ -56,15 +75,15 @@ export function Moderation() {
       )}
 
       <div style={{ display: 'grid', gap: 20 }}>
-        {queue.map((item: ModerationItem) => (
+        {pagedQueue.map((item: ModerationItem) => (
           <div key={item.id} className="cms-panel cms-panel--flat">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                   <span className="badge badge-warning">Pending</span>
-                  {item.toxicity_score && item.toxicity_score > 0.7 && (
-                    <span className="badge badge-warning">
-                      <AlertTriangle size={12} style={{ marginRight: 4 }} />
+                  {item.toxicity_score != null && (
+                    <span className={`badge ${item.toxicity_score > 0.7 ? 'badge-warning' : 'badge-gold'}`}>
+                      {item.toxicity_score > 0.7 && <AlertTriangle size={12} style={{ marginRight: 4 }} />}
                       Toxicity {(item.toxicity_score * 100).toFixed(0)}%
                     </span>
                   )}
@@ -81,7 +100,10 @@ export function Moderation() {
               </span>
             </div>
 
-            <div className="cms-moderation-preview">{item.chapters.content}</div>
+            <div
+              className="cms-moderation-preview"
+              dangerouslySetInnerHTML={{ __html: item.chapters.content }}
+            />
 
             <div className="input-group" style={{ marginBottom: 16 }}>
               <label>Reviewer notes (optional)</label>
@@ -122,6 +144,20 @@ export function Moderation() {
           </div>
         ))}
       </div>
+
+      {queue.length > PAGE_SIZE && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 24 }}>
+          <button type="button" className="btn btn-ghost" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            Previous
+          </button>
+          <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', alignSelf: 'center' }}>
+            Page {page + 1} of {pageCount}
+          </span>
+          <button type="button" className="btn btn-ghost" disabled={page >= pageCount - 1} onClick={() => setPage((p) => p + 1)}>
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

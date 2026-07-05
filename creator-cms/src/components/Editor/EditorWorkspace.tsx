@@ -2,7 +2,13 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { Sparkles } from 'lucide-react';
-import { getPhoneticSuggestions, phoneticToTelugu, type Suggestion } from '../../lib/phonetic';
+import {
+  getPhoneticSuggestions,
+  getSemanticAlternatives,
+  phoneticToTelugu,
+  setPersonalCorrection,
+  type Suggestion,
+} from '../../lib/phonetic';
 import type { SceneBlock } from './SceneSidebar';
 import { FormatToolbar } from './FormatToolbar';
 import { formatRelativeTime } from '../../lib/relativeTime';
@@ -86,6 +92,7 @@ interface EditorWorkspaceProps {
   activeSceneIndex: number;
   chapterNum: number;
   chapterTitle: string;
+  onChapterTitleChange: (title: string) => void;
   chapterWordCount: number;
   updateSceneTitle: (id: string, title: string) => void;
   updateSceneContent: (id: string, content: string) => void;
@@ -102,6 +109,7 @@ export function EditorWorkspace({
   activeSceneIndex,
   chapterNum,
   chapterTitle,
+  onChapterTitleChange,
   chapterWordCount,
   updateSceneTitle,
   updateSceneContent,
@@ -119,6 +127,7 @@ export function EditorWorkspace({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsPos, setSuggestionsPos] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [trailingWord, setTrailingWord] = useState('');
 
   const getEditor = () => quillRef.current?.getEditor();
 
@@ -155,10 +164,15 @@ export function EditorWorkspace({
     updateSceneContent(activeScene.id, html);
     if (phoneticLive && trailingWord.length > 0) {
       updatePosition();
-      setSuggestions(getPhoneticSuggestions(trailingWord));
-      setShowSuggestions(true);
+      const phonetic = getPhoneticSuggestions(trailingWord);
+      const semantic = getSemanticAlternatives(trailingWord);
+      const merged = [...phonetic, ...semantic.filter((s) => !phonetic.some((p) => p.value === s.value))];
+      setTrailingWord(trailingWord);
+      setSuggestions(merged);
+      setShowSuggestions(merged.length > 0);
       setSelectedIndex(0);
     } else {
+      setTrailingWord('');
       setShowSuggestions(false);
     }
   };
@@ -185,6 +199,32 @@ export function EditorWorkspace({
     const editor = getEditor();
     if (!editor) return;
     editor.format(name, value ?? !editor.getFormat()[name]);
+  };
+
+  const insertLink = () => {
+    const editor = getEditor();
+    if (!editor || !activeScene) return;
+    const url = window.prompt('Enter URL (https://…)');
+    if (!url?.trim()) return;
+    const selection = editor.getSelection(true);
+    const index = selection?.index ?? editor.getLength();
+    if (selection?.length) {
+      editor.format('link', url.trim());
+    } else {
+      editor.insertText(index, url.trim(), { link: url.trim() });
+    }
+    updateSceneContent(activeScene.id, editor.root.innerHTML);
+  };
+
+  const insertSceneBreak = () => {
+    const editor = getEditor();
+    if (!editor || !activeScene) return;
+    const breakHtml = '<hr class="scene-break" data-scene-break="true" />';
+    const selection = editor.getSelection(true);
+    const index = selection?.index ?? editor.getLength();
+    editor.clipboard.dangerouslyPasteHTML(index, breakHtml);
+    updateSceneContent(activeScene.id, editor.root.innerHTML);
+    editor.setSelection(editor.getLength(), 0);
   };
 
   useEffect(() => {
@@ -218,8 +258,20 @@ export function EditorWorkspace({
 
   return (
     <main ref={containerRef} className="katha-proto-editor">
-      <div className="katha-proto-editor-header">
-        Ch {chapterNum} {chapterTitle} {chapterWordCount} words
+      <div className="katha-proto-editor-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <span>Ch {chapterNum}</span>
+        <input
+          type="text"
+          className="katha-proto-chapter-title-input"
+          style={{ fontSize: '1rem', margin: 0, flex: 1, minWidth: 180 }}
+          value={chapterTitle}
+          onChange={(e) => onChapterTitleChange(e.target.value)}
+          placeholder="Chapter title"
+          maxLength={60}
+        />
+        <span style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', fontWeight: 400 }}>
+          {chapterWordCount} words
+        </span>
       </div>
 
       <FormatToolbar
@@ -232,6 +284,8 @@ export function EditorWorkspace({
         onAlign={align => format('align', align)}
         onUndo={() => getEditor()?.history.undo()}
         onRedo={() => getEditor()?.history.redo()}
+        onSceneBreak={insertSceneBreak}
+        onLink={insertLink}
       />
 
       <div ref={scrollRef} className="katha-proto-editor-body">
@@ -273,13 +327,27 @@ export function EditorWorkspace({
           boxShadow: 'var(--shadow-md)', zIndex: 9999, minWidth: 200,
         }}>
           {suggestions.map((sug, idx) => (
-            <div key={idx} onClick={() => insertSuggestion(sug)} style={{
+            <div key={idx} style={{
               padding: '8px 12px', cursor: 'pointer',
               background: idx === selectedIndex ? 'var(--paper)' : 'transparent',
-              display: 'flex', justifyContent: 'space-between',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
             }}>
-              <span style={{ fontWeight: 600 }}>{sug.value}</span>
-              <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem' }}>{sug.display.split(' → ')[0]}</span>
+              <div onClick={() => insertSuggestion(sug)} style={{ flex: 1 }}>
+                <span style={{ fontWeight: 600 }}>{sug.value}</span>
+                <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem', marginLeft: 8 }}>{sug.display.split(' → ')[0]}</span>
+              </div>
+              <button
+                type="button"
+                title="Teach this correction"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const key = window.prompt('Roman spelling to remember', trailingWord);
+                  if (key) setPersonalCorrection(key, sug.value);
+                }}
+                style={{ fontSize: '0.7rem', padding: '2px 6px', border: '1px solid var(--border)', borderRadius: 4, background: 'transparent', cursor: 'pointer' }}
+              >
+                Teach
+              </button>
             </div>
           ))}
         </div>

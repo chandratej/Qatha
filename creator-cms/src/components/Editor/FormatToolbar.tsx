@@ -14,6 +14,8 @@ interface FormatToolbarProps {
   onAlign: (align: 'left' | 'center' | 'right') => void;
   onUndo: () => void;
   onRedo: () => void;
+  onSceneBreak: () => void;
+  onLink: () => void;
 }
 
 export function FormatToolbar({
@@ -26,6 +28,8 @@ export function FormatToolbar({
   onAlign,
   onUndo,
   onRedo,
+  onSceneBreak,
+  onLink,
 }: FormatToolbarProps) {
   return (
     <div className="katha-proto-format-toolbar">
@@ -38,6 +42,9 @@ export function FormatToolbar({
       </button>
       <button type="button" className="katha-proto-fmt-btn" onClick={onConvertAll}>
         <Wand2 size={14} /> Convert all
+      </button>
+      <button type="button" className="katha-proto-fmt-btn" onClick={onSceneBreak} title="Insert scene break">
+        ***
       </button>
 
       <div className="katha-proto-fmt-divider" />
@@ -63,7 +70,7 @@ export function FormatToolbar({
       <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('right')} title="Align right">
         <AlignRight size={14} />
       </button>
-      <button type="button" className="katha-proto-fmt-btn icon-only" title="Link">
+      <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onLink} title="Insert link">
         <Link size={14} />
       </button>
 
