@@ -111,9 +111,9 @@
 
 /* ── Scene sidebar ── */
 .katha-proto-sidebar {
-  width: 24%;
-  min-width: 220px;
-  max-width: 300px;
+  width: 260px;
+  min-width: 260px;
+  max-width: 260px;
   display: flex;
   flex-direction: column;
   background: #F3EFE8;
@@ -178,35 +178,175 @@
   padding: 8px 12px;
 }
 
-.katha-proto-scene-item {
-  padding: 12px 14px;
-  margin-bottom: 6px;
-  border-radius: 10px;
-  border: 1px solid transparent;
+/* ── Scene card CSS utility classes (260px sidebar) ── */
+
+/* Layout */
+.sc-u-flex-row { display: flex; flex-direction: row; }
+.sc-u-flex-col { display: flex; flex-direction: column; }
+.sc-u-items-center { align-items: center; }
+.sc-u-flex-1 { flex: 1 1 0%; }
+.sc-u-shrink-0 { flex-shrink: 0; }
+.sc-u-min-w-0 { min-width: 0; }
+.sc-u-gap-0 { gap: 2px; }
+.sc-u-gap-1 { gap: 6px; }
+.sc-u-gap-2 { gap: 8px; }
+
+/* Spacing */
+.sc-u-px-3 { padding-left: 12px; padding-right: 12px; }
+.sc-u-py-3 { padding-top: 12px; padding-bottom: 12px; }
+.sc-u-mb-2 { margin-bottom: 8px; }
+
+/* List reset (reorder group) */
+.sc-u-list-reset { list-style: none; margin: 0; padding: 0; }
+.sc-u-list-item { list-style: none; }
+
+/* Card container — bg-[#FCFBF8] border-l-4 border-l-[#B9935A] rounded-[14px] shadow-sm */
+.sc-card {
   cursor: pointer;
-  transition: background 0.15s ease;
+  border-radius: 14px;
+  border: 1px solid rgba(243, 244, 246, 0.5);
+  border-left-width: 4px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease-out;
 }
 
-.katha-proto-scene-item:hover {
-  background: rgba(255, 255, 255, 0.5);
+.sc-card:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
 }
 
-.katha-proto-scene-item.active {
-  background: #FDFCFA;
-  border-color: rgba(196, 160, 82, 0.35);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+.sc-card--active {
+  background: #FCFBF8;
+  border-left-color: #B9935A;
 }
 
-.katha-proto-scene-item-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--ink);
-  margin-bottom: 4px;
+.sc-card--idle {
+  background: #FFFFFF;
+  border-left-color: transparent;
 }
 
-.katha-proto-scene-item-meta {
-  font-size: 0.75rem;
-  color: var(--ink-muted);
+/* Left: drag handle (w-4 h-4) + scene number */
+.sc-u-drag-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: grab;
+  opacity: 1;
+  touch-action: none;
+}
+
+.sc-u-drag-btn:active {
+  cursor: grabbing;
+}
+
+.sc-u-drag-dots {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  grid-template-columns: repeat(2, 3px);
+  grid-template-rows: repeat(3, 3px);
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.sc-u-drag-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #9CA3AF;
+}
+
+.sc-u-scene-num {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: #374151;
+  min-width: 1ch;
+}
+
+/* Middle: title + meta */
+.sc-u-scene-title {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-u-scene-meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.25;
+  color: #6B7280;
+}
+
+/* Right: menu icon (always visible, w-4 h-4) */
+.sc-u-menu-wrap {
+  position: relative;
+}
+
+.sc-u-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #9CA3AF;
+  cursor: pointer;
+  opacity: 1;
+}
+
+.sc-u-menu-btn:hover {
+  color: #6B7280;
+}
+
+.sc-u-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  min-width: 120px;
+  padding: 4px;
+  background: #FFFFFF;
+  border: 1px solid rgba(243, 244, 246, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.sc-u-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.sc-u-menu-item:hover {
+  background: rgba(185, 147, 90, 0.1);
+}
+
+.sc-u-menu-item--danger {
+  color: #B91C1C;
+}
+
+.sc-u-menu-item--danger:hover {
+  background: #FEF2F2;
 }
 
 .katha-proto-sidebar-footer {

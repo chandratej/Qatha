@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Plus, Search, Trash2, PlusCircle } from 'lucide-react';
-import { Reorder } from 'framer-motion';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, Search, Trash2, PlusCircle, MoreVertical } from 'lucide-react';
+import { Reorder, useDragControls } from 'framer-motion';
 
 export interface SceneBlock {
   id: string;
@@ -15,6 +15,7 @@ interface SceneSidebarProps {
   onAddScene: () => void;
   onReorderScenes: (scenes: SceneBlock[]) => void;
   onDeleteScene?: (id: string) => void;
+  onDuplicateScene?: (id: string) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -34,6 +35,7 @@ export function SceneSidebar({
   onAddScene,
   onReorderScenes,
   onDeleteScene,
+  onDuplicateScene,
   collapsed,
   onToggleCollapse,
 }: SceneSidebarProps) {
@@ -81,20 +83,25 @@ export function SceneSidebar({
                 scene={scene}
                 active={activeSceneId === scene.id}
                 onClick={() => onSwitchScene(scene.id)}
+                onDelete={onDeleteScene}
+                onDuplicate={onDuplicateScene}
+                draggable={false}
               />
             );
           })
         ) : (
-          <Reorder.Group axis="y" values={scenes} onReorder={onReorderScenes} style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          <Reorder.Group axis="y" values={scenes} onReorder={onReorderScenes} className="sc-u-list-reset">
             {scenes.map((scene, idx) => (
-              <Reorder.Item key={scene.id} value={scene}>
-                <SceneRow
-                  idx={idx}
-                  scene={scene}
-                  active={activeSceneId === scene.id}
-                  onClick={() => onSwitchScene(scene.id)}
-                />
-              </Reorder.Item>
+              <SceneRow
+                key={scene.id}
+                idx={idx}
+                scene={scene}
+                active={activeSceneId === scene.id}
+                onClick={() => onSwitchScene(scene.id)}
+                onDelete={onDeleteScene}
+                onDuplicate={onDuplicateScene}
+                draggable
+              />
             ))}
           </Reorder.Group>
         )}
@@ -125,16 +132,112 @@ export function SceneSidebar({
   );
 }
 
-function SceneRow({ idx, scene, active, onClick }: { idx: number; scene: SceneBlock; active: boolean; onClick: () => void }) {
-  const words = getWordCount(scene.content);
+interface SceneRowProps {
+  idx: number;
+  scene: SceneBlock;
+  active: boolean;
+  onClick: () => void;
+  onDelete?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
+  draggable?: boolean;
+}
+
+function DragDots() {
   return (
-    <div className={`katha-proto-scene-item${active ? ' active' : ''}`} onClick={onClick}>
-      <div className="katha-proto-scene-item-title">
-        {idx + 1} {scene.title || 'Untitled'}
+    <span className="sc-u-drag-dots" aria-hidden="true">
+      <span /><span /><span /><span /><span /><span />
+    </span>
+  );
+}
+
+function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggable }: SceneRowProps) {
+  const words = getWordCount(scene.content);
+  const dragControls = useDragControls();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [menuOpen]);
+
+  const card = (
+    <article
+      className={`sc-card sc-u-flex-row sc-u-items-center sc-u-gap-2 sc-u-px-3 sc-u-py-3 sc-u-mb-2 sc-u-min-w-0${active ? ' sc-card--active' : ' sc-card--idle'}`}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      aria-current={active ? 'true' : undefined}
+    >
+      <div className="sc-u-flex-row sc-u-items-center sc-u-gap-1 sc-u-shrink-0">
+        <button
+          type="button"
+          className="sc-u-drag-btn"
+          aria-label="Drag to reorder"
+          onPointerDown={e => {
+            e.stopPropagation();
+            if (draggable) dragControls.start(e);
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <DragDots />
+        </button>
+        <span className="sc-u-scene-num">{idx + 1}</span>
       </div>
-      <div className="katha-proto-scene-item-meta">
-        {idx + 1}w • {words} words
+
+      <div className="sc-u-flex-col sc-u-flex-1 sc-u-min-w-0 sc-u-gap-0">
+        <h3 className="sc-u-scene-title">{scene.title || 'Untitled'}</h3>
+        <p className="sc-u-scene-meta">{idx + 1}w • {words} words</p>
       </div>
-    </div>
+
+      <div className="sc-u-menu-wrap sc-u-shrink-0" ref={menuRef}>
+        <button
+          type="button"
+          className="sc-u-menu-btn"
+          aria-label="Scene options"
+          aria-expanded={menuOpen}
+          onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
+        >
+          <MoreVertical size={16} strokeWidth={2} />
+        </button>
+        {menuOpen && (onDuplicate || onDelete) && (
+          <div className="sc-u-menu-dropdown" role="menu">
+            {onDuplicate && (
+              <button
+                type="button"
+                role="menuitem"
+                className="sc-u-menu-item"
+                onClick={e => { e.stopPropagation(); onDuplicate(scene.id); setMenuOpen(false); }}
+              >
+                Duplicate
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                role="menuitem"
+                className="sc-u-menu-item sc-u-menu-item--danger"
+                onClick={e => { e.stopPropagation(); onDelete(scene.id); setMenuOpen(false); }}
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+
+  if (!draggable) return card;
+
+  return (
+    <Reorder.Item value={scene} dragListener={false} dragControls={dragControls} className="sc-u-list-item">
+      {card}
+    </Reorder.Item>
   );
 }

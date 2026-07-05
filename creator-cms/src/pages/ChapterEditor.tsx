@@ -139,6 +139,16 @@ export function ChapterEditor() {
     });
   };
 
+  const handleDuplicateScene = (id: string) => {
+    const sceneToDup = scenes.find(s => s.id === id);
+    if (!sceneToDup) return;
+    const newId = `scene-${Date.now()}`;
+    const newScene = { ...sceneToDup, id: newId, title: `${sceneToDup.title} (Copy)` };
+    const idx = scenes.findIndex(s => s.id === id);
+    setScenes(prev => { const next = [...prev]; next.splice(idx + 1, 0, newScene); return next; });
+    setActiveSceneId(newId);
+  };
+
   const handleRestoreVersion = (sceneId: string, content: string) => {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, content } : s));
   };
@@ -172,6 +182,7 @@ export function ChapterEditor() {
             onAddScene={handleAddScene}
             onReorderScenes={setScenes}
             onDeleteScene={handleDeleteScene}
+            onDuplicateScene={handleDuplicateScene}
             collapsed={sceneSidebarCollapsed}
             onToggleCollapse={() => setSceneSidebarCollapsed(!sceneSidebarCollapsed)}
           />
