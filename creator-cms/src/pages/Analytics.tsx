@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { AlertTriangle, Lightbulb } from 'lucide-react';
+import { AlertTriangle, Lightbulb, BarChart3 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 
@@ -17,19 +17,23 @@ export function Analytics() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', padding: 24 }}>
-        <div style={{ height: 60, width: 300, borderRadius: 8, background: 'var(--paper-warm)', animation: 'shimmer 2s infinite linear', backgroundImage: 'linear-gradient(90deg, var(--paper-warm) 0%, var(--border) 50%, var(--paper-warm) 100%)', backgroundSize: '200% 100%' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 20 }}>
-          <div style={{ height: 120, borderRadius: 12, background: 'var(--paper-warm)', animation: 'shimmer 2s infinite linear', backgroundImage: 'linear-gradient(90deg, var(--paper-warm) 0%, var(--border) 50%, var(--paper-warm) 100%)', backgroundSize: '200% 100%' }} />
-          <div style={{ height: 120, borderRadius: 12, background: 'var(--paper-warm)', animation: 'shimmer 2s infinite linear', backgroundImage: 'linear-gradient(90deg, var(--paper-warm) 0%, var(--border) 50%, var(--paper-warm) 100%)', backgroundSize: '200% 100%' }} />
-          <div style={{ height: 120, borderRadius: 12, background: 'var(--paper-warm)', animation: 'shimmer 2s infinite linear', backgroundImage: 'linear-gradient(90deg, var(--paper-warm) 0%, var(--border) 50%, var(--paper-warm) 100%)', backgroundSize: '200% 100%' }} />
+      <div className="cms-page">
+        <div className="dashboard-skeleton" style={{ height: 72, marginBottom: 32 }} />
+        <div className="cms-kpi-grid">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="dashboard-skeleton" style={{ height: 120 }} />
+          ))}
         </div>
       </div>
     );
   }
 
   if (error || !data) {
-    return <div className="card" style={{ padding: 24 }}>{error || 'Analytics unavailable'}</div>;
+    return (
+      <div className="cms-page">
+        <div className="cms-panel cms-error-text">{error || 'Analytics unavailable'}</div>
+      </div>
+    );
   }
 
   const totalReads = data.chapters.reduce((s, c) => s + c.total_views, 0);
@@ -57,80 +61,98 @@ export function Analytics() {
     });
 
   return (
-    <div>
-      <header className="page-header">
+    <div className="cms-page">
+      <header className="cms-page-header">
         <div>
-          <h2>{data.story?.title || 'Story Analytics'}</h2>
-          <p>Understand where readers drop off and optimize your pacing.</p>
+          <h1 className="cms-page-header__title">{data.story?.title || 'Story Analytics'}</h1>
+          <p className="cms-page-header__subtitle">
+            Understand where readers drop off and optimize your pacing for better retention.
+          </p>
+        </div>
+        <div className="cms-page-header__actions">
+          <Link to={`/stories/${storyId}`} className="btn btn-secondary">Back to chapters</Link>
         </div>
       </header>
 
-      <div className="grid-stats" style={{ marginBottom: 32 }}>
-        <div className="card stat-card"><div className="stat-value">{totalReads.toLocaleString()}</div><div className="stat-label">Total reads</div></div>
-        <div className="card stat-card"><div className="stat-value">{data.chapters.length}</div><div className="stat-label">Chapters published</div></div>
-        <div className="card stat-card"><div className="stat-value">{avgCompletion}%</div><div className="stat-label">Avg completion rate</div></div>
-        <div className="card stat-card"><div className="stat-value">{data.subscribers_gained}</div><div className="stat-label">Subscribers gained</div></div>
+      <div className="cms-kpi-grid">
+        <div className="cms-kpi-card">
+          <div className="cms-kpi-card__value">{totalReads.toLocaleString('en-IN')}</div>
+          <div className="cms-kpi-card__label">Total reads</div>
+        </div>
+        <div className="cms-kpi-card">
+          <div className="cms-kpi-card__value">{data.chapters.length}</div>
+          <div className="cms-kpi-card__label">Chapters published</div>
+        </div>
+        <div className="cms-kpi-card">
+          <div className="cms-kpi-card__value">{avgCompletion}%</div>
+          <div className="cms-kpi-card__label">Avg completion rate</div>
+        </div>
+        <div className="cms-kpi-card">
+          <div className="cms-kpi-card__value">{data.subscribers_gained}</div>
+          <div className="cms-kpi-card__label">Subscribers gained</div>
+        </div>
       </div>
 
       {insights.length > 0 && (
-        <div className="card" style={{ padding: 24, marginBottom: 24, borderLeft: '4px solid #C47832' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Lightbulb size={20} color="var(--gold)" />
-            <h3 style={{ fontSize: '1.125rem' }}>Drop-off insights</h3>
+        <div className="cms-callout">
+          <div className="cms-callout__head">
+            <Lightbulb size={20} color="var(--dash-gold)" />
+            <h3 className="cms-callout__title">Drop-off insights</h3>
           </div>
           {insights.map((insight) => (
-            <div
-              key={insight.chapter_number}
-              style={{
-                padding: '16px 0',
-                borderBottom: '1px solid var(--border)',
-              }}
-            >
+            <div key={insight.chapter_number} className="cms-insight-row">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <AlertTriangle size={16} color="#C47832" />
-                <strong>Chapter {insight.chapter_number}</strong>
+                <strong style={{ color: 'var(--ink)' }}>Chapter {insight.chapter_number}</strong>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
                   −{insight.view_drop_pct}% readers · −{insight.completion_drop_pct}% completion
                 </span>
               </div>
-              <p style={{ fontSize: '0.9375rem', color: 'var(--ink-soft)', lineHeight: 1.6 }}>
-                {insight.suggestion}
-              </p>
+              <p className="cms-callout__body">{insight.suggestion}</p>
             </div>
           ))}
         </div>
       )}
 
-      <div className="card" style={{ padding: 24 }}>
-        <h3 style={{ marginBottom: 20 }}>Chapter breakdown</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
-              <th style={{ padding: '12px 8px', fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>Chapter</th>
-              <th style={{ padding: '12px 8px', fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>Views</th>
-              <th style={{ padding: '12px 8px', fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>Completion</th>
-              <th style={{ padding: '12px 8px', fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>Avg scroll</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.chapters.map((ch) => (
-              <tr key={ch.chapter_number} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '14px 8px' }}>
-                  Ch {ch.chapter_number} 
-                  <Link to={`/stories/${storyId}`} style={{ marginLeft: 8, fontSize: '0.75rem' }} className="btn btn-ghost">Manage</Link>
-                </td>
-                <td style={{ padding: '14px 8px' }}>{ch.total_views.toLocaleString()}</td>
-                <td style={{ padding: '14px 8px' }}>
-                  {ch.completion_rate}%
-                  {ch.completion_rate < 70 && ch.chapter_number > 1 && (
-                    <AlertTriangle size={14} color="#C47832" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
-                  )}
-                </td>
-                <td style={{ padding: '14px 8px' }}>{ch.avg_scroll_pct}%</td>
+      <div className="cms-panel cms-panel--flat">
+        <div className="cms-panel__head">
+          <h3 className="cms-panel__title" style={{ margin: 0 }}>
+            <BarChart3 size={18} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+            Chapter breakdown
+          </h3>
+        </div>
+        <div className="cms-table-wrap">
+          <table className="cms-table">
+            <thead>
+              <tr>
+                <th>Chapter</th>
+                <th>Views</th>
+                <th>Completion</th>
+                <th>Avg scroll</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {data.chapters.map((ch) => (
+                <tr key={ch.chapter_number}>
+                  <td>
+                    Ch {ch.chapter_number}
+                    <Link to={`/stories/${storyId}`} className="btn btn-ghost" style={{ marginLeft: 8, fontSize: '0.75rem', padding: '4px 8px' }}>
+                      Manage
+                    </Link>
+                  </td>
+                  <td>{ch.total_views.toLocaleString('en-IN')}</td>
+                  <td>
+                    {ch.completion_rate}%
+                    {ch.completion_rate < 70 && ch.chapter_number > 1 && (
+                      <AlertTriangle size={14} color="#C47832" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
+                    )}
+                  </td>
+                  <td>{ch.avg_scroll_pct}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

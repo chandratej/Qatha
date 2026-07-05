@@ -1,52 +1,134 @@
 @import url('https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
-/* 
- * Follows 04_JUL_Visual_UX_Framework_Selection_Katha.md
- * Visual Design Framework: Material Design 3 (MD3) + Custom Minimalist Layer
- * - MD3 principles: elevation, 8dp grid, dynamic color concepts, accessibility (WCAG)
- * - Minimalist layer: reduced visual density, generous whitespace for reading comfort
- * - Noto Sans Telugu for regional language support
- * - Eye comfort, minimalism, accessibility prioritized
+/*
+ * Katha Creator CMS — Sepia long-session design tokens
+ * Tuned for 8+ hour writing: warm manuscript tones, matte surfaces,
+ * reduced glare (no pure white), soft brown ink contrast.
  */
 
 :root {
-  --gold: #C4A052;
-  --gold-light: #E8D5A3;
-  --gold-dark: #9A7B3A;
-  --ember: #8B3A62;
-  --paper: #FAF8F5;
-  --paper-warm: #F5F0E8;
-  --ink: #1A1814;
-  --ink-soft: #4A4540;
-  --ink-muted: #8A847C;
-  --surface: #FFFFFF;
-  --surface-elevated: #FFFFFF;
-  --border: rgba(26, 24, 20, 0.08);
-  --shadow-sm: 0 1px 3px rgba(26, 24, 20, 0.06);
-  --shadow-md: 0 4px 20px rgba(26, 24, 20, 0.08);
-  --shadow-lg: 0 12px 40px rgba(26, 24, 20, 0.12);
-  --radius-sm: 8px;   /* MD3 small */
-  --radius-md: 12px;  /* MD3 medium */
-  --radius-lg: 16px;  /* MD3 large (minimalist tweak) */
-  --spacing-unit: 8px; /* MD3 8dp grid */
+  /* Sepia foundation */
+  --sepia-base: #E8DFC8;
+  --sepia-warm: #E2D6BC;
+  --sepia-muted: #DDD0B4;
+  --sepia-deep: #D4C8AC;
+  --sepia-surface: #F0E9D8;
+  --sepia-surface-raised: #F5EFE2;
+  --sepia-night-base: #1C1814;
+  --sepia-night-warm: #252019;
+  --sepia-night-surface: #2E2820;
+  --sepia-night-ink: #E5DCC8;
+  --sepia-night-ink-soft: #C9BDA8;
+
+  --editor-canvas: #EDE4CF;
+  --editor-sidebar: var(--sepia-warm);
+
+  /* Brand accents — antique gold, muted for comfort */
+  --gold: #A8864E;
+  --gold-light: #D4C4A0;
+  --gold-dark: #7A6340;
+  --ember: #7A4A52;
+
+  /* Semantic accents (no harsh purple/green) */
+  --accent-sage: #6B8570;
+  --accent-sage-soft: rgba(107, 133, 112, 0.14);
+  --accent-wine: #8A7268;
+  --accent-wine-soft: rgba(138, 114, 104, 0.14);
+  --accent-rose: #9A7A72;
+  --accent-rose-soft: rgba(154, 122, 114, 0.14);
+  --success: var(--accent-sage);
+
+  /* Surfaces & ink */
+  --paper: var(--sepia-base);
+  --paper-warm: var(--sepia-warm);
+  --surface: var(--sepia-surface);
+  --surface-elevated: var(--sepia-surface-raised);
+  --ink: #4A3F32;
+  --ink-soft: #5C4F3E;
+  --ink-muted: #8A7B68;
+  --ink-faint: #A89882;
+  --border: #D4C8AE;
+  --border-subtle: rgba(74, 63, 50, 0.08);
+  --border-faint: rgba(74, 63, 50, 0.06);
+  --border-medium: rgba(74, 63, 50, 0.12);
+
+  /* Warm, low-glare elevation */
+  --shadow-sm: 0 1px 4px rgba(74, 63, 50, 0.05);
+  --shadow-md: 0 2px 12px rgba(74, 63, 50, 0.07);
+  --shadow-lg: 0 4px 20px rgba(74, 63, 50, 0.09);
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --spacing-unit: 8px;
   --font-ui: 'Outfit', system-ui, sans-serif;
   --font-reading: 'Literata', 'Noto Sans Telugu', Georgia, serif;
   --font-telugu: 'Noto Sans Telugu', 'Literata', serif;
-  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --line-height-body: 1.7;
+  --line-height-relaxed: 1.8;
+  --letter-spacing-body: 0.012em;
+  --focus-ring: rgba(168, 134, 78, 0.22);
+
+  /* Premium shell aliases */
+  --dash-bg: var(--paper);
+  --dash-surface: var(--surface);
+  --dash-paper: var(--paper-warm);
+  --dash-gold: var(--gold);
+  --dash-gold-soft: var(--gold-light);
+  --dash-border: var(--border);
+  --dash-shadow: var(--shadow-md);
+  --dash-shadow-hover: var(--shadow-lg);
+  --dash-radius: var(--radius-lg);
+  --dash-sidebar-width: 252px;
+
+  color-scheme: light;
 }
 
 [data-theme='dark'] {
-  --paper: #0D0D0F;
-  --paper-warm: #161618;
-  --ink: #E8E6E3;
-  --ink-soft: #B8B5B0;
-  --ink-muted: #7A7874;
-  --surface: #1A1A1E;
-  --surface-elevated: #222228;
-  --border: rgba(232, 230, 227, 0.08);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --paper: var(--sepia-night-base);
+  --paper-warm: var(--sepia-night-warm);
+  --surface: var(--sepia-night-surface);
+  --surface-elevated: #363024;
+  --editor-canvas: #2A241E;
+  --editor-sidebar: var(--sepia-night-warm);
+
+  /* Brighter gold on dark for premium legibility without glare */
+  --gold: #C4A060;
+  --gold-light: rgba(196, 160, 96, 0.22);
+  --gold-dark: #A8864E;
+  --ember: #9A6A72;
+
+  --accent-sage: #7A9A80;
+  --accent-sage-soft: rgba(122, 154, 128, 0.16);
+  --accent-wine: #A08A80;
+  --accent-wine-soft: rgba(160, 138, 128, 0.16);
+  --accent-rose: #B0928A;
+  --accent-rose-soft: rgba(176, 146, 138, 0.16);
+
+  --ink: var(--sepia-night-ink);
+  --ink-soft: var(--sepia-night-ink-soft);
+  --ink-muted: #9A8F7E;
+  --ink-faint: #7A7064;
+  --border: rgba(229, 220, 200, 0.12);
+  --border-subtle: rgba(229, 220, 200, 0.08);
+  --border-faint: rgba(229, 220, 200, 0.06);
+  --border-medium: rgba(229, 220, 200, 0.14);
+  --focus-ring: rgba(196, 160, 96, 0.28);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.22);
+  --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.38);
+  --dash-bg: var(--paper);
+  --dash-surface: var(--surface);
+  --dash-paper: var(--paper-warm);
+  --dash-border: var(--border);
+  --dash-gold: var(--gold);
+  --dash-gold-soft: var(--gold-light);
+  color-scheme: dark;
+}
+
+[data-theme='dark'] ::selection {
+  background: rgba(196, 160, 96, 0.35);
+  color: var(--sepia-night-ink);
 }
 
 *, *::before, *::after {
@@ -58,37 +140,35 @@
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--paper);
+  transition: background-color 0.35s ease;
 }
 
 body {
   font-family: var(--font-ui);
   background: var(--paper);
-  color: var(--ink);
-  line-height: 1.5;
+  color: var(--ink-soft);
+  line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-body);
+  font-weight: 400;
   min-height: 100vh;
   cursor: default;
 }
 
-/* Proper cursors for interactive vs static areas */
-input, textarea, select, 
-.ql-editor, 
+input, textarea, select,
+.ql-editor,
 [contenteditable="true"] {
   cursor: text;
 }
 
-button, 
-.nav-item, 
-.btn, 
-a {
+button, .nav-item, .btn, a {
   cursor: pointer;
 }
 
-/* Static content areas should not show text cursor */
-.preview-pane,
-.static-text,
+.preview-pane, .static-text,
 h1, h2, h3, h4, p:not(.ql-editor p),
-label,
-.sidebar {
+label, .sidebar {
   cursor: default;
 }
 
@@ -112,6 +192,12 @@ input, textarea, select {
   font-family: var(--font-ui);
 }
 
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
 ::selection {
   background: var(--gold-light);
   color: var(--ink);
@@ -125,6 +211,10 @@ input, textarea, select {
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes scaleIn {

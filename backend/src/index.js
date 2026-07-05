@@ -17,6 +17,7 @@ import { analyticsRouter } from './routes/analytics.js';
 import { waitlistRouter } from './routes/waitlist.js';
 import { configRouter } from './routes/config.js';
 import { engagementRouter } from './routes/engagement.js';
+import { uploadRouter } from './routes/upload.js';
 import { getLaunchOfferConfig } from './services/launchOffer.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { scheduleNotifications } from './services/notifications.js';
@@ -53,6 +54,7 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/waitlist', waitlistRouter);
 app.use('/api/config', configRouter);
 app.use('/api/engagement', engagementRouter);
+app.use('/api/upload', uploadRouter);
 
 app.use(express.static(path.join(__dirname, '../../landing')));
 

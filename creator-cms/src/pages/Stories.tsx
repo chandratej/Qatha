@@ -1,102 +1,92 @@
 import { Link } from 'react-router-dom';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, PenLine } from 'lucide-react';
 import { api } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 
 export function Stories() {
   const { isMockMode } = useAuth();
-  const { data, loading, error } = useApi(() => api.getStories());
+  const { data, loading, error } = useApi(() => api.getCreatorStories());
 
   return (
-    <div>
-      <header className="page-header">
+    <div className="cms-page">
+      <header className="cms-page-header">
         <div>
-          <h2>My Stories</h2>
-          <p>Manage your serialized fiction</p>
+          <h1 className="cms-page-header__title">My Stories</h1>
+          <p className="cms-page-header__subtitle">Manage your serialized fiction and grow your readership.</p>
         </div>
-        <Link to="/stories/new" className="btn btn-primary">
-          <Plus size={18} />
-          New Story
-        </Link>
+        <div className="cms-page-header__actions">
+          <Link to="/stories/new" className="dashboard-cta">
+            <Plus size={18} />
+            New Story
+          </Link>
+        </div>
       </header>
 
       {loading && (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--ink-muted)' }}>
-          <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> Loading stories...
+        <div className="cms-loading">
+          <Loader2 size={20} className="cms-loading__spin" />
+          Loading stories…
         </div>
       )}
 
-      {error && <div className="card" style={{ padding: 24, color: 'var(--ink-muted)' }}>{error}</div>}
+      {error && (
+        <div className="cms-panel cms-error-text">{error}</div>
+      )}
 
-      <div style={{ display: 'grid', gap: 16 }}>
-        {/* DEMO DUMMY STORY ADDED USING THE EDITOR - RRR by Rajamouli (typed phonetically in our editor, converted, validated, fixed issues) */}
+      <div className="cms-story-list">
         {isMockMode && (
-          <div className="card" style={{ padding: 24, display: 'flex', alignItems: 'center', gap: 24, border: '2px solid var(--gold)' }}>
-            <div style={{ 
-              width: 64, 
-              height: 90, 
-              background: 'linear-gradient(135deg, var(--paper-warm), var(--gold-light))', 
-              borderRadius: 8, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              border: '1px solid var(--border)',
-              color: 'var(--gold-dark)',
-              fontSize: '18px',
-              fontWeight: 600
-            }}>
-              ఆర్ ఆర్ ఆర్
-            </div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '1.125rem', marginBottom: 4 }}>RRR - రాజమౌళి (Demo - Editor Validated)</h3>
-              <div style={{ display: 'flex', gap: 12, fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+          <div className="cms-story-card cms-story-card--featured">
+            <div className="cms-story-card__cover">ఆర్ ఆర్ ఆర్</div>
+            <div className="cms-story-card__body">
+              <h3 className="cms-story-card__title">RRR - రాజమౌళి (Demo - Editor Validated)</h3>
+              <div className="cms-story-card__meta">
                 <span className="badge badge-gold">Action / Historical</span>
                 <span>24 chapters (demo)</span>
                 <span>Editor drafted</span>
               </div>
-              <div style={{ marginTop: 8, fontSize: '0.75rem', color: 'var(--ink-muted)' }}>
-                Story → Seasons (for sequels/prequels) → Chapters → Editor with scenes. Click "Manage Seasons &amp; Chapters" to see the full hierarchy. Per-chapter web &amp; mobile previews inside the editor.
-              </div>
+              <p className="cms-story-card__note">
+                Story → Seasons → Chapters → Editor with scenes. Per-chapter web &amp; mobile previews inside the editor.
+              </p>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexDirection: 'column' }}>
-              <Link to={`/stories/demo-rrr`} className="btn btn-secondary">Manage Seasons &amp; Chapters</Link>
-              <span style={{ fontSize: '0.7rem', color: 'var(--ink-muted)' }}>Typed & validated with our phonetic editor</span>
+            <div className="cms-story-card__actions">
+              <Link to="/stories/demo-rrr" className="btn btn-secondary">
+                <PenLine size={16} />
+                Manage Seasons &amp; Chapters
+              </Link>
             </div>
           </div>
         )}
 
         {(data?.stories || []).map((story) => (
-          <div key={story.id} className="card" style={{ padding: 24, display: 'flex', alignItems: 'center', gap: 24 }}>
-            <div style={{ 
-              width: 64, 
-              height: 90, 
-              background: 'linear-gradient(135deg, var(--paper-warm), var(--gold-light))', 
-              borderRadius: 8, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              border: '1px solid var(--border)',
-              color: 'var(--gold-dark)',
-              fontSize: '18px',
-              fontWeight: 600
-            }}>
-              కథ
-            </div>
-            <div style={{ flex: 1 }}>
-              <h3 style={{ fontSize: '1.125rem', marginBottom: 4 }}>{story.title}</h3>
-              <div style={{ display: 'flex', gap: 12, fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+          <div key={story.id} className="cms-story-card">
+            <div className="cms-story-card__cover">కథ</div>
+            <div className="cms-story-card__body">
+              <h3 className="cms-story-card__title">{story.title}</h3>
+              <div className="cms-story-card__meta">
                 <span className="badge badge-gold">{story.genre}</span>
                 <span>{story.chapter_count} chapters</span>
-                <span>{story.total_readers} readers</span>
+                <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Link to={`/stories/${story.id}`} className="btn btn-secondary">Manage Seasons &amp; Chapters</Link>
-              <Link to={`/analytics/${story.id}`} className="btn btn-ghost">Chapters & Stats</Link>
+            <div className="cms-story-card__actions">
+              <Link to={`/stories/${story.id}`} className="btn btn-secondary">Manage Chapters</Link>
+              <Link to={`/analytics/${story.id}`} className="btn btn-ghost">Analytics</Link>
             </div>
           </div>
         ))}
+
+        {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
+          <div className="cms-empty">
+            <PenLine size={40} className="cms-empty__icon" />
+            <h3 className="cms-empty__title">No stories yet</h3>
+            <p className="cms-empty__text">Create your first story to start building your audience.</p>
+            <Link to="/stories/new" className="dashboard-cta" style={{ marginTop: 20, display: 'inline-flex' }}>
+              <Plus size={18} />
+              Create New Story
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

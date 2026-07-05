@@ -3,9 +3,13 @@
 export const DEMO_CREATOR_ID = 'demo-creator-001';
 export const DEMO_USER_ID = 'demo-reader-001';
 
+/** In-memory stories created via POST /creators/stories in mock mode */
+export const mockCreatorStories = [];
+
 export const seedStories = [
   {
     id: 'story-001',
+    author_id: DEMO_CREATOR_ID,
     title: 'మనసులో మిగిలిన మాట',
     description: 'ఒక ప్రేమ కథ — హృదయానికి దగ్గరైన కథ.',
     genre: 'romance',
@@ -22,6 +26,7 @@ export const seedStories = [
   },
   {
     id: 'story-002',
+    author_id: 'other-creator-002',
     title: 'ఇల్లు — కుటుంబం — కథ',
     description: 'తల్లి, తండ్రి, మూడు తరాల కథ.',
     genre: 'family_drama',
@@ -36,6 +41,7 @@ export const seedStories = [
   },
   {
     id: 'story-003',
+    author_id: DEMO_CREATOR_ID,
     title: 'రహస్యం లో రహస్యం',
     description: 'చివరి అధ్యాయం వరకు ఊహించలేని మలుపు.',
     genre: 'suspense',
@@ -108,6 +114,56 @@ export function getSeedChapter(storyId, chapterNumber) {
   return chapters.find((c) => c.chapter_number === chapterNumber) || null;
 }
 
+/** Mock drafts + published chapters keyed by storyId:chapterNumber */
+export const mockChapterStore = new Map();
+
+export function getCreatorSeedStories(creatorId) {
+  const owned = seedStories.filter((s) => s.author_id === creatorId);
+  const created = mockCreatorStories.filter((s) => s.author_id === creatorId);
+  return [...owned, ...created];
+}
+
+export function getCreatorStoryChapters(storyId, creatorId) {
+  const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId);
+  if (!story || story.author_id !== creatorId) return null;
+
+  const published = getSeedChapters(storyId).map((c) => ({
+    ...c,
+    status: c.status || 'published',
+    word_count: c.content?.length || 0,
+    scene_count: 1,
+  }));
+
+  const draftEntries = [];
+  for (const [key, draft] of mockChapterStore.entries()) {
+    if (key.startsWith(`${storyId}:`) && draft.creator_id === creatorId) {
+      draftEntries.push(draft);
+    }
+  }
+
+  const byNum = new Map();
+  for (const ch of published) byNum.set(ch.chapter_number, ch);
+  for (const d of draftEntries) {
+    const existing = byNum.get(d.chapter_number);
+    if (!existing || d.last_saved_at > (existing.updated_at || '')) {
+      byNum.set(d.chapter_number, {
+        id: d.id || `draft-${storyId}-${d.chapter_number}`,
+        story_id: storyId,
+        chapter_number: d.chapter_number,
+        title: d.title,
+        content: d.content,
+        content_delta: d.content_delta,
+        status: d.status || 'draft',
+        word_count: d.content?.length || 0,
+        scene_count: d.content_delta?.scenes?.length || 1,
+        updated_at: d.last_saved_at,
+      });
+    }
+  }
+
+  return Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number);
+}
+
 export function getSeedDiscover(genre) {
   const filtered = seedStories.filter((s) => s.genre === genre);
   const trending = [...filtered].sort((a, b) => b.views_this_week - a.views_this_week).slice(0, 10);
@@ -141,7 +197,7 @@ export function getSeedDashboard() {
     payout_schedule: '15th of each month',
     week_over_week_growth_pct: 12,
     earnings_by_story: earningsByStory,
-    stories: seedStories.map((s) => ({
+    stories: getCreatorSeedStories(DEMO_CREATOR_ID).map((s) => ({
       id: s.id,
       title: s.title,
       total_readers: s.total_readers,

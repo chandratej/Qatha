@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function ProtectedRoute() {
@@ -6,8 +7,11 @@ export function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: 'var(--ink-muted)' }}>Loading...</span>
+      <div className="cms-auth-page">
+        <div className="cms-loading">
+          <Loader2 size={22} className="cms-loading__spin" />
+          Loading…
+        </div>
       </div>
     );
   }

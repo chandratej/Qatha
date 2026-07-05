@@ -3,8 +3,11 @@ import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { getMockModerationQueue, reviewMockItem } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
+import { requireRole } from '../middleware/requireRole.js';
 
 export const moderationRouter = Router();
+
+moderationRouter.use(requireRole('admin', 'moderator'));
 
 moderationRouter.get('/queue', async (req, res, next) => {
   try {

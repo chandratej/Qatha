@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { supabase, isMockMode } from '../lib/firebase';  // now Supabase client (renamed file for transition)
+import { supabase, isMockMode } from '../lib/supabase';
 
 export interface AuthUser {
   id: string;
@@ -23,35 +23,25 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 const STORAGE_KEY = 'katha_creator_auth';
 
+async function profileToAuthUser(
+  userId: string,
+  phone: string,
+  profile: { display_name?: string; role?: string; subscription_status?: string } | null,
+  displayName?: string,
+): Promise<AuthUser> {
+  return {
+    id: userId,
+    phone,
+    role: profile?.role || 'creator',
+    display_name: profile?.display_name || displayName || 'Creator',
+    subscription_status: profile?.subscription_status || 'free',
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const { user: u, token: t } = JSON.parse(saved);
-      setUser(u);
-      setToken(t);
-    }
-    setLoading(false);
-
-    if (!isMockMode) {
-      // Listen to Supabase auth changes for reactive session (skip entirely in mock)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          // Could refresh profile here
-        } else {
-          setUser(null);
-          setToken(null);
-          localStorage.removeItem(STORAGE_KEY);
-        }
-      });
-
-      return () => subscription.unsubscribe();
-    }
-  }, []);
 
   const persist = (u: AuthUser, t: string) => {
     setUser(u);
@@ -59,14 +49,106 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, token: t }));
   };
 
+  const clearSession = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      if (isMockMode) {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const { user: u, token: t } = JSON.parse(saved);
+            if (!cancelled) {
+              setUser(u);
+              setToken(t);
+            }
+          } catch {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        }
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (cancelled) return;
+
+      if (error || !session?.user) {
+        clearSession();
+        setLoading(false);
+        return;
+      }
+
+      const userId = session.user.id;
+      const phone = session.user.phone || '';
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, role, subscription_status')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (profile?.role === 'creator') {
+        await supabase.from('creators').upsert({
+          id: userId,
+          pen_name: profile.display_name || 'Creator',
+        }, { onConflict: 'id' });
+      }
+
+      const authUser = await profileToAuthUser(userId, phone, profile);
+      persist(authUser, session.access_token);
+      setLoading(false);
+    }
+
+    restoreSession();
+
+    if (!isMockMode) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (cancelled) return;
+
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          clearSession();
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          const userId = session.user.id;
+          const phone = session.user.phone || '';
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('display_name, role, subscription_status')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (cancelled) return;
+          const authUser = await profileToAuthUser(userId, phone, profile);
+          persist(authUser, session.access_token);
+        }
+      });
+
+      return () => {
+        cancelled = true;
+        subscription.unsubscribe();
+      };
+    }
+
+    return () => { cancelled = true; };
+  }, []);
+
   const sendOtp = async (phone: string) => {
     if (isMockMode) {
-      // Mock mode: simulate send; actual verification accepts 123456 only.
       await new Promise((r) => setTimeout(r, 250));
       return;
     }
-    // Pure Supabase Auth phone OTP
-    // Rate limit / delivery handled by Supabase Send SMS Hook (India CPaaS)
     await supabase.auth.signInWithOtp({ phone });
   };
 
@@ -78,12 +160,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await new Promise((r) => setTimeout(r, 200));
 
-      // Use the same demo ID that backend seed + api fallbacks expect
       const userId = 'demo-creator-001';
       const authUser: AuthUser = {
         id: userId,
         phone: _phone,
-        role: 'creator',
+        role: 'admin',
         display_name: displayName || 'Demo Creator',
         subscription_status: 'free',
       };
@@ -104,26 +185,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const session = data.session;
     const userId = session.user.id;
 
-    // Upsert basic profile via Supabase (RLS will apply)
+    const penName = displayName || 'Creator';
     const { data: profile } = await supabase
       .from('profiles')
       .upsert({
         id: userId,
         phone: _phone,
-        display_name: displayName || 'Creator',
+        display_name: penName,
         role: 'creator',
       }, { onConflict: 'id' })
-      .select()
+      .select('display_name, role, subscription_status')
       .single();
 
-    const authUser: AuthUser = {
+    await supabase.from('creators').upsert({
       id: userId,
-      phone: _phone,
-      role: 'creator',
-      display_name: profile?.display_name || displayName || 'Creator',
-      subscription_status: 'free',
-    };
+      pen_name: penName,
+    }, { onConflict: 'id' });
 
+    const authUser = await profileToAuthUser(userId, _phone, profile, displayName);
     persist(authUser, session.access_token);
   };
 
@@ -131,9 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isMockMode) {
       await supabase.auth.signOut();
     }
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem(STORAGE_KEY);
+    clearSession();
   };
 
   return (

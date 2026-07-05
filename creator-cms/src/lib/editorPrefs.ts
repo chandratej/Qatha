@@ -18,8 +18,8 @@ export interface EditorPrefs {
 const DEFAULTS: EditorPrefs = {
   workspaceMode: 'split',
   previewDevice: 'desktop',
-  previewTheme: 'light',
-  editorTheme: 'light',
+  previewTheme: 'sepia',
+  editorTheme: 'sepia',
   syncScroll: false,
   showWordGoal: true,
   sidebarWidth: 280,

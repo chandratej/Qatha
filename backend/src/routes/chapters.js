@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
-import { getSeedChapter, DEMO_USER_ID } from '../data/seed.js';
+import { getSeedChapter, DEMO_USER_ID, mockChapterStore } from '../data/seed.js';
 import { addToMockQueue } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
@@ -72,6 +72,53 @@ chaptersRouter.get('/:storyId/:chapterNumber', async (req, res, next) => {
   }
 });
 
+chaptersRouter.post('/:storyId/draft', async (req, res, next) => {
+  try {
+    const { storyId } = req.params;
+    const creatorId = req.headers['x-creator-id'] || 'demo-creator-001';
+    const { chapter_number, title, content, content_delta } = req.body;
+
+    if (!chapter_number) {
+      throw createAppError('INTERNAL_ERROR', 'chapter_number is required', 400);
+    }
+
+    if (isMockMode()) {
+      const key = `${storyId}:${chapter_number}`;
+      const draft = {
+        id: `draft-${storyId}-${chapter_number}`,
+        creator_id: creatorId,
+        story_id: storyId,
+        chapter_number,
+        title: title || `Chapter ${chapter_number}`,
+        content: content || '',
+        content_delta: content_delta || null,
+        status: 'draft',
+        last_saved_at: new Date().toISOString(),
+      };
+      mockChapterStore.set(key, draft);
+      return res.json({ saved: true, draft, mock: true });
+    }
+
+    const { data: story } = await supabase.from('stories').select('author_id').eq('id', storyId).single();
+    if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+
+    const { data: draft, error } = await supabase.from('chapter_drafts').upsert({
+      creator_id: creatorId,
+      story_id: storyId,
+      chapter_number,
+      title,
+      content,
+      content_delta,
+      last_saved_at: new Date().toISOString(),
+    }, { onConflict: 'creator_id,story_id,chapter_number' }).select().single();
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json({ saved: true, draft });
+  } catch (err) {
+    next(err);
+  }
+});
+
 chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
   try {
     const { storyId } = req.params;
@@ -83,11 +130,24 @@ chaptersRouter.post('/:storyId/publish', async (req, res, next) => {
     }
 
     if (isMockMode()) {
-      const chapter = { id: `mock-ch-${chapter_number}`, story_id: storyId, chapter_number, title, content: content?.slice(0, 500), status: 'pending_review' };
+      const chapter = {
+        id: `mock-ch-${chapter_number}`,
+        story_id: storyId,
+        chapter_number,
+        title,
+        content,
+        status: 'pending_review',
+      };
+      mockChapterStore.set(`${storyId}:${chapter_number}`, {
+        ...chapter,
+        creator_id: creatorId,
+        last_saved_at: new Date().toISOString(),
+      });
+
       addToMockQueue(chapter, 'Creator', 'Submitted for review');
       return res.json({
         chapter,
-        moderation: { status: 'pending_review' },
+        moderation: { status: 'pending_review', note: 'Queued for manual review (Perspective runs in production publish)' },
         mock: true,
       });
     }

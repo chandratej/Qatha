@@ -13,6 +13,8 @@ import {
   saveChapterScenes,
   updateChapterStats,
 } from '../lib/demoStorage';
+import { api } from '../lib/api';
+import { aggregateScenesToHtml, scenesFromChapterPayload, scenesToContentDelta } from '../lib/sceneUtils';
 import { useAutosave } from '../hooks/useAutosave';
 import { useVersionHistory } from '../hooks/useVersionHistory';
 import {
@@ -59,6 +61,7 @@ export function ChapterEditor() {
 
   const prefs = loadEditorPrefs(storyId, chapterNumber);
   const [chapterTitle, setChapterTitle] = useState('Untitled Chapter');
+  const [storyLabel, setStoryLabel] = useState('Story');
   const [scenes, setScenes] = useState<SceneBlock[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string>('');
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>(prefs.previewDevice);
@@ -67,50 +70,108 @@ export function ChapterEditor() {
   const [phoneticLive, setPhoneticLive] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [loading, setLoading] = useState(!isDemo);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const scenesRef = useRef(scenes);
+  const chapterTitleRef = useRef(chapterTitle);
+
+  useEffect(() => { scenesRef.current = scenes; }, [scenes]);
+  useEffect(() => { chapterTitleRef.current = chapterTitle; }, [chapterTitle]);
 
   const persistDraft = useCallback(() => {
-    if (!storyId) return;
+    if (!storyId || !isDemo) return;
     saveChapterScenes(storyId, chapterNumber, scenes);
     updateChapterStats(storyId, chapterNumber, {
       title: chapterTitle,
       wordCount: getWordCountFromScenes(scenes),
       sceneCount: scenes.length,
     });
-  }, [storyId, chapterNumber, scenes, chapterTitle]);
+  }, [storyId, chapterNumber, scenes, chapterTitle, isDemo]);
+
+  const cloudSaveDraft = useCallback(async () => {
+    if (!storyId || isDemo) return;
+    const currentScenes = scenesRef.current;
+    const content = aggregateScenesToHtml(currentScenes);
+    await api.saveDraft(storyId, {
+      chapter_number: chapterNumber,
+      title: chapterTitleRef.current,
+      content,
+      content_delta: scenesToContentDelta(currentScenes),
+    });
+  }, [storyId, chapterNumber, isDemo]);
 
   const charCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
-  const { saving, lastSaved, setLastSaved } = useAutosave({ charCount, triggerLocalSave: persistDraft });
+  const { saving, lastSaved, setLastSaved } = useAutosave({
+    charCount,
+    triggerLocalSave: persistDraft,
+    triggerCloudSave: isDemo ? undefined : cloudSaveDraft,
+  });
   const { versions, saveSceneVersion } = useVersionHistory(chapterKey);
 
   useEffect(() => {
-    if (isDemo) {
-      const demoData = getOrInitDemoData(storyId);
-      let chapterScenes = demoData.chapterScenes?.[chapterNumber] || [];
-      if (chapterScenes.length === 0 && chapterNumber === 1) {
-        chapterScenes = PROTOTYPE_CH1_SCENES;
-        saveChapterScenes(storyId, chapterNumber, chapterScenes);
-      } else if (chapterScenes.length === 0) {
-        chapterScenes = [createDefaultScene()];
+    let cancelled = false;
+
+    async function loadChapter() {
+      if (isDemo) {
+        const demoData = getOrInitDemoData(storyId);
+        let chapterScenes = demoData.chapterScenes?.[chapterNumber] || [];
+        if (chapterScenes.length === 0 && chapterNumber === 1) {
+          chapterScenes = PROTOTYPE_CH1_SCENES;
+          saveChapterScenes(storyId, chapterNumber, chapterScenes);
+        } else if (chapterScenes.length === 0) {
+          chapterScenes = [createDefaultScene()];
+        }
+        if (!cancelled) {
+          setScenes(chapterScenes);
+          setActiveSceneId(chapterScenes[0].id);
+          setChapterTitle(getChapterTitle(storyId, chapterNumber) || 'The Call of the Jungle');
+          setStoryLabel('RRR - రాజమౌళి');
+          setLoading(false);
+        }
+        return;
       }
-      setScenes(chapterScenes);
-      setActiveSceneId(chapterScenes[0].id);
-      setChapterTitle(getChapterTitle(storyId, chapterNumber) || 'The Call of the Jungle');
-    } else {
-      const defaultScenes = [createDefaultScene()];
-      setScenes(defaultScenes);
-      setActiveSceneId(defaultScenes[0].id);
-      setChapterTitle(`Chapter ${chapterNumber}`);
+
+      setLoading(true);
+      try {
+        const [{ chapter }, storyMeta] = await Promise.all([
+          api.getChapter(storyId, chapterNumber),
+          api.getStoryChapters(storyId).catch(() => ({ chapters: [], story: undefined })),
+        ]);
+        if (cancelled) return;
+
+        const loadedScenes = scenesFromChapterPayload(chapter);
+        setScenes(loadedScenes);
+        setActiveSceneId(loadedScenes[0]?.id || '');
+        setChapterTitle(chapter.title || `Chapter ${chapterNumber}`);
+        if (storyMeta.story?.title) setStoryLabel(storyMeta.story.title);
+      } catch (err) {
+        if (!cancelled) {
+          const fallback = [createDefaultScene()];
+          setScenes(fallback);
+          setActiveSceneId(fallback[0].id);
+          setChapterTitle(`Chapter ${chapterNumber}`);
+          console.warn('Chapter load failed, starting fresh:', err);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
+
+    loadChapter();
+    return () => { cancelled = true; };
   }, [storyId, chapterNumber, isDemo]);
 
   const activeScene = scenes.find(s => s.id === activeSceneId);
   const activeSceneIndex = scenes.findIndex(s => s.id === activeSceneId);
   const wordCount = getWordCountFromScenes(scenes);
-  const seasonLabel = seasonId ? `Season ${seasonId.replace(/^s/, '')}` : 'Season 1';
+  const seasonLabel = isDemo
+    ? (seasonId ? `Season ${seasonId.replace(/^s/, '')}` : 'Season 1')
+    : 'Chapters';
 
   const updateSceneTitle = (id: string, newTitle: string) => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
@@ -153,24 +214,69 @@ export function ChapterEditor() {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, content } : s));
   };
 
-  const handleSave = () => {
-    persistDraft();
-    setLastSaved(new Date());
-    if (activeScene) saveSceneVersion(activeScene.id, activeScene.title, activeScene.content);
+  const handlePublish = async () => {
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const content = aggregateScenesToHtml(scenes);
+      if (!content.trim()) {
+        throw new Error('Add some content before publishing');
+      }
+      if (content.length > 50000) {
+        throw new Error('Chapter exceeds 50,000 character limit');
+      }
+
+      if (!isDemo) {
+        await cloudSaveDraft();
+        await api.publishChapter(storyId, {
+          chapter_number: chapterNumber,
+          title: chapterTitle,
+          content,
+        });
+      } else {
+        persistDraft();
+      }
+      setLastSaved(new Date());
+      if (activeScene) saveSceneVersion(activeScene.id, activeScene.title, activeScene.content);
+    } catch (err) {
+      setPublishError(err instanceof Error ? err.message : 'Publish failed');
+    } finally {
+      setPublishing(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: 'var(--ink-muted)' }}>Loading chapter…</span>
+      </div>
+    );
+  }
 
   return (
     <div className={`katha-proto-layout${focusMode ? ' focus-mode' : ''}`}>
       {!focusMode && (
         <EditorNavbar
-          storyLabel="Story"
+          storyLabel={storyLabel}
           seasonLabel={seasonLabel}
-          chapterLabel={`Chapter ${chapterNumber}`}
-          saving={saving}
+          chapterLabel={chapterTitle || `Chapter ${chapterNumber}`}
+          saving={saving || publishing}
           onHistory={() => setHistoryOpen(true)}
           onFocus={() => setFocusMode(true)}
-          onPublish={handleSave}
+          onPublish={handlePublish}
         />
+      )}
+
+      {publishError && !focusMode && (
+        <div style={{
+          padding: '8px 16px',
+          background: 'var(--paper-warm)',
+          borderBottom: '1px solid var(--border)',
+          color: 'var(--gold-dark)',
+          fontSize: '0.875rem',
+        }}>
+          {publishError}
+        </div>
       )}
 
       <div className="katha-proto-workspace">

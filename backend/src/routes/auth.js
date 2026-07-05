@@ -5,9 +5,12 @@ import { getLaunchOfferConfig, grantLaunchTrial } from '../services/launchOffer.
 import { getSupabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 
-// Pure Supabase Auth path (per katha-auth-architecture-decision_auth.md)
-// No Firebase Admin. Clients authenticate directly with Supabase Auth + RLS.
-// This route can be kept minimal for any legacy rate-limit or profile sync if needed.
+// Pure Supabase Auth (per katha-auth-architecture-decision_auth.md)
+// OTP delivery: Supabase Send SMS Hook → MSG91 (₹0.12–0.15/OTP). No Firebase. No custom token bridge.
+//
+// Reader sign-in: Google (primary) + email magic link — handled entirely by Supabase client SDK.
+// Creator sign-in: phone OTP via Supabase client SDK (mandatory for payout/KYC in Creator CMS).
+// These routes exist only for MOCK_MODE dev convenience; production clients use Supabase directly.
 
 // ===== Production Constants from Blueprint (Phase 1.2) =====
 const OTP_VALIDITY_MINUTES = 10;

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, ArrowRight, Loader2 } from 'lucide-react';
+import { Phone, ArrowRight, Loader2, Leaf } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export function Login() {
   const { sendOtp, verifyOtp, isMockMode } = useAuth();
@@ -42,17 +43,25 @@ export function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div className="card-elevated animate-in" style={{ maxWidth: 420, width: '100%', padding: 48 }}>
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <h1 style={{ fontFamily: 'var(--font-telugu)', fontSize: '2.5rem', marginBottom: 8 }}>కథ</h1>
-          <p style={{ color: 'var(--ink-muted)' }}>Creator Studio</p>
-          <p style={{ fontSize: '0.875rem', marginTop: 12, color: 'var(--ink-soft)' }}>
-            Sign in with your phone to publish stories
+    <div className="cms-auth-page">
+      <div className="cms-auth-page__theme">
+        <ThemeToggle compact />
+      </div>
+      <div className="cms-auth-card animate-in">
+        <div className="cms-auth-card__brand">
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <div className="premium-sidebar__brand-icon">
+              <Leaf size={20} />
+            </div>
+          </div>
+          <h1 className="cms-auth-card__logo">కథ</h1>
+          <p className="cms-auth-card__tagline">Creator Studio</p>
+          <p style={{ fontSize: '0.875rem', marginTop: 12, color: 'var(--ink-soft)', lineHeight: 1.6 }}>
+            Sign in with your phone to publish stories and receive payouts.
           </p>
           {isMockMode && (
-            <p style={{ fontSize: '0.75rem', marginTop: 8, color: 'var(--gold)', fontWeight: 500 }}>
-              MOCK MODE • OTP = 123456 (no Supabase needed)
+            <p style={{ fontSize: '0.75rem', marginTop: 10, color: 'var(--gold)', fontWeight: 500 }}>
+              MOCK MODE · OTP = 123456
             </p>
           )}
         </div>
@@ -71,11 +80,11 @@ export function Login() {
                   required
                 />
               </div>
-              <span className="input-hint">Indian mobile number with country code</span>
+              <span className="input-hint">Indian mobile — required for creator payout verification</span>
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-              {loading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <ArrowRight size={18} />}
-              {loading ? 'Sending...' : 'Send OTP'}
+            <button type="submit" className="dashboard-cta" style={{ width: '100%', justifyContent: 'center', border: 'none' }} disabled={loading}>
+              {loading ? <Loader2 size={18} className="cms-loading__spin" /> : <ArrowRight size={18} />}
+              {loading ? 'Sending…' : 'Send OTP'}
             </button>
           </form>
         ) : (
@@ -95,24 +104,25 @@ export function Login() {
                 maxLength={6}
               />
             </div>
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginBottom: 12 }} disabled={loading}>
-              {loading ? 'Verifying...' : 'Sign in'}
+            <button type="submit" className="dashboard-cta" style={{ width: '100%', justifyContent: 'center', border: 'none', marginBottom: 12 }} disabled={loading}>
+              {loading ? 'Verifying…' : 'Sign in'}
             </button>
-            <button type="button" className="btn btn-ghost" style={{ width: '100%' }} onClick={() => {
-              setStep('phone');
-              setOtp('');
-              setError(null);
-            }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ width: '100%' }}
+              onClick={() => { setStep('phone'); setOtp(''); setError(null); }}
+            >
               Change number
             </button>
           </form>
         )}
 
-        {error && (
-          <p style={{ color: 'var(--gold-dark)', fontSize: '0.875rem', marginTop: 16, textAlign: 'center' }}>{error}</p>
-        )}
+        {error && <p className="cms-error-text" style={{ marginTop: 16, textAlign: 'center' }}>{error}</p>}
 
-        {/* Supabase handles OTP via configured Send SMS Hook (no client reCAPTCHA container needed) */}
+        <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 24, textAlign: 'center', lineHeight: 1.5 }}>
+          By continuing you agree to our Terms &amp; Privacy
+        </p>
       </div>
     </div>
   );

@@ -9,6 +9,15 @@
     <title>కథ Creator Studio</title>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('katha-cms-theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

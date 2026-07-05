@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MessageSquare, BookOpen, Tablet, Smartphone, Sun, Moon, MoreHorizontal } from 'lucide-react';
+import { MessageSquare, BookOpen, Tablet, Smartphone, Sun, Moon, Coffee, MoreHorizontal } from 'lucide-react';
 import type { SceneBlock } from './SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
 
@@ -48,7 +48,7 @@ export function PreviewPane({
     return () => editorEl.removeEventListener('scroll', onEditorScroll);
   }, [syncScroll, editorScrollRef, scrollRef]);
 
-  const isDark = theme === 'dark';
+  const resolvedTheme = theme === 'high-contrast' ? 'sepia' : theme;
 
   return (
     <aside className="katha-proto-preview">
@@ -85,7 +85,15 @@ export function PreviewPane({
         <div style={{ flex: 1 }} />
         <button
           type="button"
-          className={`katha-proto-preview-icon-btn${theme === 'light' ? ' active' : ''}`}
+          className={`katha-proto-preview-icon-btn${resolvedTheme === 'sepia' ? ' active' : ''}`}
+          onClick={() => onThemeChange('sepia')}
+          title="Sepia (recommended)"
+        >
+          <Coffee size={16} />
+        </button>
+        <button
+          type="button"
+          className={`katha-proto-preview-icon-btn${resolvedTheme === 'light' ? ' active' : ''}`}
           onClick={() => onThemeChange('light')}
           title="Light"
         >
@@ -93,7 +101,7 @@ export function PreviewPane({
         </button>
         <button
           type="button"
-          className={`katha-proto-preview-icon-btn${theme === 'dark' ? ' active' : ''}`}
+          className={`katha-proto-preview-icon-btn${resolvedTheme === 'dark' ? ' active' : ''}`}
           onClick={() => onThemeChange('dark')}
           title="Dark"
         >
@@ -108,17 +116,14 @@ export function PreviewPane({
         <div
           className="katha-proto-reader-card"
           data-device={device}
+          data-preview-theme={resolvedTheme}
           style={{
-            background: isDark ? '#1A1A1E' : '#FDFCFA',
-            color: isDark ? '#E8E6E3' : 'var(--ink)',
             maxWidth: device === 'mobile' ? 280 : device === 'tablet' ? 360 : '100%',
             margin: '0 auto',
           }}
         >
           <div className="katha-proto-chapter-label">Chapter {chapterNum}</div>
-          <h1 className="katha-proto-chapter-title" style={{ color: isDark ? '#E8E6E3' : 'var(--ink)' }}>
-            {chapterTitle}
-          </h1>
+          <h1 className="katha-proto-chapter-title">{chapterTitle}</h1>
           <div className="katha-proto-chapter-dots">• • •</div>
 
           {scenes.map(scene => (
@@ -128,7 +133,6 @@ export function PreviewPane({
               )}
               <div
                 className="katha-proto-preview-scene-body"
-                style={{ color: isDark ? '#D8D6D3' : 'var(--ink)' }}
                 dangerouslySetInnerHTML={{ __html: scene.content }}
               />
             </div>

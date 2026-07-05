@@ -4,10 +4,12 @@ const AUTOSAVE_MS = 30000;
 
 export function useAutosave({
   charCount,
-  triggerLocalSave
+  triggerLocalSave,
+  triggerCloudSave,
 }: {
   charCount: number;
   triggerLocalSave: () => void;
+  triggerCloudSave?: () => Promise<void>;
 }) {
   const autosaveTimerRef = useRef<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -20,17 +22,20 @@ export function useAutosave({
     autosaveTimerRef.current = window.setTimeout(async () => {
       if (charCount === 0) return;
       setSaving(true);
-      
+
       triggerLocalSave();
-      
+
       try {
+        if (triggerCloudSave) {
+          await triggerCloudSave();
+        }
         setLastSaved(new Date());
       } catch (e) {
-        console.warn('Draft cloud sync skipped (offline or not implemented yet)');
+        console.warn('Draft cloud sync failed:', e);
       }
       setSaving(false);
     }, 1200);
-  }, [charCount, triggerLocalSave]);
+  }, [charCount, triggerLocalSave, triggerCloudSave]);
 
   useEffect(() => {
     const timer = setInterval(() => {

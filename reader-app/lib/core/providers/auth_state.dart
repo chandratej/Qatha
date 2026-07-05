@@ -1,19 +1,26 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 class AuthUser {
   final String id;
   final String phone;
+  final String? email;
   final String displayName;
   final String subscriptionStatus;
   final String? trialEndsAt;
   final bool launchTrialGranted;
   final int? launchTrialDays;
 
+  String get identityLabel => email?.isNotEmpty == true
+      ? email!
+      : (phone.isNotEmpty ? phone : displayName);
+
   const AuthUser({
     required this.id,
     required this.phone,
+    this.email,
     required this.displayName,
     this.subscriptionStatus = 'free',
     this.trialEndsAt,
@@ -42,6 +49,7 @@ class AuthUser {
     return AuthUser(
       id: json['id'] as String,
       phone: json['phone'] as String? ?? '',
+      email: json['email'] as String?,
       displayName: json['display_name'] as String? ?? 'Reader',
       subscriptionStatus: json['subscription_status'] as String? ?? 'free',
       trialEndsAt: json['trial_ends_at'] as String?,
@@ -53,6 +61,7 @@ class AuthUser {
   Map<String, dynamic> toJson() => {
         'id': id,
         'phone': phone,
+        if (email != null) 'email': email,
         'display_name': displayName,
         'subscription_status': subscriptionStatus,
         if (trialEndsAt != null) 'trial_ends_at': trialEndsAt,
@@ -91,11 +100,28 @@ class AuthState extends ChangeNotifier {
   bool get isOnLaunchTrial => _user?.isOnLaunchTrial ?? false;
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userJson = prefs.getString('katha_user');
-    _token = prefs.getString('katha_token');
-    if (userJson != null) {
-      _user = AuthUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+    final auth = AuthService();
+    try {
+      final restored = await auth.restoreSession();
+      if (restored != null) {
+        _user = restored.user;
+        _token = restored.accessToken;
+        await _persist();
+      } else {
+        final prefs = await SharedPreferences.getInstance();
+        final userJson = prefs.getString('katha_user');
+        _token = prefs.getString('katha_token');
+        if (userJson != null) {
+          _user = AuthUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+        }
+      }
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('katha_user');
+      _token = prefs.getString('katha_token');
+      if (userJson != null) {
+        _user = AuthUser.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
+      }
     }
     _loading = false;
     notifyListeners();
@@ -127,6 +153,7 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await AuthService().signOut();
     _user = null;
     _token = null;
     await _persist();

@@ -4,7 +4,7 @@ import '../core/providers/app_state.dart';
 import '../core/providers/auth_state.dart';
 import '../core/services/launch_offer_service.dart';
 import '../core/theme/katha_theme.dart';
-import 'phone_auth_screen.dart';
+import 'reader_auth_screen.dart';
 
 String _subscriptionLabel(AuthState auth) {
   if (auth.user?.subscriptionStatus == 'active') return 'Katha Unlimited — Active';
@@ -83,7 +83,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _SectionTitle('Account'),
           if (auth.isLoggedIn) ...[
-            _Tile(icon: Icons.person, title: auth.user!.displayName, subtitle: auth.user!.phone),
+            _Tile(icon: Icons.person, title: auth.user!.displayName, subtitle: auth.user!.identityLabel),
             _Tile(
               icon: Icons.workspace_premium,
               title: 'Subscription',
@@ -99,10 +99,10 @@ class SettingsScreen extends StatelessWidget {
             ),
           ] else
             _Tile(
-              icon: Icons.phone_android,
-              title: 'Sign in with phone',
-              subtitle: 'Required from Chapter 4',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PhoneAuthScreen())),
+              icon: Icons.login,
+              title: 'Sign in',
+              subtitle: 'Google or email — required from Chapter 4',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReaderAuthScreen())),
             ),
           const SizedBox(height: 24),
           _SectionTitle('Notifications'),

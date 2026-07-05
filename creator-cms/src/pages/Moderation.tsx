@@ -22,40 +22,45 @@ export function Moderation() {
   const queue = data?.queue || [];
 
   return (
-    <div>
-      <header className="page-header">
+    <div className="cms-page">
+      <header className="cms-page-header">
         <div>
-          <h2>Moderation Queue</h2>
-          <p>Review flagged chapters — target 15 min/day. Zero tolerance for hard blocks.</p>
+          <h1 className="cms-page-header__title">Moderation Queue</h1>
+          <p className="cms-page-header__subtitle">
+            Review flagged chapters — target 15 min/day. Zero tolerance for hard blocks.
+          </p>
         </div>
-        <button className="btn btn-secondary" onClick={reload} disabled={loading}>
-          <RefreshCw size={16} />
-          Refresh
-        </button>
+        <div className="cms-page-header__actions">
+          <button type="button" className="btn btn-secondary" onClick={reload} disabled={loading}>
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
       </header>
 
       {loading && (
-        <div style={{ display: 'flex', gap: 8, color: 'var(--ink-muted)' }}>
-          <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /> Loading queue...
+        <div className="cms-loading">
+          <Loader2 size={20} className="cms-loading__spin" />
+          Loading queue…
         </div>
       )}
 
-      {error && <div className="card" style={{ padding: 24, color: '#C47832' }}>{error}</div>}
+      {error && <div className="cms-panel cms-error-text">{error}</div>}
 
       {!loading && queue.length === 0 && (
-        <div className="card" style={{ padding: 48, textAlign: 'center' }}>
-          <Shield size={48} color="var(--gold)" style={{ marginBottom: 16 }} />
-          <h3 style={{ marginBottom: 8 }}>Queue is clear</h3>
-          <p style={{ color: 'var(--ink-muted)' }}>No chapters pending review. Great job!</p>
+        <div className="cms-empty">
+          <Shield size={48} className="cms-empty__icon" />
+          <h3 className="cms-empty__title">Queue is clear</h3>
+          <p className="cms-empty__text">No chapters pending review. Great job!</p>
         </div>
       )}
 
       <div style={{ display: 'grid', gap: 20 }}>
         {queue.map((item: ModerationItem) => (
-          <div key={item.id} className="card" style={{ padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <div key={item.id} className="cms-panel cms-panel--flat">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
                   <span className="badge badge-warning">Pending</span>
                   {item.toxicity_score && item.toxicity_score > 0.7 && (
                     <span className="badge badge-warning">
@@ -64,10 +69,10 @@ export function Moderation() {
                     </span>
                   )}
                 </div>
-                <h3 style={{ fontSize: '1.125rem' }}>
+                <h3 className="cms-story-card__title">
                   Ch {item.chapters.chapter_number}: {item.chapters.title || 'Untitled'}
                 </h3>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 4 }}>
                   by {item.creators.pen_name} · {item.reason}
                 </p>
               </div>
@@ -76,21 +81,7 @@ export function Moderation() {
               </span>
             </div>
 
-            <div
-              style={{
-                background: 'var(--paper-warm)',
-                borderRadius: 12,
-                padding: 20,
-                marginBottom: 16,
-                fontFamily: 'var(--font-telugu)',
-                fontSize: '0.9375rem',
-                lineHeight: 1.7,
-                maxHeight: 200,
-                overflow: 'auto',
-              }}
-            >
-              {item.chapters.content}
-            </div>
+            <div className="cms-moderation-preview">{item.chapters.content}</div>
 
             <div className="input-group" style={{ marginBottom: 16 }}>
               <label>Reviewer notes (optional)</label>
@@ -101,8 +92,9 @@ export function Moderation() {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <button
+                type="button"
                 className="btn btn-primary"
                 disabled={reviewing === item.id}
                 onClick={() => handleReview(item.id, 'approved')}
@@ -110,6 +102,7 @@ export function Moderation() {
                 <Check size={18} /> Approve
               </button>
               <button
+                type="button"
                 className="btn btn-secondary"
                 disabled={reviewing === item.id}
                 onClick={() => handleReview(item.id, 'needs_revision')}
@@ -117,6 +110,7 @@ export function Moderation() {
                 Request edits
               </button>
               <button
+                type="button"
                 className="btn btn-ghost"
                 disabled={reviewing === item.id}
                 onClick={() => handleReview(item.id, 'rejected')}

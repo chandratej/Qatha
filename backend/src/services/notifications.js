@@ -7,10 +7,10 @@ export function scheduleNotifications(cron) {
   cron.schedule('0 20 * * *', notifyStreakReminders); // 8 PM daily trigger
 }
 
-async function sendFCM(token, title, body) {
-  if (!token || !process.env.FIREBASE_PROJECT_ID) return;
-  // Firebase Admin SDK integration — requires service account
-  console.log(`[FCM] ${title}: ${body} → ${token.slice(0, 8)}...`);
+async function sendPush(token, title, body) {
+  if (!token) return;
+  // Push delivery via Supabase Edge Function or India CPaaS webhook (no Firebase)
+  console.log(`[Push] ${title}: ${body} → ${token.slice(0, 8)}...`);
 }
 
 export async function notifyNewChapter(storyId, chapterId) {
@@ -42,7 +42,7 @@ export async function notifyNewChapter(storyId, chapterId) {
 
     if (!user?.notification_preferences?.new_chapters) continue;
 
-    await sendFCM(
+    await sendPush(
       user.fcm_token,
       `New chapter from ${story?.title}`,
       chapter?.title || `Chapter ${chapter?.chapter_number}`
@@ -69,7 +69,7 @@ async function notifyExpiringSubscriptions() {
 
     if (!user?.notification_preferences?.subscription_reminders) continue;
 
-    await sendFCM(
+    await sendPush(
       user.fcm_token,
       'Subscription expiring',
       'Your subscription expires in 3 days. Renew to keep reading.'
@@ -95,7 +95,7 @@ async function notifyTrendingStories() {
     const trending = (stories || []).find((s) => s.genre === user.favorite_genre);
     if (!trending) continue;
 
-    await sendFCM(
+    await sendPush(
       user.fcm_token,
       `${trending.title} is trending!`,
       `${trending.views_this_week} new readers this week`
@@ -132,7 +132,7 @@ async function notifyScheduledReleases() {
         .eq('id', reader.user_id)
         .single();
 
-      await sendFCM(
+      await sendPush(
         user?.fcm_token,
         `New chapter from ${story.title}!`,
         'Next chapter releases in 1 hour'
@@ -164,7 +164,7 @@ async function notifyStreakReminders() {
 
     if (!user?.fcm_token) continue;
 
-    await sendFCM(
+    await sendPush(
       user.fcm_token,
       'Keep your streak alive! 🔥',
       `You're on a ${streak.current_streak}-day reading streak. Read a chapter now to keep it going!`

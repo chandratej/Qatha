@@ -11,7 +11,7 @@ import '../core/services/reading_progress_service.dart';
 import '../core/services/subscription_service.dart';
 import '../core/theme/katha_theme.dart';
 import '../widgets/error_state.dart';
-import 'phone_auth_screen.dart';
+import 'reader_auth_screen.dart';
 
 class ReaderScreen extends StatefulWidget {
   final String storyId;
@@ -540,12 +540,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
       builder: (sheetCtx) => _GateSheet(
         title: 'Sign in to continue',
         subtitle: 'Chapter 4 and beyond require a free account',
-        actionLabel: 'Continue with Phone OTP',
+        actionLabel: 'Continue with Google',
         onAction: () async {
           Navigator.pop(sheetCtx);
           final ok = await Navigator.push<bool>(
             context,
-            MaterialPageRoute(builder: (_) => const PhoneAuthScreen()),
+            MaterialPageRoute(builder: (_) => const ReaderAuthScreen()),
           );
           if (!mounted) return;
           if (ok == true || context.read<AuthState>().isLoggedIn) {
@@ -646,7 +646,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         context,
         MaterialPageRoute(
           builder: (_) =>
-              PhoneAuthScreen(onSuccess: () => Navigator.pop(context)),
+              ReaderAuthScreen(onSuccess: () => Navigator.pop(context)),
         ),
       );
       if (!mounted) return;

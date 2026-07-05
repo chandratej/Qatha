@@ -10,21 +10,24 @@ export function setApiAuth(user: AuthUser | null, token: string | null = null) {
   _authToken = token;
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-creator-id': _authUser?.id || 'demo-creator-001',
     'x-user-id': _authUser?.id || '',
-    ...((options.headers as Record<string, string>) || {}),
+    'x-user-role': _authUser?.role || 'creator',
+    ...extra,
   };
-
   if (_authToken) {
     headers['Authorization'] = `Bearer ${_authToken}`;
   }
+  return headers;
+}
 
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers,
+    headers: authHeaders((options.headers as Record<string, string>) || {}),
   });
 
   const data = await res.json();
@@ -70,6 +73,26 @@ export interface StoryData {
   genre: string;
   chapter_count: number;
   total_readers: number;
+  cover_url?: string | null;
+  is_published?: boolean;
+}
+
+export interface ChapterListItem {
+  id?: string;
+  chapter_number: number;
+  title?: string;
+  status?: string;
+  word_count?: number;
+  scene_count?: number;
+}
+
+export interface ChapterDraftData {
+  story_id: string;
+  chapter_number: number;
+  title?: string;
+  content?: string;
+  content_delta?: { scenes: Array<{ id: string; title: string; content: string }> } | null;
+  status?: string;
 }
 
 export interface AnalyticsData {
@@ -93,7 +116,11 @@ export interface CreatorMilestone {
 
 export const api = {
   getDashboard: () => request<DashboardData>('/creators/dashboard'),
-  getStories: () => request<{ stories: StoryData[] }>('/stories'),
+  getCreatorStories: () => request<{ stories: StoryData[] }>('/creators/stories'),
+  getStoryChapters: (storyId: string) =>
+    request<{ story?: { id: string; title: string }; chapters: ChapterListItem[] }>(`/creators/stories/${storyId}/chapters`),
+  getChapter: (storyId: string, chapterNumber: number) =>
+    request<{ chapter: ChapterDraftData }>(`/creators/stories/${storyId}/chapters/${chapterNumber}`),
   createStory: (body: {
     title: string;
     description?: string;
@@ -101,6 +128,12 @@ export const api = {
     cover_url?: string;
     release_schedule?: string;
   }) => request<{ story: { id: string } }>('/creators/stories', { method: 'POST', body: JSON.stringify(body) }),
+  saveDraft: (storyId: string, body: {
+    chapter_number: number;
+    title?: string;
+    content: string;
+    content_delta?: { scenes: Array<{ id: string; title: string; content: string }> };
+  }) => request(`/chapters/${storyId}/draft`, { method: 'POST', body: JSON.stringify(body) }),
   publishChapter: (storyId: string, body: {
     chapter_number: number;
     title?: string;
@@ -113,19 +146,20 @@ export const api = {
   getMilestones: () => request<{ milestones: CreatorMilestone[] }>('/engagement/creator-milestones'),
   acknowledgeMilestone: (id: string) => request(`/engagement/creator-milestones/${id}/acknowledge`, { method: 'POST' }),
   uploadImage: async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const headers: Record<string, string> = {
-      'x-creator-id': _authUser?.id || 'demo-creator-001',
-      'x-user-id': _authUser?.id || '',
-    };
-    if (_authToken) {
-      headers['Authorization'] = `Bearer ${_authToken}`;
-    }
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    const image_base64 = btoa(binary);
+
     const res = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
-      headers,
-      body: formData,
+      headers: authHeaders(),
+      body: JSON.stringify({
+        image_base64,
+        filename: file.name,
+        content_type: file.type || 'image/jpeg',
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Upload failed');

@@ -5,7 +5,7 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  background: #F8F5F0;
+  background: var(--paper);
   font-family: var(--font-ui);
 }
 
@@ -16,8 +16,8 @@
   justify-content: space-between;
   height: 52px;
   padding: 0 20px;
-  background: #FDFCFA;
-  border-bottom: 1px solid rgba(26, 24, 20, 0.08);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -28,11 +28,15 @@
   min-width: 160px;
 }
 
+.katha-proto-brand-feather {
+  color: var(--gold-dark);
+}
+
 .katha-proto-brand-name {
   font-family: var(--font-reading);
   font-size: 1.25rem;
   font-weight: 600;
-  color: #8B5E3C;
+  color: var(--gold-dark);
   letter-spacing: -0.02em;
 }
 
@@ -60,7 +64,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.8125rem;
-  color: #228B57;
+  color: var(--success);
 }
 
 .katha-proto-nav-btn {
@@ -89,12 +93,12 @@
   padding: 0 16px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #A67C52 0%, #8B5E3C 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+  color: #FDF8F0;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 94, 60, 0.25);
+  box-shadow: 0 2px 8px rgba(122, 99, 64, 0.2);
 }
 
 .katha-proto-publish-btn:hover {
@@ -116,8 +120,8 @@
   max-width: 260px;
   display: flex;
   flex-direction: column;
-  background: #F3EFE8;
-  border-right: 1px solid rgba(26, 24, 20, 0.08);
+  background: var(--editor-sidebar);
+  border-right: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -137,8 +141,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #FDFCFA;
-  border: 1px solid rgba(26, 24, 20, 0.1);
+  background: var(--surface);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   margin-bottom: 10px;
 }
@@ -159,8 +163,8 @@
   gap: 6px;
   width: 100%;
   padding: 10px;
-  background: #EDE8DF;
-  border: 1px solid rgba(26, 24, 20, 0.08);
+  background: var(--sepia-muted);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -169,7 +173,7 @@
 }
 
 .katha-proto-new-scene-btn:hover {
-  background: #E5DFD4;
+  background: var(--sepia-deep);
 }
 
 .katha-proto-scene-list {
@@ -204,23 +208,23 @@
 .sc-card {
   cursor: pointer;
   border-radius: 14px;
-  border: 1px solid rgba(243, 244, 246, 0.5);
+  border: 1px solid var(--border-faint);
   border-left-width: 4px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s ease-out;
 }
 
 .sc-card:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .sc-card--active {
-  background: #FCFBF8;
-  border-left-color: #B9935A;
+  background: var(--sepia-surface-raised);
+  border-left-color: var(--gold);
 }
 
 .sc-card--idle {
-  background: #FFFFFF;
+  background: var(--surface);
   border-left-color: transparent;
 }
 
@@ -257,14 +261,14 @@
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: #9CA3AF;
+  background: var(--ink-faint);
 }
 
 .sc-u-scene-num {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
-  color: #374151;
+  color: var(--ink-soft);
   min-width: 1ch;
 }
 
@@ -274,8 +278,8 @@
   font-family: var(--font-reading);
   font-size: 15px;
   font-weight: 600;
-  line-height: 1.3;
-  color: #111827;
+  line-height: 1.35;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -285,7 +289,7 @@
   margin: 0;
   font-size: 12px;
   line-height: 1.25;
-  color: #6B7280;
+  color: var(--ink-muted);
 }
 
 /* Right: menu icon (always visible, w-4 h-4) */
@@ -302,13 +306,13 @@
   padding: 0;
   border: none;
   background: transparent;
-  color: #9CA3AF;
+  color: var(--ink-faint);
   cursor: pointer;
   opacity: 1;
 }
 
 .sc-u-menu-btn:hover {
-  color: #6B7280;
+  color: var(--ink-muted);
 }
 
 .sc-u-menu-dropdown {
@@ -318,10 +322,10 @@
   z-index: 20;
   min-width: 120px;
   padding: 4px;
-  background: #FFFFFF;
-  border: 1px solid rgba(243, 244, 246, 0.8);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .sc-u-menu-item {
@@ -332,26 +336,26 @@
   background: none;
   text-align: left;
   font-size: 13px;
-  color: #374151;
+  color: var(--ink-soft);
   cursor: pointer;
   border-radius: 6px;
 }
 
 .sc-u-menu-item:hover {
-  background: rgba(185, 147, 90, 0.1);
+  background: rgba(168, 134, 78, 0.12);
 }
 
 .sc-u-menu-item--danger {
-  color: #B91C1C;
+  color: var(--ember);
 }
 
 .sc-u-menu-item--danger:hover {
-  background: #FEF2F2;
+  background: rgba(122, 74, 82, 0.1);
 }
 
 .katha-proto-sidebar-footer {
   padding: 12px 16px;
-  border-top: 1px solid rgba(26, 24, 20, 0.06);
+  border-top: 1px solid var(--border-faint);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -383,7 +387,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #F8F5F0;
+  background: var(--paper);
 }
 
 .katha-proto-editor-header {
@@ -391,8 +395,8 @@
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--ink);
-  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
-  background: #FDFCFA;
+  border-bottom: 1px solid var(--border-faint);
+  background: var(--surface);
 }
 
 .katha-proto-format-toolbar {
@@ -400,8 +404,8 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #F3EFE8;
-  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
+  background: var(--editor-sidebar);
+  border-bottom: 1px solid var(--border-faint);
   flex-wrap: wrap;
 }
 
@@ -411,16 +415,16 @@
   gap: 5px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid rgba(26, 24, 20, 0.1);
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
-  background: #FDFCFA;
+  background: var(--surface);
   font-size: 0.8125rem;
   color: var(--ink-soft);
   cursor: pointer;
 }
 
 .katha-proto-fmt-btn.active {
-  background: rgba(196, 160, 82, 0.18);
+  background: rgba(168, 134, 78, 0.16);
   border-color: var(--gold);
   color: var(--gold-dark);
 }
@@ -435,7 +439,7 @@
 .katha-proto-fmt-divider {
   width: 1px;
   height: 20px;
-  background: rgba(26, 24, 20, 0.1);
+  background: var(--border-medium);
   margin: 0 4px;
 }
 
@@ -446,12 +450,16 @@
 }
 
 .katha-proto-editor-card {
-  background: #FFFFFF;
+  background: var(--editor-canvas);
   border-radius: 12px;
-  border: 1px solid rgba(26, 24, 20, 0.06);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(245, 239, 226, 0.5);
   padding: 28px 32px;
   min-height: 100%;
+}
+
+[data-theme='dark'] .katha-proto-editor-card {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .katha-proto-scene-label {
@@ -466,7 +474,7 @@
 .katha-proto-scene-title-input {
   font-family: var(--font-reading);
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   width: 100%;
   border: none;
   outline: none;
@@ -487,7 +495,8 @@
 .katha-proto-editor-card .ql-editor {
   padding: 0 !important;
   font-size: 1.05rem !important;
-  line-height: 1.8 !important;
+  line-height: 1.85 !important;
+  letter-spacing: 0.012em !important;
   min-height: 280px;
   color: var(--ink-soft);
 }
@@ -497,15 +506,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 20px;
-  background: #FDFCFA;
-  border-top: 1px solid rgba(26, 24, 20, 0.06);
+  background: var(--surface);
+  border-top: 1px solid var(--border-faint);
   font-size: 0.8125rem;
   color: var(--ink-muted);
   flex-shrink: 0;
 }
 
 .katha-proto-autosaved {
-  color: #228B57;
+  color: var(--success);
   font-weight: 500;
 }
 
@@ -514,9 +523,9 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid rgba(26, 24, 20, 0.1);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
-  background: #FDFCFA;
+  background: var(--surface);
   font-size: 0.8125rem;
   color: var(--ink-soft);
   cursor: pointer;
@@ -529,8 +538,8 @@
   max-width: 35%;
   display: flex;
   flex-direction: column;
-  background: #F8F5F0;
-  border-left: 1px solid rgba(26, 24, 20, 0.08);
+  background: var(--paper);
+  border-left: 1px solid var(--border-subtle);
   flex-shrink: 0;
   min-height: 0;
   overflow: hidden;
@@ -541,8 +550,8 @@
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--ink);
-  background: #FDFCFA;
-  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-faint);
   flex-shrink: 0;
 }
 
@@ -551,8 +560,8 @@
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  background: #F3EFE8;
-  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
+  background: var(--editor-sidebar);
+  border-bottom: 1px solid var(--border-faint);
   flex-shrink: 0;
 }
 
@@ -571,7 +580,7 @@
 
 .katha-proto-preview-icon-btn:hover,
 .katha-proto-preview-icon-btn.active {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--sepia-surface-raised);
   color: var(--ink);
 }
 
@@ -585,11 +594,11 @@
 }
 
 .katha-proto-reader-card {
-  background: #FDFCFA;
-  border: 1px solid rgba(26, 24, 20, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 32px 28px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
@@ -644,7 +653,7 @@
   font-family: var(--font-reading);
   font-size: 1.05rem;
   font-weight: 600;
-  color: #A67C52;
+  color: var(--gold);
   margin-bottom: 12px;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -655,7 +664,7 @@
   font-family: var(--font-reading);
   font-size: 0.95rem;
   line-height: 1.85;
-  color: var(--ink);
+  color: var(--ink-soft);
   margin-bottom: 28px;
   max-width: 100%;
   overflow-wrap: break-word;
@@ -697,11 +706,43 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
-  background: #FDFCFA;
-  border-top: 1px solid rgba(26, 24, 20, 0.06);
+  background: var(--surface);
+  border-top: 1px solid var(--border-faint);
   font-size: 0.75rem;
   color: var(--ink-muted);
   flex-shrink: 0;
+}
+
+/* Preview reader themes — sepia default for long sessions */
+.katha-proto-reader-card[data-preview-theme='sepia'] {
+  background: var(--editor-canvas);
+  color: var(--ink-soft);
+}
+
+.katha-proto-reader-card[data-preview-theme='sepia'] .katha-proto-chapter-title {
+  color: var(--ink);
+}
+
+.katha-proto-reader-card[data-preview-theme='light'] {
+  background: var(--sepia-surface-raised);
+  color: var(--ink-soft);
+}
+
+.katha-proto-reader-card[data-preview-theme='light'] .katha-proto-chapter-title {
+  color: var(--ink);
+}
+
+.katha-proto-reader-card[data-preview-theme='dark'] {
+  background: var(--sepia-night-surface);
+  color: var(--sepia-night-ink-soft);
+}
+
+.katha-proto-reader-card[data-preview-theme='dark'] .katha-proto-chapter-title {
+  color: var(--sepia-night-ink);
+}
+
+.katha-proto-reader-card[data-preview-theme='dark'] .katha-proto-preview-scene-body {
+  color: var(--sepia-night-ink-soft);
 }
 
 /* Focus mode */

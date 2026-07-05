@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Pure Supabase Auth client (katha-auth-architecture-decision_auth.md)
-// Replaces previous Firebase web SDK usage entirely.
-// Phone OTP via Supabase + Send SMS Hook to India CPaaS.
+// Creator CMS: phone OTP via Supabase Send SMS Hook → MSG91 (payout/KYC requirement).
+// Readers use Google + email magic link — phone OTP is not the reader sign-in path.
 //
 // Mock mode (for creator-cms demo without real Supabase):
 //   - Set VITE_MOCK_MODE=true, or leave placeholder URL/keys.

@@ -24,6 +24,8 @@ export function CreateStory() {
   const [schedule, setSchedule] = useState('irregular');
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,43 +35,37 @@ export function CreateStory() {
     }
   };
 
-  // Per UI/UX decisions: simple guidelines, no design skills required. Recommended 2:3 or 3:4 for cards.
-
-  const [submitting, setSubmitting] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setError(null);
     try {
-      let cover_url = undefined;
+      let cover_url: string | undefined;
       if (coverFile) {
-        try {
-          const res = await api.uploadImage(coverFile);
-          cover_url = res.url;
-        } catch (uploadError) {
-          console.warn('Cover upload failed, continuing without cover:', uploadError);
-        }
+        const res = await api.uploadImage(coverFile);
+        cover_url = res.url;
       }
       const { story } = await api.createStory({ title, description, genre, release_schedule: schedule, cover_url });
-      // Go to seasons view so author can organize seasons (sequels/prequels) then chapters
       navigate(`/stories/${story.id}`);
-    } catch {
-      navigate('/stories/story-001');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create story');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <header className="page-header">
+    <div className="cms-page">
+      <header className="cms-page-header">
         <div>
-          <h2>Create Your Story</h2>
-          <p>Step 2 of onboarding — set up your story for readers to discover.</p>
+          <h1 className="cms-page-header__title">Create Your Story</h1>
+          <p className="cms-page-header__subtitle">
+            Set up your story for readers to discover — title, genre, cover, and release schedule.
+          </p>
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32 }}>
+      <form onSubmit={handleSubmit} className="cms-form-grid">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div className="input-group">
             <label>Story title *</label>
@@ -116,43 +112,24 @@ export function CreateStory() {
             <span className="input-hint">Readers see when to expect your next chapter</span>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }} disabled={submitting}>
-            {submitting ? 'Creating...' : 'Create Story & Write Chapter 1'}
+          {error && <p className="cms-error-text">{error}</p>}
+          <button type="submit" className="dashboard-cta" style={{ alignSelf: 'flex-start', border: 'none' }} disabled={submitting}>
+            {submitting ? 'Creating…' : 'Create Story & Write Chapter 1'}
           </button>
         </div>
 
         <div>
           <label className="input-group" style={{ cursor: 'pointer' }}>
-            <span>Cover image *</span>
-            <div style={{ 
-              fontSize: '0.7rem', 
-              color: 'var(--ink-muted)',
-              background: 'var(--paper-warm)',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              border: '1px solid #fde047',
-              marginTop: '4px'
-            }}>
-              📌 Recommended: 600×900 (2:3) or 3:4 ratio, JPG/PNG &lt;1MB. Looks great in story cards. No design skills required.
+            <span>Cover image</span>
+            <div className="cms-cover-hint">
+              Recommended: 600×900 (2:3) or 3:4 ratio, JPG/PNG under 1MB. Looks great in story cards.
             </div>
-            <div
-              className="card"
-              style={{
-                aspectRatio: '5/7',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 12,
-                overflow: 'hidden',
-                position: 'relative',
-              }}
-            >
+            <div className="cms-cover-zone">
               {coverPreview ? (
-                <img src={coverPreview} alt="Cover preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={coverPreview} alt="Cover preview" />
               ) : (
                 <>
-                  <ImageIcon size={48} color="var(--ink-muted)" />
+                  <ImageIcon size={44} color="var(--ink-muted)" />
                   <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>500×700px recommended</span>
                   <span style={{ fontSize: '0.75rem', color: 'var(--ink-muted)' }}>PNG, JPG, WebP · max 5MB</span>
                 </>

@@ -15,6 +15,18 @@ class AppConfig {
     defaultValue: 'your-anon-key-here',
   );
 
+  /// Web OAuth client ID — required for Google sign-in ID token on Android.
+  static const googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
+
+  /// Deep link / web redirect for email magic links.
+  static const authRedirectUrl = String.fromEnvironment(
+    'AUTH_REDIRECT_URL',
+    defaultValue: 'io.supabase.katha://login-callback',
+  );
+
   static const brandName = 'Katha';
   static const brandNameTelugu = 'కథ';
   static const priceMonthly = 99;

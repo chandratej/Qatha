@@ -1,4 +1,5 @@
 import { Menu, Feather, Check, Clock, Focus, MoreHorizontal, Rocket } from 'lucide-react';
+import { ThemeToggle } from '../ThemeToggle';
 
 interface EditorNavbarProps {
   storyLabel: string;
@@ -25,7 +26,7 @@ export function EditorNavbar({
         <button type="button" className="katha-proto-nav-btn" style={{ border: 'none', padding: '0 8px' }} aria-label="Menu">
           <Menu size={18} />
         </button>
-        <Feather size={20} color="#8B5E3C" />
+        <Feather size={20} className="katha-proto-brand-feather" />
         <span className="katha-proto-brand-name">Katha</span>
       </div>
 
@@ -48,6 +49,7 @@ export function EditorNavbar({
         <button type="button" className="katha-proto-nav-btn" onClick={onFocus}>
           <Focus size={15} /> Focus
         </button>
+        <ThemeToggle compact />
         <button type="button" className="katha-proto-nav-btn" style={{ padding: '0 10px' }} aria-label="More options">
           <MoreHorizontal size={16} />
         </button>
