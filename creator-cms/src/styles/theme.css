@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+/* 
+ * Follows 04_JUL_Visual_UX_Framework_Selection_Katha.md
+ * Visual Design Framework: Material Design 3 (MD3) + Custom Minimalist Layer
+ * - MD3 principles: elevation, 8dp grid, dynamic color concepts, accessibility (WCAG)
+ * - Minimalist layer: reduced visual density, generous whitespace for reading comfort
+ * - Noto Sans Telugu for regional language support
+ * - Eye comfort, minimalism, accessibility prioritized
+ */
+
+:root {
+  --gold: #C4A052;
+  --gold-light: #E8D5A3;
+  --gold-dark: #9A7B3A;
+  --ember: #8B3A62;
+  --paper: #FAF8F5;
+  --paper-warm: #F5F0E8;
+  --ink: #1A1814;
+  --ink-soft: #4A4540;
+  --ink-muted: #8A847C;
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --border: rgba(26, 24, 20, 0.08);
+  --shadow-sm: 0 1px 3px rgba(26, 24, 20, 0.06);
+  --shadow-md: 0 4px 20px rgba(26, 24, 20, 0.08);
+  --shadow-lg: 0 12px 40px rgba(26, 24, 20, 0.12);
+  --radius-sm: 8px;   /* MD3 small */
+  --radius-md: 12px;  /* MD3 medium */
+  --radius-lg: 16px;  /* MD3 large (minimalist tweak) */
+  --spacing-unit: 8px; /* MD3 8dp grid */
+  --font-ui: 'Outfit', system-ui, sans-serif;
+  --font-reading: 'Literata', 'Noto Sans Telugu', Georgia, serif;
+  --font-telugu: 'Noto Sans Telugu', 'Literata', serif;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme='dark'] {
+  --paper: #0D0D0F;
+  --paper-warm: #161618;
+  --ink: #E8E6E3;
+  --ink-soft: #B8B5B0;
+  --ink-muted: #7A7874;
+  --surface: #1A1A1E;
+  --surface-elevated: #222228;
+  --border: rgba(232, 230, 227, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-ui);
+  background: var(--paper);
+  color: var(--ink);
+  line-height: 1.5;
+  min-height: 100vh;
+  cursor: default;
+}
+
+/* Proper cursors for interactive vs static areas */
+input, textarea, select, 
+.ql-editor, 
+[contenteditable="true"] {
+  cursor: text;
+}
+
+button, 
+.nav-item, 
+.btn, 
+a {
+  cursor: pointer;
+}
+
+/* Static content areas should not show text cursor */
+.preview-pane,
+.static-text,
+h1, h2, h3, h4, p:not(.ql-editor p),
+label,
+.sidebar {
+  cursor: default;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--gold-dark);
+  text-decoration: none;
+}
+
+button {
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input, textarea, select {
+  font-family: var(--font-ui);
+}
+
+::selection {
+  background: var(--gold-light);
+  color: var(--ink);
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.5s var(--transition) both;
+}

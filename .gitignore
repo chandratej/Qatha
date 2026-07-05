@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+
+# Build outputs
+reader-app/build/
+reader-app/.dart_tool/
+backend/node_modules/
+creator-cms/node_modules/
+creator-cms/dist/
+
+# IDE / local session artifacts
+terminals/
+.ai/
