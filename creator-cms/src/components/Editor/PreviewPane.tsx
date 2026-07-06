@@ -15,6 +15,7 @@ interface PreviewPaneProps {
   editorScrollRef?: React.RefObject<HTMLDivElement | null>;
   syncScroll: boolean;
   totalWords: number;
+  previewComfortStyle?: React.CSSProperties;
 }
 
 export function PreviewPane({
@@ -29,6 +30,7 @@ export function PreviewPane({
   editorScrollRef,
   syncScroll,
   totalWords,
+  previewComfortStyle,
 }: PreviewPaneProps) {
   const syncingRef = useRef(false);
   const readMins = Math.max(1, Math.round(totalWords / 200));
@@ -120,6 +122,7 @@ export function PreviewPane({
           style={{
             maxWidth: device === 'mobile' ? 280 : device === 'tablet' ? 360 : '100%',
             margin: '0 auto',
+            ...previewComfortStyle,
           }}
         >
           <div className="katha-proto-chapter-label">Chapter {chapterNum}</div>

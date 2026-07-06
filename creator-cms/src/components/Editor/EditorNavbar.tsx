@@ -1,6 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Menu, Feather, Check, Clock, Focus, Rocket, ArrowLeft } from 'lucide-react';
 import { ThemeToggle } from '../ThemeToggle';
+import { EditorComfortControls } from './EditorComfortControls';
+import type { FontScale } from '../../lib/comfortPrefs';
 
 interface EditorNavbarProps {
   storyLabel: string;
@@ -8,6 +10,8 @@ interface EditorNavbarProps {
   chapterLabel: string;
   backTo?: string;
   saving: boolean;
+  fontScale: FontScale;
+  onFontScaleChange: (scale: FontScale) => void;
   onHistory: () => void;
   onFocus: () => void;
   onPublish: () => void;
@@ -21,6 +25,8 @@ export function EditorNavbar({
   chapterLabel,
   backTo,
   saving,
+  fontScale,
+  onFontScaleChange,
   onHistory,
   onFocus,
   onPublish,
@@ -68,6 +74,11 @@ export function EditorNavbar({
           <Focus size={15} />
           <span className="katha-proto-nav-btn__label">Focus</span>
         </button>
+        <EditorComfortControls
+          fontScale={fontScale}
+          onFontScaleChange={onFontScaleChange}
+          compact
+        />
         <ThemeToggle compact />
         <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--draft" onClick={onSaveDraft}>
           Save draft

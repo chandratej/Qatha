@@ -9,7 +9,7 @@
     "stop": "node scripts/free-port.mjs 3001",
     "dev:restart": "npm run stop && npm run dev",
     "lint": "eslint src/",
-    "test": "node --test src/middleware/authenticate.test.js"
+    "test": "node --test src/middleware/authenticate.test.js src/lib/supabaseKeys.test.js src/lib/mockMode.test.js src/services/moderation/gateway.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
@@ -19,6 +19,7 @@
     "express": "^4.21.2",
     "helmet": "^8.0.0",
     "node-cron": "^3.0.3",
+    "ws": "^8.21.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

@@ -6,7 +6,7 @@ import { addToMockQueue } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
 import { resolveMockUser } from '../services/launchOffer.js';
-import { moderateChapter, scoreHeuristicToxicity, analyzeWithPerspective } from '../services/moderation.js';
+import { moderateChapter, moderateContent, riskScoreFromResult } from '../services/moderation/index.js';
 import { notifyNewChapter } from '../services/notifications.js';
 import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
@@ -141,16 +141,9 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
     }
 
     if (isMockMode()) {
-      let toxicityScore = 0;
-      if (process.env.PERSPECTIVE_API_KEY) {
-        try {
-          toxicityScore = await analyzeWithPerspective(content);
-        } catch {
-          toxicityScore = scoreHeuristicToxicity(content);
-        }
-      } else {
-        toxicityScore = scoreHeuristicToxicity(content);
-      }
+      const moderation = await moderateContent(content);
+      const riskScore = riskScoreFromResult(moderation);
+      const flagged = !moderation.isSafe;
 
       const chapter = {
         id: `mock-ch-${chapter_number}`,
@@ -158,8 +151,8 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
         chapter_number,
         title,
         content,
-        status: toxicityScore > 0.7 ? 'pending_review' : 'published',
-        moderation_status: toxicityScore > 0.7 ? 'pending' : 'approved',
+        status: flagged ? 'pending_review' : 'published',
+        moderation_status: flagged ? 'pending' : 'approved',
         moderation_notes: appeal_note || null,
       };
       mockChapterStore.set(`${storyId}:${chapter_number}`, {
@@ -170,19 +163,21 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
 
       const queueNote = appeal_note
         ? `Resubmitted: ${appeal_note}`
-        : toxicityScore > 0.7
-          ? `Auto-flagged (toxicity ${(toxicityScore * 100).toFixed(0)}%)`
+        : flagged
+          ? `Auto-flagged: ${moderation.flaggedReason}`
           : 'Submitted for review';
-      addToMockQueue(chapter, 'Creator', queueNote, toxicityScore);
+      if (flagged) addToMockQueue(chapter, 'Creator', queueNote, riskScore);
 
       return res.json({
         chapter,
         moderation: {
           status: chapter.status,
-          toxicity_score: toxicityScore,
-          note: toxicityScore > 0.7
-            ? 'Queued for manual review — high toxicity score'
-            : 'Auto-approved (low toxicity score)',
+          risk_score: riskScore,
+          flagged_reason: moderation.flaggedReason,
+          source: moderation.source,
+          note: flagged
+            ? 'Queued for manual review — content flagged'
+            : 'Auto-approved',
         },
         mock: true,
       });

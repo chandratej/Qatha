@@ -1,7 +1,8 @@
 // Edge Function: publish-chapter (Wave B — SVC-PUB-01, SVC-MOD-01)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { hasHardBlockViolation, resolveToxicityScore } from '../_shared/moderation.ts';
+import { getPublishableKey, getSecretKey } from '../_shared/keys.ts';
+import { hasHardBlockViolation, moderateContent, riskScoreFromResult } from '../_shared/moderation.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +25,7 @@ Deno.serve(async (req) => {
 
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      getPublishableKey(),
       { global: { headers: { Authorization: authHeader } } },
     );
 
@@ -56,7 +57,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      getSecretKey(),
     );
 
     // Hard block
@@ -98,48 +99,51 @@ Deno.serve(async (req) => {
 
     if (upsertError) throw upsertError;
 
-    const toxicityScore = await resolveToxicityScore(content);
-    const moderationSource = Deno.env.get('PERSPECTIVE_API_KEY') ? 'perspective' : 'heuristic';
+    const moderation = await moderateContent(content);
+    const riskScore = riskScoreFromResult(moderation);
 
     await admin.from('moderation_events').insert({
       chapter_id: chapter.id,
       creator_id: user.id,
-      toxicity_score: toxicityScore,
-      moderation_source: moderationSource,
+      toxicity_score: riskScore,
+      moderation_source: moderation.source,
     });
 
     console.log(JSON.stringify({
       event: 'chapter_moderation_scored',
       chapter_id: chapter.id,
       creator_id: user.id,
-      toxicity_score: toxicityScore,
-      source: moderationSource,
+      risk_score: riskScore,
+      is_safe: moderation.isSafe,
+      flagged_reason: moderation.flaggedReason,
+      source: moderation.source,
     }));
 
-    if (toxicityScore > 0.7) {
+    if (!moderation.isSafe) {
       const queueNote = appeal_note
         ? `Resubmitted: ${appeal_note}`
-        : `Auto-flagged (toxicity ${(toxicityScore * 100).toFixed(0)}%)`;
+        : `Auto-flagged: ${moderation.flaggedReason}`;
 
       await admin.from('moderation_queue').insert({
         chapter_id: chapter.id,
         creator_id: user.id,
         status: 'pending',
         reason: queueNote,
-        toxicity_score: toxicityScore,
+        toxicity_score: riskScore,
       });
 
       return new Response(JSON.stringify({
         chapter: { ...chapter, status: 'pending_review', moderation_status: 'pending' },
         moderation: {
           status: 'pending_review',
-          toxicity_score: toxicityScore,
-          note: 'Queued for manual review — high toxicity score',
+          risk_score: riskScore,
+          flagged_reason: moderation.flaggedReason,
+          source: moderation.source,
+          note: 'Queued for manual review — content flagged',
         },
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Auto-approve low toxicity
     const { data: published } = await admin.from('chapters').update({
       status: 'published',
       moderation_status: 'approved',
@@ -150,8 +154,9 @@ Deno.serve(async (req) => {
       chapter: published,
       moderation: {
         status: 'approved',
-        toxicity_score: toxicityScore,
-        note: 'Auto-approved (low toxicity score)',
+        risk_score: riskScore,
+        source: moderation.source,
+        note: 'Auto-approved',
       },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (err) {

@@ -23,16 +23,18 @@ class ApiException implements Exception {
 
 class ApiService {
   ApiService({
-    this.baseUrl = AppConfig.apiBase,
+    String? baseUrl,
     this.userId,
     this.subscriptionStatus,
     this.trialEndsAt,
-  });
+    this.accessToken,
+  }) : baseUrl = baseUrl ?? AppConfig.apiBase;
 
   final String baseUrl;
   final String? userId;
   final String? subscriptionStatus;
   final String? trialEndsAt;
+  final String? accessToken;
 
   factory ApiService.fromAuth(AuthState auth, {String? baseUrl}) {
     return ApiService(
@@ -40,14 +42,17 @@ class ApiService {
       userId: auth.user?.id,
       subscriptionStatus: auth.user?.subscriptionStatus,
       trialEndsAt: auth.user?.trialEndsAt,
+      accessToken: auth.token,
     );
   }
 
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
-        'x-user-id': ?userId,
-        'x-subscription-status': ?subscriptionStatus,
-        'x-trial-ends-at': ?trialEndsAt,
+        if (accessToken != null && accessToken!.isNotEmpty)
+          'Authorization': 'Bearer $accessToken',
+        if (userId != null) 'x-user-id': userId!,
+        if (subscriptionStatus != null) 'x-subscription-status': subscriptionStatus!,
+        if (trialEndsAt != null) 'x-trial-ends-at': trialEndsAt!,
         // Helps backend bind sessions for OTP rate limiting / device checks (blueprint Phase 1)
         'x-device-id': 'flutter-${DateTime.now().millisecondsSinceEpoch % 999999}',
       };

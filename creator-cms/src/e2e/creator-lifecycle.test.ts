@@ -2,16 +2,26 @@
  * Integration test scaffold for the creator lifecycle.
  * Full browser E2E (Playwright) can wrap these steps against a running dev stack.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { api, setApiAuth } from '../lib/api';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('creator lifecycle (API integration scaffold)', () => {
   beforeEach(() => {
-    setApiAuth({ id: 'test-creator', phone: '+91999', role: 'creator', display_name: 'Test' }, 'token');
+    vi.resetModules();
+    vi.unstubAllEnvs();
+    vi.stubEnv('VITE_MOCK_MODE', 'true');
+    vi.stubEnv('VITE_USE_SUPABASE_DIRECT', 'false');
     vi.stubGlobal('fetch', vi.fn());
   });
 
+  afterEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
   it('documents the happy path: create → draft → publish → moderation', async () => {
+    const { api, setApiAuth } = await import('../lib/api');
+    setApiAuth({ id: 'test-creator', phone: '+91999', role: 'creator', display_name: 'Test' }, 'token');
+
     const mockFetch = vi.mocked(fetch);
 
     mockFetch

@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import { isMockMode } from '../lib/mockMode.js';
-import { getSupabase } from '../lib/supabase.js';
+import { createSupabaseClient, getSupabase } from '../lib/supabase.js';
+import { getPublishableKey } from '../lib/supabaseKeys.js';
 import { createAppError } from './errorHandler.js';
 
 const MOCK_SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -11,11 +11,9 @@ let _authClient = null;
 function getAuthClient() {
   if (_authClient) return _authClient;
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = getPublishableKey();
   if (!url || !key || url.includes('your-project')) return null;
-  _authClient = createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  _authClient = createSupabaseClient(url, key);
   return _authClient;
 }
 

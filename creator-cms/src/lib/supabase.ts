@@ -1,24 +1,45 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Pure Supabase Auth client (katha-auth-architecture-decision_auth.md)
-// Creator CMS: phone OTP via Supabase Send SMS Hook → MSG91 (payout/KYC requirement).
-// Readers use Google + email magic link — phone OTP is not the reader sign-in path.
+// Creator CMS: register with Google/email; WhatsApp OTP at publish (JIT) via Send SMS Hook.
+// Readers use Google + email magic link — phone/WhatsApp OTP is JIT at paywall only.
 //
 // Mock mode (for creator-cms demo without real Supabase):
 //   - Set VITE_MOCK_MODE=true, or leave placeholder URL/keys.
 //   - OTP is always 123456. No network calls to Supabase.
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://your-project.supabase.co';
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || 'your-anon-key';
+const supabasePublishableKey =
+  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) ||
+  (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+  'your-publishable-key';
 
-export const isMockMode =
-  import.meta.env.VITE_MOCK_MODE === 'true' ||
-  !supabaseUrl ||
-  supabaseUrl.includes('your-project') ||
-  supabaseUrl === 'https://your-project.supabase.co' ||
-  supabaseUrl.includes('placeholder');
+function isPlaceholderKey(key: string) {
+  return !key || key.includes('your-') || key.includes('anon-key');
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+function envFlag(name: string): boolean | null {
+  const value = (import.meta.env[name] as string | undefined)?.trim().toLowerCase();
+  if (!value) return null;
+  if (['true', '1', 'yes'].includes(value)) return true;
+  if (['false', '0', 'no'].includes(value)) return false;
+  return null;
+}
+
+function hasPlaceholderConfig(): boolean {
+  return (
+    !supabaseUrl ||
+    supabaseUrl.includes('your-project') ||
+    supabaseUrl === 'https://your-project.supabase.co' ||
+    supabaseUrl.includes('placeholder') ||
+    isPlaceholderKey(supabasePublishableKey)
+  );
+}
+
+const explicitMock = envFlag('VITE_MOCK_MODE');
+export const isMockMode = explicitMock !== null ? explicitMock : hasPlaceholderConfig();
+
+export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: { persistSession: true, autoRefreshToken: true },
 });
 

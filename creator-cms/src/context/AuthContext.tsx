@@ -1,22 +1,28 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase, isMockMode } from '../lib/supabase';
 import { setApiAuth } from '../lib/api';
+import {
+  type AuthUser,
+  ensureCreatorProfile,
+  fetchCreatorProfile,
+  profileToAuthUser,
+} from '../lib/creatorProfile';
+import { verifyPhoneVerification, triggerPhoneVerification } from '../lib/phoneVerification';
 
-export interface AuthUser {
-  id: string;
-  phone: string;
-  role: string;
-  display_name: string;
-  subscription_status?: string;
-}
+export type { AuthUser };
 
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   loading: boolean;
-  sendOtp: (phone: string) => Promise<void>;
-  verifyOtp: (phone: string, otp: string, displayName?: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  sendEmailOtp: (email: string) => Promise<void>;
+  verifyEmailOtp: (email: string, otp: string, displayName?: string) => Promise<void>;
+  sendWhatsAppOtp: (phone: string) => Promise<void>;
+  verifyWhatsAppOtp: (phone: string, otp: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
   isMockMode: boolean;
 }
@@ -38,18 +44,19 @@ function isValidMockSession(user: AuthUser | null, token: string | null): boolea
   return Date.now() - parsed.issuedAt < MOCK_SESSION_MAX_AGE_MS;
 }
 
-async function profileToAuthUser(
-  userId: string,
-  phone: string,
-  profile: { display_name?: string; role?: string; subscription_status?: string } | null,
-  displayName?: string,
-): Promise<AuthUser> {
+function sessionFallbackUser(session: Session, displayName?: string): AuthUser {
+  const email = session.user.email || undefined;
   return {
-    id: userId,
-    phone,
-    role: profile?.role || 'creator',
-    display_name: profile?.display_name || displayName || 'Creator',
-    subscription_status: profile?.subscription_status || 'free',
+    id: session.user.id,
+    phone: session.user.phone || '',
+    email,
+    role: 'creator',
+    display_name:
+      displayName ||
+      session.user.user_metadata?.full_name ||
+      (email ? email.split('@')[0] : 'Creator'),
+    subscription_status: 'free',
+    phone_verified: false,
   };
 }
 
@@ -83,10 +90,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const loadProfile = async (session: Session, displayName?: string): Promise<AuthUser> => {
+    const userId = session.user.id;
+    const { data: profile, schemaMissing } = await fetchCreatorProfile(userId);
+
+    if (schemaMissing) {
+      return sessionFallbackUser(session, displayName);
+    }
+
+    if (!profile || profile.role !== 'creator') {
+      const ensured = await ensureCreatorProfile(session, displayName);
+      if (ensured.schemaMissing || !ensured.profile) {
+        return sessionFallbackUser(session, displayName);
+      }
+      return profileToAuthUser(userId, session, ensured.profile, displayName);
+    }
+
+    await supabase.from('creators').upsert({
+      id: userId,
+      pen_name: profile.display_name || 'Creator',
+    }, { onConflict: 'id' });
+
+    return profileToAuthUser(userId, session, profile, displayName);
+  };
+
+  const refreshUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const authUser = await loadProfile(session);
+    persist(authUser, session.access_token);
+  };
+
   useEffect(() => {
     let cancelled = false;
 
     async function restoreSession() {
+      if (!isMockMode) {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const { token } = JSON.parse(saved) as { token?: string };
+            if (typeof token === 'string' && token.startsWith('mock-token-')) {
+              localStorage.removeItem(STORAGE_KEY);
+            }
+          } catch {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        }
+      }
+
       if (isMockMode) {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
@@ -115,25 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const userId = session.user.id;
-      const phone = session.user.phone || '';
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name, role, subscription_status')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (profile?.role === 'creator') {
-        await supabase.from('creators').upsert({
-          id: userId,
-          pen_name: profile.display_name || 'Creator',
-        }, { onConflict: 'id' });
-      }
-
-      const authUser = await profileToAuthUser(userId, phone, profile);
+      const authUser = await loadProfile(session);
       persist(authUser, session.access_token);
       setLoading(false);
     }
@@ -150,16 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-          const userId = session.user.id;
-          const phone = session.user.phone || '';
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('display_name, role, subscription_status')
-            .eq('id', userId)
-            .maybeSingle();
-
-          if (cancelled) return;
-          const authUser = await profileToAuthUser(userId, phone, profile);
+          const authUser = await loadProfile(session);
           persist(authUser, session.access_token);
         }
       });
@@ -173,66 +198,97 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  const sendOtp = async (phone: string) => {
+  const signInWithGoogle = async () => {
+    if (isMockMode) {
+      const userId = 'demo-creator-001';
+      persist({
+        id: userId,
+        phone: '',
+        email: 'demo@katha.in',
+        role: 'admin',
+        display_name: 'Demo Creator',
+        subscription_status: 'free',
+        phone_verified: false,
+      }, `mock-token-${userId}-${Date.now()}`);
+      return;
+    }
+
+    const redirectTo = `${window.location.origin}/login`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo },
+    });
+    if (error) throw new Error(error.message);
+  };
+
+  const sendEmailOtp = async (email: string) => {
     if (isMockMode) {
       await new Promise((r) => setTimeout(r, 250));
       return;
     }
-    await supabase.auth.signInWithOtp({ phone });
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed.includes('@')) throw new Error('Enter a valid email address.');
+    const { error } = await supabase.auth.signInWithOtp({
+      email: trimmed,
+      options: { shouldCreateUser: true },
+    });
+    if (error) throw new Error(error.message);
   };
 
-  const verifyOtp = async (_phone: string, otp: string, displayName?: string) => {
+  const verifyEmailOtp = async (email: string, otp: string, displayName?: string) => {
     if (isMockMode) {
       const MOCK_OTP = '123456';
-      if ((otp || '') !== MOCK_OTP) {
-        throw new Error('Invalid OTP. In MOCK_MODE use 123456');
-      }
-      await new Promise((r) => setTimeout(r, 200));
-
+      if ((otp || '') !== MOCK_OTP) throw new Error('Invalid OTP. In MOCK_MODE use 123456');
       const userId = 'demo-creator-001';
-      const authUser: AuthUser = {
+      persist({
         id: userId,
-        phone: _phone,
-        role: 'admin',
+        phone: '',
+        email: email.trim(),
+        role: 'creator',
         display_name: displayName || 'Demo Creator',
         subscription_status: 'free',
-      };
-      persist(authUser, `mock-token-${userId}-${Date.now()}`);
+        phone_verified: false,
+      }, `mock-token-${userId}-${Date.now()}`);
       return;
     }
 
     const { data, error } = await supabase.auth.verifyOtp({
-      phone: _phone,
-      token: otp,
-      type: 'sms',
+      email: email.trim().toLowerCase(),
+      token: otp.trim(),
+      type: 'email',
     });
 
     if (error || !data.session) {
-      throw new Error(error?.message || 'OTP verification failed');
+      throw new Error(error?.message || 'Email verification failed');
     }
 
-    const session = data.session;
-    const userId = session.user.id;
+    const ensured = await ensureCreatorProfile(data.session, displayName);
+    const authUser = ensured.profile
+      ? profileToAuthUser(data.session.user.id, data.session, ensured.profile, displayName)
+      : sessionFallbackUser(data.session, displayName);
+    persist(authUser, data.session.access_token);
+  };
 
-    const penName = displayName || 'Creator';
-    const { data: profile } = await supabase
-      .from('profiles')
-      .upsert({
-        id: userId,
-        phone: _phone,
-        display_name: penName,
-        role: 'creator',
-      }, { onConflict: 'id' })
-      .select('display_name, role, subscription_status')
-      .single();
+  const sendWhatsAppOtp = async (phone: string) => {
+    if (isMockMode) {
+      await new Promise((r) => setTimeout(r, 250));
+      return;
+    }
+    await triggerPhoneVerification(phone);
+  };
 
-    await supabase.from('creators').upsert({
-      id: userId,
-      pen_name: penName,
-    }, { onConflict: 'id' });
-
-    const authUser = await profileToAuthUser(userId, _phone, profile, displayName);
-    persist(authUser, session.access_token);
+  const verifyWhatsAppOtp = async (phone: string, otp: string) => {
+    if (isMockMode) {
+      if ((otp || '') !== '123456') throw new Error('Invalid OTP. In MOCK_MODE use 123456');
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const { user: u, token: t } = JSON.parse(saved) as { user: AuthUser; token: string };
+        persist({ ...u, phone, phone_verified: true }, t);
+      }
+      return;
+    }
+    await verifyPhoneVerification(phone, otp);
+    await refreshUser();
   };
 
   const logout = async () => {
@@ -243,7 +299,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, sendOtp, verifyOtp, logout, isMockMode }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        loading,
+        signInWithGoogle,
+        sendEmailOtp,
+        verifyEmailOtp,
+        sendWhatsAppOtp,
+        verifyWhatsAppOtp,
+        refreshUser,
+        logout,
+        isMockMode,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

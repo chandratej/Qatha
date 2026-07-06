@@ -618,12 +618,31 @@ export async function sbUploadImage(file: File): Promise<{ url: string }> {
 }
 
 export async function sbCheckHealth() {
+  const { checkSchemaHealth } = await import('./schemaHealth');
+  const schema = await checkSchemaHealth();
+  if (!schema.ready && schema.reason === 'schema_missing') {
+    return {
+      status: 'schema_missing',
+      service: 'katha-cms-supabase',
+      mock_mode: false,
+      supabase_error: schema.detail,
+    };
+  }
+
   const { error } = await supabase.from('platform_config').select('key').limit(1);
+  if (error && schema.ready) {
+    return {
+      status: 'ok',
+      service: 'katha-cms-supabase',
+      mock_mode: false,
+    };
+  }
+
   return {
-    status: error ? 'degraded' : 'ok',
+    status: schema.ready ? 'ok' : 'degraded',
     service: 'katha-cms-supabase',
     mock_mode: false,
-    supabase_error: error?.message,
+    supabase_error: error?.message || schema.detail,
   };
 }
 

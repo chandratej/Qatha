@@ -232,12 +232,17 @@ html.deep-work .ql-editor {
 
 /* Comfort typography for the EDITOR input pane (creators stare at this for hours).
    Generous line-height + slight letter-spacing tuned for Telugu script legibility.
-   Applied on top of Noto Sans Telugu.
+   Applied on top of Noto Sans Telugu. Size/spacing driven by comfort prefs (reader-app parity).
 */
+.katha-proto-editor-card {
+  --editor-font-size: 1.125rem;
+  --editor-line-height: 1.88;
+}
+
 .ql-editor {
   font-family: var(--font-telugu) !important;
-  font-size: 1.1rem !important;
-  line-height: 1.75 !important;
+  font-size: var(--editor-font-size, 1.125rem) !important;
+  line-height: var(--editor-line-height, 1.88) !important;
   letter-spacing: 0.015em !important;
   padding: 16px 20px !important;
 }
@@ -792,4 +797,122 @@ html.deep-work .glass-toolbar:hover {
   .main-content {
     padding: 16px 20px;
   }
+}
+
+/* WhatsApp verification modal + CTA */
+.cms-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(42, 31, 24, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.cms-modal {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 32px 28px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+
+.cms-modal--warm {
+  background: linear-gradient(180deg, var(--paper-warm) 0%, var(--surface) 100%);
+}
+
+.cms-modal__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  padding: 6px;
+}
+
+.cms-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: rgba(37, 211, 102, 0.12);
+  color: #128c7e;
+}
+
+.cms-modal__title {
+  text-align: center;
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+
+.cms-modal__desc {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.whatsapp-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  background: linear-gradient(135deg, #f5e6c8 0%, #fdf8f0 55%, #e8f5e9 100%);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  color: var(--ink);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.whatsapp-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(122, 99, 64, 0.15);
+}
+
+.whatsapp-cta__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.whatsapp-cta__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.whatsapp-cta__label {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.whatsapp-cta__subtitle {
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+}
+
+.whatsapp-cta__arrow {
+  color: var(--gold-dark);
+  flex-shrink: 0;
 }

@@ -1,0 +1,23 @@
+# New publishable/secret API keys are not JWTs — platform JWT verification must be off.
+# Each function validates the caller in its own code (user session JWT or secret apikey).
+
+[functions.register-device]
+verify_jwt = false
+
+[functions.publish-chapter]
+verify_jwt = false
+
+[functions.review-chapter]
+verify_jwt = false
+
+[functions.record-earnings]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.sms-hook]
+verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false

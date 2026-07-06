@@ -14,16 +14,29 @@ import {
   updateChapterStats,
 } from '../lib/demoStorage';
 import { api } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
+import { PhoneVerificationModal } from '../components/PhoneVerificationModal';
 import { aggregateScenesToHtml, scenesFromChapterPayload, scenesToContentDelta } from '../lib/sceneUtils';
 import { saveDraftToCache, loadDraftFromCache } from '../lib/draftCache';
 import { useAutosave } from '../hooks/useAutosave';
 import { useVersionHistory } from '../hooks/useVersionHistory';
+import { useWritingBreakReminder } from '../hooks/useWritingBreakReminder';
 import {
   loadEditorPrefs,
   saveEditorPrefs,
   type PreviewDevice,
   type PreviewTheme,
 } from '../lib/editorPrefs';
+import {
+  loadComfortPrefs,
+  saveComfortPrefs,
+  editorFontSizePx,
+  editorLineHeight,
+  type FontScale,
+  type LineHeightScale,
+} from '../lib/comfortPrefs';
+import { EditorComfortControls } from '../components/Editor/EditorComfortControls';
+import { WritingBreakNotice } from '../components/Editor/WritingBreakNotice';
 import '../styles/editor-prototype.css';
 
 function getWordCountFromScenes(scenes: SceneBlock[]): number {
@@ -54,6 +67,7 @@ function createDefaultScene(): SceneBlock {
 }
 
 export function ChapterEditor() {
+  const { user, refreshUser } = useAuth();
   const { storyId = 'demo-rrr', seasonId, chapterNum } = useParams();
 
   const isDemo = storyId === 'demo-rrr';
@@ -61,6 +75,11 @@ export function ChapterEditor() {
   const chapterKey = `${storyId}-${chapterNumber}`;
 
   const prefs = loadEditorPrefs(storyId, chapterNumber);
+  const initialComfort = loadComfortPrefs();
+  const [fontScale, setFontScale] = useState<FontScale>(initialComfort.fontScale);
+  const [lineHeightScale, setLineHeightScale] = useState<LineHeightScale>(initialComfort.lineHeightScale);
+  const [breakReminderMinutes, setBreakReminderMinutes] = useState(initialComfort.breakReminderMinutes);
+  const [breakNoticeOpen, setBreakNoticeOpen] = useState(false);
   const [chapterTitle, setChapterTitle] = useState('Untitled Chapter');
   const [storyLabel, setStoryLabel] = useState('Story');
   const [scenes, setScenes] = useState<SceneBlock[]>([]);
@@ -79,6 +98,8 @@ export function ChapterEditor() {
   const [moderationNotes, setModerationNotes] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
   const [appealNote, setAppealNote] = useState('');
+  const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
+  const [pendingPublish, setPendingPublish] = useState(false);
 
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -88,6 +109,37 @@ export function ChapterEditor() {
 
   useEffect(() => { scenesRef.current = scenes; }, [scenes]);
   useEffect(() => { chapterTitleRef.current = chapterTitle; }, [chapterTitle]);
+
+  const handleFontScaleChange = useCallback((scale: FontScale) => {
+    setFontScale(scale);
+    saveComfortPrefs({ fontScale: scale });
+  }, []);
+
+  const editorComfortStyle = {
+    '--editor-font-size': `${editorFontSizePx(fontScale) / 16}rem`,
+    '--editor-line-height': String(editorLineHeight(lineHeightScale)),
+  } as React.CSSProperties;
+
+  const { resetTimer, snooze } = useWritingBreakReminder({
+    intervalMinutes: breakReminderMinutes,
+    enabled: breakReminderMinutes > 0,
+    onReminder: () => setBreakNoticeOpen(true),
+  });
+
+  useEffect(() => {
+    const syncComfort = () => {
+      const latest = loadComfortPrefs();
+      setFontScale(latest.fontScale);
+      setLineHeightScale(latest.lineHeightScale);
+      setBreakReminderMinutes(latest.breakReminderMinutes);
+    };
+    window.addEventListener('storage', syncComfort);
+    window.addEventListener('katha-comfort-prefs-updated', syncComfort);
+    return () => {
+      window.removeEventListener('storage', syncComfort);
+      window.removeEventListener('katha-comfort-prefs-updated', syncComfort);
+    };
+  }, []);
 
   const persistDraft = useCallback(() => {
     if (!storyId) return;
@@ -268,7 +320,7 @@ export function ChapterEditor() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handleSaveDraft]);
 
-  const handlePublish = async () => {
+  const executePublish = async () => {
     setPublishing(true);
     setPublishError(null);
     setPublishSuccess(null);
@@ -301,6 +353,23 @@ export function ChapterEditor() {
       setPublishError(err instanceof Error ? err.message : 'Publish failed');
     } finally {
       setPublishing(false);
+      setPendingPublish(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!isDemo && !user?.phone_verified) {
+      setPendingPublish(true);
+      setPhoneVerifyOpen(true);
+      return;
+    }
+    await executePublish();
+  };
+
+  const handlePhoneVerified = async () => {
+    await refreshUser();
+    if (pendingPublish) {
+      await executePublish();
     }
   };
 
@@ -321,11 +390,27 @@ export function ChapterEditor() {
           chapterLabel={chapterTitle || `Chapter ${chapterNumber}`}
           backTo={`/stories/${storyId}`}
           saving={saving || publishing || savingDraft}
+          fontScale={fontScale}
+          onFontScaleChange={handleFontScaleChange}
           onHistory={() => setHistoryOpen(true)}
           onFocus={() => setFocusMode(true)}
           onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
           publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
+        />
+      )}
+
+      {breakNoticeOpen && (
+        <WritingBreakNotice
+          minutesElapsed={breakReminderMinutes}
+          onDismiss={() => {
+            setBreakNoticeOpen(false);
+            resetTimer();
+          }}
+          onSnooze={() => {
+            setBreakNoticeOpen(false);
+            snooze();
+          }}
         />
       )}
 
@@ -398,6 +483,7 @@ export function ChapterEditor() {
           onTogglePhonetic={() => setPhoneticLive(p => !p)}
           saving={saving}
           lastSaved={lastSaved}
+          editorComfortStyle={editorComfortStyle}
         />
 
         {!focusMode && (
@@ -413,24 +499,51 @@ export function ChapterEditor() {
             editorScrollRef={editorScrollRef}
             syncScroll={prefs.syncScroll}
             totalWords={wordCount}
+            previewComfortStyle={editorComfortStyle}
           />
         )}
       </div>
 
       {focusMode && (
-        <button
-          type="button"
-          onClick={() => setFocusMode(false)}
+        <div
           style={{
-            position: 'fixed', top: 16, right: 16, zIndex: 10001,
-            padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)',
-            background: 'var(--surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-            boxShadow: 'var(--shadow-md)',
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            zIndex: 10001,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
           }}
         >
-          <X size={16} /> Exit Focus
-        </button>
+          <EditorComfortControls fontScale={fontScale} onFontScaleChange={handleFontScaleChange} compact />
+          <button
+            type="button"
+            onClick={() => setFocusMode(false)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--surface)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            <X size={16} /> Exit Focus
+          </button>
+        </div>
       )}
+
+      <PhoneVerificationModal
+        open={phoneVerifyOpen}
+        onClose={() => { setPhoneVerifyOpen(false); setPendingPublish(false); }}
+        onVerified={handlePhoneVerified}
+        title="Verify to publish"
+        description="Before your chapter goes live, verify your WhatsApp number for payouts and KYC. We send a 6-digit code on WhatsApp."
+      />
 
       <VersionHistoryModal
         open={historyOpen}

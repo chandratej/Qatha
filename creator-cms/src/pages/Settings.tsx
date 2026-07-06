@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Database, LogOut, Smartphone } from 'lucide-react';
+import { User, Bell, Database, LogOut, Smartphone, Coffee } from 'lucide-react';
+import {
+  loadComfortPrefs,
+  saveComfortPrefs,
+  fontScaleLabel,
+  lineHeightLabel,
+  breakReminderLabel,
+  editorFontSizePx,
+  type FontScale,
+  type LineHeightScale,
+  type BreakReminderMinutes,
+} from '../lib/comfortPrefs';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { clearDraftCache } from '../lib/draftCache';
@@ -21,6 +32,11 @@ export function Settings() {
   const [devices, setDevices] = useState<UserDevice[]>([]);
   const [devicesError, setDevicesError] = useState<string | null>(null);
   const currentDeviceId = getDeviceId();
+  const [comfort, setComfort] = useState(() => loadComfortPrefs());
+
+  const updateComfort = (patch: Parameters<typeof saveComfortPrefs>[0]) => {
+    setComfort(saveComfortPrefs(patch));
+  };
 
   useEffect(() => {
     if (!supabaseDirect || isMockMode) return;
@@ -81,6 +97,74 @@ export function Settings() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>Theme (sepia / night)</span>
           <ThemeToggle compact />
+        </div>
+      </div>
+
+      <div className="cms-panel cms-panel--flat" style={{ marginBottom: 20 }}>
+        <div className="cms-panel__head">
+          <h3 className="cms-panel__title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Coffee size={18} />
+            Writing comfort
+          </h3>
+        </div>
+        <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>
+          Tune the chapter editor for long sessions. Text size matches the reader app scale. Break reminders
+          appear only while you are actively editing with this tab open.
+        </p>
+
+        <div style={{ display: 'grid', gap: 16 }}>
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>
+              Editor text size — {fontScaleLabel(comfort.fontScale)} ({editorFontSizePx(comfort.fontScale)}px)
+            </span>
+            <input
+              type="range"
+              min={1}
+              max={5}
+              step={1}
+              value={comfort.fontScale}
+              onChange={(e) => updateComfort({ fontScale: Number(e.target.value) as FontScale })}
+              aria-label="Editor text size"
+            />
+          </label>
+
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>
+              Line spacing — {lineHeightLabel(comfort.lineHeightScale)}
+            </span>
+            <select
+              className="cms-input"
+              value={comfort.lineHeightScale}
+              onChange={(e) =>
+                updateComfort({ lineHeightScale: Number(e.target.value) as LineHeightScale })
+              }
+              aria-label="Editor line spacing"
+            >
+              <option value={1}>Compact (1.65)</option>
+              <option value={2}>Comfort (1.88) — recommended</option>
+              <option value={3}>Spacious (1.95)</option>
+            </select>
+          </label>
+
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>
+              Eye-break reminders — {breakReminderLabel(comfort.breakReminderMinutes)}
+            </span>
+            <select
+              className="cms-input"
+              value={comfort.breakReminderMinutes}
+              onChange={(e) =>
+                updateComfort({
+                  breakReminderMinutes: Number(e.target.value) as BreakReminderMinutes,
+                })
+              }
+              aria-label="Eye-break reminder interval"
+            >
+              <option value={0}>Off</option>
+              <option value={90}>Every 90 minutes</option>
+              <option value={120}>Every 120 minutes</option>
+            </select>
+          </label>
         </div>
       </div>
 

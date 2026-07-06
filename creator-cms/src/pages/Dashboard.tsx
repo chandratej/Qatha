@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
   Users,
@@ -33,6 +33,7 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { BRAND } from '../lib/constants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
+import { isSessionError } from '../lib/errors';
 
 function formatInr(n: number) {
   return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
@@ -144,7 +145,8 @@ function buildActivityFeed(d: DashboardData, milestones: CreatorMilestone[]): Ac
 
 export function Dashboard() {
   const { user } = useAuth();
-  const { data: d, loading, error } = useApi(() => api.getDashboard());
+  const navigate = useNavigate();
+  const { data: d, loading, error, mutate } = useApi(() => api.getDashboard());
   const { data: milestonesData, mutate: mutateMilestones } = useApi(() =>
     api.getMilestones().catch(() => ({ milestones: [] as CreatorMilestone[] })),
   );
@@ -200,11 +202,34 @@ export function Dashboard() {
   }
 
   if (error || !d) {
+    const sessionExpired = isSessionError(error);
     return (
       <div className="cms-page dashboard-page">
         <div className="cms-panel cms-panel--flat" style={{ padding: 32, textAlign: 'center' }}>
-          <p style={{ color: 'var(--ink-muted)', marginBottom: 16 }}>{error || 'Unable to load dashboard'}</p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--ink-soft)' }}>Start the backend: <code>cd backend && npm run dev</code></p>
+          <p style={{ color: 'var(--ink-muted)', marginBottom: 20 }}>
+            {error || 'We could not load your dashboard right now.'}
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {sessionExpired ? (
+              <button
+                type="button"
+                className="dashboard-cta"
+                style={{ border: 'none' }}
+                onClick={() => navigate('/login')}
+              >
+                Sign in again
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="dashboard-cta"
+                style={{ border: 'none' }}
+                onClick={() => mutate()}
+              >
+                Try again
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

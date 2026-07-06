@@ -2,6 +2,7 @@
 // Razorpay → subscriptions + earnings ledger. Configure webhook URL in Razorpay dashboard.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { getSecretKey } from '../_shared/keys.ts';
 import { isRecentWebhook, verifyRazorpaySignature } from '../_shared/razorpay.ts';
 import { loadRevenueConfig } from '../_shared/revenue.ts';
 import { recordEarnings } from '../_shared/recordEarnings.ts';
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    getSecretKey(),
   );
 
   try {

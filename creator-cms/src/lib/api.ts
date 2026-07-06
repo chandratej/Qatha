@@ -1,4 +1,5 @@
 import type { AuthUser } from '../context/AuthContext';
+import { CONNECTION_ERROR, mapApiError } from './errors';
 import { isMockMode } from './supabase';
 import * as sb from '../services';
 
@@ -40,9 +41,6 @@ function authHeaders(extra: Record<string, string> = {}): Record<string, string>
   return headers;
 }
 
-const BACKEND_HINT =
-  'Start the backend: cd backend && npm run dev (port 3001, MOCK_MODE=true in .env).';
-
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
@@ -51,20 +49,26 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       headers: authHeaders((options.headers as Record<string, string>) || {}),
     });
   } catch {
-    throw new Error(`Cannot reach the API at ${API_BASE}. ${BACKEND_HINT}`);
+    throw new Error(CONNECTION_ERROR);
   }
 
-  let data: { user_message?: string; message?: string };
+  let data: { code?: string; user_message?: string; message?: string };
   try {
     data = await res.json();
   } catch {
-    throw new Error(res.ok ? 'Invalid response from server' : `Request failed (${res.status})`);
+    throw new Error(res.ok ? 'Invalid response from server' : GENERIC_REQUEST_ERROR(res.status));
   }
 
   if (!res.ok) {
-    throw new Error(data.user_message || data.message || 'Request failed');
+    throw new Error(mapApiError(data));
   }
   return data as T;
+}
+
+function GENERIC_REQUEST_ERROR(status: number) {
+  return status >= 500
+    ? 'Katha is temporarily unavailable. Please try again shortly.'
+    : 'We could not complete that request. Please try again.';
 }
 
 import type {

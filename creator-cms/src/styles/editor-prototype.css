@@ -662,8 +662,8 @@
 
 .katha-proto-preview-scene-body {
   font-family: var(--font-reading);
-  font-size: 0.95rem;
-  line-height: 1.85;
+  font-size: var(--editor-font-size, 0.95rem);
+  line-height: var(--editor-line-height, 1.85);
   color: var(--ink-soft);
   margin-bottom: 28px;
   max-width: 100%;
@@ -776,6 +776,126 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Editor comfort controls (A-/A+ font scaling) */
+.editor-comfort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.editor-comfort--compact {
+  padding: 2px;
+}
+
+.editor-comfort__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.editor-comfort__btn:hover:not(:disabled) {
+  background: var(--paper-warm);
+  color: var(--ink);
+}
+
+.editor-comfort__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.editor-comfort__glyph {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.editor-comfort__glyph--large {
+  font-size: 0.9rem;
+}
+
+.editor-comfort__label {
+  font-size: 0.7rem;
+  color: var(--ink-muted);
+  min-width: 2.5rem;
+  text-align: center;
+  user-select: none;
+}
+
+/* Writing break reminder */
+.writing-break-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  background: var(--accent-sage-soft);
+  border-bottom: 1px solid var(--border);
+  color: var(--ink);
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.writing-break-notice__icon {
+  color: var(--accent-sage);
+  flex-shrink: 0;
+}
+
+.writing-break-notice__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.45;
+}
+
+.writing-break-notice__copy strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.writing-break-notice__copy span {
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+}
+
+.writing-break-notice__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.writing-break-notice__btn {
+  font-size: 0.8125rem;
+  padding: 6px 12px;
+}
+
+.writing-break-notice__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-muted);
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.writing-break-notice__close:hover {
+  background: var(--paper-warm);
+  color: var(--ink);
 }
 
 .katha-proto-breadcrumb__chapter {

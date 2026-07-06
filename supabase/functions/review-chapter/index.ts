@@ -1,6 +1,7 @@
 // Edge Function: review-chapter (Wave B — SVC-MOD-03)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { getPublishableKey, getSecretKey } from '../_shared/keys.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
 
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      getPublishableKey(),
       { global: { headers: { Authorization: authHeader } } },
     );
 
@@ -62,7 +63,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      getSecretKey(),
     );
 
     const { data: item, error: fetchError } = await admin

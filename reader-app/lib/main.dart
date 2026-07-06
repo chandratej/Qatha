@@ -18,7 +18,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
+    anonKey: AppConfig.supabasePublishableKey,
   );
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -37,10 +37,7 @@ void main() async {
 
   // Eager pre-warm of last read chapter + next ones → "continue reading" feels instant
   if (appState.hasContinueReading && appState.continueReadingStoryId != null) {
-    final api = ApiService(
-      userId: authState.user?.id,
-      subscriptionStatus: authState.user?.subscriptionStatus,
-    );
+    final api = ApiService.fromAuth(authState);
     // Fire and forget - makes the ritual bond instant on next open
     OfflineCache.instance.prewarmContinueReading(
       storyId: appState.continueReadingStoryId!,

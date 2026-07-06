@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Phone, BookOpen, PenLine, Rocket, Leaf } from 'lucide-react';
+import { UserCircle, BookOpen, PenLine, Rocket, Leaf } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { ONBOARDING_KEY, BRAND } from '../lib/constants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
+import { WhatsAppCTA } from '../components/WhatsAppCTA';
 
 export function Onboarding() {
   const { user } = useAuth();
@@ -15,7 +16,7 @@ export function Onboarding() {
 
   const hasStories = (data?.stories?.length ?? 0) > 0;
   const hasChapters = data?.stories?.some((s) => s.chapter_count > 0) ?? false;
-  const phoneVerified = Boolean(user?.phone && user.phone.length > 4);
+  const accountReady = Boolean(user?.id);
 
   useEffect(() => {
     if (!data?.stories?.length) return;
@@ -36,11 +37,11 @@ export function Onboarding() {
   const steps = [
     {
       num: 1,
-      icon: Phone,
-      title: 'Phone verification',
-      desc: 'Verify your mobile for creator payouts and KYC.',
-      done: phoneVerified,
-      current: !phoneVerified,
+      icon: UserCircle,
+      title: 'Create your account',
+      desc: 'Sign in with Google or email — free to start.',
+      done: accountReady,
+      current: !accountReady,
     },
     {
       num: 2,
@@ -48,7 +49,7 @@ export function Onboarding() {
       title: 'Create your first story',
       desc: 'Title, genre, cover image, and release schedule.',
       done: hasStories,
-      current: phoneVerified && !hasStories,
+      current: accountReady && !hasStories,
     },
     {
       num: 3,
@@ -74,7 +75,7 @@ export function Onboarding() {
         trackCreatorEvent('creator_onboarding_step_completed', { step: step.num, title: step.title });
       }
     });
-  }, [hasStories, hasChapters, hasPublished, phoneVerified]);
+  }, [hasStories, hasChapters, hasPublished, accountReady]);
 
   const markComplete = () => localStorage.setItem(ONBOARDING_KEY, 'true');
 
@@ -111,6 +112,16 @@ export function Onboarding() {
             </div>
           </div>
         ))}
+
+        {user?.id && (
+          <div style={{ marginTop: 24 }}>
+            <WhatsAppCTA
+              type="creator"
+              contextId={user.id}
+              subtitle="Get creator resources and open a free WhatsApp support window"
+            />
+          </div>
+        )}
 
         <Link
           to="/stories/new"

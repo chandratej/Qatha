@@ -14,7 +14,7 @@ describe('Wave B routing', () => {
   it('uses Supabase direct by default when mock mode is off', async () => {
     vi.stubEnv('VITE_MOCK_MODE', 'false');
     vi.stubEnv('VITE_SUPABASE_URL', 'https://real-project.supabase.co');
-    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'real-key');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_real');
     const { useSupabaseDirect } = await import('./api');
     expect(useSupabaseDirect()).toBe(true);
   });

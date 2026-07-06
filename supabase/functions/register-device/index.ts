@@ -2,18 +2,14 @@
 // Enforces 2-device limit; evicts stale sessions. Invoke post-login with user JWT.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, handleCorsPreflight } from '../_shared/cors.ts';
+import { getPublishableKey, getSecretKey } from '../_shared/keys.ts';
 
 const MAX_DEVICES = 2;
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -26,7 +22,7 @@ Deno.serve(async (req) => {
 
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      getPublishableKey(),
       { global: { headers: { Authorization: authHeader } } },
     );
 
@@ -49,7 +45,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      getSecretKey(),
     );
 
     await admin.from('user_devices').upsert({

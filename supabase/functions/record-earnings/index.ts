@@ -1,7 +1,8 @@
 // Edge Function: record-earnings (Wave C — SVC-MONEY-01)
-// Internal/service-only — records 60/40 split. Invoke with service_role key.
+// Internal/service-only — records 60/40 split. Invoke with secret API key (apikey header).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { authorizeSecretRequest, getSecretKey } from '../_shared/keys.ts';
 import { recordEarnings } from '../_shared/recordEarnings.ts';
 
 const corsHeaders = {
@@ -15,10 +16,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization') || '';
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    if (!authHeader.includes(serviceKey)) {
-      return new Response(JSON.stringify({ error: 'Service role required' }), {
+    if (!authorizeSecretRequest(req)) {
+      return new Response(JSON.stringify({ error: 'Secret API key required' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -26,7 +25,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      serviceKey,
+      getSecretKey(),
     );
 
     const body = await req.json();

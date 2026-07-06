@@ -103,6 +103,7 @@ interface EditorWorkspaceProps {
   onTogglePhonetic: () => void;
   saving: boolean;
   lastSaved: Date | null;
+  editorComfortStyle?: React.CSSProperties;
 }
 
 export function EditorWorkspace({
@@ -120,6 +121,7 @@ export function EditorWorkspace({
   onTogglePhonetic,
   saving,
   lastSaved,
+  editorComfortStyle,
 }: EditorWorkspaceProps) {
   const quillRef = useRef<ReactQuill>(null);
   const internalScrollRef = useRef<HTMLDivElement>(null);
@@ -290,7 +292,7 @@ export function EditorWorkspace({
       />
 
       <div ref={scrollRef} className="katha-proto-editor-body">
-        <div className="katha-proto-editor-card">
+        <div className="katha-proto-editor-card" style={editorComfortStyle}>
           <div className="katha-proto-scene-label">Scene {activeSceneIndex + 1}</div>
           <PhoneticTextInput
             className="katha-proto-scene-title-input"
