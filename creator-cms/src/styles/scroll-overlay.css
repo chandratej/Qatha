@@ -1,0 +1,73 @@
+/*
+ * macOS-style overlay auto-hide scrollbars
+ * Hidden at rest · appears on scroll · fades 500ms after idle · expands on hover-drag
+ */
+
+:root {
+  --overlay-thumb: rgba(0, 0, 0, 0.2);
+  --overlay-thumb-hover: rgba(0, 0, 0, 0.35);
+  --overlay-scrollbar-size: 5px;
+  --overlay-scrollbar-size-hover: 8px;
+  --overlay-scrollbar-fade: 0.5s ease;
+}
+
+[data-theme='dark'] {
+  --overlay-thumb: rgba(255, 255, 255, 0.2);
+  --overlay-thumb-hover: rgba(255, 255, 255, 0.38);
+}
+
+/* Firefox — transparent track, thumb only when active or hovering */
+.overlay-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.overlay-scroll--active,
+.overlay-scroll:hover {
+  scrollbar-color: var(--overlay-thumb) transparent;
+}
+
+.overlay-scroll--active:hover {
+  scrollbar-color: var(--overlay-thumb-hover) transparent;
+}
+
+/* WebKit — overlay thumb, no track */
+.overlay-scroll::-webkit-scrollbar {
+  width: var(--overlay-scrollbar-size);
+  height: var(--overlay-scrollbar-size);
+}
+
+.overlay-scroll:hover::-webkit-scrollbar {
+  width: var(--overlay-scrollbar-size-hover);
+  height: var(--overlay-scrollbar-size-hover);
+}
+
+.overlay-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overlay-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 100px;
+  transition: background var(--overlay-scrollbar-fade);
+}
+
+.overlay-scroll--active::-webkit-scrollbar-thumb,
+.overlay-scroll:hover::-webkit-scrollbar-thumb {
+  background: var(--overlay-thumb);
+}
+
+.overlay-scroll--active::-webkit-scrollbar-thumb:hover,
+.overlay-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background: var(--overlay-thumb-hover);
+}
+
+.overlay-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-scroll::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}

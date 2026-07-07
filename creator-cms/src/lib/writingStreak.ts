@@ -139,3 +139,8 @@ export function getWeekHeatmap() {
     return { label, active: words > 0, words };
   });
 }
+
+/** Last 30 days for compact streak strip. */
+export function getMonthHeatmap(): Array<{ date: string; words: number; level: 0 | 1 | 2 | 3 }> {
+  return getStreakHeatmap().slice(-30);
+}

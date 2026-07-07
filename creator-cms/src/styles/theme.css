@@ -149,7 +149,9 @@ html {
   -moz-osx-font-smoothing: grayscale;
   background: var(--paper);
   transition: background-color 0.35s ease;
-  overflow-x: hidden;
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
 }
 
 body {
@@ -159,7 +161,9 @@ body {
   line-height: var(--line-height-body);
   letter-spacing: var(--letter-spacing-body);
   font-weight: 400;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
   cursor: default;
 }
 
@@ -180,7 +184,28 @@ label, .sidebar {
 }
 
 #root {
-  min-height: 100vh;
+  height: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Viewport shell — guarantees every route can scroll to all content */
+.app-viewport {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-viewport > .app-shell,
+.app-viewport > .cms-auth-page,
+.app-viewport > .katha-proto-layout {
+  flex: 1;
+  min-height: 0;
+  height: auto;
 }
 
 a {

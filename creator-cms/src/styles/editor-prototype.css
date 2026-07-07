@@ -3,7 +3,9 @@
 .katha-proto-layout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
+  height: auto;
   overflow: hidden;
   background: var(--paper);
   font-family: var(--font-ui);

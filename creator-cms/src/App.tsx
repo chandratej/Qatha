@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ApiAuthSync } from './components/ApiAuthSync';
 import { Layout } from './components/Layout';
+import { OverlayScrollManager } from './components/OverlayScrollManager';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -21,6 +22,7 @@ import { ModerationRoute } from './components/ModerationRoute';
 import { OnboardingGate } from './components/OnboardingGate';
 import { Settings } from './pages/Settings';
 import './styles/theme.css';
+import './styles/scroll-overlay.css';
 import './styles/components.css';
 import './styles/dashboard.css';
 
@@ -31,7 +33,9 @@ function App() {
         <AuthProvider>
           <ApiAuthSync />
           <BrowserRouter>
-            <Routes>
+            <div className="app-viewport">
+              <OverlayScrollManager />
+              <Routes>
               <Route path="/login" element={<Login />} />
               <Route element={<ProtectedRoute />}>
                 <Route element={<OnboardingGate />}>
@@ -55,7 +59,8 @@ function App() {
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+              </Routes>
+            </div>
           </BrowserRouter>
         </AuthProvider>
       </ThemeProvider>
