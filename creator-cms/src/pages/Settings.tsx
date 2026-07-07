@@ -253,7 +253,7 @@ export function Settings() {
           </h3>
         </div>
         <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', margin: 0 }}>
-          In-app alerts for moderation updates and milestones appear in the sidebar bell. Email notifications coming soon.
+          In-app alerts for moderation updates and milestones appear in the notification bell. Email notifications coming soon.
         </p>
       </div>
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import { api, type StoryData } from '../lib/api';
 import { GENRES, RELEASE_SCHEDULES, PAYWALL } from '../lib/constants';
+import { CmsModal } from './CmsModal';
 
 interface StoryEditModalProps {
   story: StoryData;
@@ -33,48 +33,41 @@ export function StoryEditModal({ story, onClose, onSaved }: StoryEditModalProps)
   };
 
   return (
-    <div className="milestone-modal-backdrop" onClick={onClose}>
-      <div className="cms-panel" style={{ maxWidth: 520, width: '100%', margin: 16 }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 className="cms-panel__title" style={{ margin: 0 }}>Edit story</h2>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ background: 'none', border: 'none', color: 'var(--ink-muted)', cursor: 'pointer' }}>
-            <X size={20} />
+    <CmsModal
+      title="Edit story"
+      onClose={onClose}
+      footer={(
+        <div className="cms-modal__footer-actions">
+          <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button type="submit" form="story-edit-form" className="dashboard-cta" style={{ border: 'none' }} disabled={saving}>
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>
-        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div className="input-group">
-            <label>Title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value.slice(0, PAYWALL.maxStoryTitleChars))} required />
-          </div>
-          <div className="input-group">
-            <label>Genre</label>
-            <select value={genre} onChange={(e) => setGenre(e.target.value)}>
-              {GENRES.map((g) => (
-                <option key={g.id} value={g.id}>{g.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="input-group">
-            <label>Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))} rows={3} />
-          </div>
-          <div className="input-group">
-            <label>Release schedule</label>
-            <select value={schedule} onChange={(e) => setSchedule(e.target.value)}>
-              {RELEASE_SCHEDULES.map((s) => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-          {error && <p className="cms-error-text">{error}</p>}
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="dashboard-cta" style={{ border: 'none' }} disabled={saving}>
-              {saving ? 'Saving…' : 'Save changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      )}
+    >
+      <form id="story-edit-form" onSubmit={handleSave} className="cms-form-stack">
+        <label className="input-group">
+          <span>Title</span>
+          <input className="cms-input" value={title} onChange={(e) => setTitle(e.target.value.slice(0, PAYWALL.maxStoryTitleChars))} required />
+        </label>
+        <label className="input-group">
+          <span>Genre</span>
+          <select className="cms-select" value={genre} onChange={(e) => setGenre(e.target.value)}>
+            {GENRES.map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}
+          </select>
+        </label>
+        <label className="input-group">
+          <span>Description</span>
+          <textarea className="cms-input cms-textarea" value={description} onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))} rows={3} />
+        </label>
+        <label className="input-group">
+          <span>Release schedule</span>
+          <select className="cms-select" value={schedule} onChange={(e) => setSchedule(e.target.value)}>
+            {RELEASE_SCHEDULES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
+        </label>
+        {error && <p className="cms-error-text">{error}</p>}
+      </form>
+    </CmsModal>
   );
 }

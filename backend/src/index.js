@@ -37,6 +37,21 @@ app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(deprecationHeaders());
 
+app.get('/api/openapi.json', (_, res) => {
+  import('./openapi.js').then(({ openApiSpec }) => res.json(openApiSpec));
+});
+
+app.get('/api/docs', (_, res) => {
+  res.type('html').send(`<!DOCTYPE html>
+<html><head><title>Katha API Docs</title>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+</head><body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>SwaggerUIBundle({ url: '/api/openapi.json', dom_id: '#swagger-ui' });</script>
+</body></html>`);
+});
+
 app.get('/health', (_, res) => {
   res.json({
     status: 'ok',

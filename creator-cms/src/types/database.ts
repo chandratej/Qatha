@@ -82,6 +82,9 @@ export interface AnalyticsData {
   }>;
   subscribers_gained: number;
   drop_off_insights?: DropOffInsight[];
+  demographics?: Array<{ label: string; pct: number }>;
+  retention_history?: Array<{ month: string; retention_pct: number }>;
+  revenue_by_month?: Array<{ month: string; revenue_inr: number }>;
 }
 
 export interface CreatorMilestone {

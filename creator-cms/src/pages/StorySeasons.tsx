@@ -1,6 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit3, ArrowLeft, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil } from 'lucide-react';
+import { Plus, Edit3, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil } from 'lucide-react';
+import { BackLink } from '../components/BackLink';
 import { Reorder } from 'framer-motion';
 import {
   getOrInitDemoData,
@@ -35,7 +36,7 @@ export function StorySeasons() {
     try {
       const { story, chapters } = await api.getStoryChapters(storyId);
       if (story?.title) setStoryTitle(story.title);
-      setApiChapters(chapters);
+      setApiChapters(chapters ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load chapters');
     } finally {
@@ -59,7 +60,7 @@ export function StorySeasons() {
       if (cancelled) return;
     })();
     return () => { cancelled = true; };
-  }, [storyId, isDemo, selectedSeasonId]);
+  }, [storyId, isDemo]);
 
   const selectedSeason = seasons.find(s => s.id === selectedSeasonId) || seasons[0];
   const currentChapters = isDemo
@@ -134,9 +135,7 @@ export function StorySeasons() {
     <div className="cms-page">
       <header className="cms-page-header">
         <div className="cms-page-header__with-back">
-          <Link to="/stories" className="cms-back-link" aria-label="Back to stories">
-            <ArrowLeft size={18} />
-          </Link>
+          <BackLink to="/stories" label="Back to stories" />
           <div>
             <h1 className="cms-page-header__title">{storyTitle}</h1>
             <p className="cms-page-header__subtitle">

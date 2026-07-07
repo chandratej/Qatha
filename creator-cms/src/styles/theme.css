@@ -79,7 +79,10 @@
   --dash-shadow: var(--shadow-md);
   --dash-shadow-hover: var(--shadow-lg);
   --dash-radius: var(--radius-lg);
-  --dash-sidebar-width: 252px;
+  --dash-sidebar-width: 280px;
+  --dash-sidebar-bg: #3A2F28;
+  --dash-sidebar-ink: #F6F1E7;
+  --dash-sidebar-muted: #B8A898;
 
   color-scheme: light;
 }
@@ -123,6 +126,9 @@
   --dash-border: var(--border);
   --dash-gold: var(--gold);
   --dash-gold-soft: var(--gold-light);
+  --dash-sidebar-bg: #1A1512;
+  --dash-sidebar-ink: #E8DFD0;
+  --dash-sidebar-muted: #9A8A78;
   color-scheme: dark;
 }
 
@@ -143,6 +149,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   background: var(--paper);
   transition: background-color 0.35s ease;
+  overflow-x: hidden;
 }
 
 body {

@@ -299,7 +299,23 @@ export function getSeedAnalytics(storyId) {
   return {
     story: seedStories.find((s) => s.id === storyId),
     chapters: chapterStats,
-    subscribers_gained: 0,
+    subscribers_gained: 12,
     drop_off_insights: dropOffInsights,
+    demographics: [
+      { label: '18–24', pct: 34 },
+      { label: '25–34', pct: 41 },
+      { label: '35–44', pct: 18 },
+      { label: '45+', pct: 7 },
+    ],
+    retention_history: [
+      { month: '2026-04', retention_pct: 62 },
+      { month: '2026-05', retention_pct: 68 },
+      { month: '2026-06', retention_pct: 74 },
+    ],
+    revenue_by_month: [
+      { month: '2026-04', revenue_inr: 4200 },
+      { month: '2026-05', revenue_inr: 6800 },
+      { month: '2026-06', revenue_inr: 9200 },
+    ],
   };
 }

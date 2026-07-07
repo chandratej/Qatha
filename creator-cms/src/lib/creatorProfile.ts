@@ -74,9 +74,10 @@ export async function ensureCreatorProfile(session: Session, displayName?: strin
     role: 'creator' as const,
   };
 
+  const profileInsert = email ? { ...baseRow, email } : baseRow;
   let upsert = await supabase
     .from('profiles')
-    .upsert(email ? { ...baseRow, email } : baseRow, { onConflict: 'id' })
+    .upsert(profileInsert as typeof baseRow, { onConflict: 'id' })
     .select(EXT_COLS)
     .single();
 

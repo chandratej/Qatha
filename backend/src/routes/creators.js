@@ -119,7 +119,12 @@ creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
     if (isMockMode()) {
       const chapters = getCreatorStoryChapters(storyId, creatorId);
       if (!chapters) throw createAppError('CHAPTER_NOT_FOUND', 'Story not found', 404);
-      return res.json({ chapters, mock: true });
+      const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId);
+      return res.json({
+        story: { id: storyId, title: story?.title || 'My Story' },
+        chapters,
+        mock: true,
+      });
     }
 
     const { data: story } = await supabase.from('stories').select('id, title, author_id')

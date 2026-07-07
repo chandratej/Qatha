@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Loader2, PenLine, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Loader2, PenLine, Pencil, Trash2, Search } from 'lucide-react';
+
 import { api } from '../lib/api';
 import type { StoryData } from '../lib/api';
 import { useApi } from '../hooks/useApi';
@@ -64,20 +65,22 @@ export function Stories() {
       {error && <div className="cms-panel cms-error-text">{error}</div>}
 
       {!loading && (data?.stories?.length ?? 0) > 0 && (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <input
-            type="search"
-            className="cms-input"
-            placeholder="Search stories…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: 1, minWidth: 200 }}
-          />
+        <div className="cms-toolbar">
+          <label className="cms-search-field">
+            <Search size={16} aria-hidden />
+            <input
+              type="search"
+              className="cms-input cms-search-field__input"
+              placeholder="Search stories by title or description…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Search stories"
+            />
+          </label>
           <select
-            className="cms-input"
+            className="cms-select cms-toolbar__select"
             value={genreFilter}
             onChange={(e) => setGenreFilter(e.target.value)}
-            style={{ width: 'auto' }}
             aria-label="Filter by genre"
           >
             <option value="">All genres</option>
