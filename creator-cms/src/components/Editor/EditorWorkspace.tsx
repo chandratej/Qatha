@@ -11,6 +11,11 @@ import {
   type Suggestion,
 } from '../../lib/phonetic';
 import type { SceneBlock } from './SceneSidebar';
+import {
+  applyContentFindInQuill,
+  stripHtml,
+  type ChapterFindMatch,
+} from '../../lib/chapterFind';
 import { FormatToolbar } from './FormatToolbar';
 import { PhoneticTextInput } from './PhoneticTextInput';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
@@ -110,6 +115,11 @@ interface EditorWorkspaceProps {
   focusMode?: boolean;
   canvasMaxWidth?: number;
   toolbarMinimal?: boolean;
+  findOpen?: boolean;
+  findActiveMatch?: ChapterFindMatch | null;
+  findSceneMatches?: ChapterFindMatch[];
+  aiCompanionOpen?: boolean;
+  onAiCompanionOpenChange?: (open: boolean) => void;
 }
 
 export function EditorWorkspace({
@@ -131,9 +141,17 @@ export function EditorWorkspace({
   focusMode = false,
   canvasMaxWidth = 920,
   toolbarMinimal = false,
+  findOpen = false,
+  findActiveMatch = null,
+  findSceneMatches = [],
+  aiCompanionOpen: controlledAiOpen,
+  onAiCompanionOpenChange,
 }: EditorWorkspaceProps) {
-  const [aiCompanionOpen, setAiCompanionOpen] = useState(false);
+  const [internalAiOpen, setInternalAiOpen] = useState(false);
+  const aiCompanionOpen = controlledAiOpen ?? internalAiOpen;
+  const setAiCompanionOpen = onAiCompanionOpenChange ?? setInternalAiOpen;
   const quillRef = useRef<ReactQuill>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const internalScrollRef = useRef<HTMLDivElement>(null);
   const scrollRef = externalScrollRef || internalScrollRef;
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -146,6 +164,58 @@ export function EditorWorkspace({
 
   useEffect(() => { activeSceneIdRef.current = activeScene?.id; }, [activeScene?.id]);
   useEffect(() => { phoneticLiveRef.current = phoneticLive; }, [phoneticLive]);
+
+  useEffect(() => {
+    const editor = quillRef.current?.getEditor();
+    if (!editor || !activeScene) return;
+
+    if (!findOpen) {
+      editor.formatText(0, Math.max(0, editor.getLength() - 1), 'background', false, 'silent');
+      return;
+    }
+
+    const scenePlain = stripHtml(activeScene.content);
+    const contentMatches = findSceneMatches.filter(
+      (m) => m.sceneId === activeScene.id && m.field === 'content',
+    );
+    const active = findActiveMatch?.sceneId === activeScene.id && findActiveMatch.field === 'content'
+      ? findActiveMatch
+      : null;
+    const activeRange = applyContentFindInQuill(
+      {
+        getText: () => editor.getText(),
+        getLength: () => editor.getLength(),
+        setSelection: (index, length, source) => editor.setSelection(index, length, source as 'api'),
+        formatText: (index, length, format, value, source) =>
+          editor.formatText(index, length, format, value, source as 'api'),
+      },
+      scenePlain,
+      contentMatches,
+      active,
+    );
+
+    if (
+      findActiveMatch?.field === 'title'
+      && findActiveMatch.sceneId === activeScene.id
+    ) {
+      titleInputRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } else if (activeRange && scrollRef.current) {
+      const bounds = editor.getBounds(activeRange.start, activeRange.length);
+      if (bounds) {
+        const editorRect = editor.root.getBoundingClientRect();
+        const scrollEl = scrollRef.current;
+        const scrollRect = scrollEl.getBoundingClientRect();
+        const margin = 72;
+        const matchTop = editorRect.top + bounds.top;
+        const matchBottom = matchTop + bounds.height;
+        if (matchTop < scrollRect.top + margin) {
+          scrollEl.scrollTop += matchTop - scrollRect.top - margin;
+        } else if (matchBottom > scrollRect.bottom - margin) {
+          scrollEl.scrollTop += matchBottom - scrollRect.bottom + margin;
+        }
+      }
+    }
+  }, [findOpen, findActiveMatch, findSceneMatches, activeScene?.id, activeScene?.content, scrollRef]);
 
   const getEditor = () => quillRef.current?.getEditor();
 
@@ -377,6 +447,7 @@ export function EditorWorkspace({
           style={{ ...editorComfortStyle, maxWidth: canvasMaxWidth }}
         >
           <PhoneticTextInput
+            ref={titleInputRef}
             className="katha-proto-scene-title-input"
             value={activeScene.title}
             onChange={(v) => updateSceneTitle(activeScene.id, v)}

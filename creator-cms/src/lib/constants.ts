@@ -30,4 +30,4 @@ export const ONBOARDING_KEY = 'katha_onboarding_complete';
 
 /** Reader gateway — Trojan Horse share links (VITE_GATEWAY_URL in .env) */
 export const GATEWAY_URL =
-  import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3002';
+  import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000';

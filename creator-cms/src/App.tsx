@@ -16,7 +16,6 @@ import { Analytics } from './pages/Analytics';
 import { Onboarding } from './pages/Onboarding';
 import { Profile } from './pages/Profile';
 import { Community } from './pages/Community';
-import { Marketing } from './pages/Marketing';
 import { Moderation } from './pages/Moderation';
 import { ModerationRoute } from './components/ModerationRoute';
 import { OnboardingGate } from './components/OnboardingGate';
@@ -53,7 +52,6 @@ function App() {
                   <Route path="/stories/:storyId" element={<StorySeasons />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/community" element={<Community />} />
-                  <Route path="/marketing" element={<Marketing />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />

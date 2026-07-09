@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Leaf,
   LogOut,
-  Megaphone,
   Search,
   Settings,
   Shield,
@@ -26,7 +25,6 @@ const PRIMARY_NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/stories', label: 'Stories', icon: BookOpen },
   { to: '/community', label: 'Community', icon: Users },
-  { to: '/marketing', label: 'Marketing', icon: Megaphone, badge: 'MVP2' },
 ] as const;
 
 function userInitials(name: string) {
@@ -94,9 +92,6 @@ export function AppTopNav() {
             >
               <item.icon size={16} aria-hidden />
               <span className="app-topnav__link-label">{item.label}</span>
-              {'badge' in item && item.badge && (
-                <span className="app-topnav__link-badge">{item.badge}</span>
-              )}
             </NavLink>
           ))}
           {isModerator && (

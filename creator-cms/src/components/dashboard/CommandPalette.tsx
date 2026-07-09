@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Calendar, LayoutDashboard, Megaphone, PenLine, Search, Settings, User, Users } from 'lucide-react';
+import { BookOpen, Calendar, LayoutDashboard, PenLine, Search, Settings, User, Users } from 'lucide-react';
 
 interface CommandPaletteContextValue {
   open: boolean;
@@ -55,7 +55,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     { id: 'sch', label: 'Schedule', icon: Calendar, run: () => navigate('/schedule') },
     { id: 'p', label: 'Profile', icon: User, run: () => navigate('/profile') },
     { id: 'c', label: 'Community', icon: Users, run: () => navigate('/community') },
-    { id: 'm', label: 'Marketing', icon: Megaphone, run: () => navigate('/marketing') },
     { id: 'set', label: 'Settings', icon: Settings, run: () => navigate('/settings') },
   ], [navigate]);
   const filtered = items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()));

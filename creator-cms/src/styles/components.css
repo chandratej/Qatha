@@ -1195,9 +1195,8 @@ html.deep-work .glass-toolbar:hover {
   flex-wrap: wrap;
 }
 
-/* Community / Marketing */
-.community-grid,
-.marketing-features {
+/* Community */
+.community-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
@@ -1218,34 +1217,6 @@ html.deep-work .glass-toolbar:hover {
   font-size: 0.8125rem;
   color: var(--ink-muted);
 }
-
-.marketing-feature {
-  position: relative;
-}
-
-.marketing-feature h4 {
-  margin: 10px 0 6px;
-}
-
-.marketing-feature p {
-  font-size: 0.875rem;
-  color: var(--ink-muted);
-  line-height: 1.5;
-}
-
-.marketing-feature__badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 100px;
-  background: var(--dash-paper);
-  border: 1px solid var(--dash-border);
-}
-
-.marketing-callout { margin-bottom: 24px; }
 
 /* Analytics */
 .analytics-charts-grid {

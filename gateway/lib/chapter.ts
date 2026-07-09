@@ -71,6 +71,6 @@ export function splitParagraphs(content: string): string[] {
 }
 
 export function buildShareUrl(slug: string, chapterNumber: number): string {
-  const base = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3002';
+  const base = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
   return `${base}/read/${slug}/${chapterNumber}`;
 }

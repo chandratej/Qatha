@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PanelRightOpen, List, X } from 'lucide-react';
 import { SceneSidebar } from '../components/Editor/SceneSidebar';
 import type { SceneBlock } from '../components/Editor/SceneSidebar';
@@ -49,6 +49,15 @@ import {
   type LineHeightScale,
 } from '../lib/comfortPrefs';
 import { AiNotesPanel } from '../components/Editor/AiNotesPanel';
+import { ChapterFindBar } from '../components/Editor/ChapterFindBar';
+import { EditorCommandPalette, buildEditorCommands } from '../components/Editor/EditorCommandPalette';
+import {
+  findInChapter,
+  replaceAllInChapter,
+  replaceInSceneContent,
+  replaceInSceneTitle,
+  type ChapterFindMatch,
+} from '../lib/chapterFind';
 import { EditorComfortControls } from '../components/Editor/EditorComfortControls';
 import { WritingBreakNotice } from '../components/Editor/WritingBreakNotice';
 import '../styles/editor-prototype.css';
@@ -96,6 +105,7 @@ function createBlankScene(index: number): SceneBlock {
 }
 
 export function ChapterEditor() {
+  const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
   const { storyId = 'demo-rrr', chapterNum } = useParams();
 
@@ -148,6 +158,13 @@ export function ChapterEditor() {
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
   const [deleteSceneId, setDeleteSceneId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [findReplace, setFindReplace] = useState('');
+  const [findShowReplace, setFindShowReplace] = useState(false);
+  const [findMatchIndex, setFindMatchIndex] = useState(0);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [aiCompanionOpen, setAiCompanionOpen] = useState(false);
 
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -347,6 +364,12 @@ export function ChapterEditor() {
   const overLimit = charCount > CHAR_LIMIT;
   const hasContent = wordCount > 0;
 
+  const findMatches = useMemo(
+    () => findInChapter(scenes, findQuery),
+    [scenes, findQuery],
+  );
+  const findActiveMatch = findMatches[findMatchIndex] ?? null;
+
   const applySidePanels = useCallback((next: { sceneSidebarCollapsed: boolean; previewCollapsed: boolean }) => {
     const reconciled = reconcileSidePanels(next, workspaceLayout.showSceneSidebar, workspaceLayout.showPreview);
     setSceneSidebarCollapsed(reconciled.sceneSidebarCollapsed);
@@ -483,6 +506,20 @@ export function ChapterEditor() {
       const target = e.target as HTMLElement | null;
       const inField = target?.closest?.('input, textarea, [contenteditable="true"], .ql-editor');
 
+      if (meta && e.key.toLowerCase() === 'f' && !e.shiftKey) {
+        e.preventDefault();
+        setCommandPaletteOpen(false);
+        setFindOpen(true);
+        return;
+      }
+
+      if (meta && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setFindOpen(false);
+        setCommandPaletteOpen((open) => !open);
+        return;
+      }
+
       if (meta && e.key === 's') {
         e.preventDefault();
         handleSaveDraft();
@@ -490,6 +527,14 @@ export function ChapterEditor() {
       }
 
       if (e.key === 'Escape') {
+        if (findOpen) {
+          setFindOpen(false);
+          return;
+        }
+        if (commandPaletteOpen) {
+          setCommandPaletteOpen(false);
+          return;
+        }
         if (sceneDrawerOpen) {
           setSceneDrawerOpen(false);
           return;
@@ -519,7 +564,16 @@ export function ChapterEditor() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleSaveDraft, focusMode, applyAuthoringWorkspace, navigateScene, sceneDrawerOpen, mobilePreviewOpen]);
+  }, [
+    handleSaveDraft,
+    focusMode,
+    applyAuthoringWorkspace,
+    navigateScene,
+    sceneDrawerOpen,
+    mobilePreviewOpen,
+    findOpen,
+    commandPaletteOpen,
+  ]);
 
   // Auto-dismiss success toasts
   useEffect(() => {
@@ -594,6 +648,67 @@ export function ChapterEditor() {
     }
   };
 
+  useEffect(() => {
+    if (findMatchIndex >= findMatches.length) {
+      setFindMatchIndex(Math.max(0, findMatches.length - 1));
+    }
+  }, [findMatches.length, findMatchIndex]);
+
+  useEffect(() => {
+    if (!findActiveMatch || findActiveMatch.sceneId === activeSceneId) return;
+    switchScene(findActiveMatch.sceneId);
+  }, [findActiveMatch, activeSceneId, switchScene]);
+
+  const goToFindMatch = useCallback((nextIndex: number) => {
+    if (findMatches.length === 0) return;
+    const wrapped = (nextIndex + findMatches.length) % findMatches.length;
+    setFindMatchIndex(wrapped);
+  }, [findMatches.length]);
+
+  const applyReplaceAt = useCallback((match: ChapterFindMatch, advance: boolean) => {
+    flushEditor();
+    const scene = scenes.find((s) => s.id === match.sceneId);
+    if (!scene) return;
+
+    if (match.field === 'title') {
+      updateSceneTitle(match.sceneId, replaceInSceneTitle(scene.title, match, findReplace));
+    } else {
+      updateSceneContent(
+        match.sceneId,
+        replaceInSceneContent(scene.content, match, findReplace),
+      );
+    }
+
+    if (advance && findMatches.length > 1) {
+      goToFindMatch(findMatchIndex + 1);
+    }
+  }, [scenes, findReplace, findMatches.length, findMatchIndex, goToFindMatch, flushEditor]);
+
+  const handleReplaceAll = useCallback(() => {
+    if (!findQuery.trim()) return;
+    flushEditor();
+    setScenes(replaceAllInChapter(scenes, findQuery, findReplace));
+    setFindMatchIndex(0);
+  }, [findQuery, findReplace, scenes, flushEditor]);
+
+  const editorCommands = useMemo(
+    () => buildEditorCommands({
+      scenes,
+      onJumpScene: (id) => { switchScene(id); setSceneDrawerOpen(false); },
+      onOpenChapters: () => navigate(`/stories/${storyId}`),
+      onSwitchWorkspace: applyAuthoringWorkspace,
+      onPreviewTheme: (t) => {
+        setPreviewTheme(t);
+        saveEditorPrefs(storyId, chapterNumber, { previewTheme: t });
+      },
+      onPublish: handlePublish,
+      onHistory: () => setHistoryOpen(true),
+      onOpenAi: () => setAiCompanionOpen(true),
+      onOpenFind: () => setFindOpen(true),
+    }),
+    [scenes, storyId, chapterNumber, navigate, applyAuthoringWorkspace, handlePublish, switchScene],
+  );
+
   const deleteTarget = deleteSceneId ? scenes.find(s => s.id === deleteSceneId) : null;
 
   if (loading) {
@@ -602,6 +717,34 @@ export function ChapterEditor() {
 
   return (
     <div className={`katha-proto-layout${focusMode ? ' focus-mode' : ''}`}>
+      <ChapterFindBar
+        open={findOpen}
+        query={findQuery}
+        replaceText={findReplace}
+        showReplace={findShowReplace}
+        matchIndex={findMatchIndex}
+        matchCount={findMatches.length}
+        focusRestoreKey={findOpen ? `${findQuery}|${findMatchIndex}|${activeSceneId}` : undefined}
+        onQueryChange={(value) => {
+          setFindQuery(value);
+          setFindMatchIndex(0);
+        }}
+        onReplaceTextChange={setFindReplace}
+        onToggleReplace={() => setFindShowReplace((v) => !v)}
+        onClose={() => setFindOpen(false)}
+        onNext={() => goToFindMatch(findMatchIndex + 1)}
+        onPrev={() => goToFindMatch(findMatchIndex - 1)}
+        onReplace={() => findActiveMatch && applyReplaceAt(findActiveMatch, false)}
+        onReplaceNext={() => findActiveMatch && applyReplaceAt(findActiveMatch, true)}
+        onReplaceAll={handleReplaceAll}
+      />
+
+      <EditorCommandPalette
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        commands={editorCommands}
+      />
+
       {!focusMode && (
         <EditorNavbar
           chapterNum={chapterNumber}
@@ -749,6 +892,11 @@ export function ChapterEditor() {
           focusMode={focusMode}
           canvasMaxWidth={canvasMaxWidth}
           toolbarMinimal={workspaceLayout.toolbarMinimal}
+          findOpen={findOpen}
+          findActiveMatch={findActiveMatch}
+          findSceneMatches={findMatches}
+          aiCompanionOpen={aiCompanionOpen}
+          onAiCompanionOpenChange={setAiCompanionOpen}
         />
 
         {!focusMode && workspaceLayout.showPreview && !previewCollapsed && (

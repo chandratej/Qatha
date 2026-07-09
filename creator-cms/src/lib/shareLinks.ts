@@ -1,7 +1,7 @@
 /** Trojan Horse reader gateway — shareable chapter URLs for social distribution */
 
 const GATEWAY_BASE =
-  import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3002';
+  import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000';
 
 export function slugifyTitle(title: string): string {
   const ascii = title

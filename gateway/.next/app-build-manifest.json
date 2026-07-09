@@ -11,10 +11,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/read/[slug]/[chapter]/page.js"
     ],
-    "/api/payments/unlock/route": [
+    "/api/chapter/content/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/payments/unlock/route.js"
+      "static/chunks/app/api/chapter/content/route.js"
     ]
   }
 }

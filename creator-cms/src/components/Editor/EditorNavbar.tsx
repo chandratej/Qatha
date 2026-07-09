@@ -242,8 +242,9 @@ export function EditorNavbar({
 
         <p className="katha-editor-chrome__hint" aria-hidden>
           <kbd>Ctrl</kbd>
-          <kbd>S</kbd> save · <kbd>Esc</kbd> exit focus · <kbd>Alt</kbd>
-          <kbd>↑↓</kbd> scenes
+          <kbd>F</kbd> find · <kbd>Ctrl</kbd>
+          <kbd>K</kbd> commands · <kbd>Ctrl</kbd>
+          <kbd>S</kbd> save · <kbd>Esc</kbd> exit focus
         </p>
       </div>
     </header>
