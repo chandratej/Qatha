@@ -111,6 +111,7 @@ export function ChapterEditor() {
       previewCollapsed: initialWorkspaceLayout.previewCollapsed,
     },
     initialWorkspaceLayout.showSceneSidebar,
+    initialWorkspaceLayout.showPreview,
   );
   const initialComfort = loadComfortPrefs();
   const [fontScale, setFontScale] = useState<FontScale>(initialComfort.fontScale);
@@ -347,19 +348,20 @@ export function ChapterEditor() {
   const hasContent = wordCount > 0;
 
   const applySidePanels = useCallback((next: { sceneSidebarCollapsed: boolean; previewCollapsed: boolean }) => {
-    const reconciled = reconcileSidePanels(next, workspaceLayout.showSceneSidebar);
+    const reconciled = reconcileSidePanels(next, workspaceLayout.showSceneSidebar, workspaceLayout.showPreview);
     setSceneSidebarCollapsed(reconciled.sceneSidebarCollapsed);
     setPreviewCollapsed(reconciled.previewCollapsed);
-  }, [workspaceLayout.showSceneSidebar]);
+  }, [workspaceLayout.showSceneSidebar, workspaceLayout.showPreview]);
 
   const toggleSceneSidebar = useCallback(() => {
     applySidePanels(toggleSceneSidebarPanels(sceneSidebarCollapsed, previewCollapsed));
   }, [applySidePanels, sceneSidebarCollapsed, previewCollapsed]);
 
   const openPreview = useCallback(() => {
+    if (!workspaceLayout.showPreview) return;
     applySidePanels(expandPreviewPanels());
     setSceneDrawerOpen(false);
-  }, [applySidePanels]);
+  }, [applySidePanels, workspaceLayout.showPreview]);
 
   const closePreview = useCallback(() => {
     setPreviewCollapsed(true);
@@ -378,6 +380,7 @@ export function ChapterEditor() {
     const panels = reconcileSidePanels(
       { sceneSidebarCollapsed: layout.sceneSidebarCollapsed, previewCollapsed: layout.previewCollapsed },
       layout.showSceneSidebar,
+      layout.showPreview,
     );
     setSceneSidebarCollapsed(panels.sceneSidebarCollapsed);
     setPreviewCollapsed(panels.previewCollapsed);
@@ -748,7 +751,7 @@ export function ChapterEditor() {
           toolbarMinimal={workspaceLayout.toolbarMinimal}
         />
 
-        {!focusMode && !previewCollapsed && (
+        {!focusMode && workspaceLayout.showPreview && !previewCollapsed && (
           <PreviewPane
             chapterTitle={chapterTitle}
             chapterNum={chapterNumber}
@@ -773,7 +776,7 @@ export function ChapterEditor() {
         )}
       </div>
 
-      {!focusMode && previewCollapsed && (
+      {!focusMode && workspaceLayout.showPreview && previewCollapsed && (
         <button
           type="button"
           className="katha-proto-preview-reopen"
@@ -798,18 +801,20 @@ export function ChapterEditor() {
               <List size={18} />
             </button>
           )}
-          <button
-            type="button"
-            className="katha-proto-preview-drawer-toggle"
-            onClick={() => {
-              openPreview();
-              setMobilePreviewOpen(true);
-            }}
-            title="Reader preview"
-            aria-label="Open reader preview"
-          >
-            <PanelRightOpen size={18} />
-          </button>
+          {workspaceLayout.showPreview && (
+            <button
+              type="button"
+              className="katha-proto-preview-drawer-toggle"
+              onClick={() => {
+                openPreview();
+                setMobilePreviewOpen(true);
+              }}
+              title="Reader preview"
+              aria-label="Open reader preview"
+            >
+              <PanelRightOpen size={18} />
+            </button>
+          )}
         </>
       )}
 

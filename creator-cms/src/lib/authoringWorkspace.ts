@@ -5,6 +5,7 @@ export interface AuthoringWorkspaceLayout {
   previewCollapsed: boolean;
   focusMode: boolean;
   showSceneSidebar: boolean;
+  showPreview: boolean;
   workspaceClass: string;
   canvasMaxWidth: number;
   syncScroll: boolean;
@@ -36,14 +37,16 @@ export interface SidePanelState {
 export function reconcileSidePanels(
   state: SidePanelState,
   showSceneSidebar = true,
+  showPreview = true,
 ): SidePanelState {
-  if (!showSceneSidebar) {
-    return { sceneSidebarCollapsed: true, previewCollapsed: state.previewCollapsed };
-  }
-  if (!state.sceneSidebarCollapsed && !state.previewCollapsed) {
+  const next = {
+    sceneSidebarCollapsed: showSceneSidebar ? state.sceneSidebarCollapsed : true,
+    previewCollapsed: showPreview ? state.previewCollapsed : true,
+  };
+  if (showSceneSidebar && showPreview && !next.sceneSidebarCollapsed && !next.previewCollapsed) {
     return { sceneSidebarCollapsed: false, previewCollapsed: true };
   }
-  return state;
+  return next;
 }
 
 export function expandSceneSidebarPanels(): SidePanelState {
@@ -75,6 +78,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         previewCollapsed: true,
         focusMode: false,
         showSceneSidebar: true,
+        showPreview: false,
         syncScroll: false,
         showAiNotes: true,
         toolbarMinimal: false,
@@ -87,6 +91,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         previewCollapsed: true,
         focusMode: false,
         showSceneSidebar: true,
+        showPreview: true,
         syncScroll: false,
         showAiNotes: false,
         toolbarMinimal: false,
@@ -99,6 +104,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         previewCollapsed: true,
         focusMode: true,
         showSceneSidebar: false,
+        showPreview: false,
         syncScroll: false,
         showAiNotes: false,
         toolbarMinimal: true,
@@ -111,6 +117,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         previewCollapsed: false,
         focusMode: false,
         showSceneSidebar: false,
+        showPreview: true,
         syncScroll: true,
         showAiNotes: false,
         toolbarMinimal: false,
@@ -123,6 +130,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         previewCollapsed: true,
         focusMode: false,
         showSceneSidebar: true,
+        showPreview: true,
         syncScroll: false,
         showAiNotes: false,
         toolbarMinimal: false,

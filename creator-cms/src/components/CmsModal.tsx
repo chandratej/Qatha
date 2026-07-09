@@ -38,7 +38,11 @@ export function CmsModal({ title, onClose, children, footer }: CmsModalProps) {
           </button>
         </header>
         <div className="cms-modal__body">{children}</div>
-        {footer && <footer className="cms-modal__footer">{footer}</footer>}
+        {footer && (
+          <footer className="cms-modal__footer">
+            <div className="cms-modal__footer-actions">{footer}</div>
+          </footer>
+        )}
       </div>
     </div>
   );

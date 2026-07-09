@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Trash2, PanelLeftClose, PanelLeftOpen, MoreVertical } from 'lucide-react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { applyPhoneticToTrailingWord } from '../../business/phoneticText';
+import { PhoneticTextInput } from './PhoneticTextInput';
 import {
   detectSceneSearchInputMode,
   dismissSceneSearchHelper,
@@ -70,8 +70,7 @@ export function SceneSidebar({
   const filtered = scenes.filter((s) => sceneMatchesQuery(s, searchTerm));
   const suggestions = sceneSearchSuggestions(scenes, searchTerm);
 
-  const handleSearchChange = (raw: string) => {
-    const next = phoneticLive ? applyPhoneticToTrailingWord(raw) : raw;
+  const handleSearchChange = (next: string) => {
     setSearchTerm(next);
     setSuggestionsOpen(next.trim().length > 0);
     if (storyId && chapterNum !== undefined && next.trim()) {
@@ -136,23 +135,18 @@ export function SceneSidebar({
         <div className="katha-proto-search-wrap">
           <div className="katha-proto-search">
             <Search size={14} color="var(--ink-muted)" strokeWidth={EDITOR_ICON_STROKE} aria-hidden />
-            <input
+            <PhoneticTextInput
               ref={searchRef}
               type="search"
               placeholder="Search scenes (Telugu / English phonetic)..."
               value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={handleSearchChange}
+              phoneticLive={phoneticLive}
               onFocus={() => searchTerm.trim() && setSuggestionsOpen(true)}
-              onBlur={() => {
-                window.setTimeout(() => setSuggestionsOpen(false), 120);
-                if (phoneticLive && searchTerm) {
-                  handleSearchChange(`${searchTerm} `);
-                }
-              }}
+              onBlurExtra={() => window.setTimeout(() => setSuggestionsOpen(false), 120)}
               aria-label="Search scenes by title or content"
               aria-autocomplete="list"
               aria-controls={suggestionsOpen ? 'katha-scene-search-suggestions' : undefined}
-              lang="te"
             />
           </div>
           {showHelper && (

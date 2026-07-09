@@ -419,18 +419,10 @@
 }
 
 .katha-proto-workspace--mode-planning {
-  grid-template-columns: 22% 1fr 22% 22%;
-}
-
-.katha-proto-workspace--mode-planning.katha-proto-workspace--sidebar-collapsed {
-  grid-template-columns: 48px 1fr 22% 22%;
-}
-
-.katha-proto-workspace--mode-planning.katha-proto-workspace--preview-collapsed {
   grid-template-columns: 24% 1fr 28%;
 }
 
-.katha-proto-workspace--mode-planning.katha-proto-workspace--sidebar-collapsed.katha-proto-workspace--preview-collapsed {
+.katha-proto-workspace--mode-planning.katha-proto-workspace--sidebar-collapsed {
   grid-template-columns: 48px 1fr 28%;
 }
 
@@ -709,6 +701,7 @@
   border: none;
   background: transparent;
   outline: none;
+  font-family: var(--font-telugu), var(--font-ui);
   font-size: 0.8125rem;
   width: 100%;
   color: var(--ink);
@@ -1121,7 +1114,7 @@
 }
 
 .katha-proto-scene-title-input {
-  font-family: var(--font-reading);
+  font-family: var(--font-telugu), var(--font-reading);
   font-size: 2rem;
   font-weight: 600;
   line-height: 1.25;
@@ -2132,6 +2125,18 @@
   color: var(--ink);
 }
 
+/* Phonetic plain-text inputs (title, search) */
+.katha-phonetic-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.katha-proto-scene-title-input {
+  display: block;
+}
+
 /* Phonetic suggestion menu */
 .katha-proto-phonetic-menu {
   position: fixed;
@@ -2171,7 +2176,7 @@
 }
 
 .katha-proto-phonetic-item__word {
-  font-family: var(--font-reading);
+  font-family: var(--font-telugu), var(--font-reading);
   font-weight: 600;
   color: var(--ink);
 }
@@ -2483,7 +2488,7 @@
   }
 
   .katha-proto-workspace--mode-planning.katha-proto-workspace--sidebar-collapsed {
-    grid-template-columns: 48px 1fr 22% 22%;
+    grid-template-columns: 48px 1fr 28%;
   }
 }
 
