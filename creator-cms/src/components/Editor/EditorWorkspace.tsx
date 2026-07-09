@@ -88,6 +88,13 @@ function getCharCount(html: string) {
   return (div.textContent || '').length;
 }
 
+function isEmptyEditorHtml(html: string) {
+  if (!html) return true;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return !(div.textContent || '').trim();
+}
+
 interface EditorWorkspaceProps {
   activeScene: SceneBlock | undefined;
   activeSceneIndex: number;
@@ -99,6 +106,7 @@ interface EditorWorkspaceProps {
   updateSceneContent: (id: string, content: string) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
+  flushRef?: React.MutableRefObject<(() => void) | null>;
   phoneticLive: boolean;
   onTogglePhonetic: () => void;
   saving: boolean;
@@ -117,6 +125,7 @@ export function EditorWorkspace({
   updateSceneContent,
   containerRef,
   scrollRef: externalScrollRef,
+  flushRef,
   phoneticLive,
   onTogglePhonetic,
   saving,
@@ -131,6 +140,11 @@ export function EditorWorkspace({
   const [suggestionsPos, setSuggestionsPos] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [trailingWord, setTrailingWord] = useState('');
+  const activeSceneIdRef = useRef(activeScene?.id);
+  const phoneticLiveRef = useRef(phoneticLive);
+
+  useEffect(() => { activeSceneIdRef.current = activeScene?.id; }, [activeScene?.id]);
+  useEffect(() => { phoneticLiveRef.current = phoneticLive; }, [phoneticLive]);
 
   const getEditor = () => quillRef.current?.getEditor();
 
@@ -150,51 +164,87 @@ export function EditorWorkspace({
     }
   }, []);
 
-  const handleChange = (content: string, _delta: unknown, source: string, editor: any) => {
-    if (source !== 'user' || !activeScene) return;
-    let html = content;
-    let trailingWord = '';
-    if (phoneticLive) {
-      const result = applyLivePhoneticToHtml(content);
-      html = result.html;
-      trailingWord = result.trailingWord;
-      if (html !== content) {
-        const selection = editor.getSelection();
-        editor.root.innerHTML = html;
-        if (selection) setTimeout(() => editor.setSelection(selection.index, 0), 0);
-      }
+  const showPhoneticSuggestions = useCallback((trailing: string) => {
+    if (!trailing) {
+      setTrailingWord('');
+      setShowSuggestions(false);
+      return;
     }
-    updateSceneContent(activeScene.id, html);
-    if (phoneticLive && trailingWord.length > 0) {
-      updatePosition();
-      const phonetic = getPhoneticSuggestions(trailingWord);
-      const semantic = getSemanticAlternatives(trailingWord);
-      const merged = [...phonetic, ...semantic.filter((s) => !phonetic.some((p) => p.value === s.value))];
-      setTrailingWord(trailingWord);
-      setSuggestions(merged);
-      setShowSuggestions(merged.length > 0);
-      setSelectedIndex(0);
-    } else {
+    updatePosition();
+    const phonetic = getPhoneticSuggestions(trailing);
+    const semantic = getSemanticAlternatives(trailing);
+    const merged = [...phonetic, ...semantic.filter((s) => !phonetic.some((p) => p.value === s.value))];
+    setTrailingWord(trailing);
+    setSuggestions(merged);
+    setShowSuggestions(merged.length > 0);
+    setSelectedIndex(0);
+  }, [updatePosition]);
+
+  const saveSceneHtml = useCallback((sceneId: string, html: string, trailing = '') => {
+    updateSceneContent(sceneId, isEmptyEditorHtml(html) ? '' : html);
+    if (phoneticLiveRef.current) showPhoneticSuggestions(trailing);
+    else {
       setTrailingWord('');
       setShowSuggestions(false);
     }
+  }, [updateSceneContent, showPhoneticSuggestions]);
+
+  const flushActiveScene = useCallback(() => {
+    const editor = getEditor();
+    const sceneId = activeSceneIdRef.current;
+    if (!editor || !sceneId) return;
+    let html = editor.root.innerHTML;
+    let trailing = '';
+    if (phoneticLiveRef.current) {
+      const result = applyLivePhoneticToHtml(html);
+      html = result.html;
+      trailing = result.trailingWord;
+    }
+    saveSceneHtml(sceneId, html, trailing);
+  }, [saveSceneHtml]);
+
+  useEffect(() => {
+    if (!flushRef) return;
+    flushRef.current = flushActiveScene;
+    return () => { flushRef.current = null; };
+  }, [flushRef, flushActiveScene]);
+
+  const handleChange = (content: string, _delta: unknown, source: string, editor: any) => {
+    if (source !== 'user' || !activeScene) return;
+
+    let html = content;
+    let trailing = '';
+    if (phoneticLive) {
+      const result = applyLivePhoneticToHtml(content);
+      html = result.html;
+      trailing = result.trailingWord;
+      if (html !== content) {
+        const selection = editor.getSelection();
+        editor.root.innerHTML = html;
+        if (selection) {
+          queueMicrotask(() => editor.setSelection(Math.min(selection.index, editor.getLength()), 0, 'silent'));
+        }
+      }
+    }
+
+    saveSceneHtml(activeScene.id, html, trailing);
   };
 
   const insertSuggestion = useCallback((suggestion: Suggestion) => {
     if (!quillRef.current || !activeScene) return;
     const editor = quillRef.current.getEditor();
     const newHtml = replaceTrailingRomanInHtml(editor.root.innerHTML, suggestion.value);
-    updateSceneContent(activeScene.id, newHtml);
+    saveSceneHtml(activeScene.id, newHtml);
     editor.root.innerHTML = newHtml;
     editor.setSelection(editor.getLength(), 0);
     setShowSuggestions(false);
-  }, [activeScene, updateSceneContent]);
+  }, [activeScene, saveSceneHtml]);
 
   const handleConvertAll = () => {
     const editor = getEditor();
     if (!editor || !activeScene) return;
     const newHtml = convertAllPhoneticInHtml(editor.root.innerHTML);
-    updateSceneContent(activeScene.id, newHtml);
+    saveSceneHtml(activeScene.id, newHtml);
     editor.root.innerHTML = newHtml;
   };
 
@@ -216,7 +266,7 @@ export function EditorWorkspace({
     } else {
       editor.insertText(index, url.trim(), { link: url.trim() });
     }
-    updateSceneContent(activeScene.id, editor.root.innerHTML);
+    flushActiveScene();
   };
 
   const insertSceneBreak = () => {
@@ -226,7 +276,7 @@ export function EditorWorkspace({
     const selection = editor.getSelection(true);
     const index = selection?.index ?? editor.getLength();
     editor.clipboard.dangerouslyPasteHTML(index, breakHtml);
-    updateSceneContent(activeScene.id, editor.root.innerHTML);
+    flushActiveScene();
     editor.setSelection(editor.getLength(), 0);
   };
 
@@ -261,18 +311,17 @@ export function EditorWorkspace({
 
   return (
     <main ref={containerRef} className="katha-proto-editor">
-      <div className="katha-proto-editor-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <span>Ch {chapterNum}</span>
+      <div className="katha-proto-editor-header">
+        <span className="katha-proto-chapter-num">Ch {chapterNum}</span>
         <PhoneticTextInput
           className="katha-proto-chapter-title-input"
-          style={{ fontSize: '1rem', margin: 0, flex: 1, minWidth: 180 }}
           value={chapterTitle}
           onChange={onChapterTitleChange}
           phoneticLive={phoneticLive}
           placeholder="Chapter title"
           maxLength={60}
         />
-        <span style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', fontWeight: 400 }}>
+        <span className="katha-proto-chapter-wordcount">
           {chapterWordCount} words
         </span>
       </div>
@@ -305,8 +354,9 @@ export function EditorWorkspace({
             key={activeScene.id}
             ref={quillRef}
             theme="snow"
-            value={activeScene.content}
+            value={activeScene.content || ''}
             onChange={handleChange}
+            onBlur={flushActiveScene}
             modules={{ toolbar: false }}
             placeholder="Start writing your scene…"
           />
@@ -324,30 +374,25 @@ export function EditorWorkspace({
       </div>
 
       {showSuggestions && suggestions.length > 0 && (
-        <div style={{
-          position: 'fixed', top: suggestionsPos.top, left: suggestionsPos.left,
-          background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
-          boxShadow: 'var(--shadow-md)', zIndex: 9999, minWidth: 200,
-        }}>
+        <div className="katha-proto-phonetic-menu" style={{ top: suggestionsPos.top, left: suggestionsPos.left }}>
           {suggestions.map((sug, idx) => (
-            <div key={idx} style={{
-              padding: '8px 12px', cursor: 'pointer',
-              background: idx === selectedIndex ? 'var(--paper)' : 'transparent',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
-            }}>
-              <div onClick={() => insertSuggestion(sug)} style={{ flex: 1 }}>
-                <span style={{ fontWeight: 600 }}>{sug.value}</span>
-                <span style={{ color: 'var(--ink-muted)', fontSize: '0.8rem', marginLeft: 8 }}>{sug.display.split(' → ')[0]}</span>
+            <div
+              key={idx}
+              className={`katha-proto-phonetic-item${idx === selectedIndex ? ' katha-proto-phonetic-item--active' : ''}`}
+            >
+              <div onClick={() => insertSuggestion(sug)} className="katha-proto-phonetic-item__main">
+                <span className="katha-proto-phonetic-item__word">{sug.value}</span>
+                <span className="katha-proto-phonetic-item__hint">{sug.display.split(' → ')[0]}</span>
               </div>
               <button
                 type="button"
                 title="Teach this correction"
+                className="katha-proto-phonetic-teach"
                 onClick={(e) => {
                   e.stopPropagation();
                   const key = window.prompt('Roman spelling to remember', trailingWord);
                   if (key) setPersonalCorrection(key, sug.value);
                 }}
-                style={{ fontSize: '0.7rem', padding: '2px 6px', border: '1px solid var(--border)', borderRadius: 4, background: 'transparent', cursor: 'pointer' }}
               >
                 Teach
               </button>

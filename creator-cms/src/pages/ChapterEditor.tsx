@@ -104,8 +104,18 @@ export function ChapterEditor() {
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorFlushRef = useRef<(() => void) | null>(null);
   const scenesRef = useRef(scenes);
   const chapterTitleRef = useRef(chapterTitle);
+
+  const flushEditor = useCallback(() => {
+    editorFlushRef.current?.();
+  }, []);
+
+  const switchScene = useCallback((id: string) => {
+    flushEditor();
+    setActiveSceneId(id);
+  }, [flushEditor]);
 
   useEffect(() => { scenesRef.current = scenes; }, [scenes]);
   useEffect(() => { chapterTitleRef.current = chapterTitle; }, [chapterTitle]);
@@ -261,12 +271,14 @@ export function ChapterEditor() {
   };
 
   const handleAddScene = () => {
+    flushEditor();
     const newId = `scene-${Date.now()}`;
     setScenes(prev => [...prev, { id: newId, title: 'New Scene', content: '' }]);
     setActiveSceneId(newId);
   };
 
   const handleDeleteScene = (id: string) => {
+    flushEditor();
     setScenes(prev => {
       const filtered = prev.filter(s => s.id !== id);
       if (activeSceneId === id && filtered.length > 0) setActiveSceneId(filtered[0].id);
@@ -275,6 +287,7 @@ export function ChapterEditor() {
   };
 
   const handleDuplicateScene = (id: string) => {
+    flushEditor();
     const sceneToDup = scenes.find(s => s.id === id);
     if (!sceneToDup) return;
     const newId = `scene-${Date.now()}`;
@@ -458,7 +471,7 @@ export function ChapterEditor() {
           <SceneSidebar
             scenes={scenes}
             activeSceneId={activeSceneId}
-            onSwitchScene={setActiveSceneId}
+            onSwitchScene={switchScene}
             onAddScene={handleAddScene}
             onReorderScenes={setScenes}
             onDeleteScene={handleDeleteScene}
@@ -479,6 +492,7 @@ export function ChapterEditor() {
           updateSceneContent={updateSceneContent}
           containerRef={editorContainerRef}
           scrollRef={editorScrollRef}
+          flushRef={editorFlushRef}
           phoneticLive={phoneticLive}
           onTogglePhonetic={() => setPhoneticLive(p => !p)}
           saving={saving}

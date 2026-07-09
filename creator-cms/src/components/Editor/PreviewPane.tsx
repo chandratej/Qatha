@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { MessageSquare, BookOpen, Tablet, Smartphone, Sun, Moon, Coffee, MoreHorizontal } from 'lucide-react';
 import type { SceneBlock } from './SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
+import { sceneHasContent } from '../../lib/sceneContent';
 
 interface PreviewPaneProps {
   chapterTitle: string;
@@ -126,26 +127,33 @@ export function PreviewPane({
           }}
         >
           <div className="katha-proto-chapter-label">Chapter {chapterNum}</div>
-          <h1 className="katha-proto-chapter-title">{chapterTitle}</h1>
+          <h1 className="katha-proto-chapter-title">{chapterTitle || 'Untitled Chapter'}</h1>
           <div className="katha-proto-chapter-dots">• • •</div>
 
-          {scenes.map(scene => (
-            <div key={scene.id} className="katha-proto-preview-scene-block">
-              {scene.title && (
-                <h3 className="katha-proto-preview-scene-title">{scene.title}</h3>
-              )}
-              <div
-                className="katha-proto-preview-scene-body"
-                dangerouslySetInnerHTML={{ __html: scene.content }}
-              />
-            </div>
+          {scenes.map((scene, index) => (
+            <React.Fragment key={scene.id}>
+              {index > 0 && <hr className="katha-proto-preview-scene-break" aria-hidden />}
+              <div className="katha-proto-preview-scene-block">
+                {scene.title && scene.title !== 'New Scene' && (
+                  <h3 className="katha-proto-preview-scene-title">{scene.title}</h3>
+                )}
+                {sceneHasContent(scene.content) ? (
+                  <div
+                    className="katha-proto-preview-scene-body"
+                    dangerouslySetInnerHTML={{ __html: scene.content }}
+                  />
+                ) : (
+                  <p className="katha-proto-preview-scene-empty">Start writing this scene…</p>
+                )}
+              </div>
+            </React.Fragment>
           ))}
         </div>
       </div>
 
       <div className="katha-proto-preview-footer">
         <span>{totalWords} words • ~{readMins} min read</span>
-        <span>Page 1 of 1</span>
+        <span>{scenes.length} scene{scenes.length === 1 ? '' : 's'}</span>
       </div>
     </aside>
   );

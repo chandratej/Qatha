@@ -192,7 +192,7 @@ function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggabl
 
       <div className="sc-u-flex-col sc-u-flex-1 sc-u-min-w-0 sc-u-gap-0">
         <h3 className="sc-u-scene-title">{scene.title || 'Untitled'}</h3>
-        <p className="sc-u-scene-meta">{idx + 1}w • {words} words</p>
+        <p className="sc-u-scene-meta">Scene {idx + 1} • {words} words</p>
       </div>
 
       <div className="sc-u-menu-wrap sc-u-shrink-0" ref={menuRef}>

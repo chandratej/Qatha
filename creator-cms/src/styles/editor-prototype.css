@@ -393,12 +393,62 @@
 }
 
 .katha-proto-editor-header {
-  padding: 14px 20px 10px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--border-faint);
   background: var(--surface);
+}
+
+.katha-proto-chapter-num {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-dark);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(168, 134, 78, 0.12);
+  border: 1px solid rgba(168, 134, 78, 0.22);
+}
+
+.katha-proto-chapter-title-input {
+  flex: 1;
+  min-width: 180px;
+  font-family: var(--font-reading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.katha-proto-chapter-title-input::placeholder {
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.katha-proto-chapter-title-input:hover {
+  border-color: var(--border-medium);
+}
+
+.katha-proto-chapter-title-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(168, 134, 78, 0.15);
+}
+
+.katha-proto-chapter-wordcount {
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-muted);
 }
 
 .katha-proto-format-toolbar {
@@ -479,10 +529,17 @@
   font-weight: 600;
   width: 100%;
   border: none;
+  border-bottom: 1px solid transparent;
   outline: none;
   background: transparent;
   color: var(--ink);
   margin-bottom: 16px;
+  padding: 0 0 6px;
+  transition: border-color 0.15s ease;
+}
+
+.katha-proto-scene-title-input:focus {
+  border-bottom-color: rgba(168, 134, 78, 0.35);
 }
 
 .katha-proto-editor-card .ql-toolbar {
@@ -646,9 +703,35 @@
   opacity: 0.5;
 }
 
+.katha-proto-preview-scene-break {
+  border: none;
+  height: 0;
+  margin: 1.25rem 0;
+  background: none;
+  overflow: visible;
+}
+
+.katha-proto-preview-scene-break::before {
+  content: '✦';
+  display: block;
+  text-align: center;
+  font-size: 0.55rem;
+  color: var(--gold);
+  opacity: 0.45;
+}
+
 .katha-proto-preview-scene-block {
   max-width: 100%;
   overflow: hidden;
+}
+
+.katha-proto-preview-scene-empty {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--ink-muted);
+  margin: 0 0 1rem;
+  opacity: 0.75;
 }
 
 .katha-proto-preview-scene-title {
@@ -667,7 +750,7 @@
   font-size: var(--editor-font-size, 0.95rem);
   line-height: var(--editor-line-height, 1.85);
   color: var(--ink-soft);
-  margin-bottom: 28px;
+  margin-bottom: 1rem;
   max-width: 100%;
   overflow-wrap: break-word;
   word-wrap: break-word;
@@ -898,6 +981,58 @@
 .writing-break-notice__close:hover {
   background: var(--paper-warm);
   color: var(--ink);
+}
+
+/* Phonetic suggestion menu */
+.katha-proto-phonetic-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.katha-proto-phonetic-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.katha-proto-phonetic-item--active {
+  background: var(--paper-warm);
+}
+
+.katha-proto-phonetic-item__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.katha-proto-phonetic-item__word {
+  font-family: var(--font-reading);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.katha-proto-phonetic-item__hint {
+  margin-left: 8px;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.katha-proto-phonetic-teach {
+  font-size: 0.6875rem;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
 }
 
 .katha-proto-breadcrumb__chapter {
