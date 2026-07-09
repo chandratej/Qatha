@@ -13,7 +13,7 @@ import {
 import type { SceneBlock } from './SceneSidebar';
 import { FormatToolbar } from './FormatToolbar';
 import { PhoneticTextInput } from './PhoneticTextInput';
-import { formatRelativeTime } from '../../lib/relativeTime';
+
 
 function applyLivePhoneticToHtml(html: string): { html: string; trailingWord: string } {
   if (!html) return { html: '', trailingWord: '' };
@@ -102,7 +102,6 @@ interface EditorWorkspaceProps {
   chapterNum: number;
   chapterTitle: string;
   onChapterTitleChange: (title: string) => void;
-  chapterWordCount: number;
   updateSceneTitle: (id: string, title: string) => void;
   updateSceneContent: (id: string, content: string) => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -110,12 +109,10 @@ interface EditorWorkspaceProps {
   flushRef?: React.MutableRefObject<(() => void) | null>;
   phoneticLive: boolean;
   onTogglePhonetic: () => void;
-  saving: boolean;
-  lastSaved: Date | null;
   editorComfortStyle?: React.CSSProperties;
   focusMode?: boolean;
   onExitFocus?: () => void;
-  totalCharCount?: number;
+  canvasMaxWidth?: number;
 }
 
 export function EditorWorkspace({
@@ -124,7 +121,6 @@ export function EditorWorkspace({
   chapterNum,
   chapterTitle,
   onChapterTitleChange,
-  chapterWordCount,
   updateSceneTitle,
   updateSceneContent,
   containerRef,
@@ -132,12 +128,10 @@ export function EditorWorkspace({
   flushRef,
   phoneticLive,
   onTogglePhonetic,
-  saving,
-  lastSaved,
   editorComfortStyle,
   focusMode = false,
   onExitFocus,
-  totalCharCount = 0,
+  canvasMaxWidth = 920,
 }: EditorWorkspaceProps) {
   const quillRef = useRef<ReactQuill>(null);
   const internalScrollRef = useRef<HTMLDivElement>(null);
@@ -308,14 +302,6 @@ export function EditorWorkspace({
     );
   }
 
-  const sceneWords = (() => {
-    const div = document.createElement('div');
-    div.innerHTML = activeScene.content;
-    const text = div.textContent || '';
-    return text.trim().split(/\s+/).filter(Boolean).length;
-  })();
-  const readMins = Math.max(1, Math.round(chapterWordCount / 200));
-
   return (
     <main ref={containerRef} className={`katha-proto-editor${focusMode ? ' katha-proto-editor--focus' : ''}`}>
       {focusMode && (
@@ -351,7 +337,10 @@ export function EditorWorkspace({
       />
 
       <div ref={scrollRef} className="katha-proto-editor-body">
-        <div className="katha-proto-editor-canvas" style={editorComfortStyle}>
+        <div
+          className="katha-proto-editor-canvas"
+          style={{ ...editorComfortStyle, maxWidth: canvasMaxWidth }}
+        >
           <PhoneticTextInput
             className="katha-proto-scene-title-input"
             value={activeScene.title}
@@ -369,26 +358,6 @@ export function EditorWorkspace({
             modules={{ toolbar: false }}
             placeholder="Start writing your scene…"
           />
-        </div>
-      </div>
-
-      <div className="katha-proto-status-bar" role="status" aria-live="polite">
-        <div className="katha-proto-status-bar__group">
-          <span className="katha-proto-status-bar__item katha-proto-status-bar__item--saved">
-            {saving ? 'Saving…' : `Saved ${lastSaved ? formatRelativeTime(lastSaved.getTime()) : 'just now'}`}
-          </span>
-          <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
-          <span className="katha-proto-status-bar__item">{chapterWordCount.toLocaleString()} words</span>
-          <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
-          <span className="katha-proto-status-bar__item">{totalCharCount.toLocaleString()} characters</span>
-          <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
-          <span className="katha-proto-status-bar__item">~{readMins} min read</span>
-          {focusMode && (
-            <>
-              <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
-              <span className="katha-proto-status-bar__item">Scene {activeSceneIndex + 1}: {sceneWords} words</span>
-            </>
-          )}
         </div>
       </div>
 

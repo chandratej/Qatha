@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { X, PanelRightOpen, List } from 'lucide-react';
 import { SceneSidebar } from '../components/Editor/SceneSidebar';
@@ -27,6 +27,11 @@ import {
   type PreviewDevice,
   type PreviewTheme,
 } from '../lib/editorPrefs';
+import {
+  layoutForWorkspace,
+  normalizeAuthoringWorkspace,
+  type AuthoringWorkspace,
+} from '../lib/authoringWorkspace';
 import {
   loadComfortPrefs,
   saveComfortPrefs,
@@ -75,6 +80,7 @@ export function ChapterEditor() {
   const chapterKey = `${storyId}-${chapterNumber}`;
 
   const prefs = loadEditorPrefs(storyId, chapterNumber);
+  const initialWorkspaceLayout = layoutForWorkspace(prefs.authoringWorkspace);
   const initialComfort = loadComfortPrefs();
   const [fontScale, setFontScale] = useState<FontScale>(initialComfort.fontScale);
   const [lineHeightScale, setLineHeightScale] = useState<LineHeightScale>(initialComfort.lineHeightScale);
@@ -86,11 +92,15 @@ export function ChapterEditor() {
   const [activeSceneId, setActiveSceneId] = useState<string>('');
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>(prefs.previewDevice);
   const [previewTheme, setPreviewTheme] = useState<PreviewTheme>(prefs.previewTheme);
-  const [sceneSidebarCollapsed, setSceneSidebarCollapsed] = useState(false);
-  const [previewCollapsed, setPreviewCollapsed] = useState(false);
+  const [authoringWorkspace, setAuthoringWorkspace] = useState<AuthoringWorkspace>(
+    () => normalizeAuthoringWorkspace(prefs.authoringWorkspace),
+  );
+  const [sceneSidebarCollapsed, setSceneSidebarCollapsed] = useState(initialWorkspaceLayout.sceneSidebarCollapsed);
+  const [previewCollapsed, setPreviewCollapsed] = useState(initialWorkspaceLayout.previewCollapsed);
+  const [canvasMaxWidth, setCanvasMaxWidth] = useState(initialWorkspaceLayout.canvasMaxWidth);
   const [sceneDrawerOpen, setSceneDrawerOpen] = useState(false);
   const [phoneticLive, setPhoneticLive] = useState(true);
-  const [focusMode, setFocusMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(initialWorkspaceLayout.focusMode);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loading, setLoading] = useState(!isDemo);
   const [publishing, setPublishing] = useState(false);
@@ -187,11 +197,6 @@ export function ChapterEditor() {
   }, [storyId, chapterNumber, isDemo]);
 
   const charCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
-  const totalCharCount = useMemo(() => scenes.reduce((sum, s) => {
-    const div = document.createElement('div');
-    div.innerHTML = s.content || '';
-    return sum + (div.textContent || '').length;
-  }, 0), [scenes]);
   const { saving, lastSaved, setLastSaved } = useAutosave({
     charCount,
     triggerLocalSave: persistDraft,
@@ -257,6 +262,20 @@ export function ChapterEditor() {
   const activeScene = scenes.find(s => s.id === activeSceneId);
   const activeSceneIndex = scenes.findIndex(s => s.id === activeSceneId);
   const wordCount = getWordCountFromScenes(scenes);
+  const readMins = Math.max(1, Math.round(wordCount / 200));
+  const workspaceLayout = layoutForWorkspace(authoringWorkspace);
+
+  const applyAuthoringWorkspace = useCallback((mode: AuthoringWorkspace) => {
+    const layout = layoutForWorkspace(mode);
+    setAuthoringWorkspace(mode);
+    setSceneSidebarCollapsed(layout.sceneSidebarCollapsed);
+    setPreviewCollapsed(layout.previewCollapsed);
+    setFocusMode(layout.focusMode);
+    setCanvasMaxWidth(layout.canvasMaxWidth);
+    if (!isDemo) {
+      saveEditorPrefs(storyId, chapterNumber, { authoringWorkspace: mode });
+    }
+  }, [storyId, chapterNumber, isDemo]);
 
 
   const updateSceneTitle = (id: string, newTitle: string) => {
@@ -405,15 +424,19 @@ export function ChapterEditor() {
           onChapterTitleChange={setChapterTitle}
           phoneticLive={phoneticLive}
           wordCount={wordCount}
+          readMins={readMins}
           backTo={`/stories/${storyId}`}
           saving={saving || publishing || savingDraft}
+          lastSaved={lastSaved}
           fontScale={fontScale}
           onFontScaleChange={handleFontScaleChange}
           onHistory={() => setHistoryOpen(true)}
-          onFocus={() => setFocusMode(true)}
+          onFocus={() => applyAuthoringWorkspace('focus')}
           onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
           publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
+          workspace={authoringWorkspace}
+          onWorkspaceChange={applyAuthoringWorkspace}
         />
       )}
 
@@ -473,6 +496,7 @@ export function ChapterEditor() {
       <div
         className={[
           'katha-proto-workspace',
+          workspaceLayout.workspaceClass,
           previewCollapsed && 'katha-proto-workspace--preview-collapsed',
           sceneSidebarCollapsed && 'katha-proto-workspace--sidebar-collapsed',
         ].filter(Boolean).join(' ')}
@@ -509,7 +533,6 @@ export function ChapterEditor() {
           chapterNum={chapterNumber}
           chapterTitle={chapterTitle}
           onChapterTitleChange={setChapterTitle}
-          chapterWordCount={wordCount}
           updateSceneTitle={updateSceneTitle}
           updateSceneContent={updateSceneContent}
           containerRef={editorContainerRef}
@@ -517,12 +540,10 @@ export function ChapterEditor() {
           flushRef={editorFlushRef}
           phoneticLive={phoneticLive}
           onTogglePhonetic={() => setPhoneticLive(p => !p)}
-          saving={saving}
-          lastSaved={lastSaved}
           editorComfortStyle={editorComfortStyle}
           focusMode={focusMode}
-          onExitFocus={() => setFocusMode(false)}
-          totalCharCount={totalCharCount}
+          onExitFocus={() => applyAuthoringWorkspace('writing')}
+          canvasMaxWidth={canvasMaxWidth}
         />
 
         {!focusMode && !previewCollapsed && (
@@ -571,7 +592,7 @@ export function ChapterEditor() {
       {focusMode && (
         <div className="katha-proto-focus-controls">
           <EditorComfortControls fontScale={fontScale} onFontScaleChange={handleFontScaleChange} compact />
-          <button type="button" className="katha-proto-focus-controls__exit" onClick={() => setFocusMode(false)}>
+          <button type="button" className="katha-proto-focus-controls__exit" onClick={() => applyAuthoringWorkspace('writing')}>
             <X size={16} /> Exit
           </button>
         </div>

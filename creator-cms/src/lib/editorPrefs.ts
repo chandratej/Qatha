@@ -1,3 +1,5 @@
+import { normalizeAuthoringWorkspace, type AuthoringWorkspace } from './authoringWorkspace';
+
 export type WorkspaceMode = 'editor' | 'split' | 'desktop' | 'mobile';
 export type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
 export type PreviewTheme = 'light' | 'dark' | 'sepia' | 'high-contrast';
@@ -7,6 +9,7 @@ const PREFIX = 'katha-editor-prefs-';
 
 export interface EditorPrefs {
   workspaceMode: WorkspaceMode;
+  authoringWorkspace: AuthoringWorkspace;
   previewDevice: PreviewDevice;
   previewTheme: PreviewTheme;
   editorTheme: EditorTheme;
@@ -17,6 +20,7 @@ export interface EditorPrefs {
 
 const DEFAULTS: EditorPrefs = {
   workspaceMode: 'split',
+  authoringWorkspace: 'writing',
   previewDevice: 'desktop',
   previewTheme: 'sepia',
   editorTheme: 'sepia',
@@ -33,7 +37,12 @@ export function loadEditorPrefs(storyId: string, chapterNum: number): EditorPref
   try {
     const raw = localStorage.getItem(key(storyId, chapterNum));
     if (!raw) return { ...DEFAULTS };
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw) as Partial<EditorPrefs>;
+    return {
+      ...DEFAULTS,
+      ...parsed,
+      authoringWorkspace: normalizeAuthoringWorkspace(parsed.authoringWorkspace),
+    };
   } catch {
     return { ...DEFAULTS };
   }

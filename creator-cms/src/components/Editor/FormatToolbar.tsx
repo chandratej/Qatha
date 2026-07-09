@@ -35,60 +35,54 @@ export const FormatToolbar = memo(function FormatToolbar({
   hideHistory = false,
 }: FormatToolbarProps) {
   return (
-    <div className="katha-proto-format-toolbar" role="toolbar" aria-label="Formatting">
-      <div className="katha-proto-fmt-group">
-        <span className="katha-proto-fmt-group-label">Telugu</span>
+    <div className="katha-proto-format-toolbar katha-proto-format-toolbar--compact" role="toolbar" aria-label="Formatting">
+      <div className="katha-proto-fmt-group" aria-label="Telugu tools">
         <button
           type="button"
           className={`katha-proto-fmt-btn${phoneticLive ? ' active' : ''}`}
           onClick={onTogglePhonetic}
-          title="Toggle phonetic live typing"
+          title="Phonetic live typing"
         >
-          <Keyboard size={16} />
-          <span className="katha-proto-fmt-btn__text">Phonetic</span>
+          <Keyboard size={15} />
         </button>
         <button type="button" className="katha-proto-fmt-btn" onClick={onConvertAll} title="Convert all roman to Telugu">
-          <Wand2 size={16} />
-          <span className="katha-proto-fmt-btn__text">Convert all</span>
+          <Wand2 size={15} />
         </button>
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />
 
-      <div className="katha-proto-fmt-group">
-        <span className="katha-proto-fmt-group-label">Text</span>
+      <div className="katha-proto-fmt-group" aria-label="Text formatting">
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onBold} title="Bold">
-          <Bold size={16} />
+          <Bold size={15} />
         </button>
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onItalic} title="Italic">
-          <Italic size={16} />
+          <Italic size={15} />
         </button>
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onUnderline} title="Underline">
-          <Underline size={16} />
+          <Underline size={15} />
         </button>
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />
 
-      <div className="katha-proto-fmt-group">
-        <span className="katha-proto-fmt-group-label">Paragraph</span>
+      <div className="katha-proto-fmt-group" aria-label="Paragraph alignment">
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('left')} title="Align left">
-          <AlignLeft size={16} />
+          <AlignLeft size={15} />
         </button>
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('center')} title="Align center">
-          <AlignCenter size={16} />
+          <AlignCenter size={15} />
         </button>
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('right')} title="Align right">
-          <AlignRight size={16} />
+          <AlignRight size={15} />
         </button>
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />
 
-      <div className="katha-proto-fmt-group">
-        <span className="katha-proto-fmt-group-label">Insert</span>
-        <button type="button" className="katha-proto-fmt-btn" onClick={onLink} title="Insert link">
-          <Link size={16} />
+      <div className="katha-proto-fmt-group" aria-label="Insert">
+        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onLink} title="Insert link">
+          <Link size={15} />
         </button>
         <button type="button" className="katha-proto-fmt-btn" onClick={onSceneBreak} title="Insert scene break">
           ***
@@ -98,13 +92,12 @@ export const FormatToolbar = memo(function FormatToolbar({
       {!hideHistory && (
         <>
           <div className="katha-proto-fmt-divider" aria-hidden />
-          <div className="katha-proto-fmt-group">
-            <span className="katha-proto-fmt-group-label">History</span>
+          <div className="katha-proto-fmt-group" aria-label="Undo and redo">
             <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onUndo} title="Undo">
-              <Undo2 size={16} />
+              <Undo2 size={15} />
             </button>
             <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onRedo} title="Redo">
-              <Redo2 size={16} />
+              <Redo2 size={15} />
             </button>
           </div>
         </>
