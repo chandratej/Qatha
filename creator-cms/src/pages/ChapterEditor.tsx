@@ -32,8 +32,12 @@ import {
   type PreviewTheme,
 } from '../lib/editorPrefs';
 import {
+  expandPreviewPanels,
+  expandSceneSidebarPanels,
   layoutForWorkspace,
   normalizeAuthoringWorkspace,
+  reconcileSidePanels,
+  toggleSceneSidebarPanels,
   type AuthoringWorkspace,
 } from '../lib/authoringWorkspace';
 import {
@@ -101,6 +105,13 @@ export function ChapterEditor() {
 
   const prefs = loadEditorPrefs(storyId, chapterNumber);
   const initialWorkspaceLayout = layoutForWorkspace(prefs.authoringWorkspace);
+  const initialSidePanels = reconcileSidePanels(
+    {
+      sceneSidebarCollapsed: initialWorkspaceLayout.sceneSidebarCollapsed,
+      previewCollapsed: initialWorkspaceLayout.previewCollapsed,
+    },
+    initialWorkspaceLayout.showSceneSidebar,
+  );
   const initialComfort = loadComfortPrefs();
   const [fontScale, setFontScale] = useState<FontScale>(initialComfort.fontScale);
   const [lineHeightScale, setLineHeightScale] = useState<LineHeightScale>(initialComfort.lineHeightScale);
@@ -115,8 +126,8 @@ export function ChapterEditor() {
   const [authoringWorkspace, setAuthoringWorkspace] = useState<AuthoringWorkspace>(
     () => normalizeAuthoringWorkspace(prefs.authoringWorkspace),
   );
-  const [sceneSidebarCollapsed, setSceneSidebarCollapsed] = useState(initialWorkspaceLayout.sceneSidebarCollapsed);
-  const [previewCollapsed, setPreviewCollapsed] = useState(initialWorkspaceLayout.previewCollapsed);
+  const [sceneSidebarCollapsed, setSceneSidebarCollapsed] = useState(initialSidePanels.sceneSidebarCollapsed);
+  const [previewCollapsed, setPreviewCollapsed] = useState(initialSidePanels.previewCollapsed);
   const [canvasMaxWidth, setCanvasMaxWidth] = useState(initialWorkspaceLayout.canvasMaxWidth);
   const [sceneDrawerOpen, setSceneDrawerOpen] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
@@ -335,13 +346,45 @@ export function ChapterEditor() {
   const overLimit = charCount > CHAR_LIMIT;
   const hasContent = wordCount > 0;
 
+  const applySidePanels = useCallback((next: { sceneSidebarCollapsed: boolean; previewCollapsed: boolean }) => {
+    const reconciled = reconcileSidePanels(next, workspaceLayout.showSceneSidebar);
+    setSceneSidebarCollapsed(reconciled.sceneSidebarCollapsed);
+    setPreviewCollapsed(reconciled.previewCollapsed);
+  }, [workspaceLayout.showSceneSidebar]);
+
+  const toggleSceneSidebar = useCallback(() => {
+    applySidePanels(toggleSceneSidebarPanels(sceneSidebarCollapsed, previewCollapsed));
+  }, [applySidePanels, sceneSidebarCollapsed, previewCollapsed]);
+
+  const openPreview = useCallback(() => {
+    applySidePanels(expandPreviewPanels());
+    setSceneDrawerOpen(false);
+  }, [applySidePanels]);
+
+  const closePreview = useCallback(() => {
+    setPreviewCollapsed(true);
+    setMobilePreviewOpen(false);
+  }, []);
+
+  const openSceneDrawer = useCallback(() => {
+    applySidePanels(expandSceneSidebarPanels());
+    setSceneDrawerOpen(true);
+    setMobilePreviewOpen(false);
+  }, [applySidePanels]);
+
   const applyAuthoringWorkspace = useCallback((mode: AuthoringWorkspace) => {
     const layout = layoutForWorkspace(mode);
     setAuthoringWorkspace(mode);
-    setSceneSidebarCollapsed(layout.sceneSidebarCollapsed);
-    setPreviewCollapsed(layout.previewCollapsed);
+    const panels = reconcileSidePanels(
+      { sceneSidebarCollapsed: layout.sceneSidebarCollapsed, previewCollapsed: layout.previewCollapsed },
+      layout.showSceneSidebar,
+    );
+    setSceneSidebarCollapsed(panels.sceneSidebarCollapsed);
+    setPreviewCollapsed(panels.previewCollapsed);
     setFocusMode(layout.focusMode);
     setCanvasMaxWidth(layout.canvasMaxWidth);
+    setSceneDrawerOpen(false);
+    setMobilePreviewOpen(false);
     if (!isDemo) {
       saveEditorPrefs(storyId, chapterNumber, { authoringWorkspace: mode });
     }
@@ -674,7 +717,7 @@ export function ChapterEditor() {
             onDeleteScene={requestDeleteScene}
             onDuplicateScene={handleDuplicateScene}
             collapsed={sceneSidebarCollapsed}
-            onToggleCollapse={() => setSceneSidebarCollapsed(!sceneSidebarCollapsed)}
+            onToggleCollapse={toggleSceneSidebar}
             drawerMode={sceneDrawerOpen}
             onCloseDrawer={() => setSceneDrawerOpen(false)}
             phoneticLive={phoneticLive}
@@ -719,7 +762,7 @@ export function ChapterEditor() {
             syncScroll={workspaceLayout.syncScroll || prefs.syncScroll}
             totalWords={wordCount}
             previewComfortStyle={editorComfortStyle}
-            onCollapse={() => setPreviewCollapsed(true)}
+            onCollapse={closePreview}
             mobileOpen={mobilePreviewOpen}
             onCloseMobile={() => setMobilePreviewOpen(false)}
           />
@@ -734,7 +777,7 @@ export function ChapterEditor() {
         <button
           type="button"
           className="katha-proto-preview-reopen"
-          onClick={() => setPreviewCollapsed(false)}
+          onClick={openPreview}
           title="Show preview"
           aria-label="Show preview panel"
         >
@@ -748,7 +791,7 @@ export function ChapterEditor() {
             <button
               type="button"
               className="katha-proto-scene-drawer-toggle"
-              onClick={() => { setSceneDrawerOpen(true); setMobilePreviewOpen(false); }}
+              onClick={openSceneDrawer}
               title="Scenes"
               aria-label="Open scenes"
             >
@@ -759,9 +802,8 @@ export function ChapterEditor() {
             type="button"
             className="katha-proto-preview-drawer-toggle"
             onClick={() => {
+              openPreview();
               setMobilePreviewOpen(true);
-              setPreviewCollapsed(false);
-              setSceneDrawerOpen(false);
             }}
             title="Reader preview"
             aria-label="Open reader preview"

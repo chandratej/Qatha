@@ -27,6 +27,38 @@ export const AUTHORING_WORKSPACES: {
 
 const VALID_WORKSPACES = new Set<AuthoringWorkspace>(['planning', 'writing', 'focus', 'review']);
 
+export interface SidePanelState {
+  sceneSidebarCollapsed: boolean;
+  previewCollapsed: boolean;
+}
+
+/** Keep scenes and preview panes mutually exclusive — never both expanded. */
+export function reconcileSidePanels(
+  state: SidePanelState,
+  showSceneSidebar = true,
+): SidePanelState {
+  if (!showSceneSidebar) {
+    return { sceneSidebarCollapsed: true, previewCollapsed: state.previewCollapsed };
+  }
+  if (!state.sceneSidebarCollapsed && !state.previewCollapsed) {
+    return { sceneSidebarCollapsed: false, previewCollapsed: true };
+  }
+  return state;
+}
+
+export function expandSceneSidebarPanels(): SidePanelState {
+  return { sceneSidebarCollapsed: false, previewCollapsed: true };
+}
+
+export function expandPreviewPanels(): SidePanelState {
+  return { sceneSidebarCollapsed: true, previewCollapsed: false };
+}
+
+export function toggleSceneSidebarPanels(collapsed: boolean, previewCollapsed: boolean): SidePanelState {
+  if (collapsed) return expandSceneSidebarPanels();
+  return { sceneSidebarCollapsed: true, previewCollapsed };
+}
+
 export function normalizeAuthoringWorkspace(mode: unknown): AuthoringWorkspace {
   if (typeof mode === 'string' && VALID_WORKSPACES.has(mode as AuthoringWorkspace)) {
     return mode as AuthoringWorkspace;
@@ -40,7 +72,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
     case 'planning':
       return {
         sceneSidebarCollapsed: false,
-        previewCollapsed: false,
+        previewCollapsed: true,
         focusMode: false,
         showSceneSidebar: true,
         syncScroll: false,
@@ -52,7 +84,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
     case 'writing':
       return {
         sceneSidebarCollapsed: false,
-        previewCollapsed: false,
+        previewCollapsed: true,
         focusMode: false,
         showSceneSidebar: true,
         syncScroll: false,
@@ -88,7 +120,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
     default:
       return {
         sceneSidebarCollapsed: false,
-        previewCollapsed: false,
+        previewCollapsed: true,
         focusMode: false,
         showSceneSidebar: true,
         syncScroll: false,

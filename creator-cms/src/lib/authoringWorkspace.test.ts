@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { layoutForWorkspace, normalizeAuthoringWorkspace } from './authoringWorkspace';
+import {
+  expandPreviewPanels,
+  expandSceneSidebarPanels,
+  layoutForWorkspace,
+  normalizeAuthoringWorkspace,
+  reconcileSidePanels,
+  toggleSceneSidebarPanels,
+} from './authoringWorkspace';
 
 describe('authoringWorkspace', () => {
   it('defaults unknown workspace modes to writing', () => {
@@ -24,6 +31,40 @@ describe('authoringWorkspace', () => {
 
   it('shows AI notes in planning mode', () => {
     expect(layoutForWorkspace('planning').showAiNotes).toBe(true);
-    expect(layoutForWorkspace('planning').previewCollapsed).toBe(false);
+    expect(layoutForWorkspace('planning').previewCollapsed).toBe(true);
+  });
+
+  it('defaults writing and planning to scenes open, preview collapsed', () => {
+    expect(layoutForWorkspace('writing')).toMatchObject({
+      sceneSidebarCollapsed: false,
+      previewCollapsed: true,
+    });
+    expect(layoutForWorkspace('planning')).toMatchObject({
+      sceneSidebarCollapsed: false,
+      previewCollapsed: true,
+    });
+  });
+
+  it('keeps scenes and preview mutually exclusive', () => {
+    expect(reconcileSidePanels({ sceneSidebarCollapsed: false, previewCollapsed: false })).toEqual({
+      sceneSidebarCollapsed: false,
+      previewCollapsed: true,
+    });
+    expect(expandSceneSidebarPanels()).toEqual({
+      sceneSidebarCollapsed: false,
+      previewCollapsed: true,
+    });
+    expect(expandPreviewPanels()).toEqual({
+      sceneSidebarCollapsed: true,
+      previewCollapsed: false,
+    });
+    expect(toggleSceneSidebarPanels(true, false)).toEqual({
+      sceneSidebarCollapsed: false,
+      previewCollapsed: true,
+    });
+    expect(toggleSceneSidebarPanels(false, false)).toEqual({
+      sceneSidebarCollapsed: true,
+      previewCollapsed: false,
+    });
   });
 });
