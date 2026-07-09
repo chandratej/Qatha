@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getChapterReadContext, getChapterTeaser, buildShareUrl } from '@/lib/chapter';
+import { estimateReadMinutes } from '@/lib/readTime';
+import { ChapterHero } from '@/components/ChapterHero';
 import { ChapterReader } from '@/components/ChapterReader';
 
 interface PageProps {
@@ -48,6 +50,7 @@ export default async function ChapterReadPage({ params }: PageProps) {
   if (!context) notFound();
 
   const { authorId, ...payload } = context;
+  const readMinutes = estimateReadMinutes(payload.chapter.teaser_text);
 
   return (
     <div className="chapter-shell">
@@ -56,26 +59,31 @@ export default async function ChapterReadPage({ params }: PageProps) {
           <span className="chapter-topbar__mark" aria-hidden>క</span>
           <span>
             <div className="chapter-topbar__name">Katha</div>
-            <div className="chapter-topbar__tag">Share preview</div>
+            <div className="chapter-topbar__tag">Stories that stay with you</div>
           </span>
         </a>
+        <span className="chapter-topbar__pill">Preview</span>
       </header>
 
-      <main className="chapter-page">
-        <article>
-          <header className="chapter-header">
-            <p className="chapter-header__author">{payload.story.author_name}</p>
-            <h1>{payload.chapter.title || `Chapter ${chapterNumber}`}</h1>
-            <p className="chapter-header__series">{payload.story.title}</p>
-          </header>
+      <main className="chapter-stage">
+        <div className="reading-canvas">
+          <div className="reading-canvas__inner">
+            <ChapterHero
+              authorName={payload.story.author_name}
+              storyTitle={payload.story.title}
+              chapterTitle={payload.chapter.title}
+              chapterNumber={chapterNumber}
+              readMinutes={readMinutes}
+            />
 
-          <ChapterReader
-            slug={slug}
-            chapterNumber={chapterNumber}
-            payload={payload}
-            authorId={authorId}
-          />
-        </article>
+            <ChapterReader
+              slug={slug}
+              chapterNumber={chapterNumber}
+              payload={payload}
+              authorId={authorId}
+            />
+          </div>
+        </div>
       </main>
     </div>
   );

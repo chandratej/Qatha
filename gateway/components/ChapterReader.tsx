@@ -5,6 +5,7 @@ import { createBrowserSupabase } from '@/lib/auth';
 import { normalizeChapterHtml, type ChapterTeaserPayload } from '@/lib/chapter';
 import { buildReaderAppChapterUrl } from '@/lib/constants';
 import { Paywall } from './Paywall';
+import { ReadingSkeleton } from './ReadingSkeleton';
 
 interface ChapterReaderProps {
   slug: string;
@@ -74,7 +75,11 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
   const fullHtml = fullContent ? normalizeChapterHtml(fullContent) : null;
 
   if (mode === 'loading') {
-    return <p className="chapter-loading">Loading chapter…</p>;
+    return (
+      <div className="chapter-loading" aria-busy="true" aria-label="Loading chapter">
+        <ReadingSkeleton />
+      </div>
+    );
   }
 
   if (mode === 'author' && fullHtml) {
@@ -82,7 +87,7 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
       <>
         <div className="author-bar" role="status">
           <strong>Author preview</strong>
-          <span>— you see the full chapter. Readers get a teaser and unlock on this link.</span>
+          <span>Readers see a short teaser on this link — full story lives in the Katha app.</span>
         </div>
         <div
           className="chapter-body"
@@ -94,33 +99,42 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
 
   return (
     <>
-      <div
-        className="chapter-body chapter-body--teaser"
-        dangerouslySetInnerHTML={{ __html: teaserHtml }}
-      />
-
-      <Paywall
-        storySlug={slug}
-        chapterNumber={chapterNumber}
-        chapterId={payload.chapter.id}
-        storyId={payload.story.id}
-        priceInr={priceInr}
-        pricePaise={payload.chapter.unlock_price_paise}
-        accessToken={accessToken}
-      />
-
-      <section className="reader-cta" aria-label="Read in Katha app">
-        <h2>Read the full story in Katha</h2>
-        <p>
-          This page is a shareable preview for new readers. The Katha app is the main reading
-          experience — library, progress, and subscriptions.
+      <div className="teaser-wrap">
+        <div
+          className="chapter-body chapter-body--teaser"
+          dangerouslySetInnerHTML={{ __html: teaserHtml }}
+        />
+        <p className="teaser-hint">
+          <span className="teaser-hint__icon" aria-hidden />
+          Story continues below
         </p>
-        <div className="reader-cta__actions">
-          <a href={readerAppUrl} className="btn btn-primary">
-            Open in Katha app
-          </a>
-        </div>
-      </section>
+      </div>
+
+      <div className="unlock-zone">
+        <Paywall
+          storySlug={slug}
+          chapterNumber={chapterNumber}
+          chapterId={payload.chapter.id}
+          storyId={payload.story.id}
+          priceInr={priceInr}
+          pricePaise={payload.chapter.unlock_price_paise}
+          accessToken={accessToken}
+        />
+
+        <section className="reader-cta" aria-label="Read in Katha app">
+          <p className="reader-cta__label">Full experience</p>
+          <h2>Continue in the Katha app</h2>
+          <p>
+            Library, reading progress, subscriptions, and the complete story —
+            built for long-form Telugu fiction.
+          </p>
+          <div className="reader-cta__actions">
+            <a href={readerAppUrl} className="btn btn-primary">
+              Open in Katha
+            </a>
+          </div>
+        </section>
+      </div>
     </>
   );
 }

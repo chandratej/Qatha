@@ -58,7 +58,7 @@ export function Paywall({
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 401) {
-          throw new Error('Sign in to unlock this chapter, or read in the Katha app.');
+          throw new Error('Sign in to unlock, or open this story in the Katha app.');
         }
         throw new Error(data.error || 'Payment could not be started');
       }
@@ -126,9 +126,15 @@ export function Paywall({
   return (
     <section className="paywall" aria-label="Unlock chapter">
       <div className="paywall__panel">
-        <h2>Continue reading</h2>
-        <p className="paywall__price">₹{priceInr}</p>
-        <p>Unlock the rest of this chapter, or read the full story in the Katha app.</p>
+        <div className="paywall__ornament" aria-hidden />
+        <h2>Unlock this chapter</h2>
+        <p className="paywall__subtitle">
+          Support the author and read the rest of this chapter — one-time unlock, yours to keep.
+        </p>
+        <div className="paywall__price-row">
+          <span className="paywall__price">₹{priceInr}</span>
+          <span className="paywall__price-note">per chapter</span>
+        </div>
         {error && <p className="paywall__error">{error}</p>}
         <button
           type="button"
@@ -138,6 +144,9 @@ export function Paywall({
         >
           {loading ? 'Opening payment…' : `Unlock for ₹${priceInr}`}
         </button>
+        <p className="paywall__fine">
+          Secure payment via Razorpay · 60% goes to the creator
+        </p>
       </div>
     </section>
   );
