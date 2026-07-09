@@ -222,7 +222,7 @@ export function ChapterEditor() {
         setChapterTitle(cached?.title || chapter.title || `Chapter ${chapterNumber}`);
         if (storyMeta.story?.title) setStoryLabel(storyMeta.story.title);
         setModerationStatus(chapter.moderation_status || chapter.status || null);
-        setModerationNotes(chapter.moderation_notes || null);
+        setModerationNotes(chapter.moderation_reason || null);
       } catch (err) {
         if (!cancelled) {
           const fallback = [createDefaultScene()];

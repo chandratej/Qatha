@@ -16,6 +16,8 @@ import {
 } from '../data/seed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { getAuthenticatedUserId } from '../middleware/authenticate.js';
+import { moderateChapterForSchedule } from '../services/moderation/index.js';
+import { generateUniqueStorySlug } from '../lib/slugify.js';
 
 export const creatorsRouter = Router();
 
@@ -100,8 +102,11 @@ creatorsRouter.get('/stories', async (req, res, next) => {
       const { data: chapters } = await supabase.from('chapters')
         .select('status').eq('story_id', s.id);
       const { data: drafts } = await supabase.from('chapter_drafts')
-        .select('status').eq('story_id', s.id).eq('creator_id', creatorId);
-      const statuses = [...(chapters || []), ...(drafts || [])];
+        .select('chapter_number').eq('story_id', s.id).eq('creator_id', creatorId);
+      const statuses = [
+        ...(chapters || []),
+        ...(drafts || []).map(() => ({ status: 'draft' })),
+      ];
       return { ...s, moderation_status: deriveStoryModerationStatus(statuses) };
     }));
 
@@ -121,7 +126,7 @@ creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
       if (!chapters) throw createAppError('CHAPTER_NOT_FOUND', 'Story not found', 404);
       const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId);
       return res.json({
-        story: { id: storyId, title: story?.title || 'My Story' },
+        story: { id: storyId, title: story?.title || 'My Story', slug: story?.slug || null },
         chapters,
         mock: true,
       });
@@ -139,7 +144,7 @@ creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
       .order('chapter_number');
 
     const { data: drafts } = await supabase.from('chapter_drafts')
-      .select('id, chapter_number, title, content, content_delta, last_saved_at, status')
+      .select('id, chapter_number, title, content, content_delta, last_saved_at')
       .eq('story_id', storyId)
       .eq('creator_id', creatorId);
 
@@ -168,7 +173,10 @@ creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
       }
     }
 
-    res.json({ story: { id: story.id, title: story.title }, chapters: Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number) });
+    res.json({
+      story: { id: story.id, title: story.title, slug: story.slug ?? null },
+      chapters: Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number),
+    });
   } catch (err) {
     next(err);
   }
@@ -418,26 +426,346 @@ creatorsRouter.post('/stories/:storyId/chapters/:chapterNumber/duplicate', async
   }
 });
 
+function plainTextLength(html = '') {
+  return html.replace(/<[^>]+>/g, '').trim().length;
+}
+
+function buildMockScheduledList(creatorId) {
+  const items = [];
+  const stories = getCreatorSeedStories(creatorId);
+  const storyTitles = new Map(stories.map((s) => [s.id, s.title]));
+
+  for (const [key, entry] of mockChapterStore.entries()) {
+    if (entry.status !== 'scheduled' || !entry.scheduled_publish_at) continue;
+    if (entry.moderation_status && entry.moderation_status !== 'approved') continue;
+    const [storyId, chapterNum] = key.split(':');
+    if (!storyTitles.has(storyId) || entry.creator_id !== creatorId) continue;
+    items.push({
+      id: entry.id || `scheduled-${key}`,
+      story_id: storyId,
+      story_title: storyTitles.get(storyId),
+      chapter_number: Number(chapterNum),
+      chapter_title: entry.title,
+      scheduled_publish_at: entry.scheduled_publish_at,
+      status: 'scheduled',
+    });
+  }
+
+  return items.sort((a, b) => new Date(a.scheduled_publish_at) - new Date(b.scheduled_publish_at));
+}
+
+creatorsRouter.get('/schedule', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+
+    if (isMockMode()) {
+      return res.json({ items: buildMockScheduledList(creatorId), mock: true });
+    }
+
+    const { data: stories } = await supabase.from('stories')
+      .select('id, title')
+      .eq('author_id', creatorId)
+      .eq('is_published', true);
+
+    const storyIds = (stories || []).map((s) => s.id);
+    if (!storyIds.length) return res.json({ items: [] });
+
+    const { data, error } = await supabase.from('chapters')
+      .select('id, story_id, chapter_number, title, status, scheduled_publish_at')
+      .in('story_id', storyIds)
+      .eq('status', 'scheduled')
+      .eq('moderation_status', 'approved')
+      .order('scheduled_publish_at');
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+
+    const storyTitles = new Map((stories || []).map((s) => [s.id, s.title]));
+    res.json({
+      items: (data || []).map((ch) => ({
+        id: ch.id,
+        story_id: ch.story_id,
+        story_title: storyTitles.get(ch.story_id) || 'Untitled',
+        chapter_number: ch.chapter_number,
+        chapter_title: ch.title,
+        scheduled_publish_at: ch.scheduled_publish_at,
+        status: ch.status,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+creatorsRouter.post('/schedule', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { story_id, chapter_number, scheduled_publish_at } = req.body;
+
+    if (!story_id || !chapter_number || !scheduled_publish_at) {
+      throw createAppError('INTERNAL_ERROR', 'story_id, chapter_number, and scheduled_publish_at are required', 400);
+    }
+
+    const publishAt = new Date(scheduled_publish_at);
+    if (Number.isNaN(publishAt.getTime()) || publishAt <= new Date()) {
+      throw createAppError('INTERNAL_ERROR', 'Schedule time must be in the future', 400);
+    }
+
+    if (isMockMode()) {
+      const chapters = getCreatorStoryChapters(story_id, creatorId);
+      if (!chapters) throw createAppError('CHAPTER_NOT_FOUND', 'Story not found', 404);
+
+      const source = chapters.find((c) => c.chapter_number === Number(chapter_number));
+      const content = source?.content || '';
+      if (plainTextLength(content) < 1) {
+        throw createAppError('INTERNAL_ERROR', 'Write chapter content before scheduling', 400);
+      }
+
+      const key = `${story_id}:${chapter_number}`;
+      const entry = {
+        id: `scheduled-${story_id}-${chapter_number}`,
+        creator_id: creatorId,
+        story_id,
+        chapter_number: Number(chapter_number),
+        title: source?.title || `Chapter ${chapter_number}`,
+        content,
+        content_delta: source?.content_delta,
+        status: 'scheduled',
+        moderation_status: 'approved',
+        scheduled_publish_at: publishAt.toISOString(),
+        last_saved_at: new Date().toISOString(),
+      };
+      mockChapterStore.set(key, entry);
+      const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === story_id);
+      return res.json({
+        item: {
+          id: entry.id,
+          story_id,
+          story_title: story?.title || 'My Story',
+          chapter_number: entry.chapter_number,
+          chapter_title: entry.title,
+          scheduled_publish_at: entry.scheduled_publish_at,
+          status: 'scheduled',
+        },
+        mock: true,
+      });
+    }
+
+    const { data: story } = await supabase.from('stories').select('id, title, author_id')
+      .eq('id', story_id).single();
+    if (!story || story.author_id !== creatorId) {
+      throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+    }
+
+    const { data: draft } = await supabase.from('chapter_drafts')
+      .select('title, content, content_delta')
+      .eq('story_id', story_id)
+      .eq('chapter_number', chapter_number)
+      .eq('creator_id', creatorId)
+      .maybeSingle();
+
+    let title = draft?.title;
+    let content = draft?.content;
+    let content_delta = draft?.content_delta;
+
+    if (!content) {
+      const { data: existing } = await supabase.from('chapters')
+        .select('title, content, content_delta, status')
+        .eq('story_id', story_id)
+        .eq('chapter_number', chapter_number)
+        .maybeSingle();
+      if (existing?.status === 'published') {
+        throw createAppError('INTERNAL_ERROR', 'Published chapters cannot be scheduled', 400);
+      }
+      title = existing?.title;
+      content = existing?.content;
+      content_delta = existing?.content_delta;
+    }
+
+    if (!content || plainTextLength(content) < 1) {
+      throw createAppError('INTERNAL_ERROR', 'Write chapter content before scheduling', 400);
+    }
+    if (content.length > 50000) {
+      throw createAppError('INTERNAL_ERROR', 'Chapter content invalid (max 50,000 chars)', 400);
+    }
+
+    const { data: chapter, error } = await supabase.from('chapters').upsert({
+      story_id,
+      chapter_number,
+      title: title || `Chapter ${chapter_number}`,
+      content,
+      content_delta,
+      status: 'scheduled',
+      moderation_status: 'pending',
+      scheduled_publish_at: publishAt.toISOString(),
+      published_at: null,
+    }, { onConflict: 'story_id,chapter_number' }).select().single();
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+
+    const moderation = await moderateChapterForSchedule(
+      chapter.id,
+      content,
+      creatorId,
+      publishAt.toISOString(),
+    );
+
+    if (moderation.userMessage) {
+      throw createAppError('INTERNAL_ERROR', moderation.userMessage, 400);
+    }
+
+    const { data: ready } = await supabase.from('chapters')
+      .select('id, chapter_number, title, status, scheduled_publish_at')
+      .eq('id', chapter.id)
+      .single();
+
+    res.json({
+      item: {
+        id: ready.id,
+        story_id,
+        story_title: story.title,
+        chapter_number: ready.chapter_number,
+        chapter_title: ready.title,
+        scheduled_publish_at: ready.scheduled_publish_at,
+        status: ready.status,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+creatorsRouter.patch('/schedule/:storyId/:chapterNumber', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { storyId, chapterNumber } = req.params;
+    const { scheduled_publish_at } = req.body;
+    const num = Number(chapterNumber);
+
+    if (!scheduled_publish_at) {
+      throw createAppError('INTERNAL_ERROR', 'scheduled_publish_at is required', 400);
+    }
+
+    const publishAt = new Date(scheduled_publish_at);
+    if (Number.isNaN(publishAt.getTime()) || publishAt <= new Date()) {
+      throw createAppError('INTERNAL_ERROR', 'Schedule time must be in the future', 400);
+    }
+
+    if (isMockMode()) {
+      const key = `${storyId}:${num}`;
+      const entry = mockChapterStore.get(key);
+      if (!entry || entry.creator_id !== creatorId || entry.status !== 'scheduled') {
+        throw createAppError('CHAPTER_NOT_FOUND', 'Scheduled chapter not found', 404);
+      }
+      entry.scheduled_publish_at = publishAt.toISOString();
+      mockChapterStore.set(key, entry);
+      const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId);
+      return res.json({
+        item: {
+          id: entry.id,
+          story_id: storyId,
+          story_title: story?.title || 'My Story',
+          chapter_number: num,
+          chapter_title: entry.title,
+          scheduled_publish_at: entry.scheduled_publish_at,
+          status: 'scheduled',
+        },
+        mock: true,
+      });
+    }
+
+    const { data: story } = await supabase.from('stories').select('id, title, author_id')
+      .eq('id', storyId).single();
+    if (!story || story.author_id !== creatorId) {
+      throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+    }
+
+    const { data: chapter, error } = await supabase.from('chapters')
+      .update({ scheduled_publish_at: publishAt.toISOString() })
+      .eq('story_id', storyId)
+      .eq('chapter_number', num)
+      .eq('status', 'scheduled')
+      .eq('moderation_status', 'approved')
+      .select()
+      .single();
+
+    if (error || !chapter) throw createAppError('CHAPTER_NOT_FOUND', 'Scheduled chapter not found', 404);
+
+    res.json({
+      item: {
+        id: chapter.id,
+        story_id: storyId,
+        story_title: story.title,
+        chapter_number: chapter.chapter_number,
+        chapter_title: chapter.title,
+        scheduled_publish_at: chapter.scheduled_publish_at,
+        status: chapter.status,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+creatorsRouter.delete('/schedule/:storyId/:chapterNumber', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { storyId, chapterNumber } = req.params;
+    const num = Number(chapterNumber);
+
+    if (isMockMode()) {
+      const key = `${storyId}:${num}`;
+      const entry = mockChapterStore.get(key);
+      if (!entry || entry.creator_id !== creatorId || entry.status !== 'scheduled') {
+        throw createAppError('CHAPTER_NOT_FOUND', 'Scheduled chapter not found', 404);
+      }
+      entry.status = 'draft';
+      entry.scheduled_publish_at = null;
+      mockChapterStore.set(key, entry);
+      return res.json({ cancelled: true, mock: true });
+    }
+
+    const { data: story } = await supabase.from('stories').select('author_id').eq('id', storyId).single();
+    if (!story || story.author_id !== creatorId) {
+      throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+    }
+
+    const { error } = await supabase.from('chapters')
+      .update({ status: 'draft', scheduled_publish_at: null })
+      .eq('story_id', storyId)
+      .eq('chapter_number', num)
+      .eq('status', 'scheduled');
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json({ cancelled: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 creatorsRouter.post('/stories', async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { title, description, genre, cover_url, release_schedule, release_day_of_week, release_time_of_day } = req.body;
 
     if (isMockMode()) {
+      const { slugifyTitle } = await import('../lib/slugify.js');
       const story = {
         id: `story-${Date.now()}`, author_id: creatorId, title, description, genre,
         cover_url, release_schedule: release_schedule || 'irregular',
         release_day_of_week, release_time_of_day, is_published: true,
         chapter_count: 0, total_readers: 0, views_this_week: 0,
+        slug: slugifyTitle(title) || `story-${Date.now()}`,
       };
       mockCreatorStories.push(story);
       return res.json({ story, mock: true });
     }
 
+    const slug = await generateUniqueStorySlug(supabase, title);
+
     const { data, error } = await supabase.from('stories').insert({
       author_id: creatorId, title, description, genre, cover_url,
       release_schedule: release_schedule || 'irregular',
-      release_day_of_week, release_time_of_day, is_published: true,
+      release_day_of_week, release_time_of_day, slug, is_published: true,
     }).select().single();
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);

@@ -8,7 +8,7 @@ import 'launch_offer_service.dart';
 
 /// Reader auth: Cascading Auth Gate (Google primary → email magic link fallback).
 /// Phone OTP is NOT used for readers — it is reserved for Creator CMS payout/KYC.
-/// SMS delivery infra (Supabase Send SMS Hook → MSG91) is shared but creator-only.
+/// WhatsApp OTP delivery (whatsapp-otp edge function) is shared but creator-only.
 class AuthService {
   AuthService();
 

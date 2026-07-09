@@ -1,19 +1,30 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { normalizeIndianPhone, isValidIndianMobile } from './phoneVerification';
 import { generateWhatsAppLink } from './whatsappLinks';
+import { DEFAULT_PHONE_CONFIG, resetPhoneConfigCache } from './phoneConfig';
 
 describe('phoneVerification', () => {
-  it('normalizes 10-digit Indian numbers', () => {
-    expect(normalizeIndianPhone('9876543210')).toBe('+919876543210');
+  beforeEach(() => {
+    resetPhoneConfigCache();
   });
 
-  it('accepts valid Indian mobile', () => {
-    expect(isValidIndianMobile('+919876543210')).toBe(true);
-    expect(isValidIndianMobile('+911234567890')).toBe(false);
+  it('normalizes 10-digit national numbers', () => {
+    const example = DEFAULT_PHONE_CONFIG.exampleE164;
+    const national = example.replace(DEFAULT_PHONE_CONFIG.dialPrefix, '');
+    expect(normalizeIndianPhone(national)).toBe(example);
+  });
+
+  it('accepts valid mobile numbers', () => {
+    expect(isValidIndianMobile(DEFAULT_PHONE_CONFIG.exampleE164)).toBe(true);
+    expect(isValidIndianMobile(`${DEFAULT_PHONE_CONFIG.dialPrefix}1234567890`)).toBe(false);
   });
 });
 
 describe('whatsappLinks', () => {
+  beforeEach(() => {
+    resetPhoneConfigCache();
+  });
+
   it('generates creator toolkit deep link', () => {
     const url = generateWhatsAppLink('creator', 'abc-123', '9199999999999');
     expect(url).toContain('wa.me/9199999999999');

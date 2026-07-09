@@ -1,10 +1,13 @@
 import { supabase } from '../lib/supabase.js';
 
+import { publishDueScheduledChapters } from './scheduledPublish.js';
+
 export function scheduleNotifications(cron) {
   cron.schedule('0 10 * * 0', notifyTrendingStories);
   cron.schedule('0 9 * * *', notifyExpiringSubscriptions);
   cron.schedule('0 * * * *', notifyScheduledReleases);
   cron.schedule('0 20 * * *', notifyStreakReminders); // 8 PM daily trigger
+  cron.schedule('* * * * *', publishDueScheduledChapters);
 }
 
 async function sendPush(token, title, body) {

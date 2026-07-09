@@ -1,4 +1,5 @@
 import type { AuthUser } from '../context/AuthContext';
+import { isEdgeFunctionUnavailable } from './edgeFunctions';
 import { CONNECTION_ERROR, mapApiError } from './errors';
 import { isMockMode } from './supabase';
 import * as sb from '../services';
@@ -13,6 +14,7 @@ export type {
   CreatorMilestone,
   ModerationItem,
   UserDevice,
+  ScheduledPublishItem,
 } from '../types/database';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -79,6 +81,7 @@ import type {
   AnalyticsData,
   CreatorMilestone,
   ModerationItem,
+  ScheduledPublishItem,
 } from '../types/database';
 
 export const api = {
@@ -89,7 +92,7 @@ export const api = {
   getStoryChapters: (storyId: string) =>
     useSupabaseDirect()
       ? sb.sbGetStoryChapters(storyId)
-      : request<{ story?: { id: string; title: string }; chapters: ChapterListItem[] }>(`/creators/stories/${storyId}/chapters`),
+      : request<{ story?: { id: string; title: string; slug?: string | null }; chapters: ChapterListItem[] }>(`/creators/stories/${storyId}/chapters`),
   getChapter: (storyId: string, chapterNumber: number) =>
     useSupabaseDirect()
       ? sb.sbGetChapter(storyId, chapterNumber)
@@ -142,15 +145,29 @@ export const api = {
     useSupabaseDirect()
       ? sb.sbSaveDraft(storyId, body)
       : request(`/chapters/${storyId}/draft`, { method: 'POST', body: JSON.stringify(body) }),
-  publishChapter: (storyId: string, body: {
+  publishChapter: async (storyId: string, body: {
     chapter_number: number;
     title?: string;
     content: string;
     appeal_note?: string;
-  }) =>
-    useSupabaseDirect()
-      ? sb.sbPublishChapter(storyId, body)
-      : request(`/chapters/${storyId}/publish`, { method: 'POST', body: JSON.stringify(body) }),
+  }) => {
+    const nodePublish = () => request(`/chapters/${storyId}/publish`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+    if (!useSupabaseDirect()) return nodePublish();
+    try {
+      return await sb.sbPublishChapter(storyId, body);
+    } catch (err) {
+      if (isEdgeFunctionUnavailable(err)) {
+        if (import.meta.env.DEV) {
+          console.warn('[api] publish-chapter edge function unavailable — using Node API');
+        }
+        return nodePublish();
+      }
+      throw err;
+    }
+  },
   getAnalytics: (storyId: string) =>
     useSupabaseDirect()
       ? sb.sbGetAnalytics(storyId)
@@ -173,6 +190,28 @@ export const api = {
       : request(`/engagement/creator-milestones/${id}/acknowledge`, { method: 'POST' }),
   uploadImage: (file: File) =>
     useSupabaseDirect() ? sb.sbUploadImage(file) : uploadImageViaNode(file),
+  getScheduledPublishes: () =>
+    useSupabaseDirect()
+      ? sb.sbGetScheduledPublishes()
+      : request<{ items: ScheduledPublishItem[] }>('/creators/schedule'),
+  scheduleChapter: (storyId: string, body: { chapter_number: number; scheduled_publish_at: string }) =>
+    useSupabaseDirect()
+      ? sb.sbScheduleChapter(storyId, body)
+      : request<{ item: ScheduledPublishItem }>('/creators/schedule', {
+          method: 'POST',
+          body: JSON.stringify({ story_id: storyId, ...body }),
+        }),
+  rescheduleChapter: (storyId: string, chapterNumber: number, scheduledPublishAt: string) =>
+    useSupabaseDirect()
+      ? sb.sbRescheduleChapter(storyId, chapterNumber, scheduledPublishAt)
+      : request<{ item: ScheduledPublishItem }>(`/creators/schedule/${storyId}/${chapterNumber}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ scheduled_publish_at: scheduledPublishAt }),
+        }),
+  cancelScheduledPublish: (storyId: string, chapterNumber: number) =>
+    useSupabaseDirect()
+      ? sb.sbCancelScheduledPublish(storyId, chapterNumber)
+      : request<{ cancelled: boolean }>(`/creators/schedule/${storyId}/${chapterNumber}`, { method: 'DELETE' }),
 };
 
 async function uploadImageViaNode(file: File): Promise<{ url: string }> {

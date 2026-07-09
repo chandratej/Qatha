@@ -1,19 +1,16 @@
 /** Meta WhatsApp Cloud API helpers — OTP delivery + free-form replies. */
 
+import { normalizeWhatsAppRecipient } from './phone.ts';
+
 const META_GRAPH = 'https://graph.facebook.com/v21.0';
 
-export function normalizeWhatsAppRecipient(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 10) return `91${digits}`;
-  if (digits.startsWith('91') && digits.length === 12) return digits;
-  return digits;
-}
+export { normalizeWhatsAppRecipient };
 
 export interface WhatsAppSendResult {
   ok: boolean;
   messageId?: string;
   error?: string;
-  channel: 'whatsapp' | 'sms';
+  channel: 'whatsapp';
 }
 
 export async function sendWhatsAppAuthOtp(
@@ -116,29 +113,4 @@ export async function sendWhatsAppTextMessage(
 
   const messageId = (body as { messages?: Array<{ id: string }> }).messages?.[0]?.id;
   return { ok: true, channel: 'whatsapp', messageId };
-}
-
-export async function sendMsg91SmsOtp(
-  phone: string,
-  otp: string,
-  opts: { authKey: string; templateId: string },
-): Promise<WhatsAppSendResult> {
-  const res = await fetch('https://control.msg91.com/api/v5/flow/', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      authkey: opts.authKey,
-    },
-    body: JSON.stringify({
-      template_id: opts.templateId,
-      recipients: [{ mobiles: phone.replace('+', ''), var: otp }],
-    }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    return { ok: false, channel: 'sms', error: text };
-  }
-
-  return { ok: true, channel: 'sms' };
 }

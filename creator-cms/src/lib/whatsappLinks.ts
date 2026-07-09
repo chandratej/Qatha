@@ -1,15 +1,25 @@
 /** Click-to-WhatsApp deep links — opens free 24-hour Meta pricing window. */
 
-const DEFAULT_WA_NUMBER = (import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER as string) || '919876543210';
+import { getPhoneConfig } from './phoneConfig';
 
 export type WhatsAppIntentType = 'reader' | 'creator';
+
+export function getWhatsAppBusinessNumber(): string {
+  const digits = getPhoneConfig().whatsappBusinessNumber.replace(/\D/g, '');
+  if (!digits) {
+    throw new Error(
+      'WhatsApp business number is not configured. Set platform_config.phone or VITE_WHATSAPP_BUSINESS_NUMBER.',
+    );
+  }
+  return digits;
+}
 
 export function generateWhatsAppLink(
   type: WhatsAppIntentType,
   contextId: string,
-  businessNumber: string = DEFAULT_WA_NUMBER,
+  businessNumber?: string,
 ): string {
-  const digits = businessNumber.replace(/\D/g, '');
+  const digits = (businessNumber ?? getWhatsAppBusinessNumber()).replace(/\D/g, '');
   const safeId = contextId.replace(/[^a-zA-Z0-9_-]/g, '');
 
   const prefill =

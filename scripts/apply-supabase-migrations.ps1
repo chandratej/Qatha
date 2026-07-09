@@ -37,5 +37,5 @@ Write-Host "  1. Open https://supabase.com/dashboard -> your project -> SQL Edit
 Write-Host "  2. New query -> paste contents of:"
 Write-Host "     $bootstrap"
 Write-Host "  3. Click Run (may take 30-60 seconds)"
-Write-Host "  4. Deploy Edge Functions: supabase functions deploy register-device sms-hook"
+Write-Host "  4. Deploy Edge Functions: supabase functions deploy register-device whatsapp-otp"
 Write-Host "  5. Restart Creator CMS dev server"

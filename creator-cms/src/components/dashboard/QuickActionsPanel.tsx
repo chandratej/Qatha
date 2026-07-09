@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bot, Calendar, FileUp, PenLine, Sparkles } from 'lucide-react';
+import { Bot, Calendar, PenLine, Sparkles } from 'lucide-react';
 
 interface Props {
   layout?: 'stack' | 'bar';
@@ -14,13 +14,9 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
           New story
         </Link>
         <div className="quick-actions-bar__actions">
-          <Link to="/stories" className="quick-actions-bar__action">
+          <Link to="/schedule" className="quick-actions-bar__action">
             <Calendar size={16} aria-hidden />
             Schedule
-          </Link>
-          <Link to="/stories/new" className="quick-actions-bar__action">
-            <FileUp size={16} aria-hidden />
-            Import
           </Link>
           <button type="button" className="quick-actions-bar__action quick-actions-bar__action--soon" disabled>
             <Bot size={16} aria-hidden />
@@ -46,13 +42,9 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
         </span>
       </Link>
       <div className="quick-actions quick-actions--grid">
-        <Link to="/stories" className="quick-action-btn quick-action-btn--tile">
+        <Link to="/schedule" className="quick-action-btn quick-action-btn--tile">
           <Calendar size={17} aria-hidden />
           <span>Schedule</span>
-        </Link>
-        <Link to="/stories/new" className="quick-action-btn quick-action-btn--tile">
-          <FileUp size={17} aria-hidden />
-          <span>Import</span>
         </Link>
         <button type="button" className="quick-action-btn quick-action-btn--tile quick-action-btn--soon" disabled>
           <Bot size={17} aria-hidden />

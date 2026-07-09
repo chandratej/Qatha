@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { MessageCircle, ExternalLink } from 'lucide-react';
 import { generateWhatsAppLink, type WhatsAppIntentType } from '../lib/whatsappLinks';
+import { loadPhoneConfig } from '../lib/phoneConfig';
 
 interface WhatsAppCTAProps {
   type: WhatsAppIntentType;
@@ -16,7 +18,16 @@ export function WhatsAppCTA({
   subtitle,
   className = '',
 }: WhatsAppCTAProps) {
-  const href = generateWhatsAppLink(type, contextId);
+  const [href, setHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadPhoneConfig()
+      .then(() => setHref(generateWhatsAppLink(type, contextId)))
+      .catch(() => setHref(null));
+  }, [type, contextId]);
+
+  if (!href) return null;
+
   const defaultLabel =
     type === 'creator'
       ? 'Claim your creator toolkit on WhatsApp'

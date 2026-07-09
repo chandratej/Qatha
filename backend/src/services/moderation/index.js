@@ -1,2 +1,2 @@
 export { moderateContent, riskScoreFromResult } from './gateway.js';
-export { moderateChapter, hasHardBlockViolation } from './chapter.js';
+export { moderateChapter, moderateChapterForSchedule, hasHardBlockViolation } from './chapter.js';

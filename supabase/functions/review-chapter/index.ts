@@ -1,19 +1,14 @@
 // Edge Function: review-chapter (Wave B — SVC-MOD-03)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { corsHeaders, handleCorsPreflight } from '../_shared/cors.ts';
 import { getPublishableKey, getSecretKey } from '../_shared/keys.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 const VALID_DECISIONS = new Set(['approved', 'needs_revision', 'rejected']);
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
 
   try {
     const authHeader = req.headers.get('Authorization');

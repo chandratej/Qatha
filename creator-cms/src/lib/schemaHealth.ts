@@ -22,7 +22,13 @@ export function isSchemaMissingError(error: PostgrestError | null | undefined): 
 /** True when PostgREST reports a missing column (migration partially applied). */
 export function isMissingColumnError(error: PostgrestError | null | undefined): boolean {
   if (!error) return false;
-  return error.code === '42703' || (error.message || '').includes('column');
+  const msg = (error.message || '').toLowerCase();
+  return (
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    msg.includes('column') && msg.includes('does not exist') ||
+    msg.includes('could not find') && msg.includes('column')
+  );
 }
 
 export async function checkSchemaHealth(): Promise<SchemaHealth> {

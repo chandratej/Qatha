@@ -21,6 +21,7 @@ import { Moderation } from './pages/Moderation';
 import { ModerationRoute } from './components/ModerationRoute';
 import { OnboardingGate } from './components/OnboardingGate';
 import { Settings } from './pages/Settings';
+import { Schedule } from './pages/Schedule';
 import './styles/theme.css';
 import './styles/scroll-overlay.css';
 import './styles/components.css';
@@ -43,6 +44,7 @@ function App() {
                 <Route element={<Layout />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/stories" element={<Stories />} />
+                  <Route path="/schedule" element={<Schedule />} />
                   <Route path="/stories/new" element={<CreateStory />} />
                   <Route path="/analytics/:storyId" element={<Analytics />} />
                   <Route element={<ModerationRoute />}>

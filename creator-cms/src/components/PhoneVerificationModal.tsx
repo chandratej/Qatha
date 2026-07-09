@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, Loader2, RotateCcw, X } from 'lucide-react';
-import { triggerPhoneVerification, verifyPhoneVerification } from '../lib/phoneVerification';
+import { MessageCircle, Mail, Loader2, RotateCcw, X } from 'lucide-react';
+import {
+  canUseEmailVerificationFallback,
+  maskEmail,
+  sendEmailVerificationFallback,
+  triggerPhoneVerification,
+  verifyEmailVerificationFallback,
+  verifyPhoneVerification,
+} from '../lib/phoneVerification';
+import { getPhoneConfig, loadPhoneConfig } from '../lib/phoneConfig';
 
 const RESEND_COOLDOWN_SEC = 60;
+
+type VerificationStep = 'phone' | 'otp' | 'email-fallback';
 
 interface PhoneVerificationModalProps {
   open: boolean;
@@ -17,22 +27,40 @@ export function PhoneVerificationModal({
   onClose,
   onVerified,
   title = 'Verify via WhatsApp',
-  description = 'To publish and receive payouts, verify your Indian mobile number. We send a 6-digit code on WhatsApp — not SMS.',
+  description,
 }: PhoneVerificationModalProps) {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
-  const [phone, setPhone] = useState('+91');
+  const phoneCfg = getPhoneConfig();
+  const defaultDescription =
+    description ??
+    `To publish and receive payouts, verify your ${phoneCfg.regionLabel} mobile number. We send a 6-digit code on WhatsApp — not SMS.`;
+
+  const [step, setStep] = useState<VerificationStep>('phone');
+  const [phone, setPhone] = useState(phoneCfg.dialPrefix);
   const [otp, setOtp] = useState('');
+  const [fallbackEmail, setFallbackEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendSecs, setResendSecs] = useState(0);
+  const [emailFallbackAvailable, setEmailFallbackAvailable] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setStep('phone');
       setOtp('');
+      setFallbackEmail('');
       setError(null);
       setResendSecs(0);
+      setEmailFallbackAvailable(false);
+      return;
     }
+
+    loadPhoneConfig()
+      .then((cfg) => setPhone(cfg.dialPrefix))
+      .catch(() => setPhone(getPhoneConfig().dialPrefix));
+
+    canUseEmailVerificationFallback()
+      .then(setEmailFallbackAvailable)
+      .catch(() => setEmailFallbackAvailable(false));
   }, [open]);
 
   useEffect(() => {
@@ -88,6 +116,52 @@ export function PhoneVerificationModal({
     }
   };
 
+  const handleStartEmailFallback = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const email = await sendEmailVerificationFallback();
+      setFallbackEmail(email);
+      setOtp('');
+      setStep('email-fallback');
+      startCooldown();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send email code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendEmailFallback = async () => {
+    if (resendSecs > 0) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await sendEmailVerificationFallback();
+      setOtp('');
+      startCooldown();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not resend email code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmailFallback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await verifyEmailVerificationFallback(otp);
+      onVerified();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -98,19 +172,25 @@ export function PhoneVerificationModal({
         </button>
 
         <div className="cms-modal__icon">
-          <MessageCircle size={28} />
+          {step === 'email-fallback' ? <Mail size={28} /> : <MessageCircle size={28} />}
         </div>
-        <h2 id="wa-verify-title" className="cms-modal__title">{title}</h2>
-        <p className="cms-modal__desc">{description}</p>
+        <h2 id="wa-verify-title" className="cms-modal__title">
+          {step === 'email-fallback' ? 'Verify via email' : title}
+        </h2>
+        <p className="cms-modal__desc">
+          {step === 'email-fallback'
+            ? 'Enter the 6-digit code sent to your account email. Available because you verified WhatsApp before.'
+            : defaultDescription}
+        </p>
 
-        {step === 'phone' ? (
+        {step === 'phone' && (
           <form onSubmit={handleSend}>
             <div className="input-group" style={{ marginBottom: 20 }}>
               <label>WhatsApp number</label>
               <input
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+919876543210"
+                placeholder={phoneCfg.exampleE164}
                 required
               />
               <span className="input-hint">Must match your active WhatsApp account</span>
@@ -120,7 +200,9 @@ export function PhoneVerificationModal({
               {loading ? 'Sending…' : 'Send code on WhatsApp'}
             </button>
           </form>
-        ) : (
+        )}
+
+        {step === 'otp' && (
           <form onSubmit={handleVerify}>
             <div className="input-group" style={{ marginBottom: 20 }}>
               <label>6-digit WhatsApp code</label>
@@ -147,7 +229,54 @@ export function PhoneVerificationModal({
           </form>
         )}
 
+        {step === 'email-fallback' && (
+          <form onSubmit={handleVerifyEmailFallback}>
+            <div className="input-group" style={{ marginBottom: 20 }}>
+              <label>6-digit email code</label>
+              <input
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="• • • • • •"
+                style={{ letterSpacing: '0.5em', textAlign: 'center', fontSize: '1.25rem' }}
+                required
+                maxLength={6}
+              />
+              <span className="input-hint">
+                Sent to {fallbackEmail ? maskEmail(fallbackEmail) : 'your account email'}
+              </span>
+            </div>
+            <button type="submit" className="dashboard-cta" style={{ width: '100%', justifyContent: 'center', border: 'none', marginBottom: 12 }} disabled={loading}>
+              {loading ? 'Verifying…' : 'Verify & continue'}
+            </button>
+            <button type="button" className="btn btn-secondary" style={{ width: '100%', marginBottom: 8 }} onClick={handleResendEmailFallback} disabled={loading || resendSecs > 0}>
+              <RotateCcw size={16} />
+              {resendSecs > 0 ? `Resend in ${resendSecs}s` : 'Resend email code'}
+            </button>
+            <button type="button" className="btn btn-ghost" style={{ width: '100%' }} onClick={() => { setStep('phone'); setOtp(''); setError(null); }}>
+              Back to WhatsApp
+            </button>
+          </form>
+        )}
+
         {error && <p className="cms-error-text" style={{ marginTop: 16, textAlign: 'center' }}>{error}</p>}
+
+        {emailFallbackAvailable && step !== 'email-fallback' && (
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-soft)', textAlign: 'center', marginBottom: 12, lineHeight: 1.5 }}>
+              You verified WhatsApp before. If delivery fails, use a code sent to your account email instead.
+            </p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ width: '100%' }}
+              onClick={handleStartEmailFallback}
+              disabled={loading}
+            >
+              <Mail size={16} />
+              {loading ? 'Sending…' : 'Verify with email instead'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

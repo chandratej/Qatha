@@ -6,6 +6,9 @@ import { supabase, isMockMode } from './supabase';
 import { deriveStoryModerationStatus } from '../business/moderationStatus';
 import { buildDropOffInsights } from '../business/dropOffInsights';
 import { getNextPayoutDate } from '../business/payout';
+import { slugifyTitle } from './shareLinks';
+import { getSchemaCapabilities } from './schemaCapabilities';
+import { requireSessionUser, getSessionUser } from './authSession';
 import type {
   StoryData,
   ChapterListItem,
@@ -15,6 +18,7 @@ import type {
   AnalyticsData,
   ModerationItem,
   UserDevice,
+  ScheduledPublishItem,
 } from '../types/database';
 
 // ---------------------------------------------------------------------------
@@ -29,9 +33,7 @@ function assertSession() {
 
 async function requireUser() {
   assertSession();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) throw new Error('Authentication required');
-  return user;
+  return requireSessionUser();
 }
 
 async function assertStoryOwner(storyId: string, userId: string) {
@@ -111,11 +113,21 @@ export async function sbGetWallet(): Promise<{
   };
 }
 
+function shouldSkipDeviceRegister(): boolean {
+  if (import.meta.env.VITE_SKIP_DEVICE_REGISTER === 'true') return true;
+  if (import.meta.env.VITE_SKIP_DEVICE_REGISTER === 'false') return false;
+  if (!import.meta.env.DEV || typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1';
+}
+
 /** Register device post-login (§6 — staleness-based 2-device limit). */
+let skipDeviceRegister = shouldSkipDeviceRegister();
+
 export async function sbRegisterDevice(deviceId: string, deviceLabel?: string): Promise<{
   evicted_devices?: string[];
 } | void> {
-  if (isMockMode) return;
+  if (isMockMode || skipDeviceRegister) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
@@ -127,7 +139,10 @@ export async function sbRegisterDevice(deviceId: string, deviceLabel?: string): 
     },
   });
 
-  if (error) return;
+  if (error) {
+    skipDeviceRegister = true;
+    return;
+  }
   if (data?.evicted_devices?.length) {
     sessionStorage.setItem('katha_device_eviction_notice', JSON.stringify({
       at: Date.now(),
@@ -162,7 +177,7 @@ export async function sbRemoveUserDevice(deviceId: string): Promise<void> {
 
 export async function sbTrackAnalyticsEvent(event: string, properties: Record<string, unknown> = {}) {
   if (isMockMode) return;
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   await supabase.from('analytics_events').insert({
     user_id: user?.id ?? null,
     event,
@@ -176,24 +191,40 @@ export async function sbTrackAnalyticsEvent(event: string, properties: Record<st
 
 export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
   const user = await requireUser();
+  const caps = getSchemaCapabilities();
 
-  const { data, error } = await supabase
-    .from('stories')
-    .select('id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at')
-    .eq('author_id', user.id)
-    .eq('is_published', true)
-    .order('created_at', { ascending: false });
+  const baseStorySelect = 'id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at';
+  const { data, error } = caps.storySlug
+    ? await supabase
+      .from('stories')
+      .select(`${baseStorySelect}, slug`)
+      .eq('author_id', user.id)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false })
+    : await supabase
+      .from('stories')
+      .select(baseStorySelect)
+      .eq('author_id', user.id)
+      .eq('is_published', true)
+      .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
 
   const storiesWithStatus = await Promise.all((data || []).map(async (s) => {
-    const [{ data: chapters }, { data: drafts }] = await Promise.all([
-      supabase.from('chapters').select('status').eq('story_id', s.id),
-      supabase.from('chapter_drafts').select('status').eq('story_id', s.id).eq('creator_id', user.id),
-    ]);
+    const chaptersQuery = supabase.from('chapters').select('status').eq('story_id', s.id);
+    const draftsQuery = caps.chapterDraftStatus
+      ? supabase.from('chapter_drafts').select('status').eq('story_id', s.id).eq('creator_id', user.id)
+      : supabase.from('chapter_drafts').select('chapter_number').eq('story_id', s.id).eq('creator_id', user.id);
+
+    const [{ data: chapters }, { data: drafts }] = await Promise.all([chaptersQuery, draftsQuery]);
     return {
       ...s,
-      moderation_status: deriveStoryModerationStatus([...(chapters || []), ...(drafts || [])]),
+      moderation_status: deriveStoryModerationStatus([
+        ...(chapters || []),
+        ...(drafts || []).map((d) => ({
+          status: 'status' in d && typeof d.status === 'string' ? d.status : 'draft',
+        })),
+      ]),
     } as StoryData;
   }));
 
@@ -209,7 +240,8 @@ export async function sbCreateStory(body: {
 }): Promise<{ story: { id: string } }> {
   const user = await requireUser();
 
-  const { data, error } = await supabase.from('stories').insert({
+  const caps = getSchemaCapabilities();
+  const insertPayload: Record<string, unknown> = {
     author_id: user.id,
     title: body.title,
     description: body.description,
@@ -217,7 +249,23 @@ export async function sbCreateStory(body: {
     cover_url: body.cover_url,
     release_schedule: body.release_schedule || 'irregular',
     is_published: true,
-  }).select('id').single();
+  };
+
+  if (caps.storySlug) {
+    const slugBase = slugifyTitle(body.title) || `story-${user.id.replace(/-/g, '').slice(0, 12)}`;
+    let slug = slugBase;
+    for (let n = 0; n < 20; n += 1) {
+      const candidate = n === 0 ? slugBase : `${slugBase}-${n}`;
+      const { data: existing } = await supabase.from('stories').select('id').eq('slug', candidate).maybeSingle();
+      if (!existing) {
+        slug = candidate;
+        break;
+      }
+    }
+    insertPayload.slug = slug;
+  }
+
+  const { data, error } = await supabase.from('stories').insert(insertPayload).select('id').single();
 
   if (error) throw new Error(error.message);
   return { story: { id: data.id } };
@@ -258,24 +306,39 @@ export async function sbDeleteStory(storyId: string): Promise<{ archived: boolea
 }
 
 export async function sbGetStoryChapters(storyId: string): Promise<{
-  story?: { id: string; title: string };
+  story?: { id: string; title: string; slug?: string | null };
   chapters: ChapterListItem[];
 }> {
   const user = await requireUser();
   const story = await assertStoryOwner(storyId, user.id);
 
-  const [{ data: chapters }, { data: drafts }] = await Promise.all([
-    supabase
+  const caps = getSchemaCapabilities();
+
+  const chaptersQuery = caps.chapterScheduledPublishAt
+    ? supabase
+      .from('chapters')
+      .select('id, chapter_number, title, status, view_count, updated_at, content_delta, scheduled_publish_at')
+      .eq('story_id', storyId)
+      .order('chapter_number')
+    : supabase
       .from('chapters')
       .select('id, chapter_number, title, status, view_count, updated_at, content_delta')
       .eq('story_id', storyId)
-      .order('chapter_number'),
-    supabase
+      .order('chapter_number');
+
+  const draftsQuery = caps.chapterDraftStatus
+    ? supabase
       .from('chapter_drafts')
       .select('id, chapter_number, title, content, content_delta, last_saved_at, status')
       .eq('story_id', storyId)
-      .eq('creator_id', user.id),
-  ]);
+      .eq('creator_id', user.id)
+    : supabase
+      .from('chapter_drafts')
+      .select('id, chapter_number, title, content, content_delta, last_saved_at')
+      .eq('story_id', storyId)
+      .eq('creator_id', user.id);
+
+  const [{ data: chapters }, { data: drafts }] = await Promise.all([chaptersQuery, draftsQuery]);
 
   const byNum = new Map<number, ChapterListItem & { updated_at?: string }>();
   for (const ch of chapters || []) {
@@ -294,7 +357,7 @@ export async function sbGetStoryChapters(storyId: string): Promise<{
         id: d.id,
         chapter_number: d.chapter_number,
         title: d.title,
-        status: d.status || 'draft',
+        status: ('status' in d && typeof d.status === 'string') ? d.status : 'draft',
         word_count: d.content?.length || 0,
         scene_count: delta?.scenes?.length || 1,
         updated_at: d.last_saved_at,
@@ -302,8 +365,14 @@ export async function sbGetStoryChapters(storyId: string): Promise<{
     }
   }
 
+  let storySlug: string | null = null;
+  if (caps.storySlug) {
+    const { data: storyRow } = await supabase.from('stories').select('slug').eq('id', storyId).single();
+    storySlug = storyRow?.slug ?? null;
+  }
+
   return {
-    story: { id: story.id, title: story.title },
+    story: { id: story.id, title: story.title, slug: storySlug },
     chapters: Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number),
   };
 }
@@ -324,7 +393,7 @@ export async function sbGetChapter(storyId: string, chapterNumber: number): Prom
 
   const { data: chapter } = await supabase
     .from('chapters')
-    .select('id, story_id, chapter_number, title, content, content_delta, status, moderation_status, moderation_notes')
+    .select('id, story_id, chapter_number, title, content, content_delta, status, moderation_status, moderation_reason')
     .eq('story_id', storyId)
     .eq('chapter_number', chapterNumber)
     .maybeSingle();
@@ -455,7 +524,172 @@ export async function sbSaveDraft(
     .single();
 
   if (error) throw new Error(error.message);
+
+  const caps = getSchemaCapabilities();
+  if (caps.chapterScheduledPublishAt) {
+    const clearPayload: Record<string, unknown> = { status: 'draft', moderation_status: null };
+    clearPayload.scheduled_publish_at = null;
+    await supabase
+      .from('chapters')
+      .update(clearPayload)
+      .eq('story_id', storyId)
+      .eq('chapter_number', body.chapter_number)
+      .eq('status', 'scheduled');
+  }
+
   return { saved: true, draft: draft as ChapterDraftData };
+}
+
+// ---------------------------------------------------------------------------
+// Scheduled publishing
+// ---------------------------------------------------------------------------
+
+function plainTextLength(html = '') {
+  return html.replace(/<[^>]+>/g, '').trim().length;
+}
+
+export async function sbGetScheduledPublishes(): Promise<{ items: ScheduledPublishItem[] }> {
+  const user = await requireUser();
+  const caps = getSchemaCapabilities();
+  if (!caps.chapterScheduledPublishAt) {
+    return { items: [] };
+  }
+
+  const { data: stories, error: storiesError } = await supabase
+    .from('stories')
+    .select('id, title')
+    .eq('author_id', user.id)
+    .eq('is_published', true);
+
+  if (storiesError) throw new Error(storiesError.message);
+
+  const storyIds = (stories || []).map((s) => s.id);
+  if (!storyIds.length) return { items: [] };
+
+  const { data, error } = await supabase
+    .from('chapters')
+    .select('id, story_id, chapter_number, title, status, scheduled_publish_at')
+    .in('story_id', storyIds)
+    .eq('status', 'scheduled')
+    .eq('moderation_status', 'approved')
+    .order('scheduled_publish_at');
+
+  if (error) throw new Error(error.message);
+
+  const storyTitles = new Map((stories || []).map((s) => [s.id, s.title]));
+  return {
+    items: (data || []).map((ch) => ({
+      id: ch.id,
+      story_id: ch.story_id,
+      story_title: storyTitles.get(ch.story_id) || 'Untitled',
+      chapter_number: ch.chapter_number,
+      chapter_title: ch.title,
+      scheduled_publish_at: ch.scheduled_publish_at,
+      status: ch.status,
+    })),
+  };
+}
+
+export async function sbScheduleChapter(
+  storyId: string,
+  body: { chapter_number: number; scheduled_publish_at: string },
+): Promise<{ item: ScheduledPublishItem }> {
+  const user = await requireUser();
+  const caps = getSchemaCapabilities();
+  if (!caps.chapterScheduledPublishAt) {
+    throw new Error('Scheduled publishing is not available until database migrations 011–012 are applied.');
+  }
+  const story = await assertStoryOwner(storyId, user.id);
+
+  const publishAt = new Date(body.scheduled_publish_at);
+  if (Number.isNaN(publishAt.getTime()) || publishAt <= new Date()) {
+    throw new Error('Schedule time must be in the future');
+  }
+
+  const { chapter } = await sbGetChapter(storyId, body.chapter_number);
+  const content = chapter.content || '';
+  if (plainTextLength(content) < 1) {
+    throw new Error('Write chapter content before scheduling');
+  }
+  if (content.length > 50_000) {
+    throw new Error('Chapter content invalid (max 50,000 chars)');
+  }
+  if (chapter.status === 'published') {
+    throw new Error('Published chapters cannot be scheduled');
+  }
+
+  const { data, error } = await supabase.functions.invoke('schedule-chapter', {
+    body: {
+      story_id: storyId,
+      chapter_number: body.chapter_number,
+      title: chapter.title || `Chapter ${body.chapter_number}`,
+      content,
+      content_delta: chapter.content_delta,
+      scheduled_publish_at: publishAt.toISOString(),
+    },
+  });
+
+  if (error) throw new Error(error.message || 'Could not schedule publish');
+  if (data?.error) throw new Error(data.error);
+
+  const item = data.item as ScheduledPublishItem;
+  return { item: { ...item, story_title: item.story_title || story.title } };
+}
+
+export async function sbRescheduleChapter(
+  storyId: string,
+  chapterNumber: number,
+  scheduledPublishAt: string,
+): Promise<{ item: ScheduledPublishItem }> {
+  const user = await requireUser();
+  const story = await assertStoryOwner(storyId, user.id);
+
+  const publishAt = new Date(scheduledPublishAt);
+  if (Number.isNaN(publishAt.getTime()) || publishAt <= new Date()) {
+    throw new Error('Schedule time must be in the future');
+  }
+
+  const { data, error } = await supabase
+    .from('chapters')
+    .update({ scheduled_publish_at: publishAt.toISOString() })
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .eq('status', 'scheduled')
+    .eq('moderation_status', 'approved')
+    .select()
+    .single();
+
+  if (error || !data) throw new Error('Scheduled chapter not found');
+
+  return {
+    item: {
+      id: data.id,
+      story_id: storyId,
+      story_title: story.title,
+      chapter_number: data.chapter_number,
+      chapter_title: data.title,
+      scheduled_publish_at: data.scheduled_publish_at,
+      status: data.status,
+    },
+  };
+}
+
+export async function sbCancelScheduledPublish(
+  storyId: string,
+  chapterNumber: number,
+): Promise<{ cancelled: boolean }> {
+  const user = await requireUser();
+  await assertStoryOwner(storyId, user.id);
+
+  const { error } = await supabase
+    .from('chapters')
+    .update({ status: 'draft', scheduled_publish_at: null })
+    .eq('story_id', storyId)
+    .eq('chapter_number', chapterNumber)
+    .eq('status', 'scheduled');
+
+  if (error) throw new Error(error.message);
+  return { cancelled: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -663,7 +897,7 @@ export async function sbUpsertPhoneticCorrection(phoneticInput: string, correcte
 
 export async function sbLoadPhoneticCorrections(): Promise<Record<string, string>> {
   if (isMockMode) return {};
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) return {};
 
   const { data, error } = await supabase
@@ -684,7 +918,7 @@ export async function sbMigrateLocalPhoneticCorrections() {
     const entries = Object.entries(local);
     if (!entries.length) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (!user) return;
 
     await supabase.from('phonetic_corrections').upsert(

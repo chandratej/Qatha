@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Loader2, PenLine, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Loader2, PenLine, Pencil, Trash2, Search, Link2 } from 'lucide-react';
+import { ShareLinkField } from '../components/ShareLinkField';
+import { buildChapterShareUrl, resolveStorySlug } from '../lib/shareLinks';
 
 import { api } from '../lib/api';
 import type { StoryData } from '../lib/api';
@@ -117,6 +119,9 @@ export function Stories() {
 
         {filteredStories.map((story) => {
           const badge = storyStatusBadge(story.moderation_status);
+          const storySlug = resolveStorySlug(story);
+          const readerLink = buildChapterShareUrl(storySlug, 1);
+          const canShare = story.moderation_status === 'published';
           return (
             <div key={story.id} className="cms-story-card">
               {story.cover_url ? (
@@ -132,6 +137,15 @@ export function Stories() {
                   <span>{story.chapter_count} chapters</span>
                   <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
                 </div>
+                {canShare && (
+                  <div className="cms-story-card__share">
+                    <Link2 size={14} aria-hidden />
+                    <ShareLinkField
+                      url={readerLink}
+                      label="Reader link (Chapter 1)"
+                    />
+                  </div>
+                )}
               </div>
               <div className="cms-story-card__actions">
                 <Link to={`/stories/${story.id}`} className="btn btn-secondary">Manage Chapters</Link>

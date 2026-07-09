@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Pure Supabase Auth client (katha-auth-architecture-decision_auth.md)
-// Creator CMS: register with Google/email; WhatsApp OTP at publish (JIT) via Send SMS Hook.
+// Creator CMS: register with Google/email; WhatsApp OTP at publish (JIT) via whatsapp-otp hook.
 // Readers use Google + email magic link — phone/WhatsApp OTP is JIT at paywall only.
 //
 // Mock mode (for creator-cms demo without real Supabase):
@@ -40,7 +40,13 @@ const explicitMock = envFlag('VITE_MOCK_MODE');
 export const isMockMode = explicitMock !== null ? explicitMock : hasPlaceholderConfig();
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
-  auth: { persistSession: true, autoRefreshToken: true },
+  auth: {
+    persistSession: true,
+    // Dev: skip auto-refresh to avoid /auth/v1/user 500 loops from stale JWTs
+    autoRefreshToken: import.meta.env.PROD,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+  },
 });
 
 export default supabase;

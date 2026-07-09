@@ -10,6 +10,7 @@ import {
   profileToAuthUser,
 } from '../lib/creatorProfile';
 import { verifyPhoneVerification, triggerPhoneVerification } from '../lib/phoneVerification';
+import { handleAuthFailure } from '../lib/authSession';
 
 export type { AuthUser };
 
@@ -157,11 +158,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data: { session }, error } = await supabase.auth.getSession();
+      let session: Session | null = null;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          await handleAuthFailure();
+          if (!cancelled) {
+            clearSession();
+            setLoading(false);
+          }
+          return;
+        }
+        session = data.session;
+      } catch {
+        await handleAuthFailure();
+        if (!cancelled) {
+          clearSession();
+          setLoading(false);
+        }
+        return;
+      }
 
       if (cancelled) return;
 
-      if (error || !session?.user) {
+      if (!session?.user) {
         clearSession();
         setLoading(false);
         return;
@@ -183,9 +203,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-          const authUser = await loadProfile(session);
-          persist(authUser, session.access_token);
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          try {
+            const authUser = await loadProfile(session);
+            persist(authUser, session.access_token);
+          } catch {
+            await handleAuthFailure();
+            clearSession();
+          }
         }
       });
 

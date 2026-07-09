@@ -41,7 +41,7 @@ const ERROR_MAP = {
     action: 'RETRY_OTP',
   },
   INVALID_PHONE: {
-    userMessage: 'Enter a valid Indian phone number (+91XXXXXXXXXX).',
+    userMessage: 'Enter a valid phone number.',
     action: 'RETRY',
   },
 };
@@ -51,10 +51,11 @@ export function createAppError(code, message, status = 400) {
     userMessage: message || 'Something went wrong. Please try again.',
     action: 'RETRY',
   };
-  const err = new Error(mapped.userMessage);
+  const userMessage = message || mapped.userMessage;
+  const err = new Error(userMessage);
   err.code = code;
   err.status = status;
-  err.userMessage = mapped.userMessage;
+  err.userMessage = userMessage;
   err.action = mapped.action;
   return err;
 }

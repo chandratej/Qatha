@@ -1,6 +1,8 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit3, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil } from 'lucide-react';
+import { Plus, Edit3, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil, Link2 } from 'lucide-react';
+import { ShareLinkField } from '../components/ShareLinkField';
+import { buildChapterShareUrl, isChapterShareable, resolveStorySlug } from '../lib/shareLinks';
 import { BackLink } from '../components/BackLink';
 import { Reorder } from 'framer-motion';
 import {
@@ -26,6 +28,8 @@ export function StorySeasons() {
   const [showAddSeason, setShowAddSeason] = useState(false);
 
   const [storyTitle, setStoryTitle] = useState(isDemo ? 'RRR - రాజమౌళి (Demo - Editor Validated)' : 'My Story');
+  const [storySlug, setStorySlug] = useState<string | null>(null);
+  const [storyMeta, setStoryMeta] = useState<{ id: string; title: string; slug?: string | null } | null>(null);
   const [apiChapters, setApiChapters] = useState<ChapterListItem[]>([]);
   const [loading, setLoading] = useState(!isDemo);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,10 @@ export function StorySeasons() {
     try {
       const { story, chapters } = await api.getStoryChapters(storyId);
       if (story?.title) setStoryTitle(story.title);
+      if (story) {
+        setStoryMeta(story);
+        setStorySlug(story.slug ?? null);
+      }
       setApiChapters(chapters ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load chapters');
@@ -161,6 +169,35 @@ export function StorySeasons() {
         <div className="cms-panel cms-error-text cms-panel--flat" style={{ marginBottom: 20 }}>{error}</div>
       )}
 
+      {!isDemo && storyMeta && (
+        <div className="cms-panel cms-panel--flat cms-share-panel">
+          <div className="cms-share-panel__head">
+            <Link2 size={18} aria-hidden />
+            <div>
+              <h2 className="cms-panel__title" style={{ margin: 0 }}>Share on social</h2>
+              <p className="cms-panel__subtitle" style={{ margin: '4px 0 0' }}>
+                Copy a chapter link for WhatsApp, Instagram, or X — readers land on a rich preview with a teaser.
+              </p>
+            </div>
+          </div>
+          {apiChapters.some((ch) => isChapterShareable(ch.status)) ? (
+            <ShareLinkField
+              url={buildChapterShareUrl(
+                resolveStorySlug({ ...storyMeta, slug: storySlug }),
+                Math.max(
+                  ...apiChapters
+                    .filter((ch) => isChapterShareable(ch.status))
+                    .map((ch) => ch.chapter_number),
+                ),
+              )}
+              label="Latest shareable chapter"
+            />
+          ) : (
+            <p className="cms-share-panel__hint">Publish a chapter to get your first shareable reader link.</p>
+          )}
+        </div>
+      )}
+
       {isDemo && showAddSeason && (
         <div className="cms-inline-form">
           <input
@@ -262,10 +299,12 @@ export function StorySeasons() {
                 <ChapterRow
                   key={ch.chapter_number}
                   storyId={storyId}
+                  storySlug={storyMeta ? resolveStorySlug({ ...storyMeta, slug: storySlug }) : undefined}
                   chNum={ch.chapter_number}
                   title={ch.title || `Chapter ${ch.chapter_number}`}
                   words={ch.word_count || 0}
                   scenes={ch.scene_count || 1}
+                  status={ch.status}
                   statusBadge={statusBadge(ch.status)}
                   editorLink={`/stories/${storyId}/chapters/${ch.chapter_number}`}
                   onRefresh={loadProdChapters}
@@ -320,15 +359,18 @@ export function StorySeasons() {
 
 function ChapterRow({
   storyId,
+  storySlug,
   chNum,
   title,
   words,
   scenes,
   editorLink,
+  status,
   statusBadge,
   onRefresh,
 }: {
   storyId?: string;
+  storySlug?: string;
   chNum: number;
   title: string;
   words: number;
@@ -338,6 +380,9 @@ function ChapterRow({
   statusBadge?: ReactNode;
   onRefresh?: () => void;
 }) {
+  const shareUrl = storySlug && isChapterShareable(status)
+    ? buildChapterShareUrl(storySlug, chNum)
+    : null;
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
   const [busy, setBusy] = useState(false);
@@ -404,12 +449,17 @@ function ChapterRow({
               <div className="cms-chapter-row__meta">
                 {displayWords} words • {displayScenes} scenes
               </div>
+              {shareUrl && (
+                <div className="cms-chapter-row__share">
+                  <ShareLinkField url={shareUrl} label={`Chapter ${chNum} share link`} compact />
+                </div>
+              )}
             </>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
         {onRefresh && storyId && !editing && (
           <>
             <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => { setEditTitle(title); setEditing(true); }} disabled={busy} aria-label="Rename">

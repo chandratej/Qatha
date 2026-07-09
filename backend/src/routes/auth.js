@@ -5,9 +5,10 @@ import { getLaunchOfferConfig, grantLaunchTrial } from '../services/launchOffer.
 import { getSupabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { requireAuth, getAuthenticatedUserId } from '../middleware/authenticate.js';
+import { isValidMobile, phoneValidationMessage } from '../config/phone.js';
 
 // Pure Supabase Auth (per katha-auth-architecture-decision_auth.md)
-// OTP delivery: Supabase Send SMS Hook → MSG91 (₹0.12–0.15/OTP). No Firebase. No custom token bridge.
+// Phone OTP delivery: whatsapp-otp edge function (wired via Supabase Send SMS Hook). No Firebase.
 //
 // Reader sign-in: Google (primary) + email magic link — handled entirely by Supabase client SDK.
 // Creator sign-in: phone OTP via Supabase client SDK (mandatory for payout/KYC in Creator CMS).
@@ -120,8 +121,8 @@ async function checkRateLimits(phone, phoneHash, ip) {
 authRouter.post('/send-otp', async (req, res, next) => {
   try {
     const { phone } = req.body;
-    if (!phone || !/^\+91[6-9]\d{9}$/.test(phone)) {
-      throw createAppError('INVALID_PHONE', 'Enter a valid Indian phone number (+91XXXXXXXXXX)', 400);
+    if (!phone || !isValidMobile(phone)) {
+      throw createAppError('INVALID_PHONE', phoneValidationMessage(), 400);
     }
 
     // In pure Supabase path, rate limiting / OTP is handled inside Supabase Auth + Send SMS Hook.

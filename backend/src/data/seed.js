@@ -10,6 +10,7 @@ export const seedStories = [
   {
     id: 'story-001',
     author_id: DEMO_CREATOR_ID,
+    slug: 'manasulo-migilina-maata',
     title: 'మనసులో మిగిలిన మాట',
     description: 'ఒక ప్రేమ కథ — హృదయానికి దగ్గరైన కథ.',
     genre: 'romance',
@@ -42,6 +43,7 @@ export const seedStories = [
   {
     id: 'story-003',
     author_id: DEMO_CREATOR_ID,
+    slug: 'rahasyam-lo-rahasyam',
     title: 'రహస్యం లో రహస్యం',
     description: 'చివరి అధ్యాయం వరకు ఊహించలేని మలుపు.',
     genre: 'suspense',
@@ -156,7 +158,7 @@ export function getCreatorStoryChapters(storyId, creatorId) {
         status: d.status || 'draft',
         word_count: d.word_count ?? countDraftWords(d),
         scene_count: d.scene_count ?? (d.content_delta?.scenes?.length || 1),
-        moderation_notes: d.moderation_notes,
+        moderation_reason: d.moderation_reason ?? d.moderation_notes,
         updated_at: d.last_saved_at,
       });
     }

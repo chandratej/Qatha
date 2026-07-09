@@ -1,18 +1,13 @@
 // Edge Function: publish-chapter (Wave B — SVC-PUB-01, SVC-MOD-01)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { corsHeaders, handleCorsPreflight } from '../_shared/cors.ts';
 import { getPublishableKey, getSecretKey } from '../_shared/keys.ts';
 import { hasHardBlockViolation, moderateContent, riskScoreFromResult } from '../_shared/moderation.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
 
   try {
     const authHeader = req.headers.get('Authorization');
@@ -70,7 +65,7 @@ Deno.serve(async (req) => {
         content_delta,
         status: 'unpublished',
         moderation_status: 'rejected_banned',
-        moderation_notes: appeal_note || 'Hard block violation',
+        moderation_reason: appeal_note || 'Hard block violation',
       }, { onConflict: 'story_id,chapter_number' }).select().single();
 
       await admin.from('creators').update({
@@ -93,7 +88,7 @@ Deno.serve(async (req) => {
       content_delta,
       status: 'pending_review',
       moderation_status: 'pending',
-      moderation_notes: appeal_note || null,
+      moderation_reason: appeal_note || null,
       published_at: null,
     }, { onConflict: 'story_id,chapter_number' }).select().single();
 

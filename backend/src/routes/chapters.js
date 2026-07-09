@@ -7,6 +7,7 @@ import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
 import { resolveMockUser } from '../services/launchOffer.js';
 import { moderateChapter, moderateContent, riskScoreFromResult } from '../services/moderation/index.js';
+import { generateUniqueStorySlug } from '../lib/slugify.js';
 import { notifyNewChapter } from '../services/notifications.js';
 import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
@@ -124,6 +125,13 @@ chaptersRouter.post('/:storyId/draft', requireAuth(), async (req, res, next) => 
     }, { onConflict: 'creator_id,story_id,chapter_number' }).select().single();
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+
+    await supabase.from('chapters')
+      .update({ status: 'draft', scheduled_publish_at: null, moderation_status: null })
+      .eq('story_id', storyId)
+      .eq('chapter_number', chapter_number)
+      .eq('status', 'scheduled');
+
     res.json({ saved: true, draft });
   } catch (err) {
     next(err);
@@ -153,7 +161,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
         content,
         status: flagged ? 'pending_review' : 'published',
         moderation_status: flagged ? 'pending' : 'approved',
-        moderation_notes: appeal_note || null,
+        moderation_reason: appeal_note || null,
       };
       mockChapterStore.set(`${storyId}:${chapter_number}`, {
         ...chapter,
@@ -183,8 +191,15 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
       });
     }
 
-    const { data: story } = await supabase.from('stories').select('author_id').eq('id', storyId).single();
+    const { data: story } = await supabase.from('stories').select('author_id, title, slug, is_published').eq('id', storyId).single();
     if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+
+    if (!story.slug) {
+      const slug = await generateUniqueStorySlug(supabase, story.title, storyId);
+      await supabase.from('stories').update({ slug, is_published: true }).eq('id', storyId);
+    } else if (!story.is_published) {
+      await supabase.from('stories').update({ is_published: true }).eq('id', storyId);
+    }
 
     const { data: chapter, error } = await supabase.from('chapters').upsert({
       story_id: storyId,
@@ -193,7 +208,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
       content,
       content_delta,
       status: 'pending_review',
-      moderation_notes: appeal_note || null,
+      moderation_reason: appeal_note || null,
     }, { onConflict: 'story_id,chapter_number' }).select().single();
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);

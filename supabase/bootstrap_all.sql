@@ -19,7 +19,7 @@ CREATE TYPE subscription_status AS ENUM ('free', 'trial', 'active', 'grace_perio
 CREATE TYPE release_schedule AS ENUM ('weekly', 'biweekly', 'irregular', 'complete');
 CREATE TYPE genre_type AS ENUM ('romance', 'family_drama', 'suspense');
 CREATE TYPE moderation_status AS ENUM ('pending', 'approved', 'needs_revision', 'rejected', 'rejected_banned');
-CREATE TYPE chapter_status AS ENUM ('draft', 'pending_review', 'published', 'unpublished', 'removed');
+CREATE TYPE chapter_status AS ENUM ('draft', 'pending_review', 'published', 'unpublished', 'removed', 'scheduled');
 
 -- Users (extends Supabase auth.users)
 CREATE TABLE public.profiles (
@@ -99,12 +99,14 @@ CREATE TABLE public.chapters (
   view_count INT NOT NULL DEFAULT 0,
   estimated_read_time_minutes INT,
   published_at TIMESTAMPTZ,
+  scheduled_publish_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(story_id, chapter_number)
 );
 
 CREATE INDEX idx_chapters_story ON public.chapters(story_id, chapter_number);
+CREATE INDEX idx_chapters_scheduled_publish ON public.chapters(scheduled_publish_at) WHERE status = 'scheduled';
 
 -- Chapter drafts (auto-save)
 CREATE TABLE public.chapter_drafts (
@@ -514,7 +516,8 @@ CREATE POLICY platform_config_service_write ON public.platform_config
 
 INSERT INTO public.platform_config (key, value) VALUES
   ('revenue_split', '{"creator_share_pct":60,"platform_share_pct":40,"subscription_price_inr":99,"subscription_price_paise":9900,"currency":"INR"}'::jsonb),
-  ('launch_offer', '{"mode":"immediate","trial_days":0,"subscription_gate_chapter":6,"founding_limit":null}'::jsonb)
+  ('launch_offer', '{"mode":"immediate","trial_days":0,"subscription_gate_chapter":6,"founding_limit":null}'::jsonb),
+  ('phone', '{"country_code":"91","national_length":10,"mobile_leading_pattern":"[6-9]","example_e164":"+919876543210","whatsapp_business_number":"919876543210","region_label":"Indian"}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- ---------------------------------------------------------------------------

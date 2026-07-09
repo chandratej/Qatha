@@ -3,7 +3,8 @@
 
 param(
   [string]$BackendEnv = (Join-Path $PSScriptRoot "..\backend\.env"),
-  [string]$CreatorEnv = (Join-Path $PSScriptRoot "..\creator-cms\.env")
+  [string]$CreatorEnv = (Join-Path $PSScriptRoot "..\creator-cms\.env"),
+  [string]$GatewayEnv = (Join-Path $PSScriptRoot "..\gateway\.env")
 )
 
 function Read-EnvValue([string]$Path, [string]$Key) {
@@ -44,12 +45,29 @@ if (-not $url -or -not $publishable) {
   exit 1
 }
 
+$secret = Read-EnvValue $BackendEnv "SUPABASE_SECRET_KEY"
+if (-not $secret) {
+  $secret = Read-EnvValue $BackendEnv "SUPABASE_SERVICE_ROLE_KEY"
+}
+
 Upsert-EnvLine $CreatorEnv "VITE_SUPABASE_URL" $url
 Upsert-EnvLine $CreatorEnv "VITE_SUPABASE_PUBLISHABLE_KEY" $publishable
 Upsert-EnvLine $CreatorEnv "VITE_MOCK_MODE" "false"
+Upsert-EnvLine $CreatorEnv "VITE_GATEWAY_URL" "http://localhost:3002"
 
-Write-Host "Synced Supabase config to creator-cms/.env" -ForegroundColor Green
+Upsert-EnvLine $GatewayEnv "NEXT_PUBLIC_GATEWAY_URL" "http://localhost:3002"
+Upsert-EnvLine $GatewayEnv "NEXT_PUBLIC_READER_APP_URL" "http://localhost:8080"
+Upsert-EnvLine $GatewayEnv "NEXT_PUBLIC_SUPABASE_URL" $url
+Upsert-EnvLine $GatewayEnv "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" $publishable
+if ($secret) {
+  Upsert-EnvLine $GatewayEnv "SUPABASE_SECRET_KEY" $secret
+}
+
+Write-Host "Synced Supabase config to creator-cms/.env and gateway/.env" -ForegroundColor Green
 Write-Host "  VITE_SUPABASE_URL=$url"
 Write-Host "  VITE_MOCK_MODE=false"
+Write-Host "  VITE_GATEWAY_URL=http://localhost:3002"
 Write-Host ""
-Write-Host "Restart creator-cms dev server: cd creator-cms; npm run dev"
+Write-Host "Restart dev servers:"
+Write-Host "  cd creator-cms; npm run dev"
+Write-Host "  cd gateway; npm run dev"

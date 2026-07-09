@@ -16,7 +16,7 @@ verify_jwt = false
 [functions.payment-webhook]
 verify_jwt = false
 
-[functions.sms-hook]
+[functions.whatsapp-otp]
 verify_jwt = false
 
 [functions.whatsapp-webhook]

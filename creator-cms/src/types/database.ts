@@ -40,6 +40,7 @@ export interface StoryData {
   cover_url?: string | null;
   is_published?: boolean;
   release_schedule?: string;
+  slug?: string | null;
   moderation_status?: 'draft' | 'pending_review' | 'published' | 'needs_revision';
 }
 
@@ -50,7 +51,18 @@ export interface ChapterListItem {
   status?: string;
   word_count?: number;
   scene_count?: number;
-  moderation_notes?: string;
+  moderation_reason?: string;
+  scheduled_publish_at?: string | null;
+}
+
+export interface ScheduledPublishItem {
+  id: string;
+  story_id: string;
+  story_title: string;
+  chapter_number: number;
+  chapter_title?: string;
+  scheduled_publish_at: string;
+  status: string;
 }
 
 export interface ChapterDraftData {
@@ -61,7 +73,7 @@ export interface ChapterDraftData {
   content_delta?: { scenes: Array<{ id: string; title: string; content: string }> } | null;
   status?: string;
   moderation_status?: string;
-  moderation_notes?: string;
+  moderation_reason?: string;
 }
 
 export interface DropOffInsight {

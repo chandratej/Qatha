@@ -5,6 +5,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { getSecretKey } from '../_shared/keys.ts';
+import { toE164FromWhatsAppDigits } from '../_shared/phone.ts';
 import { normalizeWhatsAppRecipient, sendWhatsAppTextMessage } from '../_shared/whatsapp.ts';
 
 const corsHeaders = {
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
           const sender = normalizeWhatsAppRecipient(msg.from);
           const intent = parseIntent(msg.text.body);
 
-          const phoneE164 = sender.startsWith('91') ? `+${sender}` : `+${sender}`;
+          const phoneE164 = toE164FromWhatsAppDigits(sender);
 
           const { data: profile } = await supabase
             .from('profiles')
