@@ -351,18 +351,22 @@ export async function sbGetStoryChapters(storyId: string): Promise<{
   }
   for (const d of drafts || []) {
     const existing = byNum.get(d.chapter_number);
-    if (!existing || new Date(d.last_saved_at) > new Date(existing.updated_at || 0)) {
-      const delta = d.content_delta as { scenes?: Array<{ content?: string }> } | null;
-      byNum.set(d.chapter_number, {
-        id: d.id,
-        chapter_number: d.chapter_number,
-        title: d.title,
-        status: ('status' in d && typeof d.status === 'string') ? d.status : 'draft',
-        word_count: d.content?.length || 0,
-        scene_count: delta?.scenes?.length || 1,
-        updated_at: d.last_saved_at,
-      });
-    }
+    const draftIsNewer = !existing || new Date(d.last_saved_at) > new Date(existing.updated_at || 0);
+    if (!draftIsNewer) continue;
+
+    const delta = d.content_delta as { scenes?: Array<{ content?: string }> } | null;
+    // Drafts are working copies — publication status always comes from the chapters row.
+    byNum.set(d.chapter_number, {
+      id: existing?.id ?? d.id,
+      chapter_number: d.chapter_number,
+      title: d.title,
+      status: existing?.status ?? 'draft',
+      view_count: existing?.view_count,
+      scheduled_publish_at: existing?.scheduled_publish_at,
+      word_count: d.content?.length || 0,
+      scene_count: delta?.scenes?.length || 1,
+      updated_at: d.last_saved_at,
+    });
   }
 
   let storySlug: string | null = null;
@@ -381,24 +385,35 @@ export async function sbGetChapter(storyId: string, chapterNumber: number): Prom
   const user = await requireUser();
   await assertStoryOwner(storyId, user.id);
 
-  const { data: draft } = await supabase
-    .from('chapter_drafts')
-    .select('*')
-    .eq('story_id', storyId)
-    .eq('chapter_number', chapterNumber)
-    .eq('creator_id', user.id)
-    .maybeSingle();
+  const [{ data: draft }, { data: published }] = await Promise.all([
+    supabase
+      .from('chapter_drafts')
+      .select('*')
+      .eq('story_id', storyId)
+      .eq('chapter_number', chapterNumber)
+      .eq('creator_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('chapters')
+      .select('id, story_id, chapter_number, title, content, content_delta, status, moderation_status, moderation_reason')
+      .eq('story_id', storyId)
+      .eq('chapter_number', chapterNumber)
+      .maybeSingle(),
+  ]);
 
-  if (draft) return { chapter: draft as ChapterDraftData };
+  if (draft && published) {
+    return {
+      chapter: {
+        ...(draft as ChapterDraftData),
+        status: published.status,
+        moderation_status: published.moderation_status,
+        moderation_reason: published.moderation_reason,
+      },
+    };
+  }
 
-  const { data: chapter } = await supabase
-    .from('chapters')
-    .select('id, story_id, chapter_number, title, content, content_delta, status, moderation_status, moderation_reason')
-    .eq('story_id', storyId)
-    .eq('chapter_number', chapterNumber)
-    .maybeSingle();
-
-  if (chapter) return { chapter: chapter as ChapterDraftData };
+  if (draft) return { chapter: { ...(draft as ChapterDraftData), status: 'draft' } };
+  if (published) return { chapter: published as ChapterDraftData };
 
   return {
     chapter: {

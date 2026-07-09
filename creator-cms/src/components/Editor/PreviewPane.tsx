@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MessageSquare, BookOpen, Tablet, Smartphone, Sun, Moon, Coffee, MoreHorizontal } from 'lucide-react';
+import { BookOpen, Tablet, Smartphone, Sun, Moon, Coffee, PanelRightClose } from 'lucide-react';
 import type { SceneBlock } from './SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
 import { sceneHasContent } from '../../lib/sceneContent';
@@ -17,7 +17,14 @@ interface PreviewPaneProps {
   syncScroll: boolean;
   totalWords: number;
   previewComfortStyle?: React.CSSProperties;
+  onCollapse?: () => void;
 }
+
+const DEVICE_OPTIONS: { id: PreviewDevice; label: string; icon: typeof BookOpen }[] = [
+  { id: 'desktop', label: 'Book', icon: BookOpen },
+  { id: 'tablet', label: 'Tablet', icon: Tablet },
+  { id: 'mobile', label: 'Mobile', icon: Smartphone },
+];
 
 export function PreviewPane({
   chapterTitle,
@@ -32,6 +39,7 @@ export function PreviewPane({
   syncScroll,
   totalWords,
   previewComfortStyle,
+  onCollapse,
 }: PreviewPaneProps) {
   const syncingRef = useRef(false);
   const readMins = Math.max(1, Math.round(totalWords / 200));
@@ -55,64 +63,67 @@ export function PreviewPane({
 
   return (
     <aside className="katha-proto-preview">
-      <div className="katha-proto-preview-header">Preview</div>
+      <div className="katha-proto-preview-header">
+        <span>Preview</span>
+        {onCollapse && (
+          <button
+            type="button"
+            className="katha-proto-preview-collapse"
+            onClick={onCollapse}
+            title="Hide preview"
+            aria-label="Hide preview panel"
+          >
+            <PanelRightClose size={16} />
+          </button>
+        )}
+      </div>
 
       <div className="katha-proto-preview-toolbar">
-        <button type="button" className="katha-proto-preview-icon-btn" title="Comments">
-          <MessageSquare size={16} />
-        </button>
-        <button
-          type="button"
-          className={`katha-proto-preview-icon-btn${device === 'desktop' ? ' active' : ''}`}
-          onClick={() => onDeviceChange('desktop')}
-          title="Desktop"
-        >
-          <BookOpen size={16} />
-        </button>
-        <button
-          type="button"
-          className={`katha-proto-preview-icon-btn${device === 'tablet' ? ' active' : ''}`}
-          onClick={() => onDeviceChange('tablet')}
-          title="Tablet"
-        >
-          <Tablet size={16} />
-        </button>
-        <button
-          type="button"
-          className={`katha-proto-preview-icon-btn${device === 'mobile' ? ' active' : ''}`}
-          onClick={() => onDeviceChange('mobile')}
-          title="Mobile"
-        >
-          <Smartphone size={16} />
-        </button>
-        <div style={{ flex: 1 }} />
-        <button
-          type="button"
-          className={`katha-proto-preview-icon-btn${resolvedTheme === 'sepia' ? ' active' : ''}`}
-          onClick={() => onThemeChange('sepia')}
-          title="Sepia (recommended)"
-        >
-          <Coffee size={16} />
-        </button>
-        <button
-          type="button"
-          className={`katha-proto-preview-icon-btn${resolvedTheme === 'light' ? ' active' : ''}`}
-          onClick={() => onThemeChange('light')}
-          title="Light"
-        >
-          <Sun size={16} />
-        </button>
-        <button
-          type="button"
-          className={`katha-proto-preview-icon-btn${resolvedTheme === 'dark' ? ' active' : ''}`}
-          onClick={() => onThemeChange('dark')}
-          title="Dark"
-        >
-          <Moon size={16} />
-        </button>
-        <button type="button" className="katha-proto-preview-icon-btn" title="More">
-          <MoreHorizontal size={16} />
-        </button>
+        <div className="katha-proto-device-switcher" role="group" aria-label="Preview device">
+          {DEVICE_OPTIONS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              className={`katha-proto-device-btn${device === id ? ' active' : ''}`}
+              onClick={() => onDeviceChange(id)}
+              title={`${label} preview`}
+              aria-pressed={device === id}
+            >
+              <Icon size={16} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="katha-proto-preview-theme-group" role="group" aria-label="Preview theme">
+          <button
+            type="button"
+            className={`katha-proto-preview-icon-btn${resolvedTheme === 'sepia' ? ' active' : ''}`}
+            onClick={() => onThemeChange('sepia')}
+            title="Sepia (recommended)"
+            aria-pressed={resolvedTheme === 'sepia'}
+          >
+            <Coffee size={16} />
+          </button>
+          <button
+            type="button"
+            className={`katha-proto-preview-icon-btn${resolvedTheme === 'light' ? ' active' : ''}`}
+            onClick={() => onThemeChange('light')}
+            title="Light"
+            aria-pressed={resolvedTheme === 'light'}
+          >
+            <Sun size={16} />
+          </button>
+          <button
+            type="button"
+            className={`katha-proto-preview-icon-btn${resolvedTheme === 'dark' ? ' active' : ''}`}
+            onClick={() => onThemeChange('dark')}
+            title="Dark"
+            aria-pressed={resolvedTheme === 'dark'}
+          >
+            <Moon size={16} />
+          </button>
+        </div>
       </div>
 
       <div ref={scrollRef} className="katha-proto-preview-body">
@@ -128,7 +139,7 @@ export function PreviewPane({
         >
           <div className="katha-proto-chapter-label">Chapter {chapterNum}</div>
           <h1 className="katha-proto-chapter-title">{chapterTitle || 'Untitled Chapter'}</h1>
-          <div className="katha-proto-chapter-dots">• • •</div>
+          <div className="katha-proto-chapter-dots" aria-hidden>• • •</div>
 
           {scenes.map((scene, index) => (
             <React.Fragment key={scene.id}>
@@ -152,7 +163,7 @@ export function PreviewPane({
       </div>
 
       <div className="katha-proto-preview-footer">
-        <span>{totalWords} words • ~{readMins} min read</span>
+        <span>{totalWords.toLocaleString()} words · ~{readMins} min</span>
         <span>{scenes.length} scene{scenes.length === 1 ? '' : 's'}</span>
       </div>
     </aside>

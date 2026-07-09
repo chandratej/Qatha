@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { Sparkles } from 'lucide-react';
+import { AiAssistantDock } from './AiAssistantDock';
+import { InlineChapterTitle } from './InlineChapterTitle';
 import {
   getPhoneticSuggestions,
   getSemanticAlternatives,
@@ -112,6 +113,9 @@ interface EditorWorkspaceProps {
   saving: boolean;
   lastSaved: Date | null;
   editorComfortStyle?: React.CSSProperties;
+  focusMode?: boolean;
+  onExitFocus?: () => void;
+  totalCharCount?: number;
 }
 
 export function EditorWorkspace({
@@ -131,6 +135,9 @@ export function EditorWorkspace({
   saving,
   lastSaved,
   editorComfortStyle,
+  focusMode = false,
+  onExitFocus,
+  totalCharCount = 0,
 }: EditorWorkspaceProps) {
   const quillRef = useRef<ReactQuill>(null);
   const internalScrollRef = useRef<HTMLDivElement>(null);
@@ -307,24 +314,26 @@ export function EditorWorkspace({
     const text = div.textContent || '';
     return text.trim().split(/\s+/).filter(Boolean).length;
   })();
-  const sceneChars = getCharCount(activeScene.content);
+  const readMins = Math.max(1, Math.round(chapterWordCount / 200));
 
   return (
-    <main ref={containerRef} className="katha-proto-editor">
-      <div className="katha-proto-editor-header">
-        <span className="katha-proto-chapter-num">Ch {chapterNum}</span>
-        <PhoneticTextInput
-          className="katha-proto-chapter-title-input"
-          value={chapterTitle}
-          onChange={onChapterTitleChange}
-          phoneticLive={phoneticLive}
-          placeholder="Chapter title"
-          maxLength={60}
-        />
-        <span className="katha-proto-chapter-wordcount">
-          {chapterWordCount} words
-        </span>
-      </div>
+    <main ref={containerRef} className={`katha-proto-editor${focusMode ? ' katha-proto-editor--focus' : ''}`}>
+      {focusMode && (
+        <div className="katha-proto-focus-bar">
+          <span className="katha-proto-chapter-num">Ch {chapterNum}</span>
+          <InlineChapterTitle
+            value={chapterTitle}
+            onChange={onChapterTitleChange}
+            phoneticLive={phoneticLive}
+            className="katha-proto-focus-bar__title"
+          />
+          {onExitFocus && (
+            <button type="button" className="katha-proto-focus-bar__exit" onClick={onExitFocus}>
+              Exit focus
+            </button>
+          )}
+        </div>
+      )}
 
       <FormatToolbar
         phoneticLive={phoneticLive}
@@ -338,11 +347,11 @@ export function EditorWorkspace({
         onRedo={() => getEditor()?.history.redo()}
         onSceneBreak={insertSceneBreak}
         onLink={insertLink}
+        hideHistory={focusMode}
       />
 
       <div ref={scrollRef} className="katha-proto-editor-body">
-        <div className="katha-proto-editor-card" style={editorComfortStyle}>
-          <div className="katha-proto-scene-label">Scene {activeSceneIndex + 1}</div>
+        <div className="katha-proto-editor-canvas" style={editorComfortStyle}>
           <PhoneticTextInput
             className="katha-proto-scene-title-input"
             value={activeScene.title}
@@ -363,15 +372,27 @@ export function EditorWorkspace({
         </div>
       </div>
 
-      <div className="katha-proto-editor-footer">
-        <span>{sceneWords} words {sceneChars.toLocaleString()} characters</span>
-        <span className="katha-proto-autosaved">
-          {saving ? 'Saving…' : `Autosaved ${lastSaved ? formatRelativeTime(lastSaved.getTime()) : 'just now'}`}
-        </span>
-        <button type="button" className="katha-proto-ai-btn">
-          <Sparkles size={14} /> AI Assist
-        </button>
+      <div className="katha-proto-status-bar" role="status" aria-live="polite">
+        <div className="katha-proto-status-bar__group">
+          <span className="katha-proto-status-bar__item katha-proto-status-bar__item--saved">
+            {saving ? 'Saving…' : `Saved ${lastSaved ? formatRelativeTime(lastSaved.getTime()) : 'just now'}`}
+          </span>
+          <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
+          <span className="katha-proto-status-bar__item">{chapterWordCount.toLocaleString()} words</span>
+          <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
+          <span className="katha-proto-status-bar__item">{totalCharCount.toLocaleString()} characters</span>
+          <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
+          <span className="katha-proto-status-bar__item">~{readMins} min read</span>
+          {focusMode && (
+            <>
+              <span className="katha-proto-status-bar__sep" aria-hidden>·</span>
+              <span className="katha-proto-status-bar__item">Scene {activeSceneIndex + 1}: {sceneWords} words</span>
+            </>
+          )}
+        </div>
       </div>
+
+      <AiAssistantDock />
 
       {showSuggestions && suggestions.length > 0 && (
         <div className="katha-proto-phonetic-menu" style={{ top: suggestionsPos.top, left: suggestionsPos.left }}>

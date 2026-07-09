@@ -1,13 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { Menu, Feather, Check, Clock, Focus, Rocket, ArrowLeft } from 'lucide-react';
-import { ThemeToggle } from '../ThemeToggle';
+import { Check, Clock, Focus, Rocket, ArrowLeft } from 'lucide-react';
 import { EditorComfortControls } from './EditorComfortControls';
+import { InlineChapterTitle } from './InlineChapterTitle';
 import type { FontScale } from '../../lib/comfortPrefs';
 
 interface EditorNavbarProps {
-  storyLabel: string;
-  seasonLabel: string;
-  chapterLabel: string;
+  chapterNum: number;
+  chapterTitle: string;
+  onChapterTitleChange: (title: string) => void;
+  phoneticLive: boolean;
+  wordCount: number;
   backTo?: string;
   saving: boolean;
   fontScale: FontScale;
@@ -20,9 +22,11 @@ interface EditorNavbarProps {
 }
 
 export function EditorNavbar({
-  storyLabel,
-  seasonLabel,
-  chapterLabel,
+  chapterNum,
+  chapterTitle,
+  onChapterTitleChange,
+  phoneticLive,
+  wordCount,
   backTo,
   saving,
   fontScale,
@@ -37,54 +41,82 @@ export function EditorNavbar({
 
   return (
     <header className="katha-proto-navbar">
-      <div className="katha-proto-brand">
+      <div className="katha-proto-navbar__left">
         <button
           type="button"
-          className="katha-proto-nav-btn katha-proto-nav-btn--menu"
+          className="katha-proto-nav-btn katha-proto-nav-btn--back"
           onClick={() => (backTo ? navigate(backTo) : navigate('/stories'))}
           aria-label="Back to chapters"
           title="Back to chapters"
         >
-          {backTo ? <ArrowLeft size={18} /> : <Menu size={18} />}
+          <ArrowLeft size={18} />
+          <span className="katha-proto-nav-btn__label">Chapters</span>
         </button>
-        <Feather size={20} className="katha-proto-brand-feather" />
-        <span className="katha-proto-brand-name">Katha</span>
+
+        <span className="katha-proto-chapter-num" aria-label={`Chapter ${chapterNum}`}>
+          Ch {chapterNum}
+        </span>
+
+        <InlineChapterTitle
+          value={chapterTitle}
+          onChange={onChapterTitleChange}
+          phoneticLive={phoneticLive}
+          className="katha-proto-navbar__title"
+        />
       </div>
 
-      <nav className="katha-proto-breadcrumb" aria-label="Chapter location">
-        <span className="katha-proto-breadcrumb__story">{storyLabel}</span>
-        <span className="katha-proto-breadcrumb__sep" aria-hidden>›</span>
-        <span className="katha-proto-breadcrumb__season">{seasonLabel}</span>
-        <span className="katha-proto-breadcrumb__sep" aria-hidden>›</span>
-        <span className="katha-proto-breadcrumb__chapter">{chapterLabel}</span>
-      </nav>
-
       <div className="katha-proto-nav-actions">
-        <span className="katha-proto-save-status">
-          {!saving && <Check size={14} />}
+        <span className="katha-proto-save-status" aria-live="polite">
+          {!saving && <Check size={14} aria-hidden />}
           <span className="katha-proto-save-status__text">
             {saving ? 'Saving…' : 'Saved'}
           </span>
         </span>
-        <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--icon" onClick={onHistory} title="Version history">
-          <Clock size={15} />
+
+        <span className="katha-proto-navbar__wordcount" aria-label={`${wordCount} words`}>
+          {wordCount.toLocaleString()} words
+        </span>
+
+        <button
+          type="button"
+          className="katha-proto-nav-btn katha-proto-nav-btn--icon"
+          onClick={onHistory}
+          title="Version history"
+          aria-label="Version history"
+        >
+          <Clock size={16} />
           <span className="katha-proto-nav-btn__label">History</span>
         </button>
-        <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--icon" onClick={onFocus} title="Focus mode">
-          <Focus size={15} />
+
+        <button
+          type="button"
+          className="katha-proto-nav-btn katha-proto-nav-btn--icon"
+          onClick={onFocus}
+          title="Focus mode"
+          aria-label="Enter focus mode"
+        >
+          <Focus size={16} />
           <span className="katha-proto-nav-btn__label">Focus</span>
         </button>
+
         <EditorComfortControls
           fontScale={fontScale}
           onFontScaleChange={onFontScaleChange}
           compact
         />
-        <ThemeToggle compact />
-        <button type="button" className="katha-proto-nav-btn katha-proto-nav-btn--draft" onClick={onSaveDraft}>
-          Save draft
+
+        <button
+          type="button"
+          className="katha-proto-nav-btn katha-proto-nav-btn--draft"
+          onClick={onSaveDraft}
+          title="Save draft (Ctrl+S)"
+        >
+          <span className="katha-proto-nav-btn__draft-full">Save draft</span>
+          <span className="katha-proto-nav-btn__draft-short">Save</span>
         </button>
+
         <button type="button" className="katha-proto-publish-btn" onClick={onPublish}>
-          <Rocket size={15} />
+          <Rocket size={16} />
           <span>{publishLabel}</span>
         </button>
       </div>

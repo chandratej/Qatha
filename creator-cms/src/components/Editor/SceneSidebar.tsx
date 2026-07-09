@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Trash2, PlusCircle, MoreVertical } from 'lucide-react';
+import { Plus, Search, Trash2, PanelLeftClose, PanelLeftOpen, MoreVertical } from 'lucide-react';
 import { Reorder, useDragControls } from 'framer-motion';
+import { applyPhoneticToTrailingWord } from '../../business/phoneticText';
+import { sceneTitleMatchesQuery } from '../../lib/sceneSearch';
 
 export interface SceneBlock {
   id: string;
@@ -18,6 +20,9 @@ interface SceneSidebarProps {
   onDuplicateScene?: (id: string) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  drawerMode?: boolean;
+  onCloseDrawer?: () => void;
+  phoneticLive?: boolean;
 }
 
 function getWordCount(html: string) {
@@ -38,33 +43,72 @@ export function SceneSidebar({
   onDuplicateScene,
   collapsed,
   onToggleCollapse,
+  drawerMode = false,
+  onCloseDrawer,
+  phoneticLive = true,
 }: SceneSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const filtered = scenes.filter(s => s.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = scenes.filter((s) => sceneTitleMatchesQuery(s.title, searchTerm));
 
-  if (collapsed) {
+  const handleSearchChange = (raw: string) => {
+    setSearchTerm(phoneticLive ? applyPhoneticToTrailingWord(raw) : raw);
+  };
+
+  if (collapsed && !drawerMode) {
     return (
-      <div className="katha-proto-sidebar" style={{ width: 48, minWidth: 48 }}>
-        <button type="button" className="katha-proto-nav-btn" onClick={onToggleCollapse} style={{ margin: 12 }}>
-          <PlusCircle size={18} />
+      <aside className="katha-proto-sidebar katha-proto-sidebar--collapsed-rail">
+        <button
+          type="button"
+          className="katha-proto-sidebar-rail-btn"
+          onClick={onToggleCollapse}
+          title="Expand scenes"
+          aria-label="Expand scenes panel"
+        >
+          <PanelLeftOpen size={18} />
         </button>
-      </div>
+        <span className="katha-proto-sidebar-rail-label" aria-hidden>Scenes</span>
+      </aside>
     );
   }
 
-  const list = searchTerm ? filtered : scenes;
+  const list = searchTerm.trim() ? filtered : scenes;
 
   return (
-    <aside className="katha-proto-sidebar">
+    <aside className={`katha-proto-sidebar${drawerMode ? ' katha-proto-sidebar--drawer' : ''}`}>
+      {drawerMode && onCloseDrawer && (
+        <button type="button" className="katha-proto-sidebar-drawer-close" onClick={onCloseDrawer} aria-label="Close scenes">
+          ×
+        </button>
+      )}
       <div className="katha-proto-sidebar-header">
-        <div className="katha-proto-sidebar-title">Scenes</div>
+        <div className="katha-proto-sidebar-title-row">
+          <div className="katha-proto-sidebar-title">Scenes</div>
+          {!drawerMode && (
+            <button
+              type="button"
+              className="katha-proto-sidebar-collapse-btn"
+              onClick={onToggleCollapse}
+              title="Collapse scenes"
+              aria-label="Collapse scenes panel"
+            >
+              <PanelLeftClose size={16} />
+            </button>
+          )}
+        </div>
         <div className="katha-proto-search">
-          <Search size={14} color="var(--ink-muted)" />
+          <Search size={14} color="var(--ink-muted)" aria-hidden />
           <input
-            type="text"
-            placeholder="Search scenes..."
+            type="search"
+            placeholder="Search scenes…"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onBlur={() => {
+              if (phoneticLive && searchTerm) {
+                handleSearchChange(`${searchTerm} `);
+              }
+            }}
+            aria-label="Search scenes by title"
+            lang="te"
           />
         </div>
         <button type="button" className="katha-proto-new-scene-btn" onClick={onAddScene}>
@@ -73,22 +117,26 @@ export function SceneSidebar({
       </div>
 
       <div className="katha-proto-scene-list">
-        {searchTerm ? (
-          list.map(scene => {
-            const idx = scenes.findIndex(s => s.id === scene.id);
-            return (
-              <SceneRow
-                key={scene.id}
-                idx={idx}
-                scene={scene}
-                active={activeSceneId === scene.id}
-                onClick={() => onSwitchScene(scene.id)}
-                onDelete={onDeleteScene}
-                onDuplicate={onDuplicateScene}
-                draggable={false}
-              />
-            );
-          })
+        {searchTerm.trim() ? (
+          list.length > 0 ? (
+            list.map((scene) => {
+              const idx = scenes.findIndex((s) => s.id === scene.id);
+              return (
+                <SceneRow
+                  key={scene.id}
+                  idx={idx}
+                  scene={scene}
+                  active={activeSceneId === scene.id}
+                  onClick={() => onSwitchScene(scene.id)}
+                  onDelete={onDeleteScene}
+                  onDuplicate={onDuplicateScene}
+                  draggable={false}
+                />
+              );
+            })
+          ) : (
+            <p className="katha-proto-scene-search-empty">No scenes match your search.</p>
+          )
         ) : (
           <Reorder.Group axis="y" values={scenes} onReorder={onReorderScenes} className="sc-u-list-reset">
             {scenes.map((scene, idx) => (
@@ -116,17 +164,15 @@ export function SceneSidebar({
         >
           <Trash2 size={14} /> Trash
         </button>
-        <div className="katha-proto-collapse-controls">
-          <button type="button" onClick={onToggleCollapse} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 'inherit' }}>
-            ‹‹
-          </button>
-          <button type="button" onClick={onToggleCollapse} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 'inherit' }}>
+        {!drawerMode && (
+          <button
+            type="button"
+            className="katha-proto-sidebar-footer-collapse"
+            onClick={onToggleCollapse}
+          >
             Collapse
           </button>
-          <button type="button" onClick={onAddScene} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontSize: 'inherit' }}>
-            +
-          </button>
-        </div>
+        )}
       </div>
     </aside>
   );
@@ -192,7 +238,7 @@ function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggabl
 
       <div className="sc-u-flex-col sc-u-flex-1 sc-u-min-w-0 sc-u-gap-0">
         <h3 className="sc-u-scene-title">{scene.title || 'Untitled'}</h3>
-        <p className="sc-u-scene-meta">Scene {idx + 1} • {words} words</p>
+        {words > 0 && <p className="sc-u-scene-meta">{words} words</p>}
       </div>
 
       <div className="sc-u-menu-wrap sc-u-shrink-0" ref={menuRef}>

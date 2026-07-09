@@ -1,0 +1,68 @@
+import { useState, useRef, useEffect } from 'react';
+import { PhoneticTextInput } from './PhoneticTextInput';
+
+interface InlineChapterTitleProps {
+  value: string;
+  onChange: (value: string) => void;
+  phoneticLive: boolean;
+  className?: string;
+  placeholder?: string;
+  maxLength?: number;
+}
+
+export function InlineChapterTitle({
+  value,
+  onChange,
+  phoneticLive,
+  className = '',
+  placeholder = 'Untitled Chapter',
+  maxLength = 60,
+}: InlineChapterTitleProps) {
+  const [editing, setEditing] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!editing) return;
+    const input = wrapRef.current?.querySelector('input');
+    input?.focus();
+    input?.select();
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setEditing(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [editing]);
+
+  if (editing) {
+    return (
+      <div ref={wrapRef} className={`katha-inline-title-wrap ${className}`}>
+        <PhoneticTextInput
+          className="katha-inline-title-input"
+          value={value}
+          onChange={onChange}
+          phoneticLive={phoneticLive}
+          placeholder={placeholder}
+          maxLength={maxLength}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={`katha-inline-title ${className}`}
+      onClick={() => setEditing(true)}
+      title="Click to edit chapter title"
+      aria-label={`Chapter title: ${value || placeholder}. Click to edit.`}
+    >
+      {value || placeholder}
+    </button>
+  );
+}

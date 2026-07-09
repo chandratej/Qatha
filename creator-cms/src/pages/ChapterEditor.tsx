@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, PanelRightOpen, List } from 'lucide-react';
 import { SceneSidebar } from '../components/Editor/SceneSidebar';
 import type { SceneBlock } from '../components/Editor/SceneSidebar';
 import { EditorWorkspace } from '../components/Editor/EditorWorkspace';
@@ -68,7 +68,7 @@ function createDefaultScene(): SceneBlock {
 
 export function ChapterEditor() {
   const { user, refreshUser } = useAuth();
-  const { storyId = 'demo-rrr', seasonId, chapterNum } = useParams();
+  const { storyId = 'demo-rrr', chapterNum } = useParams();
 
   const isDemo = storyId === 'demo-rrr';
   const chapterNumber = Number(chapterNum) || 1;
@@ -81,12 +81,14 @@ export function ChapterEditor() {
   const [breakReminderMinutes, setBreakReminderMinutes] = useState(initialComfort.breakReminderMinutes);
   const [breakNoticeOpen, setBreakNoticeOpen] = useState(false);
   const [chapterTitle, setChapterTitle] = useState('Untitled Chapter');
-  const [storyLabel, setStoryLabel] = useState('Story');
+
   const [scenes, setScenes] = useState<SceneBlock[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string>('');
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>(prefs.previewDevice);
   const [previewTheme, setPreviewTheme] = useState<PreviewTheme>(prefs.previewTheme);
   const [sceneSidebarCollapsed, setSceneSidebarCollapsed] = useState(false);
+  const [previewCollapsed, setPreviewCollapsed] = useState(false);
+  const [sceneDrawerOpen, setSceneDrawerOpen] = useState(false);
   const [phoneticLive, setPhoneticLive] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -185,6 +187,11 @@ export function ChapterEditor() {
   }, [storyId, chapterNumber, isDemo]);
 
   const charCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
+  const totalCharCount = useMemo(() => scenes.reduce((sum, s) => {
+    const div = document.createElement('div');
+    div.innerHTML = s.content || '';
+    return sum + (div.textContent || '').length;
+  }, 0), [scenes]);
   const { saving, lastSaved, setLastSaved } = useAutosave({
     charCount,
     triggerLocalSave: persistDraft,
@@ -209,7 +216,7 @@ export function ChapterEditor() {
           setScenes(chapterScenes);
           setActiveSceneId(chapterScenes[0].id);
           setChapterTitle(getChapterTitle(storyId, chapterNumber) || 'The Call of the Jungle');
-          setStoryLabel('RRR - రాజమౌళి');
+
           setLoading(false);
         }
         return;
@@ -217,10 +224,7 @@ export function ChapterEditor() {
 
       setLoading(true);
       try {
-        const [{ chapter }, storyMeta] = await Promise.all([
-          api.getChapter(storyId, chapterNumber),
-          api.getStoryChapters(storyId).catch(() => ({ chapters: [], story: undefined })),
-        ]);
+        const { chapter } = await api.getChapter(storyId, chapterNumber);
         if (cancelled) return;
 
         const cached = await loadDraftFromCache(storyId, chapterNumber).catch(() => null);
@@ -230,7 +234,7 @@ export function ChapterEditor() {
         setScenes(loadedScenes);
         setActiveSceneId(loadedScenes[0]?.id || '');
         setChapterTitle(cached?.title || chapter.title || `Chapter ${chapterNumber}`);
-        if (storyMeta.story?.title) setStoryLabel(storyMeta.story.title);
+
         setModerationStatus(chapter.moderation_status || chapter.status || null);
         setModerationNotes(chapter.moderation_reason || null);
       } catch (err) {
@@ -253,9 +257,7 @@ export function ChapterEditor() {
   const activeScene = scenes.find(s => s.id === activeSceneId);
   const activeSceneIndex = scenes.findIndex(s => s.id === activeSceneId);
   const wordCount = getWordCountFromScenes(scenes);
-  const seasonLabel = isDemo
-    ? (seasonId ? `Season ${seasonId.replace(/^s/, '')}` : 'Season 1')
-    : 'Chapters';
+
 
   const updateSceneTitle = (id: string, newTitle: string) => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
@@ -398,9 +400,11 @@ export function ChapterEditor() {
     <div className={`katha-proto-layout${focusMode ? ' focus-mode' : ''}`}>
       {!focusMode && (
         <EditorNavbar
-          storyLabel={storyLabel}
-          seasonLabel={seasonLabel}
-          chapterLabel={chapterTitle || `Chapter ${chapterNumber}`}
+          chapterNum={chapterNumber}
+          chapterTitle={chapterTitle}
+          onChapterTitleChange={setChapterTitle}
+          phoneticLive={phoneticLive}
+          wordCount={wordCount}
           backTo={`/stories/${storyId}`}
           saving={saving || publishing || savingDraft}
           fontScale={fontScale}
@@ -466,18 +470,36 @@ export function ChapterEditor() {
         </div>
       )}
 
-      <div className="katha-proto-workspace">
+      <div
+        className={[
+          'katha-proto-workspace',
+          previewCollapsed && 'katha-proto-workspace--preview-collapsed',
+          sceneSidebarCollapsed && 'katha-proto-workspace--sidebar-collapsed',
+        ].filter(Boolean).join(' ')}
+      >
+        {!focusMode && sceneDrawerOpen && (
+          <button
+            type="button"
+            className="katha-proto-scene-drawer-backdrop"
+            aria-label="Close scenes panel"
+            onClick={() => setSceneDrawerOpen(false)}
+          />
+        )}
+
         {!focusMode && (
           <SceneSidebar
             scenes={scenes}
             activeSceneId={activeSceneId}
-            onSwitchScene={switchScene}
+            onSwitchScene={(id) => { switchScene(id); setSceneDrawerOpen(false); }}
             onAddScene={handleAddScene}
             onReorderScenes={setScenes}
             onDeleteScene={handleDeleteScene}
             onDuplicateScene={handleDuplicateScene}
             collapsed={sceneSidebarCollapsed}
             onToggleCollapse={() => setSceneSidebarCollapsed(!sceneSidebarCollapsed)}
+            drawerMode={sceneDrawerOpen}
+            onCloseDrawer={() => setSceneDrawerOpen(false)}
+            phoneticLive={phoneticLive}
           />
         )}
 
@@ -498,9 +520,12 @@ export function ChapterEditor() {
           saving={saving}
           lastSaved={lastSaved}
           editorComfortStyle={editorComfortStyle}
+          focusMode={focusMode}
+          onExitFocus={() => setFocusMode(false)}
+          totalCharCount={totalCharCount}
         />
 
-        {!focusMode && (
+        {!focusMode && !previewCollapsed && (
           <PreviewPane
             chapterTitle={chapterTitle}
             chapterNum={chapterNumber}
@@ -514,39 +539,40 @@ export function ChapterEditor() {
             syncScroll={prefs.syncScroll}
             totalWords={wordCount}
             previewComfortStyle={editorComfortStyle}
+            onCollapse={() => setPreviewCollapsed(true)}
           />
         )}
       </div>
 
-      {focusMode && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 16,
-            right: 16,
-            zIndex: 10001,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
+      {!focusMode && previewCollapsed && (
+        <button
+          type="button"
+          className="katha-proto-preview-reopen"
+          onClick={() => setPreviewCollapsed(false)}
+          title="Show preview"
+          aria-label="Show preview panel"
         >
+          <PanelRightOpen size={18} />
+        </button>
+      )}
+
+      {!focusMode && (
+        <button
+          type="button"
+          className="katha-proto-scene-drawer-toggle"
+          onClick={() => setSceneDrawerOpen(true)}
+          title="Scenes"
+          aria-label="Open scenes"
+        >
+          <List size={18} />
+        </button>
+      )}
+
+      {focusMode && (
+        <div className="katha-proto-focus-controls">
           <EditorComfortControls fontScale={fontScale} onFontScaleChange={handleFontScaleChange} compact />
-          <button
-            type="button"
-            onClick={() => setFocusMode(false)}
-            style={{
-              padding: '8px 16px',
-              borderRadius: 8,
-              border: '1px solid var(--border)',
-              background: 'var(--surface)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              boxShadow: 'var(--shadow-md)',
-            }}
-          >
-            <X size={16} /> Exit Focus
+          <button type="button" className="katha-proto-focus-controls__exit" onClick={() => setFocusMode(false)}>
+            <X size={16} /> Exit
           </button>
         </div>
       )}
