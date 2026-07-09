@@ -1,18 +1,32 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, X } from 'lucide-react';
+import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 
-const QUICK_ACTIONS = [
+const COMPANION_ACTIONS = [
+  'Continue Writing',
   'Rewrite',
-  'Continue',
-  'Improve',
-  'Expand',
+  'Improve Style',
+  'Expand Scene',
+  'Character Development',
+  'Timeline',
   'Translate',
   'Summarize',
 ] as const;
 
-export function AiAssistantDock() {
-  const [open, setOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+interface AiAssistantDockProps {
+  integrated?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export function AiAssistantDock({
+  integrated = false,
+  open: controlledOpen,
+  onOpenChange,
+}: AiAssistantDockProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
 
   useEffect(() => {
     if (!open) return;
@@ -21,29 +35,32 @@ export function AiAssistantDock() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
-    <div className="katha-ai-dock" ref={panelRef}>
+    <div className={`katha-ai-companion${integrated ? ' katha-ai-companion--integrated' : ''}`}>
       {open && (
-        <div className="katha-ai-dock__panel" role="dialog" aria-label="AI writing assistant">
-          <div className="katha-ai-dock__panel-header">
-            <span>AI Assistant</span>
+        <div className="katha-ai-companion__panel" role="dialog" aria-label="AI writing companion">
+          <div className="katha-ai-companion__panel-header">
+            <div>
+              <strong>Writing companion</strong>
+              <p>Quick assists for your current scene</p>
+            </div>
             <button
               type="button"
-              className="katha-ai-dock__close"
+              className="katha-ai-companion__close"
               onClick={() => setOpen(false)}
-              aria-label="Close AI assistant"
+              aria-label="Close AI companion"
             >
-              <X size={16} />
+              <X size={16} strokeWidth={EDITOR_ICON_STROKE} />
             </button>
           </div>
-          <div className="katha-ai-dock__actions">
-            {QUICK_ACTIONS.map((action) => (
+          <div className="katha-ai-companion__actions">
+            {COMPANION_ACTIONS.map((action) => (
               <button
                 key={action}
                 type="button"
-                className="katha-ai-dock__action"
+                className="katha-ai-companion__action"
                 onClick={() => setOpen(false)}
               >
                 {action}
@@ -52,16 +69,18 @@ export function AiAssistantDock() {
           </div>
         </div>
       )}
-      <button
-        type="button"
-        className="katha-ai-dock__trigger"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-label="AI writing assistant"
-      >
-        <Sparkles size={18} />
-        <span>AI Assistant</span>
-      </button>
+      {!integrated && (
+        <button
+          type="button"
+          className="katha-ai-companion__trigger"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          aria-label="AI writing companion"
+        >
+          <Sparkles size={16} strokeWidth={EDITOR_ICON_STROKE} />
+          <span>Companion</span>
+        </button>
+      )}
     </div>
   );
 }

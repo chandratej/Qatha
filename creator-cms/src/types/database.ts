@@ -51,6 +51,7 @@ export interface ChapterListItem {
   status?: string;
   word_count?: number;
   scene_count?: number;
+  view_count?: number;
   moderation_reason?: string;
   scheduled_publish_at?: string | null;
 }

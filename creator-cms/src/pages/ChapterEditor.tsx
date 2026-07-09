@@ -1,12 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { X, PanelRightOpen, List } from 'lucide-react';
+import { PanelRightOpen, List, X } from 'lucide-react';
 import { SceneSidebar } from '../components/Editor/SceneSidebar';
 import type { SceneBlock } from '../components/Editor/SceneSidebar';
 import { EditorWorkspace } from '../components/Editor/EditorWorkspace';
 import { PreviewPane } from '../components/Editor/PreviewPane';
 import { EditorNavbar } from '../components/Editor/EditorNavbar';
 import { VersionHistoryModal } from '../components/Editor/VersionHistoryModal';
+import { EditorStatusStrip } from '../components/Editor/EditorStatusStrip';
+import { PublishConfirmModal } from '../components/Editor/PublishConfirmModal';
+import { DeleteSceneModal } from '../components/Editor/DeleteSceneModal';
+import { EditorLoadingSkeleton } from '../components/Editor/EditorLoadingSkeleton';
 import {
   getChapterTitle,
   getOrInitDemoData,
@@ -40,9 +44,12 @@ import {
   type FontScale,
   type LineHeightScale,
 } from '../lib/comfortPrefs';
+import { AiNotesPanel } from '../components/Editor/AiNotesPanel';
 import { EditorComfortControls } from '../components/Editor/EditorComfortControls';
 import { WritingBreakNotice } from '../components/Editor/WritingBreakNotice';
 import '../styles/editor-prototype.css';
+
+const CHAR_LIMIT = 50_000;
 
 function getWordCountFromScenes(scenes: SceneBlock[]): number {
   return scenes.reduce((total, scene) => {
@@ -51,6 +58,15 @@ function getWordCountFromScenes(scenes: SceneBlock[]): number {
     temp.innerHTML = scene.content;
     const text = temp.textContent || '';
     return total + text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  }, 0);
+}
+
+function getPlainCharCountFromScenes(scenes: SceneBlock[]): number {
+  return scenes.reduce((total, scene) => {
+    if (!scene.content) return total;
+    const temp = document.createElement('div');
+    temp.innerHTML = scene.content;
+    return total + (temp.textContent || '').length;
   }, 0);
 }
 
@@ -68,7 +84,11 @@ const PROTOTYPE_CH1_SCENES: SceneBlock[] = [
 ];
 
 function createDefaultScene(): SceneBlock {
-  return { id: `scene-${Date.now()}`, title: 'Opening Scene', content: '<p>Start writing…</p>' };
+  return { id: `scene-${Date.now()}`, title: 'Opening Scene', content: '<p></p>' };
+}
+
+function createBlankScene(index: number): SceneBlock {
+  return { id: `scene-${Date.now()}-${index}`, title: `Scene ${index}`, content: '' };
 }
 
 export function ChapterEditor() {
@@ -99,6 +119,7 @@ export function ChapterEditor() {
   const [previewCollapsed, setPreviewCollapsed] = useState(initialWorkspaceLayout.previewCollapsed);
   const [canvasMaxWidth, setCanvasMaxWidth] = useState(initialWorkspaceLayout.canvasMaxWidth);
   const [sceneDrawerOpen, setSceneDrawerOpen] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const [phoneticLive, setPhoneticLive] = useState(true);
   const [focusMode, setFocusMode] = useState(initialWorkspaceLayout.focusMode);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -112,6 +133,9 @@ export function ChapterEditor() {
   const [appealNote, setAppealNote] = useState('');
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
   const [pendingPublish, setPendingPublish] = useState(false);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [deleteSceneId, setDeleteSceneId] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
 
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -119,6 +143,7 @@ export function ChapterEditor() {
   const editorFlushRef = useRef<(() => void) | null>(null);
   const scenesRef = useRef(scenes);
   const chapterTitleRef = useRef(chapterTitle);
+  const dirtyBaselineRef = useRef<string>('');
 
   const flushEditor = useCallback(() => {
     editorFlushRef.current?.();
@@ -131,6 +156,21 @@ export function ChapterEditor() {
 
   useEffect(() => { scenesRef.current = scenes; }, [scenes]);
   useEffect(() => { chapterTitleRef.current = chapterTitle; }, [chapterTitle]);
+
+  const contentFingerprint = useMemo(
+    () => JSON.stringify({ title: chapterTitle, scenes }),
+    [chapterTitle, scenes],
+  );
+
+  useEffect(() => {
+    if (!dirtyBaselineRef.current) return;
+    setDirty(contentFingerprint !== dirtyBaselineRef.current);
+  }, [contentFingerprint]);
+
+  const markClean = useCallback(() => {
+    dirtyBaselineRef.current = contentFingerprint;
+    setDirty(false);
+  }, [contentFingerprint]);
 
   const handleFontScaleChange = useCallback((scale: FontScale) => {
     setFontScale(scale);
@@ -196,13 +236,22 @@ export function ChapterEditor() {
     });
   }, [storyId, chapterNumber, isDemo]);
 
-  const charCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
+  const charCount = useMemo(() => getPlainCharCountFromScenes(scenes), [scenes]);
+  const htmlCharCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
   const { saving, lastSaved, setLastSaved } = useAutosave({
-    charCount,
+    charCount: htmlCharCount,
     triggerLocalSave: persistDraft,
     triggerCloudSave: isDemo ? undefined : cloudSaveDraft,
   });
   const { versions, saveSceneVersion } = useVersionHistory(chapterKey);
+
+  // Mark clean after successful autosave
+  useEffect(() => {
+    if (lastSaved && !saving) {
+      dirtyBaselineRef.current = contentFingerprint;
+      setDirty(false);
+    }
+  }, [lastSaved, saving]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;
@@ -220,8 +269,10 @@ export function ChapterEditor() {
         if (!cancelled) {
           setScenes(chapterScenes);
           setActiveSceneId(chapterScenes[0].id);
-          setChapterTitle(getChapterTitle(storyId, chapterNumber) || 'The Call of the Jungle');
-
+          const title = getChapterTitle(storyId, chapterNumber) || 'The Call of the Jungle';
+          setChapterTitle(title);
+          dirtyBaselineRef.current = JSON.stringify({ title, scenes: chapterScenes });
+          setDirty(false);
           setLoading(false);
         }
         return;
@@ -236,9 +287,12 @@ export function ChapterEditor() {
         const loadedScenes = cached?.scenes?.length
           ? cached.scenes
           : scenesFromChapterPayload(chapter);
+        const title = cached?.title || chapter.title || `Chapter ${chapterNumber}`;
         setScenes(loadedScenes);
         setActiveSceneId(loadedScenes[0]?.id || '');
-        setChapterTitle(cached?.title || chapter.title || `Chapter ${chapterNumber}`);
+        setChapterTitle(title);
+        dirtyBaselineRef.current = JSON.stringify({ title, scenes: loadedScenes });
+        setDirty(false);
 
         setModerationStatus(chapter.moderation_status || chapter.status || null);
         setModerationNotes(chapter.moderation_reason || null);
@@ -247,7 +301,10 @@ export function ChapterEditor() {
           const fallback = [createDefaultScene()];
           setScenes(fallback);
           setActiveSceneId(fallback[0].id);
-          setChapterTitle(`Chapter ${chapterNumber}`);
+          const title = `Chapter ${chapterNumber}`;
+          setChapterTitle(title);
+          dirtyBaselineRef.current = JSON.stringify({ title, scenes: fallback });
+          setDirty(false);
           console.warn('Chapter load failed, starting fresh:', err);
         }
       } finally {
@@ -259,11 +316,24 @@ export function ChapterEditor() {
     return () => { cancelled = true; };
   }, [storyId, chapterNumber, isDemo]);
 
+  // Warn on unload with unsaved changes
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
+
   const activeScene = scenes.find(s => s.id === activeSceneId);
   const activeSceneIndex = scenes.findIndex(s => s.id === activeSceneId);
   const wordCount = getWordCountFromScenes(scenes);
-  const readMins = Math.max(1, Math.round(wordCount / 200));
+  const readMins = wordCount === 0 ? 0 : Math.max(1, Math.round(wordCount / 200));
   const workspaceLayout = layoutForWorkspace(authoringWorkspace);
+  const overLimit = charCount > CHAR_LIMIT;
+  const hasContent = wordCount > 0;
 
   const applyAuthoringWorkspace = useCallback((mode: AuthoringWorkspace) => {
     const layout = layoutForWorkspace(mode);
@@ -276,7 +346,6 @@ export function ChapterEditor() {
       saveEditorPrefs(storyId, chapterNumber, { authoringWorkspace: mode });
     }
   }, [storyId, chapterNumber, isDemo]);
-
 
   const updateSceneTitle = (id: string, newTitle: string) => {
     setScenes(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
@@ -293,18 +362,26 @@ export function ChapterEditor() {
 
   const handleAddScene = () => {
     flushEditor();
-    const newId = `scene-${Date.now()}`;
-    setScenes(prev => [...prev, { id: newId, title: 'New Scene', content: '' }]);
-    setActiveSceneId(newId);
+    const newScene = createBlankScene(scenes.length + 1);
+    setScenes(prev => [...prev, newScene]);
+    setActiveSceneId(newScene.id);
   };
 
-  const handleDeleteScene = (id: string) => {
+  const requestDeleteScene = (id: string) => {
+    if (scenes.length <= 1) return;
+    setDeleteSceneId(id);
+  };
+
+  const confirmDeleteScene = () => {
+    if (!deleteSceneId) return;
     flushEditor();
+    const id = deleteSceneId;
     setScenes(prev => {
       const filtered = prev.filter(s => s.id !== id);
       if (activeSceneId === id && filtered.length > 0) setActiveSceneId(filtered[0].id);
       return filtered.length ? filtered : prev;
     });
+    setDeleteSceneId(null);
   };
 
   const handleDuplicateScene = (id: string) => {
@@ -322,49 +399,101 @@ export function ChapterEditor() {
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, content } : s));
   };
 
+  const navigateScene = useCallback((direction: -1 | 1) => {
+    if (scenes.length < 2) return;
+    const idx = scenes.findIndex(s => s.id === activeSceneId);
+    if (idx < 0) return;
+    const next = scenes[idx + direction];
+    if (next) switchScene(next.id);
+  }, [scenes, activeSceneId, switchScene]);
+
   const needsResubmit = moderationStatus === 'needs_revision' || moderationStatus === 'rejected';
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = useCallback(async () => {
     setSavingDraft(true);
     setPublishError(null);
     setPublishSuccess(null);
     try {
+      flushEditor();
       if (isDemo) {
         persistDraft();
       } else {
         await cloudSaveDraft();
+        persistDraft();
       }
       setLastSaved(new Date());
+      markClean();
       setPublishSuccess('Draft saved');
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSavingDraft(false);
     }
-  };
+  }, [flushEditor, isDemo, persistDraft, cloudSaveDraft, setLastSaved, markClean]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      const meta = e.ctrlKey || e.metaKey;
+      const target = e.target as HTMLElement | null;
+      const inField = target?.closest?.('input, textarea, [contenteditable="true"], .ql-editor');
+
+      if (meta && e.key === 's') {
         e.preventDefault();
         handleSaveDraft();
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (sceneDrawerOpen) {
+          setSceneDrawerOpen(false);
+          return;
+        }
+        if (mobilePreviewOpen) {
+          setMobilePreviewOpen(false);
+          return;
+        }
+        if (focusMode) {
+          e.preventDefault();
+          applyAuthoringWorkspace('writing');
+          return;
+        }
+      }
+
+      if (meta && e.key === '.') {
+        e.preventDefault();
+        applyAuthoringWorkspace(focusMode ? 'writing' : 'focus');
+        return;
+      }
+
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        if (inField && !target?.classList?.contains('ql-editor')) return;
+        e.preventDefault();
+        navigateScene(e.key === 'ArrowUp' ? -1 : 1);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleSaveDraft]);
+  }, [handleSaveDraft, focusMode, applyAuthoringWorkspace, navigateScene, sceneDrawerOpen, mobilePreviewOpen]);
+
+  // Auto-dismiss success toasts
+  useEffect(() => {
+    if (!publishSuccess) return;
+    const t = window.setTimeout(() => setPublishSuccess(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [publishSuccess]);
 
   const executePublish = async () => {
     setPublishing(true);
     setPublishError(null);
     setPublishSuccess(null);
     try {
+      flushEditor();
       const content = aggregateScenesToHtml(scenes);
-      if (!content.trim()) {
+      if (!content.trim() || wordCount === 0) {
         throw new Error('Add some content before publishing');
       }
-      if (content.length > 50000) {
-        throw new Error('Chapter exceeds 50,000 character limit');
+      if (charCount > CHAR_LIMIT) {
+        throw new Error(`Chapter exceeds ${CHAR_LIMIT.toLocaleString()} character limit`);
       }
 
       if (!isDemo) {
@@ -382,9 +511,12 @@ export function ChapterEditor() {
         setPublishSuccess('Demo draft saved locally');
       }
       setLastSaved(new Date());
+      markClean();
       if (activeScene) saveSceneVersion(activeScene.id, activeScene.title, activeScene.content);
+      setPublishConfirmOpen(false);
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : 'Publish failed');
+      setPublishConfirmOpen(false);
     } finally {
       setPublishing(false);
       setPendingPublish(false);
@@ -392,27 +524,34 @@ export function ChapterEditor() {
   };
 
   const handlePublish = async () => {
+    if (!hasContent) {
+      setPublishError('Add some content before publishing');
+      return;
+    }
+    if (overLimit) {
+      setPublishError(`Chapter exceeds ${CHAR_LIMIT.toLocaleString()} character limit`);
+      return;
+    }
     if (!isDemo && !user?.phone_verified) {
       setPendingPublish(true);
       setPhoneVerifyOpen(true);
       return;
     }
-    await executePublish();
+    setPublishConfirmOpen(true);
   };
 
   const handlePhoneVerified = async () => {
     await refreshUser();
     if (pendingPublish) {
-      await executePublish();
+      setPendingPublish(false);
+      setPublishConfirmOpen(true);
     }
   };
 
+  const deleteTarget = deleteSceneId ? scenes.find(s => s.id === deleteSceneId) : null;
+
   if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: 'var(--ink-muted)' }}>Loading chapter…</span>
-      </div>
-    );
+    return <EditorLoadingSkeleton />;
   }
 
   return (
@@ -425,16 +564,20 @@ export function ChapterEditor() {
           phoneticLive={phoneticLive}
           wordCount={wordCount}
           readMins={readMins}
+          charCount={charCount}
+          charLimit={CHAR_LIMIT}
           backTo={`/stories/${storyId}`}
           saving={saving || publishing || savingDraft}
           lastSaved={lastSaved}
+          dirty={dirty}
           fontScale={fontScale}
           onFontScaleChange={handleFontScaleChange}
           onHistory={() => setHistoryOpen(true)}
-          onFocus={() => applyAuthoringWorkspace('focus')}
           onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
           publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
+          publishing={publishing}
+          publishDisabled={!hasContent || overLimit}
           workspace={authoringWorkspace}
           onWorkspaceChange={applyAuthoringWorkspace}
         />
@@ -454,43 +597,53 @@ export function ChapterEditor() {
         />
       )}
 
-      {!focusMode && (moderationStatus || publishSuccess) && (
-        <div className="cms-callout" style={{ margin: 0, borderRadius: 0, borderLeft: 'none', borderBottom: '1px solid var(--border)' }}>
-          {moderationStatus === 'pending_review' && (
-            <p className="cms-callout__body"><strong>Pending review</strong> — your chapter is in the moderation queue.</p>
-          )}
-          {needsResubmit && (
-            <>
-              <p className="cms-callout__body">
-                <strong>Edits requested.</strong> {moderationNotes || 'Review moderator notes, update your chapter, and resubmit.'}
-              </p>
-              <textarea
-                className="cms-input"
-                rows={2}
-                placeholder="Optional note to moderator (what you changed)"
-                value={appealNote}
-                onChange={(e) => setAppealNote(e.target.value)}
-                style={{ width: '100%', marginTop: 8, resize: 'vertical' }}
-              />
-            </>
-          )}
-          {moderationStatus === 'published' && (
-            <p className="cms-callout__body"><strong>Published</strong> — this chapter is live for readers.</p>
-          )}
-          {publishSuccess && <p className="cms-callout__body" style={{ color: 'var(--accent-sage)' }}>{publishSuccess}</p>}
-        </div>
+      {!focusMode && moderationStatus === 'pending_review' && (
+        <EditorStatusStrip
+          tone="info"
+          title="Pending review"
+          message="Your chapter is in the moderation queue."
+        />
       )}
 
-      {publishError && !focusMode && (
-        <div style={{
-          padding: '8px 16px',
-          background: 'var(--paper-warm)',
-          borderBottom: '1px solid var(--border)',
-          color: 'var(--gold-dark)',
-          fontSize: '0.875rem',
-        }}>
-          {publishError}
-        </div>
+      {!focusMode && needsResubmit && (
+        <EditorStatusStrip
+          tone="warning"
+          title="Edits requested"
+          message={moderationNotes || 'Review moderator notes, update your chapter, and resubmit.'}
+        >
+          <textarea
+            className="cms-input katha-editor-status__appeal"
+            rows={2}
+            placeholder="Optional note to moderator (what you changed)"
+            value={appealNote}
+            onChange={(e) => setAppealNote(e.target.value)}
+          />
+        </EditorStatusStrip>
+      )}
+
+      {!focusMode && moderationStatus === 'published' && !publishSuccess && (
+        <EditorStatusStrip
+          tone="success"
+          title="Published"
+          message="This chapter is live for readers."
+        />
+      )}
+
+      {!focusMode && publishSuccess && (
+        <EditorStatusStrip
+          tone="success"
+          message={publishSuccess}
+          onDismiss={() => setPublishSuccess(null)}
+        />
+      )}
+
+      {!focusMode && publishError && (
+        <EditorStatusStrip
+          tone="error"
+          title="Action needed"
+          message={publishError}
+          onDismiss={() => setPublishError(null)}
+        />
       )}
 
       <div
@@ -499,9 +652,10 @@ export function ChapterEditor() {
           workspaceLayout.workspaceClass,
           previewCollapsed && 'katha-proto-workspace--preview-collapsed',
           sceneSidebarCollapsed && 'katha-proto-workspace--sidebar-collapsed',
+          mobilePreviewOpen && 'katha-proto-workspace--mobile-preview-open',
         ].filter(Boolean).join(' ')}
       >
-        {!focusMode && sceneDrawerOpen && (
+        {workspaceLayout.showSceneSidebar && sceneDrawerOpen && (
           <button
             type="button"
             className="katha-proto-scene-drawer-backdrop"
@@ -510,31 +664,36 @@ export function ChapterEditor() {
           />
         )}
 
-        {!focusMode && (
+        {workspaceLayout.showSceneSidebar && (
           <SceneSidebar
             scenes={scenes}
             activeSceneId={activeSceneId}
             onSwitchScene={(id) => { switchScene(id); setSceneDrawerOpen(false); }}
             onAddScene={handleAddScene}
             onReorderScenes={setScenes}
-            onDeleteScene={handleDeleteScene}
+            onDeleteScene={requestDeleteScene}
             onDuplicateScene={handleDuplicateScene}
             collapsed={sceneSidebarCollapsed}
             onToggleCollapse={() => setSceneSidebarCollapsed(!sceneSidebarCollapsed)}
             drawerMode={sceneDrawerOpen}
             onCloseDrawer={() => setSceneDrawerOpen(false)}
             phoneticLive={phoneticLive}
+            storyId={storyId}
+            chapterNum={chapterNumber}
+            sceneSearchInputMode={prefs.sceneSearchInputMode}
           />
         )}
 
         <EditorWorkspace
           activeScene={activeScene}
           activeSceneIndex={activeSceneIndex}
+          sceneCount={scenes.length}
           chapterNum={chapterNumber}
           chapterTitle={chapterTitle}
-          onChapterTitleChange={setChapterTitle}
           updateSceneTitle={updateSceneTitle}
           updateSceneContent={updateSceneContent}
+          onPrevScene={() => navigateScene(-1)}
+          onNextScene={() => navigateScene(1)}
           containerRef={editorContainerRef}
           scrollRef={editorScrollRef}
           flushRef={editorFlushRef}
@@ -542,8 +701,8 @@ export function ChapterEditor() {
           onTogglePhonetic={() => setPhoneticLive(p => !p)}
           editorComfortStyle={editorComfortStyle}
           focusMode={focusMode}
-          onExitFocus={() => applyAuthoringWorkspace('writing')}
           canvasMaxWidth={canvasMaxWidth}
+          toolbarMinimal={workspaceLayout.toolbarMinimal}
         />
 
         {!focusMode && !previewCollapsed && (
@@ -557,11 +716,17 @@ export function ChapterEditor() {
             onDeviceChange={d => { setPreviewDevice(d); saveEditorPrefs(storyId, chapterNumber, { previewDevice: d }); }}
             scrollRef={previewScrollRef}
             editorScrollRef={editorScrollRef}
-            syncScroll={prefs.syncScroll}
+            syncScroll={workspaceLayout.syncScroll || prefs.syncScroll}
             totalWords={wordCount}
             previewComfortStyle={editorComfortStyle}
             onCollapse={() => setPreviewCollapsed(true)}
+            mobileOpen={mobilePreviewOpen}
+            onCloseMobile={() => setMobilePreviewOpen(false)}
           />
+        )}
+
+        {!focusMode && workspaceLayout.showAiNotes && (
+          <AiNotesPanel storyId={storyId} chapterNum={chapterNumber} />
         )}
       </div>
 
@@ -578,22 +743,45 @@ export function ChapterEditor() {
       )}
 
       {!focusMode && (
-        <button
-          type="button"
-          className="katha-proto-scene-drawer-toggle"
-          onClick={() => setSceneDrawerOpen(true)}
-          title="Scenes"
-          aria-label="Open scenes"
-        >
-          <List size={18} />
-        </button>
+        <>
+          {workspaceLayout.showSceneSidebar && (
+            <button
+              type="button"
+              className="katha-proto-scene-drawer-toggle"
+              onClick={() => { setSceneDrawerOpen(true); setMobilePreviewOpen(false); }}
+              title="Scenes"
+              aria-label="Open scenes"
+            >
+              <List size={18} />
+            </button>
+          )}
+          <button
+            type="button"
+            className="katha-proto-preview-drawer-toggle"
+            onClick={() => {
+              setMobilePreviewOpen(true);
+              setPreviewCollapsed(false);
+              setSceneDrawerOpen(false);
+            }}
+            title="Reader preview"
+            aria-label="Open reader preview"
+          >
+            <PanelRightOpen size={18} />
+          </button>
+        </>
       )}
 
       {focusMode && (
         <div className="katha-proto-focus-controls">
           <EditorComfortControls fontScale={fontScale} onFontScaleChange={handleFontScaleChange} compact />
-          <button type="button" className="katha-proto-focus-controls__exit" onClick={() => applyAuthoringWorkspace('writing')}>
-            <X size={16} /> Exit
+          <SaveChip saving={saving || savingDraft} lastSaved={lastSaved} dirty={dirty} />
+          <button
+            type="button"
+            className="katha-proto-focus-controls__exit"
+            onClick={() => applyAuthoringWorkspace('writing')}
+            title="Exit focus (Esc)"
+          >
+            <X size={16} /> Exit focus
           </button>
         </div>
       )}
@@ -606,6 +794,25 @@ export function ChapterEditor() {
         description="Before your chapter goes live, verify your WhatsApp number for payouts and KYC. We send a 6-digit code on WhatsApp."
       />
 
+      <PublishConfirmModal
+        open={publishConfirmOpen}
+        onClose={() => setPublishConfirmOpen(false)}
+        onConfirm={executePublish}
+        chapterTitle={chapterTitle}
+        chapterNum={chapterNumber}
+        wordCount={wordCount}
+        sceneCount={scenes.length}
+        isResubmit={needsResubmit}
+        publishing={publishing}
+      />
+
+      <DeleteSceneModal
+        open={Boolean(deleteSceneId)}
+        sceneTitle={deleteTarget?.title || 'Untitled scene'}
+        onClose={() => setDeleteSceneId(null)}
+        onConfirm={confirmDeleteScene}
+      />
+
       <VersionHistoryModal
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
@@ -616,4 +823,25 @@ export function ChapterEditor() {
       />
     </div>
   );
+}
+
+function SaveChip({
+  saving,
+  lastSaved,
+  dirty,
+}: {
+  saving: boolean;
+  lastSaved: Date | null;
+  dirty: boolean;
+}) {
+  if (saving) {
+    return <span className="katha-proto-focus-save">Saving…</span>;
+  }
+  if (dirty) {
+    return <span className="katha-proto-focus-save katha-proto-focus-save--dirty">Unsaved</span>;
+  }
+  if (lastSaved) {
+    return <span className="katha-proto-focus-save">Saved</span>;
+  }
+  return null;
 }

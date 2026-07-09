@@ -10,6 +10,20 @@ describe('authoringWorkspace', () => {
   it('always returns a layout object', () => {
     const layout = layoutForWorkspace(undefined);
     expect(layout.sceneSidebarCollapsed).toBe(false);
-    expect(layout.canvasMaxWidth).toBe(920);
+    expect(layout.canvasMaxWidth).toBe(960);
+  });
+
+  it('enables sync scroll in review mode', () => {
+    expect(layoutForWorkspace('review').syncScroll).toBe(true);
+  });
+
+  it('hides scene sidebar in review mode', () => {
+    expect(layoutForWorkspace('review').showSceneSidebar).toBe(false);
+    expect(layoutForWorkspace('writing').showSceneSidebar).toBe(true);
+  });
+
+  it('shows AI notes in planning mode', () => {
+    expect(layoutForWorkspace('planning').showAiNotes).toBe(true);
+    expect(layoutForWorkspace('planning').previewCollapsed).toBe(false);
   });
 });

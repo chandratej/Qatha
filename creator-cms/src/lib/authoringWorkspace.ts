@@ -4,19 +4,25 @@ export interface AuthoringWorkspaceLayout {
   sceneSidebarCollapsed: boolean;
   previewCollapsed: boolean;
   focusMode: boolean;
+  showSceneSidebar: boolean;
   workspaceClass: string;
   canvasMaxWidth: number;
+  syncScroll: boolean;
+  showAiNotes: boolean;
+  toolbarMinimal: boolean;
 }
+
+export type WorkspaceIconId = 'notebook' | 'pen' | 'focus' | 'book-open';
 
 export const AUTHORING_WORKSPACES: {
   id: AuthoringWorkspace;
   label: string;
-  icon: string;
+  icon: WorkspaceIconId;
 }[] = [
-  { id: 'planning', label: 'Planning', icon: '📋' },
-  { id: 'writing', label: 'Writing', icon: '✍' },
-  { id: 'focus', label: 'Focus', icon: '🎯' },
-  { id: 'review', label: 'Review', icon: '📖' },
+  { id: 'planning', label: 'Planning', icon: 'notebook' },
+  { id: 'writing', label: 'Writing', icon: 'pen' },
+  { id: 'focus', label: 'Focus', icon: 'focus' },
+  { id: 'review', label: 'Review', icon: 'book-open' },
 ];
 
 const VALID_WORKSPACES = new Set<AuthoringWorkspace>(['planning', 'writing', 'focus', 'review']);
@@ -34,42 +40,62 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
     case 'planning':
       return {
         sceneSidebarCollapsed: false,
-        previewCollapsed: true,
+        previewCollapsed: false,
         focusMode: false,
+        showSceneSidebar: true,
+        syncScroll: false,
+        showAiNotes: true,
+        toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-planning',
-        canvasMaxWidth: 880,
+        canvasMaxWidth: 840,
       };
     case 'writing':
       return {
         sceneSidebarCollapsed: false,
         previewCollapsed: false,
         focusMode: false,
+        showSceneSidebar: true,
+        syncScroll: false,
+        showAiNotes: false,
+        toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-writing',
-        canvasMaxWidth: 920,
+        canvasMaxWidth: 960,
       };
     case 'focus':
       return {
         sceneSidebarCollapsed: true,
         previewCollapsed: true,
         focusMode: true,
+        showSceneSidebar: false,
+        syncScroll: false,
+        showAiNotes: false,
+        toolbarMinimal: true,
         workspaceClass: 'katha-proto-workspace--mode-focus',
-        canvasMaxWidth: 900,
+        canvasMaxWidth: 940,
       };
     case 'review':
       return {
         sceneSidebarCollapsed: true,
         previewCollapsed: false,
         focusMode: false,
+        showSceneSidebar: false,
+        syncScroll: true,
+        showAiNotes: false,
+        toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-review',
-        canvasMaxWidth: 760,
+        canvasMaxWidth: 720,
       };
     default:
       return {
         sceneSidebarCollapsed: false,
         previewCollapsed: false,
         focusMode: false,
+        showSceneSidebar: true,
+        syncScroll: false,
+        showAiNotes: false,
+        toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-writing',
-        canvasMaxWidth: 920,
+        canvasMaxWidth: 960,
       };
   }
 }

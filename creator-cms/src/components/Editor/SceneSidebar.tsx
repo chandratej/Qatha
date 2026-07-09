@@ -2,12 +2,22 @@ import { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Trash2, PanelLeftClose, PanelLeftOpen, MoreVertical } from 'lucide-react';
 import { Reorder, useDragControls } from 'framer-motion';
 import { applyPhoneticToTrailingWord } from '../../business/phoneticText';
-import { sceneTitleMatchesQuery } from '../../lib/sceneSearch';
+import {
+  detectSceneSearchInputMode,
+  dismissSceneSearchHelper,
+  sceneMatchesQuery,
+  sceneSearchSuggestions,
+  shouldShowSceneSearchHelper,
+} from '../../lib/sceneSearch';
+import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
+import { saveEditorPrefs, type SceneSearchInputMode } from '../../lib/editorPrefs';
 
 export interface SceneBlock {
   id: string;
   title: string;
   content: string;
+  keywords?: string[];
+  aliases?: string[];
 }
 
 interface SceneSidebarProps {
@@ -23,6 +33,9 @@ interface SceneSidebarProps {
   drawerMode?: boolean;
   onCloseDrawer?: () => void;
   phoneticLive?: boolean;
+  storyId?: string;
+  chapterNum?: number;
+  sceneSearchInputMode?: SceneSearchInputMode;
 }
 
 function getWordCount(html: string) {
@@ -46,12 +59,32 @@ export function SceneSidebar({
   drawerMode = false,
   onCloseDrawer,
   phoneticLive = true,
+  storyId,
+  chapterNum,
+  sceneSearchInputMode,
 }: SceneSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const filtered = scenes.filter((s) => sceneTitleMatchesQuery(s.title, searchTerm));
+  const [showHelper, setShowHelper] = useState(shouldShowSceneSearchHelper);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const filtered = scenes.filter((s) => sceneMatchesQuery(s, searchTerm));
+  const suggestions = sceneSearchSuggestions(scenes, searchTerm);
 
   const handleSearchChange = (raw: string) => {
-    setSearchTerm(phoneticLive ? applyPhoneticToTrailingWord(raw) : raw);
+    const next = phoneticLive ? applyPhoneticToTrailingWord(raw) : raw;
+    setSearchTerm(next);
+    setSuggestionsOpen(next.trim().length > 0);
+    if (storyId && chapterNum !== undefined && next.trim()) {
+      const mode = detectSceneSearchInputMode(next);
+      if (mode !== sceneSearchInputMode) {
+        saveEditorPrefs(storyId, chapterNum, { sceneSearchInputMode: mode });
+      }
+    }
+  };
+
+  const dismissHelper = () => {
+    dismissSceneSearchHelper();
+    setShowHelper(false);
   };
 
   if (collapsed && !drawerMode) {
@@ -64,7 +97,7 @@ export function SceneSidebar({
           title="Expand scenes"
           aria-label="Expand scenes panel"
         >
-          <PanelLeftOpen size={18} />
+          <PanelLeftOpen size={18} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
         <span className="katha-proto-sidebar-rail-label" aria-hidden>Scenes</span>
       </aside>
@@ -82,7 +115,12 @@ export function SceneSidebar({
       )}
       <div className="katha-proto-sidebar-header">
         <div className="katha-proto-sidebar-title-row">
-          <div className="katha-proto-sidebar-title">Scenes</div>
+          <div className="katha-proto-sidebar-title">
+            Scenes
+            <span className="katha-proto-sidebar-count" aria-label={`${scenes.length} scenes`}>
+              {scenes.length}
+            </span>
+          </div>
           {!drawerMode && (
             <button
               type="button"
@@ -91,32 +129,71 @@ export function SceneSidebar({
               title="Collapse scenes"
               aria-label="Collapse scenes panel"
             >
-              <PanelLeftClose size={16} />
+              <PanelLeftClose size={16} strokeWidth={EDITOR_ICON_STROKE} />
             </button>
           )}
         </div>
-        <div className="katha-proto-search">
-          <Search size={14} color="var(--ink-muted)" aria-hidden />
-          <input
-            type="search"
-            placeholder="Search scenes…"
-            value={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            onBlur={() => {
-              if (phoneticLive && searchTerm) {
-                handleSearchChange(`${searchTerm} `);
-              }
-            }}
-            aria-label="Search scenes by title"
-            lang="te"
-          />
+        <div className="katha-proto-search-wrap">
+          <div className="katha-proto-search">
+            <Search size={14} color="var(--ink-muted)" strokeWidth={EDITOR_ICON_STROKE} aria-hidden />
+            <input
+              ref={searchRef}
+              type="search"
+              placeholder="Search scenes (Telugu / English phonetic)..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              onFocus={() => searchTerm.trim() && setSuggestionsOpen(true)}
+              onBlur={() => {
+                window.setTimeout(() => setSuggestionsOpen(false), 120);
+                if (phoneticLive && searchTerm) {
+                  handleSearchChange(`${searchTerm} `);
+                }
+              }}
+              aria-label="Search scenes by title or content"
+              aria-autocomplete="list"
+              aria-controls={suggestionsOpen ? 'katha-scene-search-suggestions' : undefined}
+              lang="te"
+            />
+          </div>
+          {showHelper && (
+            <p className="katha-proto-search-helper">
+              You can type Telugu using English letters.
+              <button type="button" className="katha-proto-search-helper__dismiss" onClick={dismissHelper}>
+                Got it
+              </button>
+            </p>
+          )}
+          {suggestionsOpen && suggestions.length > 0 && (
+            <ul id="katha-scene-search-suggestions" className="katha-proto-search-suggestions" role="listbox">
+              {suggestions.map((s) => (
+                <li key={s.sceneId} role="option">
+                  <button
+                    type="button"
+                    className="katha-proto-search-suggestion"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      onSwitchScene(s.sceneId);
+                      setSearchTerm('');
+                      setSuggestionsOpen(false);
+                      searchRef.current?.blur();
+                    }}
+                  >
+                    <span className="katha-proto-search-suggestion__title">{s.label}</span>
+                    <span className="katha-proto-search-suggestion__meta">
+                      {s.matchField === 'content' ? 'in content' : 'title'}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <button type="button" className="katha-proto-new-scene-btn" onClick={onAddScene}>
-          <Plus size={16} /> New Scene
+          <Plus size={16} strokeWidth={EDITOR_ICON_STROKE} /> New scene
         </button>
       </div>
 
-      <div className="katha-proto-scene-list">
+      <div className="katha-proto-scene-list" role="listbox" aria-label="Chapter scenes">
         {searchTerm.trim() ? (
           list.length > 0 ? (
             list.map((scene) => {
@@ -135,8 +212,17 @@ export function SceneSidebar({
               );
             })
           ) : (
-            <p className="katha-proto-scene-search-empty">No scenes match your search.</p>
+            <div className="katha-proto-scene-search-empty">
+              <p>No scenes match “{searchTerm.trim()}”.</p>
+              <button type="button" className="katha-proto-scene-search-empty__clear" onClick={() => setSearchTerm('')}>
+                Clear search
+              </button>
+            </div>
           )
+        ) : scenes.length === 0 ? (
+          <div className="katha-proto-scene-search-empty">
+            <p>No scenes yet. Create your first beat.</p>
+          </div>
         ) : (
           <Reorder.Group axis="y" values={scenes} onReorder={onReorderScenes} className="sc-u-list-reset">
             {scenes.map((scene, idx) => (
@@ -161,8 +247,9 @@ export function SceneSidebar({
           className="katha-proto-trash-btn"
           onClick={() => onDeleteScene?.(activeSceneId)}
           disabled={scenes.length <= 1}
+          title={scenes.length <= 1 ? 'Keep at least one scene' : 'Delete active scene'}
         >
-          <Trash2 size={14} /> Trash
+          <Trash2 size={14} strokeWidth={EDITOR_ICON_STROKE} /> Delete
         </button>
         {!drawerMode && (
           <button
@@ -249,7 +336,7 @@ function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggabl
           aria-expanded={menuOpen}
           onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
         >
-          <MoreVertical size={16} strokeWidth={2} />
+          <MoreVertical size={16} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
         {menuOpen && (onDuplicate || onDelete) && (
           <div className="sc-u-menu-dropdown" role="menu">

@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { applyPhoneticToTrailingWord } from '../../business/phoneticText';
 
 interface PhoneticTextInputProps {
@@ -9,6 +9,9 @@ interface PhoneticTextInputProps {
   placeholder?: string;
   maxLength?: number;
   style?: CSSProperties;
+  'aria-label'?: string;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
+  onBlurExtra?: () => void;
 }
 
 export function PhoneticTextInput({
@@ -19,6 +22,9 @@ export function PhoneticTextInput({
   placeholder,
   maxLength,
   style,
+  'aria-label': ariaLabel,
+  onKeyDown,
+  onBlurExtra,
 }: PhoneticTextInputProps) {
   const handleChange = (raw: string) => {
     onChange(phoneticLive ? applyPhoneticToTrailingWord(raw) : raw);
@@ -32,9 +38,12 @@ export function PhoneticTextInput({
       value={value}
       placeholder={placeholder}
       maxLength={maxLength}
+      aria-label={ariaLabel || placeholder}
       onChange={(e) => handleChange(e.target.value)}
+      onKeyDown={onKeyDown}
       onBlur={() => {
         if (phoneticLive && value) handleChange(applyPhoneticToTrailingWord(`${value} `).trimEnd());
+        onBlurExtra?.();
       }}
     />
   );

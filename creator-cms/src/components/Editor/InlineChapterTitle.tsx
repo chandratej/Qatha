@@ -49,6 +49,13 @@ export function InlineChapterTitle({
           phoneticLive={phoneticLive}
           placeholder={placeholder}
           maxLength={maxLength}
+          aria-label="Chapter title"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === 'Escape') {
+              e.preventDefault();
+              setEditing(false);
+            }
+          }}
         />
       </div>
     );

@@ -1,9 +1,11 @@
 import { normalizeAuthoringWorkspace, type AuthoringWorkspace } from './authoringWorkspace';
+import type { SceneSearchInputMode } from './sceneSearch';
 
 export type WorkspaceMode = 'editor' | 'split' | 'desktop' | 'mobile';
 export type PreviewDevice = 'desktop' | 'tablet' | 'mobile';
 export type PreviewTheme = 'light' | 'dark' | 'sepia' | 'high-contrast';
 export type EditorTheme = 'light' | 'dark' | 'sepia';
+export type { SceneSearchInputMode };
 
 const PREFIX = 'katha-editor-prefs-';
 
@@ -16,6 +18,7 @@ export interface EditorPrefs {
   syncScroll: boolean;
   showWordGoal: boolean;
   sidebarWidth: number;
+  sceneSearchInputMode: SceneSearchInputMode;
 }
 
 const DEFAULTS: EditorPrefs = {
@@ -27,6 +30,7 @@ const DEFAULTS: EditorPrefs = {
   syncScroll: false,
   showWordGoal: true,
   sidebarWidth: 280,
+  sceneSearchInputMode: 'phonetic',
 };
 
 function key(storyId: string, chapterNum: number) {

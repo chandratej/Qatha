@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { AiAssistantDock } from './AiAssistantDock';
-import { InlineChapterTitle } from './InlineChapterTitle';
 import {
   getPhoneticSuggestions,
   getSemanticAlternatives,
@@ -13,6 +13,7 @@ import {
 import type { SceneBlock } from './SceneSidebar';
 import { FormatToolbar } from './FormatToolbar';
 import { PhoneticTextInput } from './PhoneticTextInput';
+import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 
 
 function applyLivePhoneticToHtml(html: string): { html: string; trailingWord: string } {
@@ -83,12 +84,6 @@ function replaceTrailingRomanInHtml(html: string, teluguWord: string): string {
   return div.innerHTML;
 }
 
-function getCharCount(html: string) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return (div.textContent || '').length;
-}
-
 function isEmptyEditorHtml(html: string) {
   if (!html) return true;
   const div = document.createElement('div');
@@ -99,11 +94,13 @@ function isEmptyEditorHtml(html: string) {
 interface EditorWorkspaceProps {
   activeScene: SceneBlock | undefined;
   activeSceneIndex: number;
+  sceneCount?: number;
   chapterNum: number;
   chapterTitle: string;
-  onChapterTitleChange: (title: string) => void;
   updateSceneTitle: (id: string, title: string) => void;
   updateSceneContent: (id: string, content: string) => void;
+  onPrevScene?: () => void;
+  onNextScene?: () => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
   flushRef?: React.MutableRefObject<(() => void) | null>;
@@ -111,18 +108,20 @@ interface EditorWorkspaceProps {
   onTogglePhonetic: () => void;
   editorComfortStyle?: React.CSSProperties;
   focusMode?: boolean;
-  onExitFocus?: () => void;
   canvasMaxWidth?: number;
+  toolbarMinimal?: boolean;
 }
 
 export function EditorWorkspace({
   activeScene,
   activeSceneIndex,
+  sceneCount = 0,
   chapterNum,
   chapterTitle,
-  onChapterTitleChange,
   updateSceneTitle,
   updateSceneContent,
+  onPrevScene,
+  onNextScene,
   containerRef,
   scrollRef: externalScrollRef,
   flushRef,
@@ -130,9 +129,10 @@ export function EditorWorkspace({
   onTogglePhonetic,
   editorComfortStyle,
   focusMode = false,
-  onExitFocus,
   canvasMaxWidth = 920,
+  toolbarMinimal = false,
 }: EditorWorkspaceProps) {
+  const [aiCompanionOpen, setAiCompanionOpen] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
   const internalScrollRef = useRef<HTMLDivElement>(null);
   const scrollRef = externalScrollRef || internalScrollRef;
@@ -296,28 +296,34 @@ export function EditorWorkspace({
 
   if (!activeScene) {
     return (
-      <main className="katha-proto-editor" style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--ink-muted)' }}>Select a scene to start editing</p>
+      <main className="katha-proto-editor katha-proto-editor--empty">
+        <div className="katha-proto-editor-empty">
+          <div className="katha-proto-editor-empty__glyph" aria-hidden>
+            ✦
+          </div>
+          <h2>No scene selected</h2>
+          <p>Choose a scene from the sidebar, or create one to begin writing.</p>
+        </div>
       </main>
     );
   }
+
+  const canPrev = activeSceneIndex > 0;
+  const canNext = sceneCount > 0 && activeSceneIndex < sceneCount - 1;
+  const isBlank = isEmptyEditorHtml(activeScene.content);
 
   return (
     <main ref={containerRef} className={`katha-proto-editor${focusMode ? ' katha-proto-editor--focus' : ''}`}>
       {focusMode && (
         <div className="katha-proto-focus-bar">
           <span className="katha-proto-chapter-num">Ch {chapterNum}</span>
-          <InlineChapterTitle
-            value={chapterTitle}
-            onChange={onChapterTitleChange}
-            phoneticLive={phoneticLive}
-            className="katha-proto-focus-bar__title"
-          />
-          {onExitFocus && (
-            <button type="button" className="katha-proto-focus-bar__exit" onClick={onExitFocus}>
-              Exit focus
-            </button>
-          )}
+          <span className="katha-proto-focus-bar__title" title={chapterTitle}>
+            {chapterTitle || 'Untitled Chapter'}
+          </span>
+          <span className="katha-proto-focus-bar__scene">
+            Scene {activeSceneIndex + 1}
+            {sceneCount > 0 ? ` of ${sceneCount}` : ''}
+          </span>
         </div>
       )}
 
@@ -333,8 +339,37 @@ export function EditorWorkspace({
         onRedo={() => getEditor()?.history.redo()}
         onSceneBreak={insertSceneBreak}
         onLink={insertLink}
-        hideHistory={focusMode}
+        minimal={toolbarMinimal}
+        onOpenAi={() => setAiCompanionOpen(true)}
       />
+
+      {!focusMode && sceneCount > 1 && (
+        <div className="katha-proto-scene-nav" role="navigation" aria-label="Scene navigation">
+          <button
+            type="button"
+            className="katha-proto-scene-nav__btn"
+            onClick={onPrevScene}
+            disabled={!canPrev}
+            title="Previous scene (Alt+↑)"
+            aria-label="Previous scene"
+          >
+            <ChevronUp size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+          <span className="katha-proto-scene-nav__label">
+            Scene {activeSceneIndex + 1} of {sceneCount}
+          </span>
+          <button
+            type="button"
+            className="katha-proto-scene-nav__btn"
+            onClick={onNextScene}
+            disabled={!canNext}
+            title="Next scene (Alt+↓)"
+            aria-label="Next scene"
+          >
+            <ChevronDown size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </div>
+      )}
 
       <div ref={scrollRef} className="katha-proto-editor-body">
         <div
@@ -347,6 +382,7 @@ export function EditorWorkspace({
             onChange={(v) => updateSceneTitle(activeScene.id, v)}
             phoneticLive={phoneticLive}
             placeholder="Scene title"
+            aria-label="Scene title"
           />
           <ReactQuill
             key={activeScene.id}
@@ -355,25 +391,45 @@ export function EditorWorkspace({
             value={activeScene.content || ''}
             onChange={handleChange}
             onBlur={flushActiveScene}
-            modules={{ toolbar: false }}
-            placeholder="Start writing your scene…"
+            modules={{ toolbar: false, history: { delay: 1000, maxStack: 200, userOnly: true } }}
+            placeholder="Begin this scene… Write as your readers will experience it."
           />
+          {isBlank && (
+            <div className="katha-proto-editor-nudge" aria-hidden>
+              <p>Tip: Type English phonetics for Telugu — they convert as you write.</p>
+            </div>
+          )}
         </div>
       </div>
 
-      <AiAssistantDock />
+      <AiAssistantDock
+        open={aiCompanionOpen}
+        onOpenChange={setAiCompanionOpen}
+        integrated={false}
+      />
 
       {showSuggestions && suggestions.length > 0 && (
-        <div className="katha-proto-phonetic-menu" style={{ top: suggestionsPos.top, left: suggestionsPos.left }}>
+        <div
+          className="katha-proto-phonetic-menu"
+          style={{ top: suggestionsPos.top, left: suggestionsPos.left }}
+          role="listbox"
+          aria-label="Phonetic suggestions"
+        >
           {suggestions.map((sug, idx) => (
             <div
-              key={idx}
+              key={`${sug.value}-${idx}`}
+              role="option"
+              aria-selected={idx === selectedIndex}
               className={`katha-proto-phonetic-item${idx === selectedIndex ? ' katha-proto-phonetic-item--active' : ''}`}
             >
-              <div onClick={() => insertSuggestion(sug)} className="katha-proto-phonetic-item__main">
+              <button
+                type="button"
+                onClick={() => insertSuggestion(sug)}
+                className="katha-proto-phonetic-item__main"
+              >
                 <span className="katha-proto-phonetic-item__word">{sug.value}</span>
                 <span className="katha-proto-phonetic-item__hint">{sug.display.split(' → ')[0]}</span>
-              </div>
+              </button>
               <button
                 type="button"
                 title="Teach this correction"
