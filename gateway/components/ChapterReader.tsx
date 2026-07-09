@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createBrowserSupabase } from '@/lib/auth';
-import type { ChapterTeaserPayload } from '@/lib/chapter';
+import { normalizeChapterHtml, type ChapterTeaserPayload } from '@/lib/chapter';
 import { buildReaderAppChapterUrl } from '@/lib/constants';
 import { Paywall } from './Paywall';
 
@@ -70,12 +70,14 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
 
   const priceInr = (payload.chapter.unlock_price_paise / 100).toFixed(0);
   const readerAppUrl = buildReaderAppChapterUrl(payload.story.id, chapterNumber);
+  const teaserHtml = normalizeChapterHtml(payload.chapter.teaser_text);
+  const fullHtml = fullContent ? normalizeChapterHtml(fullContent) : null;
 
   if (mode === 'loading') {
     return <p className="chapter-loading">Loading chapter…</p>;
   }
 
-  if (mode === 'author' && fullContent) {
+  if (mode === 'author' && fullHtml) {
     return (
       <>
         <div className="author-bar" role="status">
@@ -84,7 +86,7 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
         </div>
         <div
           className="chapter-body"
-          dangerouslySetInnerHTML={{ __html: fullContent }}
+          dangerouslySetInnerHTML={{ __html: fullHtml }}
         />
       </>
     );
@@ -94,7 +96,7 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
     <>
       <div
         className="chapter-body chapter-body--teaser"
-        dangerouslySetInnerHTML={{ __html: payload.chapter.teaser_text }}
+        dangerouslySetInnerHTML={{ __html: teaserHtml }}
       />
 
       <Paywall

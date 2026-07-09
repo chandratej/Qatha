@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { normalizeChapterHtml } from '@/lib/chapter';
 
 interface PaywallProps {
   storySlug: string;
@@ -117,7 +118,7 @@ export function Paywall({
     return (
       <div
         className="chapter-body"
-        dangerouslySetInnerHTML={{ __html: lockedContent }}
+        dangerouslySetInnerHTML={{ __html: normalizeChapterHtml(lockedContent) }}
       />
     );
   }

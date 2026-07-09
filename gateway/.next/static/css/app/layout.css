@@ -99,9 +99,16 @@ body {
 }
 
 .chapter-page {
+  width: 100%;
   max-width: var(--read-max-width);
   margin: 0 auto;
   padding: 24px clamp(16px, 4vw, 24px) 96px;
+  overflow-x: hidden;
+}
+
+.chapter-page article {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .chapter-header {
@@ -140,21 +147,63 @@ body {
   line-height: var(--read-line-height);
   color: var(--katha-ink);
   letter-spacing: 0.01em;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-hyphens: auto;
+          hyphens: auto;
 }
 
-.chapter-body p {
-  margin: 0 0 1.25rem;
+.chapter-body p,
+.chapter-body li,
+.chapter-body blockquote {
+  margin: 0 0 1rem;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Quill/editor artifacts — collapse empty lines before scene breaks */
+.chapter-body p:empty,
+.chapter-body p:has(> br:only-child) {
+  display: none;
+  margin: 0;
 }
 
 .chapter-body hr.scene-break {
   border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--katha-border), transparent);
-  margin: 2rem 0;
+  height: 0;
+  margin: 1.125rem 0;
+  background: none;
+  overflow: visible;
+}
+
+.chapter-body hr.scene-break::before {
+  content: '· · ·';
+  display: block;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  letter-spacing: 0.4em;
+  color: var(--katha-ink-muted);
+  opacity: 0.5;
+  line-height: 1;
+}
+
+/* Tighten gap when scene break follows a paragraph */
+.chapter-body p + hr.scene-break {
+  margin-top: 0.75rem;
+}
+
+.chapter-body hr.scene-break + p {
+  margin-top: 0.75rem;
 }
 
 .chapter-body--teaser {
   position: relative;
+  max-height: min(52vh, 28rem);
+  overflow: hidden;
 }
 
 .chapter-body--teaser::after {
@@ -170,10 +219,12 @@ body {
 
 .author-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
   margin-bottom: 20px;
+  max-width: 100%;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(196, 160, 82, 0.14), rgba(232, 213, 163, 0.2));
   border: 1px solid rgba(196, 160, 82, 0.25);

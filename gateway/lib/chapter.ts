@@ -53,6 +53,16 @@ export async function getChapterReadContext(
   return { ...payload, authorId: story.author_id };
 }
 
+/** Normalize Quill/editor HTML for reader preview — fixes overflow and scene spacing. */
+export function normalizeChapterHtml(html: string): string {
+  return html
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\u00a0/g, ' ')
+    .replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
+    .replace(/(<hr[^>]*scene-break[^>]*\/?>)\s*/gi, '$1')
+    .trim();
+}
+
 export function splitParagraphs(content: string): string[] {
   return content
     .split(/\n\n+/)
