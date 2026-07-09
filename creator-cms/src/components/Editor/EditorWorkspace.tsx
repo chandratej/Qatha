@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { AiAssistantDock } from './AiAssistantDock';
 import {
   getPhoneticSuggestions,
@@ -299,7 +299,7 @@ export function EditorWorkspace({
       <main className="katha-proto-editor katha-proto-editor--empty">
         <div className="katha-proto-editor-empty">
           <div className="katha-proto-editor-empty__glyph" aria-hidden>
-            ✦
+            <Sparkles size={28} strokeWidth={EDITOR_ICON_STROKE} />
           </div>
           <h2>No scene selected</h2>
           <p>Choose a scene from the sidebar, or create one to begin writing.</p>

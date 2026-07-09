@@ -1029,6 +1029,10 @@ html.deep-work .glass-toolbar:hover {
   animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.cms-modal--wide {
+  max-width: 720px;
+}
+
 .cms-modal__head {
   display: flex;
   align-items: center;

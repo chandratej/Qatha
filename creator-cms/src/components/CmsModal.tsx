@@ -6,9 +6,10 @@ interface CmsModalProps {
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  className?: string;
 }
 
-export function CmsModal({ title, onClose, children, footer }: CmsModalProps) {
+export function CmsModal({ title, onClose, children, footer, className }: CmsModalProps) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -25,7 +26,7 @@ export function CmsModal({ title, onClose, children, footer }: CmsModalProps) {
   return (
     <div className="cms-modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="cms-modal"
+        className={['cms-modal', className].filter(Boolean).join(' ')}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cms-modal-title"

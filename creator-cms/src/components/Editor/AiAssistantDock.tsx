@@ -4,13 +4,11 @@ import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 
 const COMPANION_ACTIONS = [
   'Continue Writing',
-  'Rewrite',
-  'Improve Style',
-  'Expand Scene',
-  'Character Development',
-  'Timeline',
-  'Translate',
-  'Summarize',
+  'Improve Telugu',
+  'Rewrite Paragraph',
+  'Expand Dialogue',
+  'Check Consistency',
+  'Generate Scene Ideas',
 ] as const;
 
 interface AiAssistantDockProps {

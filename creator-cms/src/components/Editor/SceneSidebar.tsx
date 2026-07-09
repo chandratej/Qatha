@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search, Trash2, PanelLeftClose, PanelLeftOpen, MoreVertical } from 'lucide-react';
+import { Plus, Search, Trash2, PanelLeftClose, PanelLeftOpen, MoreVertical, X } from 'lucide-react';
 import { Reorder, useDragControls } from 'framer-motion';
 import { PhoneticTextInput } from './PhoneticTextInput';
 import {
@@ -109,7 +109,7 @@ export function SceneSidebar({
     <aside className={`katha-proto-sidebar${drawerMode ? ' katha-proto-sidebar--drawer' : ''}`}>
       {drawerMode && onCloseDrawer && (
         <button type="button" className="katha-proto-sidebar-drawer-close" onClick={onCloseDrawer} aria-label="Close scenes">
-          ×
+          <X size={18} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
       )}
       <div className="katha-proto-sidebar-header">
@@ -151,7 +151,10 @@ export function SceneSidebar({
           </div>
           {showHelper && (
             <p className="katha-proto-search-helper">
-              You can type Telugu using English letters.
+              Search in Telugu or English phonetics.
+              <span className="katha-proto-search-helper__examples">
+                e.g. rama → రామ · gudem → గూడెం
+              </span>
               <button type="button" className="katha-proto-search-helper__dismiss" onClick={dismissHelper}>
                 Got it
               </button>

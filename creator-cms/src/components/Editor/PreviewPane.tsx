@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { BookOpen, Leaf, Moon, PanelRightClose, Smartphone, Sun, Tablet } from 'lucide-react';
+import { BookOpen, Ellipsis, Leaf, Moon, PanelRightClose, Smartphone, Sun, Tablet } from 'lucide-react';
 import type { SceneBlock } from './SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
 import { sceneHasContent } from '../../lib/sceneContent';
@@ -17,6 +17,7 @@ interface PreviewPaneProps {
   editorScrollRef?: React.RefObject<HTMLDivElement | null>;
   syncScroll: boolean;
   totalWords: number;
+  activeSceneId?: string;
   previewComfortStyle?: React.CSSProperties;
   onCollapse?: () => void;
   mobileOpen?: boolean;
@@ -55,6 +56,7 @@ export function PreviewPane({
   editorScrollRef,
   syncScroll,
   totalWords,
+  activeSceneId,
   previewComfortStyle,
   onCollapse,
   mobileOpen = false,
@@ -62,6 +64,14 @@ export function PreviewPane({
 }: PreviewPaneProps) {
   const syncingRef = useRef(false);
   const readMins = Math.max(0, Math.round(totalWords / 200)) || (totalWords > 0 ? 1 : 0);
+
+  useEffect(() => {
+    if (!activeSceneId || !scrollRef.current) return;
+    const block = scrollRef.current.querySelector<HTMLElement>(
+      `[data-scene-id="${activeSceneId}"]`,
+    );
+    block?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [activeSceneId, scrollRef]);
 
   useEffect(() => {
     if (!syncScroll || !editorScrollRef?.current || !scrollRef.current) return;
@@ -167,7 +177,10 @@ export function PreviewPane({
         </div>
       </div>
 
-      <div ref={scrollRef} className="katha-proto-preview-body">
+      <div
+        ref={scrollRef}
+        className={`katha-proto-preview-body${syncScroll ? ' katha-proto-preview-body--synced' : ''}`}
+      >
         {totalWords === 0 ? (
           <div className="katha-proto-preview-empty">
             <p className="katha-proto-preview-empty__title">Your reader view is empty</p>
@@ -188,12 +201,17 @@ export function PreviewPane({
           >
             <div className="katha-proto-chapter-label">Chapter {chapterNum}</div>
             <h1 className="katha-proto-chapter-title">{chapterTitle || 'Untitled Chapter'}</h1>
-            <div className="katha-proto-chapter-dots" aria-hidden>• • •</div>
+            <div className="katha-proto-chapter-dots" aria-hidden>
+              <Ellipsis size={18} strokeWidth={EDITOR_ICON_STROKE} />
+            </div>
 
             {scenes.map((scene, index) => (
               <React.Fragment key={scene.id}>
                 {index > 0 && <hr className="katha-proto-preview-scene-break" aria-hidden />}
-                <div className="katha-proto-preview-scene-block">
+                <div
+                  className={`katha-proto-preview-scene-block${activeSceneId === scene.id ? ' katha-proto-preview-scene-block--active' : ''}`}
+                  data-scene-id={scene.id}
+                >
                   {scene.title && scene.title !== 'New Scene' && scene.title !== `Scene ${index + 1}` && (
                     <h3 className="katha-proto-preview-scene-title">{scene.title}</h3>
                   )}

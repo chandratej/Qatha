@@ -1,9 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
-import { X, Copy, RotateCcw } from 'lucide-react';
+import { Copy, RotateCcw } from 'lucide-react';
+import { CmsModal } from '../CmsModal';
 import type { SceneVersion } from '../../hooks/useVersionHistory';
 import type { SceneBlock } from './SceneSidebar';
 import { storedContentToPreviewText } from '../../lib/contentPreview';
 import { formatRelativeTime } from '../../lib/relativeTime';
+import { versionSourceLabel } from '../../lib/versionLabels';
 
 interface VersionHistoryModalProps {
   open: boolean;
@@ -32,14 +34,14 @@ export function VersionHistoryModal({
     }
   }, [open, activeSceneId]);
 
-  const activeScene = scenes.find(s => s.id === selectedSceneId);
+  const activeScene = scenes.find((s) => s.id === selectedSceneId);
   const sceneVersions = useMemo(
-    () => versions.filter(v => v.sceneId === selectedSceneId),
+    () => versions.filter((v) => v.sceneId === selectedSceneId),
     [versions, selectedSceneId],
   );
 
   const currentDraftText = storedContentToPreviewText(activeScene?.content || '', 5000);
-  const selectedVersion = sceneVersions.find(v => v.id === selectedVersionId);
+  const selectedVersion = sceneVersions.find((v) => v.id === selectedVersionId);
   const selectedText = selectedVersion
     ? storedContentToPreviewText(selectedVersion.content, 5000)
     : currentDraftText;
@@ -55,60 +57,48 @@ export function VersionHistoryModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Version history"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.4)',
-        zIndex: 10000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="card"
-        style={{
-          width: '100%',
-          maxWidth: 720,
-          maxHeight: '80vh',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: 0,
-          overflow: 'hidden',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1rem' }}>Version History</h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
-              Compare past versions or copy text without reverting
-            </p>
-          </div>
-          <button type="button" className="btn btn-ghost" onClick={onClose} aria-label="Close" style={{ padding: 8 }}>
-            <X size={18} />
+    <CmsModal
+      className="cms-modal--wide"
+      title="Version history"
+      onClose={onClose}
+      footer={(
+        <div className="cms-modal__footer-actions">
+          <button type="button" className="btn btn-secondary katha-version-history__copy" onClick={handleCopy}>
+            <Copy size={14} aria-hidden />
+            Copy text
           </button>
+          {selectedVersion && (
+            <button
+              type="button"
+              className="btn btn-primary katha-version-history__restore"
+              onClick={() => {
+                onRestore(selectedSceneId, selectedVersion.content);
+                onClose();
+              }}
+            >
+              <RotateCcw size={14} aria-hidden />
+              Restore this version
+            </button>
+          )}
         </div>
+      )}
+    >
+      <div className="katha-version-history">
+        <p className="katha-version-history__lead">
+          Compare past versions or copy text without reverting your current draft.
+        </p>
 
-        <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-          {scenes.map(scene => (
+        <div className="katha-version-history__scenes" role="tablist" aria-label="Scenes">
+          {scenes.map((scene) => (
             <button
               key={scene.id}
               type="button"
-              onClick={() => { setSelectedSceneId(scene.id); setSelectedVersionId(null); }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: selectedSceneId === scene.id ? '1px solid var(--gold)' : '1px solid var(--border)',
-                background: selectedSceneId === scene.id ? 'var(--paper-warm)' : 'transparent',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
+              role="tab"
+              aria-selected={selectedSceneId === scene.id}
+              className={`katha-version-history__scene-tab${selectedSceneId === scene.id ? ' katha-version-history__scene-tab--active' : ''}`}
+              onClick={() => {
+                setSelectedSceneId(scene.id);
+                setSelectedVersionId(null);
               }}
             >
               {scene.title || 'Untitled'}
@@ -116,81 +106,52 @@ export function VersionHistoryModal({
           ))}
         </div>
 
-        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-          <div style={{ width: 220, borderRight: '1px solid var(--border)', overflowY: 'auto', padding: '8px 0' }}>
+        <div className="katha-version-history__body">
+          <div className="katha-version-history__list" role="listbox" aria-label="Saved versions">
             <button
               type="button"
+              role="option"
+              aria-selected={selectedVersionId === null}
+              className={`katha-version-history__entry${selectedVersionId === null ? ' katha-version-history__entry--active' : ''}`}
               onClick={() => setSelectedVersionId(null)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '10px 16px',
-                border: 'none',
-                background: selectedVersionId === null ? 'var(--paper)' : 'transparent',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-              }}
             >
-              <div style={{ fontWeight: 600 }}>Current draft</div>
-              <div style={{ color: 'var(--ink-muted)', fontSize: '0.75rem', marginTop: 2 }}>
-                {storedContentToPreviewText(activeScene?.content || '', 60)}
-              </div>
+              <span className="katha-version-history__entry-label">Current draft</span>
+              <span className="katha-version-history__entry-meta">
+                {storedContentToPreviewText(activeScene?.content || '', 60) || 'Empty scene'}
+              </span>
             </button>
 
-            {sceneVersions.map(v => (
+            {sceneVersions.map((v) => (
               <button
                 key={v.id}
                 type="button"
+                role="option"
+                aria-selected={selectedVersionId === v.id}
+                className={`katha-version-history__entry${selectedVersionId === v.id ? ' katha-version-history__entry--active' : ''}`}
                 onClick={() => setSelectedVersionId(v.id)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '10px 16px',
-                  border: 'none',
-                  background: selectedVersionId === v.id ? 'var(--paper)' : 'transparent',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
               >
-                <div style={{ fontWeight: 500 }}>{formatRelativeTime(v.timestamp)}</div>
-                <div style={{ color: 'var(--ink-muted)', fontSize: '0.75rem', marginTop: 2 }}>
+                <span className="katha-version-history__entry-label">
+                  {versionSourceLabel(v.source)}
+                </span>
+                <span className="katha-version-history__entry-time">
+                  {formatRelativeTime(v.timestamp)}
+                </span>
+                <span className="katha-version-history__entry-meta">
                   {storedContentToPreviewText(v.content, 60)}
-                </div>
+                </span>
               </button>
             ))}
 
             {sceneVersions.length === 0 && (
-              <p style={{ padding: '12px 16px', fontSize: '0.8rem', color: 'var(--ink-muted)' }}>
-                No saved versions yet for this scene.
-              </p>
+              <p className="katha-version-history__empty">No saved versions yet for this scene.</p>
             )}
           </div>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 20, fontFamily: 'var(--font-telugu)', fontSize: '1rem', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-              {selectedText}
-            </div>
-
-            <div style={{ display: 'flex', gap: 8, padding: '12px 20px', borderTop: '1px solid var(--border)' }}>
-              <button type="button" className="btn btn-secondary" onClick={handleCopy} style={{ fontSize: '0.85rem' }}>
-                <Copy size={14} /> Copy text
-              </button>
-              {selectedVersion && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={() => { onRestore(selectedSceneId, selectedVersion.content); onClose(); }}
-                  style={{ fontSize: '0.85rem' }}
-                >
-                  <RotateCcw size={14} /> Restore this version
-                </button>
-              )}
-            </div>
+          <div className="katha-version-history__preview" aria-live="polite">
+            {selectedText || 'No content to preview.'}
           </div>
         </div>
       </div>
-    </div>
+    </CmsModal>
   );
 }

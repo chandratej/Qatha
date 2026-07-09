@@ -764,6 +764,7 @@ export function ChapterEditor() {
             editorScrollRef={editorScrollRef}
             syncScroll={workspaceLayout.syncScroll || prefs.syncScroll}
             totalWords={wordCount}
+            activeSceneId={activeSceneId}
             previewComfortStyle={editorComfortStyle}
             onCollapse={closePreview}
             mobileOpen={mobilePreviewOpen}

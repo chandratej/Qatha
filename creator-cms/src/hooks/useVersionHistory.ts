@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import type { VersionSource } from '../lib/versionLabels';
 
 const DB_NAME = 'katha-local-versions';
 const DB_VERSION = 2;
@@ -12,6 +13,7 @@ export interface SceneVersion {
   sceneTitle: string;
   content: string;
   chapterKey: string;
+  source?: VersionSource;
 }
 
 async function openVersionsDB(): Promise<IDBDatabase> {
@@ -121,6 +123,7 @@ export function useVersionHistory(chapterKey: string) {
       sceneTitle,
       content,
       chapterKey,
+      source: 'autosave',
     };
 
     try {

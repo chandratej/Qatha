@@ -2,7 +2,7 @@ import { memo, useState, useRef, useEffect } from 'react';
 import {
   Keyboard, Wand2, Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight, Link,
-  Undo2, Redo2, MoreHorizontal, Sparkles,
+  Undo2, Redo2, MoreHorizontal, Sparkles, SeparatorHorizontal,
 } from 'lucide-react';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 
@@ -175,8 +175,8 @@ export const FormatToolbar = memo(function FormatToolbar({
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onLink} title="Insert link" aria-label="Insert link">
           <Link size={15} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
-        <button type="button" className="katha-proto-fmt-btn" onClick={onSceneBreak} title="Insert scene break" aria-label="Insert scene break">
-          ***
+        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onSceneBreak} title="Insert scene break" aria-label="Insert scene break">
+          <SeparatorHorizontal size={15} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
       </div>
 
