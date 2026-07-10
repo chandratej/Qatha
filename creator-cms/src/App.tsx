@@ -61,10 +61,11 @@ function App() {
                   <Route path="/stories/:storyId" element={<StorySeasons />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/community" element={<Community />} />
+                  {/* Events are core GTM + revenue (not Labs) — authors must register freely */}
+                  <Route path="/events" element={<Events />} />
+                  <Route path="/events/new" element={<EventCreate />} />
+                  <Route path="/events/:eventId" element={<EventDetail />} />
                   <Route element={<LabsRoute />}>
-                    <Route path="/events" element={<Events />} />
-                    <Route path="/events/new" element={<EventCreate />} />
-                    <Route path="/events/:eventId" element={<EventDetail />} />
                     <Route path="/reviewers" element={<ReviewerMarketplace />} />
                     <Route path="/tags" element={<TagsModeration />} />
                     <Route path="/platform" element={<PlatformMap />} />

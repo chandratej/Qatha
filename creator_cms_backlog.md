@@ -17,7 +17,8 @@
 | **Moderation** | ~88% | Role gate, scoring, DOMPurify preview, notify on review |
 | **Auth & hardening** | ~85% | Supabase + mock OTP; phonetic cloud sync |
 | **Testing / DevOps** | ~85% | Vitest + Playwright multi-browser; vercel.json; dry-run script |
-| **Overall CMS soft-launch** | **~88%** | Code ready; production env + keys + migration 015–016 remain |
+| **Events / contests** | ~85% | Registration + submit + escrow revenue path fixed (Cycle 8) |
+| **Overall CMS soft-launch** | **~90%** | Code ready; production env + keys + migration 015–016 remain |
 
 **Demo path:** `VITE_MOCK_MODE=true` → OTP `123456` → full craft loop.
 
@@ -25,7 +26,18 @@
 
 ---
 
-## Cycle 7 delivered (this update)
+## Cycle 8 delivered — Events registration
+
+| Item | Status |
+|------|--------|
+| Authors can register (free + paid escrow) | ✅ |
+| Submit story from library after register | ✅ |
+| Events in core nav (not Labs) | ✅ |
+| Host publish opens registration | ✅ |
+| Platform fee tracking from entry fees | ✅ |
+| Backend POST /events/:id/register | ✅ |
+
+## Cycle 7 delivered
 
 | Item | Status |
 |------|--------|

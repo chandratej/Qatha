@@ -23,29 +23,77 @@ export interface EventRegistration {
   id: string;
   event_id: string;
   participant_id: string;
+  participant_name?: string;
   entry_fee_paid_inr: number;
-  payment_status: string;
+  payment_status: 'pending' | 'paid' | 'waived' | 'failed' | 'refunded';
   registered_at: string;
+  /** Escrow attribution for platform revenue analytics */
+  platform_fee_inr?: number;
+  prize_pool_contribution_inr?: number;
+  story_id?: string | null;
+  story_title?: string | null;
 }
 
 export interface EventSubmission {
   id: string;
   event_id: string;
   registration_id: string;
+  story_id?: string | null;
+  story_title?: string | null;
   validation_status: string;
   total_score?: number;
   rank?: number;
+  submitted_at?: string;
+}
+
+/** Platform-level contest revenue ledger (demo + analytics) */
+export interface EventRevenueLedgerEntry {
+  id: string;
+  event_id: string;
+  registration_id: string;
+  entry_fee_inr: number;
+  platform_fee_inr: number;
+  organizer_fee_inr: number;
+  tax_inr: number;
+  prize_pool_inr: number;
+  created_at: string;
+}
+
+export type PeerReviewStatus =
+  | 'pending_payment'
+  | 'matching'
+  | 'awaiting_reviewers'
+  | 'in_review'
+  | 'decision_ready'
+  | 'completed'
+  | 'cancelled';
+
+export interface ReviewerPoolMember {
+  id: string;
+  /** Internal pool id — never shown to authors (anonymous matching) */
+  pool_slot: string;
+  specializations: string[];
+  reputation_tier: string;
+  is_available: boolean;
+  agreement_score: number;
+  response_time_hours: number;
 }
 
 export interface PeerReviewRequest {
   id: string;
+  author_id: string;
   story_id: string;
   story_title: string;
   package_fee_inr: number;
   mode: 'volunteer' | 'paid';
-  status: string;
+  status: PeerReviewStatus;
+  preferred_roles: string[];
   majority_decision?: string;
   reviews_received: number;
+  reviewers_matched: number;
+  platform_fee_inr?: number;
+  created_at: string;
+  payment_status?: 'pending' | 'paid' | 'waived';
 }
 
 export interface TagRecord {

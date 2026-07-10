@@ -34,10 +34,9 @@ describe('featureFlags (DEC-007 / BR-010)', () => {
     expect(isStudioLabsEnabled()).toBe(false);
   });
 
-  it('recognizes lab paths including nested', () => {
-    expect(STUDIO_LAB_PATHS.length).toBeGreaterThanOrEqual(4);
-    expect(isStudioLabPath('/events')).toBe(true);
-    expect(isStudioLabPath('/events/new')).toBe(true);
+  it('recognizes lab paths (Events are core, not labs)', () => {
+    expect(isStudioLabPath('/events')).toBe(false);
+    expect(isStudioLabPath('/events/new')).toBe(false);
     expect(isStudioLabPath('/reviewers')).toBe(true);
     expect(isStudioLabPath('/tags')).toBe(true);
     expect(isStudioLabPath('/platform')).toBe(true);

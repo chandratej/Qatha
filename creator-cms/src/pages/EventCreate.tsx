@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { platformApi } from '../lib/platformApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
@@ -17,24 +18,36 @@ export function EventCreate() {
   const [judgingModel, setJudgingModel] = useState('weighted_rubric');
   const [prizePool, setPrizePool] = useState(10000);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const wizardStep = EVENT_WIZARD_STEPS[step];
+  const canAdvance = step !== 0 || title.trim().length > 0;
 
   const handleNext = () => setStep((s) => Math.min(s + 1, EVENT_WIZARD_STEPS.length - 1));
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
 
   const handlePublish = async () => {
+    if (!title.trim()) {
+      setError('Add an event title before publishing.');
+      setStep(0);
+      return;
+    }
     setSubmitting(true);
+    setError(null);
     try {
       const { event } = await platformApi.createEvent({
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         event_type: eventType,
         entry_fee_inr: entryFee,
         judging_model: judgingModel,
         prize_pool_inr: prizePool,
+        open_registration: true,
+        status: 'registration_open',
       });
       navigate(`/events/${event.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not publish event');
     } finally {
       setSubmitting(false);
     }
@@ -60,6 +73,15 @@ export function EventCreate() {
           </button>
         ))}
       </nav>
+
+      {error && (
+        <div className="cms-panel cms-panel--flat event-status-banner event-status-banner--error" role="alert">
+          <p className="event-status-banner__text">
+            <AlertCircle size={18} aria-hidden className="event-status-banner__icon" />
+            <span>{error}</span>
+          </p>
+        </div>
+      )}
 
       <div className="cms-panel platform-wizard-panel">
         <h3 className="dashboard-panel__title">{wizardStep?.label}</h3>
@@ -120,16 +142,26 @@ export function EventCreate() {
         )}
 
         {step === 6 && (
-          <p className="studio-page-header__subtitle">Review and publish. Event enters draft until you open registration.</p>
+          <div>
+            <p className="studio-page-header__subtitle">
+              Publish opens registration immediately so authors can enter. Paid fees use escrow splits
+              (15% platform · 10% organizer · tax · prize pool). Free challenges drive acquisition.
+            </p>
+            {entryFee > 0 && (
+              <p className="input-hint">
+                At ₹{entryFee}/entry, platform commission ≈ ₹{Math.round(entryFee * 0.15)} per author.
+              </p>
+            )}
+          </div>
         )}
 
         <div className="platform-wizard-actions">
           {step > 0 && <button type="button" className="btn btn-secondary" onClick={handleBack}>Back</button>}
           {step < EVENT_WIZARD_STEPS.length - 1 ? (
-            <button type="button" className="katha-cta katha-cta--maroon" onClick={handleNext}>Continue</button>
+            <button type="button" className="katha-cta katha-cta--maroon" onClick={handleNext} disabled={!canAdvance}>Continue</button>
           ) : (
             <button type="button" className="katha-cta katha-cta--maroon" onClick={handlePublish} disabled={submitting || !title.trim()}>
-              {submitting ? 'Publishing…' : 'Publish event draft'}
+              {submitting ? 'Opening registration…' : 'Publish & open registration'}
             </button>
           )}
         </div>

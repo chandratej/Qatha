@@ -15,6 +15,7 @@ import { ensureDemoStreak, getProductivitySnapshot, getWritingStreak } from '../
 
 import { StoriesWidget } from '../components/dashboard/StoriesWidget';
 import { QuickActionsPanel } from '../components/dashboard/QuickActionsPanel';
+import { EventsSpotlight } from '../components/dashboard/EventsSpotlight';
 import { ActivityFeedPanel } from '../components/dashboard/ActivityFeedPanel';
 import { TopPerformingStories } from '../components/dashboard/TopPerformingStories';
 import { CreatorBadgeBar } from '../components/dashboard/CreatorBadgeBar';
@@ -178,7 +179,10 @@ export function Dashboard() {
 
       <div className="studio-workspace">
         <StoriesWidget stories={storiesData?.stories ?? []} earningsMap={earningsMap} />
-        <QuickActionsPanel />
+        <div className="studio-workspace__aside">
+          <EventsSpotlight />
+          <QuickActionsPanel />
+        </div>
       </div>
 
       <div className="dashboard-bottom-grid">

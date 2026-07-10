@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Calendar, PenLine } from 'lucide-react';
+import { Calendar, PenLine, Trophy } from 'lucide-react';
 
 interface Props {
   layout?: 'stack' | 'bar';
@@ -17,6 +17,10 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
           <Link to="/schedule" className="quick-actions-bar__action">
             <Calendar size={16} aria-hidden />
             Schedule
+          </Link>
+          <Link to="/events" className="quick-actions-bar__action">
+            <Trophy size={16} aria-hidden />
+            Events
           </Link>
         </div>
       </nav>
@@ -39,6 +43,10 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
         <Link to="/schedule" className="quick-action-btn quick-action-btn--tile">
           <Calendar size={17} aria-hidden />
           <span>Schedule</span>
+        </Link>
+        <Link to="/events" className="quick-action-btn quick-action-btn--tile">
+          <Trophy size={17} aria-hidden />
+          <span>Contests</span>
         </Link>
       </div>
     </div>

@@ -22,6 +22,7 @@ export function buildDashboardTasks(stories: StoryData[]): DashboardTask[] {
   if (draft) {
     tasks.push({ id: 'desc', label: `Update description for ${draft.title}`, done: false, href: `/stories/${draft.id}` });
   }
+  tasks.push({ id: 'events', label: 'Browse open contests & register', done: false, href: '/events' });
   tasks.push({ id: 'comments', label: 'Respond to reader comments', done: false });
   return tasks.slice(0, 4);
 }
