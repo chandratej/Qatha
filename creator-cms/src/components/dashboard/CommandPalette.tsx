@@ -64,7 +64,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (labsOn) {
       base.splice(5, 0, {
         id: 'rev',
-        label: 'Peer Review Marketplace',
+        label: 'Literary Council Reviews',
         icon: BookOpenCheck,
         run: () => navigate('/reviewers'),
       });

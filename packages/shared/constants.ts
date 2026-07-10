@@ -95,6 +95,31 @@ export {
 } from './reviewer-marketplace';
 export type { ReviewerRoleId, ReviewDecisionId } from './reviewer-marketplace';
 
+export {
+  LITERARY_COUNCIL_PHILOSOPHY,
+  COUNCIL_CAREER_LEVELS,
+  PROFESSIONAL_REVIEW_ROLES,
+  GENRE_SPECIALIZATIONS,
+  MATCHING_ENGINE_WEIGHTS,
+  RQI_WEIGHTS,
+  SQI_DIMENSIONS,
+  SIS_SIGNALS,
+  STRUCTURED_REVIEW_FIELDS,
+  STRUCTURED_REVIEW_SUPPORT,
+  PAID_REVIEWER_ELIGIBILITY,
+  REVIEW_PAYMENT_WORKFLOW,
+  ANTI_FRAUD_MEASURES,
+  DOUBLE_BLIND_POLICY,
+  INVITATION_BATCH_SIZE,
+  REVIEWERS_ASSIGNED_COUNT,
+} from './literary-council';
+export type {
+  CouncilCareerLevelId,
+  ProfessionalReviewRoleId,
+  GenreSpecializationId,
+  SqiDimensionId,
+} from './literary-council';
+
 export { REPORT_CATEGORIES, REPORT_STATUSES, GOVERNANCE_SAFEGUARDS } from './governance';
 export type { ReportCategoryId } from './governance';
 

@@ -1,5 +1,7 @@
 /** Platform types — Master PRD + Creator Events Platform */
 
+import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
+
 export interface KathaEvent {
   id: string;
   organizer_id: string;
@@ -73,10 +75,29 @@ export interface ReviewerPoolMember {
   /** Internal pool id — never shown to authors (anonymous matching) */
   pool_slot: string;
   specializations: string[];
+  genre_expertise: string[];
+  professional_role: string;
+  council_level: string;
   reputation_tier: string;
   is_available: boolean;
   agreement_score: number;
+  rqi: number;
+  review_experience_count: number;
+  story_trust_level: StoryTrustLevelId;
+  conduct_score: number;
   response_time_hours: number;
+}
+
+export interface StructuredReviewComment {
+  chapter_ref?: string;
+  paragraph_ref?: string;
+  sentence_ref?: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high';
+  reason: string;
+  recommendation: string;
+  expected_impact: string;
+  reviewer_confidence: number;
 }
 
 export interface PeerReviewRequest {
@@ -87,13 +108,23 @@ export interface PeerReviewRequest {
   package_fee_inr: number;
   mode: 'volunteer' | 'paid';
   status: PeerReviewStatus;
+  professional_role: string;
+  story_genre: string;
   preferred_roles: string[];
+  double_blind: boolean;
+  escrow_status: 'none' | 'held' | 'released' | 'refunded';
   majority_decision?: string;
+  consensus_pct?: number;
   reviews_received: number;
   reviewers_matched: number;
+  matching_avg_score?: number;
+  sqi_before?: number;
+  sqi_after?: number;
+  sis_score?: number;
   platform_fee_inr?: number;
   created_at: string;
   payment_status?: 'pending' | 'paid' | 'waived';
+  structured_comments?: StructuredReviewComment[];
 }
 
 export interface TagRecord {

@@ -6,6 +6,7 @@ import type {
   TagRecord,
   TagRequest,
 } from '../types/platform';
+import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
 import {
   createPlatformEvent,
   getPeerReviewRequests,
@@ -110,6 +111,11 @@ export const platformApi = {
     mode: 'volunteer' | 'paid';
     packageFeeInr: number;
     preferredRoles?: string[];
+    professionalRole?: string;
+    storyGenre?: string;
+    authorTrustLevel?: StoryTrustLevelId;
+    authorVerified?: boolean;
+    totalReaders?: number;
     markPaid?: boolean;
   }) => {
     try {

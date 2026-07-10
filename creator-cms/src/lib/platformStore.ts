@@ -20,13 +20,20 @@ import { slugifyTag } from '../business/tagWorkflow';
 import { calculateEscrowSplit } from '../business/escrow';
 import { eventAcceptsRegistration, eventAcceptsSubmission } from '../business/eventRegistration';
 import {
+  checkPaidReviewEligibility,
+  normalizeStoryGenre,
+} from '../business/literaryCouncil';
+import { computeStoryQualityIndex, demoSqiFromTrust } from '../business/storyQualityIndex';
+import {
   platformFeeFromReview,
   poolAvailabilitySummary,
   reviewerPayoutEach,
   seedReviewerPool,
-  selectAnonymousReviewers,
+  matchReviewersForRequest,
   validateReviewRequest,
+  type ReviewerCandidate,
 } from '../business/reviewerMatching';
+import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
 import { REVIEW_PACKAGE } from '../../../packages/shared/reviewer-marketplace';
 
 const EVENTS_KEY = 'katha_platform_events';
@@ -434,9 +441,16 @@ function loadReviewerPool(): ReviewerPoolMember[] {
     id: r.id,
     pool_slot: `slot-${r.id.replace('rev-pool-', '')}`,
     specializations: r.specializations,
+    genre_expertise: r.genre_expertise,
+    professional_role: r.professional_role,
+    council_level: r.council_level,
     reputation_tier: r.reputation_tier,
     is_available: r.is_available,
     agreement_score: r.agreement_score ?? 70,
+    rqi: r.rqi,
+    review_experience_count: r.review_experience_count,
+    story_trust_level: r.story_trust_level,
+    conduct_score: r.conduct_score,
     response_time_hours: r.response_time_hours ?? 24,
   }));
   localStorage.setItem(REVIEWER_POOL_KEY, JSON.stringify(seeded));
@@ -464,7 +478,7 @@ export function getReviewerPool(): ReviewerPoolMember[] {
 }
 
 export function getReviewerPoolSummary() {
-  return poolAvailabilitySummary(loadReviewerPool());
+  return poolAvailabilitySummary(loadReviewerPool() as ReviewerCandidate[]);
 }
 
 export function getPeerReviewRequests(authorId?: string): PeerReviewRequest[] {
@@ -485,10 +499,29 @@ export function requestPeerReview(opts: {
   mode: 'volunteer' | 'paid';
   packageFeeInr: number;
   preferredRoles?: string[];
+  professionalRole?: string;
+  storyGenre?: string;
+  authorTrustLevel?: StoryTrustLevelId;
+  authorVerified?: boolean;
+  totalReaders?: number;
   markPaid?: boolean;
-}): { request: PeerReviewRequest; payoutEach: number } {
+}): { request: PeerReviewRequest; payoutEach: number; matchingAvgScore: number } {
   const preferredRoles = opts.preferredRoles ?? [];
   const fee = opts.mode === 'volunteer' ? 0 : opts.packageFeeInr;
+  const professionalRole = opts.professionalRole ?? 'literary_reviewer';
+  const storyGenre = normalizeStoryGenre(opts.storyGenre);
+  const authorTrust = opts.authorTrustLevel ?? 'emerging';
+
+  if (opts.mode === 'paid') {
+    const eligibility = checkPaidReviewEligibility({
+      verifiedAuthor: opts.authorVerified !== false,
+      storyTrustLevel: authorTrust,
+      totalReaders: opts.totalReaders ?? 0,
+    });
+    if (!eligibility.eligible) {
+      throw new Error(eligibility.reasons.join(' · '));
+    }
+  }
 
   validateReviewRequest({
     storyId: opts.storyId,
@@ -496,6 +529,8 @@ export function requestPeerReview(opts: {
     mode: opts.mode,
     packageFeeInr: fee,
     preferredRoles,
+    professionalRole,
+    storyGenre,
   });
 
   const existing = loadPeerReviewRequests().find(
@@ -508,18 +543,22 @@ export function requestPeerReview(opts: {
   }
 
   const pool = loadReviewerPool();
-  const summary = poolAvailabilitySummary(pool);
+  const poolCandidates = pool as ReviewerCandidate[];
+  const summary = poolAvailabilitySummary(poolCandidates);
   if (!summary.canFulfill) {
     throw new Error('Reviewer pool is temporarily thin — try again later or broaden specializations');
   }
 
-  const matched = selectAnonymousReviewers(pool, REVIEW_PACKAGE.reviewerCount, preferredRoles);
-  if (matched.length < REVIEW_PACKAGE.reviewerCount) {
+  const { assigned } = matchReviewersForRequest(poolCandidates, {
+    storyGenre,
+    authorTrustLevel: authorTrust,
+    preferredRoles,
+  });
+  if (assigned.length < REVIEW_PACKAGE.reviewerCount) {
     throw new Error('Not enough reviewers match your preferences — try fewer specializations');
   }
 
-  // Reserve matched slots (demo: mark unavailable until request completes)
-  const matchedIds = new Set(matched.map((m) => m.id));
+  const matchedIds = new Set(assigned.map((m) => m.reviewer.id));
   const updatedPool = pool.map((m) =>
     matchedIds.has(m.id) ? { ...m, is_available: false } : m,
   );
@@ -527,6 +566,10 @@ export function requestPeerReview(opts: {
 
   const paid = opts.mode === 'paid' && (opts.markPaid !== false);
   const platformFee = paid ? platformFeeFromReview(fee) : 0;
+  const matchingAvg = Math.round(
+    assigned.reduce((s, r) => s + r.matchingScore, 0) / assigned.length,
+  );
+  const sqiBefore = computeStoryQualityIndex(demoSqiFromTrust(opts.totalReaders ?? 100));
 
   const request: PeerReviewRequest = {
     id: `pr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -535,14 +578,23 @@ export function requestPeerReview(opts: {
     story_title: opts.storyTitle,
     package_fee_inr: fee,
     mode: opts.mode,
-    status: paid ? 'awaiting_reviewers' : 'awaiting_reviewers',
+    status: 'matching',
+    professional_role: professionalRole,
+    story_genre: storyGenre,
     preferred_roles: preferredRoles,
+    double_blind: true,
+    escrow_status: paid ? 'held' : 'none',
     reviews_received: 0,
-    reviewers_matched: matched.length,
+    reviewers_matched: assigned.length,
+    matching_avg_score: matchingAvg,
+    sqi_before: sqiBefore,
     platform_fee_inr: platformFee,
     payment_status: opts.mode === 'volunteer' ? 'waived' : paid ? 'paid' : 'pending',
     created_at: new Date().toISOString(),
   };
+
+  // Demo: advance to awaiting_reviewers after matching (invitation accept simulation)
+  request.status = 'awaiting_reviewers';
 
   const requests = loadPeerReviewRequests();
   requests.unshift(request);
@@ -551,6 +603,7 @@ export function requestPeerReview(opts: {
   return {
     request,
     payoutEach: reviewerPayoutEach(fee),
+    matchingAvgScore: matchingAvg,
   };
 }
 

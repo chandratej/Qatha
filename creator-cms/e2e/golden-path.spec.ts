@@ -97,11 +97,11 @@ test.describe('Creator Studio golden path', () => {
     await page.reload();
 
     await page.goto('/reviewers');
-    await expect(page.getByRole('heading', { name: /Peer review marketplace/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('heading', { name: /Professional Review Ecosystem/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/Studio Labs is off/i)).toHaveCount(0);
 
-    await page.getByRole('button', { name: /Request premium review/i }).click();
-    await expect(page.getByText(/review requested|reviewers matched/i)).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: /Request community review/i }).click();
+    await expect(page.getByText(/community review queued|Literary Council matched/i)).toBeVisible({ timeout: 10_000 });
   });
 });
 

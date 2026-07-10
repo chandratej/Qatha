@@ -4,12 +4,26 @@ import { AlertCircle, BookOpen, CheckCircle2, IndianRupee, Users } from 'lucide-
 import { platformApi } from '../../lib/platformApi';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
-import { REVIEW_PACKAGE, REVIEWER_ROLES } from '../../lib/platformConstants';
+import {
+  GENRE_SPECIALIZATIONS,
+  PROFESSIONAL_REVIEW_ROLES,
+  REVIEW_PACKAGE,
+  REVIEWER_ROLES,
+  trustLevelForReaders,
+} from '../../lib/platformConstants';
+import { checkPaidReviewEligibility } from '../../business/literaryCouncil';
 import { reviewerPayoutEach } from '../../business/reviewerMatching';
 import { trackCreatorEvent } from '../../lib/analyticsEvents';
 
 interface Props {
   onRequested: () => void;
+}
+
+interface StoryOption {
+  id: string;
+  title: string;
+  genre?: string;
+  total_readers?: number;
 }
 
 const FEE_OPTIONS = [REVIEW_PACKAGE.minFeeInr, 169, REVIEW_PACKAGE.maxFeeInr];
@@ -18,22 +32,47 @@ export function ReviewRequestPanel({ onRequested }: Props) {
   const { user } = useAuth();
   const authorId = user?.id || 'anonymous-creator';
 
-  const [stories, setStories] = useState<Array<{ id: string; title: string }>>([]);
+  const [stories, setStories] = useState<StoryOption[]>([]);
   const [storyId, setStoryId] = useState('');
-  const [mode, setMode] = useState<'paid' | 'volunteer'>('paid');
+  const [mode, setMode] = useState<'paid' | 'volunteer'>('volunteer');
   const [fee, setFee] = useState<number>(REVIEW_PACKAGE.minFeeInr);
+  const [professionalRole, setProfessionalRole] = useState('literary_reviewer');
+  const [storyGenre, setStoryGenre] = useState('romance');
   const [preferredRoles, setPreferredRoles] = useState<string[]>([]);
   const [poolAvailable, setPoolAvailable] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const selectedStory = stories.find((s) => s.id === storyId);
+  const totalReaders = selectedStory?.total_readers ?? 0;
+  const authorTrust = trustLevelForReaders(totalReaders);
+  const paidEligibility = useMemo(
+    () => checkPaidReviewEligibility({
+      verifiedAuthor: Boolean(user?.id),
+      storyTrustLevel: authorTrust,
+      totalReaders,
+    }),
+    [user?.id, authorTrust, totalReaders],
+  );
+
   useEffect(() => {
     api.getCreatorStories()
       .then((r) => {
-        const list = (r.stories || []).map((s) => ({ id: s.id, title: s.title }));
+        const list = (r.stories || []).map((s) => ({
+          id: s.id,
+          title: s.title,
+          genre: s.genre,
+          total_readers: s.total_readers,
+        }));
         setStories(list);
-        if (list[0]) setStoryId(list[0].id);
+        if (list[0]) {
+          setStoryId(list[0].id);
+          if (list[0].genre) {
+            const g = list[0].genre.toLowerCase().replace(/\s+/g, '_');
+            if (GENRE_SPECIALIZATIONS.some((x) => x.id === g)) setStoryGenre(g);
+          }
+        }
       })
       .catch(() => setStories([]));
 
@@ -61,6 +100,10 @@ export function ReviewRequestPanel({ onRequested }: Props) {
       setError('Choose a story from your library');
       return;
     }
+    if (mode === 'paid' && !paidEligibility.eligible) {
+      setError(paidEligibility.reasons.join(' · '));
+      return;
+    }
     setBusy(true);
     setError(null);
     setSuccess(null);
@@ -72,6 +115,11 @@ export function ReviewRequestPanel({ onRequested }: Props) {
         mode,
         packageFeeInr: mode === 'paid' ? fee : 0,
         preferredRoles,
+        professionalRole,
+        storyGenre,
+        authorTrustLevel: authorTrust,
+        authorVerified: Boolean(user?.id),
+        totalReaders,
         markPaid: mode === 'paid',
       });
       trackCreatorEvent('peer_review_requested', {
@@ -79,11 +127,13 @@ export function ReviewRequestPanel({ onRequested }: Props) {
         mode,
         fee: result.request.package_fee_inr,
         reviewers_matched: result.request.reviewers_matched,
+        matching_score: result.matchingAvgScore,
+        professional_role: professionalRole,
       });
       setSuccess(
         mode === 'paid'
-          ? `Review requested! ₹${fee} held — ${result.request.reviewers_matched} anonymous reviewers matched (₹${result.payoutEach} each).`
-          : `Volunteer review queued — ${result.request.reviewers_matched} beta readers matched anonymously.`,
+          ? `Literary Council matched ${result.request.reviewers_matched} anonymous reviewers (avg match ${result.matchingAvgScore}%). ₹${fee} in escrow — double-blind review begins.`
+          : `Community review queued — ${result.request.reviewers_matched} volunteer readers matched (match score ${result.matchingAvgScore}%). New reviewers start here.`,
       );
       platformApi.getReviewerPoolSummary().then((s) => setPoolAvailable(s.available));
       onRequested();
@@ -97,15 +147,15 @@ export function ReviewRequestPanel({ onRequested }: Props) {
   return (
     <section className="cms-panel review-request-panel" aria-labelledby="review-request-title">
       <h3 id="review-request-title" className="dashboard-panel__title">
-        <BookOpen size={18} aria-hidden /> Request a review
+        <BookOpen size={18} aria-hidden /> Request professional literary feedback
       </h3>
       <p className="input-hint review-request-panel__intro">
-        Three anonymous reviewers · majority decision · equal payouts. Your manuscript identity stays private until decision.
+        Double-blind matching · evidence-based structured comments · reviews improve stories, not reject them.
       </p>
 
       <div className="review-request-panel__pool" role="status">
         <Users size={16} aria-hidden />
-        <span><strong>{poolAvailable}</strong> reviewers available in pool now</span>
+        <span><strong>{poolAvailable}</strong> council reviewers available · escrow protected</span>
       </div>
 
       {success && (
@@ -128,7 +178,7 @@ export function ReviewRequestPanel({ onRequested }: Props) {
       {stories.length === 0 ? (
         <p className="input-hint">
           No manuscripts yet.{' '}
-          <Link to="/stories/new">Create a story</Link> then return to request peer review.
+          <Link to="/stories/new">Create a story</Link> then return for Literary Council review.
         </p>
       ) : (
         <div className="review-request-form">
@@ -146,20 +196,39 @@ export function ReviewRequestPanel({ onRequested }: Props) {
             </select>
           </div>
 
+          <div className="input-group">
+            <label htmlFor="professional-role">Professional role</label>
+            <select
+              id="professional-role"
+              className="cms-select"
+              value={professionalRole}
+              onChange={(e) => setProfessionalRole(e.target.value)}
+            >
+              {PROFESSIONAL_REVIEW_ROLES.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
+            <span className="input-hint">
+              {PROFESSIONAL_REVIEW_ROLES.find((r) => r.id === professionalRole)?.dimensions.join(', ').replace(/_/g, ' ')}
+            </span>
+          </div>
+
+          <div className="input-group">
+            <label htmlFor="story-genre">Genre expertise</label>
+            <select
+              id="story-genre"
+              className="cms-select"
+              value={storyGenre}
+              onChange={(e) => setStoryGenre(e.target.value)}
+            >
+              {GENRE_SPECIALIZATIONS.map((g) => (
+                <option key={g.id} value={g.id}>{g.label}</option>
+              ))}
+            </select>
+          </div>
+
           <fieldset className="review-request-form__mode">
             <legend>Review mode</legend>
-            <label className="review-mode-option">
-              <input
-                type="radio"
-                name="review-mode"
-                checked={mode === 'paid'}
-                onChange={() => setMode('paid')}
-              />
-              <span>
-                <strong>Premium peer review</strong>
-                <span className="input-hint">₹{REVIEW_PACKAGE.minFeeInr}–₹{REVIEW_PACKAGE.maxFeeInr} · paid experts</span>
-              </span>
-            </label>
             <label className="review-mode-option">
               <input
                 type="radio"
@@ -168,16 +237,36 @@ export function ReviewRequestPanel({ onRequested }: Props) {
                 onChange={() => setMode('volunteer')}
               />
               <span>
-                <strong>Volunteer beta read</strong>
-                <span className="input-hint">Free · community beta readers</span>
+                <strong>Community review (free)</strong>
+                <span className="input-hint">New reviewers start here · volunteer beta readers</span>
               </span>
             </label>
+            <label className="review-mode-option">
+              <input
+                type="radio"
+                name="review-mode"
+                checked={mode === 'paid'}
+                onChange={() => setMode('paid')}
+                disabled={!paidEligibility.eligible}
+              />
+              <span>
+                <strong>Professional review (paid)</strong>
+                <span className="input-hint">
+                  ₹{REVIEW_PACKAGE.minFeeInr}–₹{REVIEW_PACKAGE.maxFeeInr} · verified author + Story Trust required
+                </span>
+              </span>
+            </label>
+            {mode === 'paid' && !paidEligibility.eligible && (
+              <p className="input-hint cms-error-text" style={{ margin: 0 }}>
+                {paidEligibility.reasons.join(' · ')}
+              </p>
+            )}
           </fieldset>
 
-          {mode === 'paid' && (
+          {mode === 'paid' && paidEligibility.eligible && (
             <div className="input-group">
               <label htmlFor="review-fee">
-                <IndianRupee size={14} aria-hidden style={{ verticalAlign: 'middle' }} /> Package fee
+                <IndianRupee size={14} aria-hidden style={{ verticalAlign: 'middle' }} /> Escrow fee
               </label>
               <select
                 id="review-fee"
@@ -186,17 +275,14 @@ export function ReviewRequestPanel({ onRequested }: Props) {
                 onChange={(e) => setFee(Number(e.target.value))}
               >
                 {FEE_OPTIONS.map((f) => (
-                  <option key={f} value={f}>₹{f} · reviewers earn ₹{reviewerPayoutEach(f)} each</option>
+                  <option key={f} value={f}>₹{f} · reviewers earn ₹{reviewerPayoutEach(f)} each (quarterly payout)</option>
                 ))}
               </select>
-              <span className="input-hint">
-                Platform keeps {REVIEW_PACKAGE.platformCommissionPct}% · remainder split equally among {REVIEW_PACKAGE.reviewerCount} reviewers
-              </span>
             </div>
           )}
 
           <div className="input-group">
-            <span className="label">Preferred specializations (optional, max 3)</span>
+            <span className="label">Additional specializations (optional, max 3)</span>
             <div className="review-role-chips" role="group" aria-label="Reviewer specializations">
               {REVIEWER_ROLES.map((r) => (
                 <button
@@ -213,12 +299,12 @@ export function ReviewRequestPanel({ onRequested }: Props) {
           </div>
 
           <div className="review-request-form__summary">
-            {mode === 'paid' ? (
+            {mode === 'paid' && paidEligibility.eligible ? (
               <p className="input-hint">
-                You pay <strong>₹{fee}</strong> · each reviewer earns <strong>₹{payoutEach}</strong>
+                Escrow <strong>₹{fee}</strong> · {REVIEW_PACKAGE.reviewerCount} reviewers · <strong>₹{payoutEach}</strong> each after validation
               </p>
             ) : (
-              <p className="input-hint">Free volunteer queue · typical turnaround 3–5 days</p>
+              <p className="input-hint">Free community path · builds reviewer reputation toward paid eligibility</p>
             )}
           </div>
 
@@ -229,10 +315,10 @@ export function ReviewRequestPanel({ onRequested }: Props) {
             onClick={() => { void handleSubmit(); }}
           >
             {busy
-              ? 'Matching reviewers…'
+              ? 'Running matching engine…'
               : mode === 'paid'
-                ? `Request premium review · ₹${fee}`
-                : 'Request volunteer beta read'}
+                ? `Request professional review · ₹${fee}`
+                : 'Request community review (free)'}
           </button>
         </div>
       )}

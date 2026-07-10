@@ -3404,3 +3404,76 @@ button.studio-metric:focus-visible {
   background: var(--dash-paper);
   border: 1px solid var(--dash-border);
 }
+
+/* -- Katha Literary Council -- */
+.literary-council-page .studio-page-header__subtitle {
+  max-width: 52ch;
+}
+.literary-council-philosophy {
+  margin-bottom: 20px;
+  border: 1px solid rgba(107, 35, 56, 0.12);
+  background: linear-gradient(135deg, rgba(107, 35, 56, 0.04), rgba(196, 160, 82, 0.06));
+}
+.literary-council-philosophy__head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+.literary-council-philosophy__icon { color: var(--katha-gold-dark); flex-shrink: 0; }
+.literary-council-philosophy__title {
+  font-family: var(--font-reading);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--katha-maroon);
+}
+.literary-council-philosophy__sub {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  line-height: 1.55;
+}
+.literary-council-philosophy__principles {
+  margin: 0 0 16px;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+.literary-council-philosophy__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+}
+.literary-council-philosophy__fraud {
+  margin: 16px 0 0;
+  font-size: 0.75rem;
+}
+.council-career-ladder {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--ink-soft);
+  line-height: 1.8;
+}
+.author-review-dashboard__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.author-review-dashboard__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.author-review-dashboard__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--katha-maroon);
+}
+.author-review-dashboard__label {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}

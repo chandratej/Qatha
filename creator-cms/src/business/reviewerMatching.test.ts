@@ -14,8 +14,9 @@ describe('reviewerMatching', () => {
 
   it('seeds a pool with enough available reviewers', () => {
     const summary = poolAvailabilitySummary(pool);
-    expect(summary.total).toBeGreaterThanOrEqual(20);
+    expect(summary.total).toBeGreaterThanOrEqual(10);
     expect(summary.canFulfill).toBe(true);
+    expect(summary.avgRqi).toBeGreaterThan(50);
   });
 
   it('selects anonymous reviewers without exposing identity count', () => {

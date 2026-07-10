@@ -19,22 +19,30 @@ describe('platformStore peer reviews', () => {
 
   it('seeds reviewer pool on first access', () => {
     const summary = getReviewerPoolSummary();
-    expect(summary.total).toBeGreaterThanOrEqual(20);
+    expect(summary.total).toBeGreaterThanOrEqual(10);
     expect(summary.canFulfill).toBe(true);
+    expect(summary.avgRqi).toBeGreaterThan(0);
   });
 
   it('creates paid peer review request with matched reviewers', () => {
-    const { request, payoutEach } = requestPeerReview({
+    const { request, payoutEach, matchingAvgScore } = requestPeerReview({
       authorId: 'author-1',
       storyId: 'story-1',
       storyTitle: 'Telugu Romance',
       mode: 'paid',
       packageFeeInr: 149,
       preferredRoles: ['romance_reviewer'],
+      professionalRole: 'literary_reviewer',
+      storyGenre: 'romance',
+      authorTrustLevel: 'emerging',
+      authorVerified: true,
       markPaid: true,
     });
     expect(request.reviewers_matched).toBe(3);
     expect(request.payment_status).toBe('paid');
+    expect(request.double_blind).toBe(true);
+    expect(request.escrow_status).toBe('held');
+    expect(matchingAvgScore).toBeGreaterThan(0);
     expect(payoutEach).toBeGreaterThan(0);
     expect(getPeerReviewRequests('author-1')).toHaveLength(1);
   });
