@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 
-const AUTOSAVE_MS = 30000;
+const AUTOSAVE_MS = 15000;
 
 export function useAutosave({
   charCount,

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Clock, CloudOff, Loader2, Rocket, ArrowLeft } from 'lucide-react';
 import { EditorComfortControls } from './EditorComfortControls';
+import { ThemeToggle } from '../ThemeToggle';
+import { modKeyLabel } from '../../lib/device';
 import { InlineChapterTitle } from './InlineChapterTitle';
 import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 import { useSavePulse } from '../../hooks/useSavePulse';
@@ -172,6 +174,8 @@ export function EditorNavbar({
             compact
           />
 
+          <ThemeToggle compact />
+
           <button
             type="button"
             className="katha-proto-nav-btn katha-proto-nav-btn--draft"
@@ -241,9 +245,9 @@ export function EditorNavbar({
         </div>
 
         <p className="katha-editor-chrome__hint" aria-hidden>
-          <kbd>Ctrl</kbd>
-          <kbd>F</kbd> find · <kbd>Ctrl</kbd>
-          <kbd>K</kbd> commands · <kbd>Ctrl</kbd>
+          <kbd>{modKeyLabel()}</kbd>
+          <kbd>F</kbd> find · <kbd>{modKeyLabel()}</kbd>
+          <kbd>K</kbd> commands · <kbd>{modKeyLabel()}</kbd>
           <kbd>S</kbd> save · <kbd>Esc</kbd> exit focus
         </p>
       </div>

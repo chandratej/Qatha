@@ -1,15 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Loader2, PenLine, Pencil, Trash2, Search, Link2 } from 'lucide-react';
-import { ShareLinkField } from '../components/ShareLinkField';
+import { Library, Loader2, PenLine, Plus, Search } from 'lucide-react';
 import { buildChapterShareUrl, resolveStorySlug } from '../lib/shareLinks';
-
 import { api } from '../lib/api';
 import type { StoryData } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { StoryEditModal } from '../components/StoryEditModal';
-import { storyStatusBadge } from '../lib/storyStatus';
+import { ManuscriptCard } from '../components/studio/ManuscriptCard';
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { GENRES } from '../lib/constants';
 
 export function Stories() {
@@ -43,24 +42,24 @@ export function Stories() {
   };
 
   return (
-    <div className="cms-page">
-      <header className="cms-page-header">
-        <div>
-          <h1 className="cms-page-header__title">My Stories</h1>
-          <p className="cms-page-header__subtitle">Manage your serialized fiction and grow your readership.</p>
-        </div>
-        <div className="cms-page-header__actions">
-          <Link to="/stories/new" className="dashboard-cta">
-            <Plus size={18} />
-            New Story
+    <div className="cms-page studio-page">
+      <StudioPageHeader
+        eyebrow="గ్రంథాలయం · Manuscript library"
+        eyebrowIcon={Library}
+        title="Your stories"
+        subtitle="Each story is a manuscript on your shelf — open one to write, publish, and share with pride."
+        actions={(
+          <Link to="/stories/new" className="katha-cta katha-cta--maroon">
+            <Plus size={18} aria-hidden />
+            New manuscript
           </Link>
-        </div>
-      </header>
+        )}
+      />
 
       {loading && (
-        <div className="cms-loading">
-          <Loader2 size={20} className="cms-loading__spin" />
-          Loading stories…
+        <div className="cms-loading" role="status" aria-live="polite">
+          <Loader2 size={20} className="cms-loading__spin" aria-hidden />
+          Opening your library…
         </div>
       )}
 
@@ -73,7 +72,7 @@ export function Stories() {
             <input
               type="search"
               className="cms-input cms-search-field__input"
-              placeholder="Search stories by title or description…"
+              placeholder="Search by title or description…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-label="Search stories"
@@ -93,93 +92,71 @@ export function Stories() {
         </div>
       )}
 
-      <div className="cms-story-list">
+      {!loading && !error && (data?.stories?.length ?? 0) > 0 && filteredStories.length === 0 && (
+        <div className="studio-empty studio-empty--compact">
+          <h3 className="studio-empty__title">No manuscripts match</h3>
+          <p className="studio-empty__text">Try a different search term or clear the genre filter.</p>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => { setSearch(''); setGenreFilter(''); }}
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
+
+      {!loading && (filteredStories.length > 0 || isMockMode) && (
+      <div className="manuscript-grid" role="list" aria-label="Manuscript library">
         {isMockMode && (
-          <div className="cms-story-card cms-story-card--featured">
-            <div className="cms-story-card__cover">ఆర్ ఆర్ ఆర్</div>
-            <div className="cms-story-card__body">
-              <h3 className="cms-story-card__title">RRR - రాజమౌళి (Demo - Editor Validated)</h3>
-              <div className="cms-story-card__meta">
-                <span className="badge badge-gold">Action / Historical</span>
-                <span>24 chapters (demo)</span>
-                <span>Editor drafted</span>
-              </div>
-              <p className="cms-story-card__note">
-                Story → Seasons → Chapters → Editor with scenes. Per-chapter web &amp; mobile previews inside the editor.
-              </p>
-            </div>
-            <div className="cms-story-card__actions">
-              <Link to="/stories/demo-rrr" className="btn btn-secondary">
-                <PenLine size={16} />
-                Manage Seasons &amp; Chapters
-              </Link>
-            </div>
-          </div>
+          <ManuscriptCard
+            story={{
+              id: 'demo-rrr',
+              title: 'RRR - రాజమౌళి (Demo)',
+              description: 'Story → Seasons → Chapters → Editor with scenes. Per-chapter previews inside the editor.',
+              genre: 'family_drama',
+              chapter_count: 24,
+              total_readers: 0,
+              moderation_status: 'draft',
+            }}
+            variant="grid"
+          />
         )}
 
         {filteredStories.map((story) => {
-          const badge = storyStatusBadge(story.moderation_status);
           const storySlug = resolveStorySlug(story);
-          const readerLink = buildChapterShareUrl(storySlug, 1);
-          const canShare = story.moderation_status === 'published';
+          const readerLink = story.moderation_status === 'published'
+            ? buildChapterShareUrl(storySlug, 1)
+            : null;
           return (
-            <div key={story.id} className="cms-story-card">
-              {story.cover_url ? (
-                <img src={story.cover_url} alt="" className="cms-story-card__cover-img" />
-              ) : (
-                <div className="cms-story-card__cover">కథ</div>
-              )}
-              <div className="cms-story-card__body">
-                <h3 className="cms-story-card__title">{story.title}</h3>
-                <div className="cms-story-card__meta">
-                  <span className="badge badge-gold">{story.genre}</span>
-                  <span className={badge.className}>{badge.label}</span>
-                  <span>{story.chapter_count} chapters</span>
-                  <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
-                </div>
-                {canShare && (
-                  <div className="cms-story-card__share">
-                    <Link2 size={14} aria-hidden />
-                    <ShareLinkField
-                      url={readerLink}
-                      label="Reader link (Chapter 1)"
-                    />
-                  </div>
-                )}
-              </div>
-              <div className="cms-story-card__actions">
-                <Link to={`/stories/${story.id}`} className="btn btn-secondary">Manage Chapters</Link>
-                <Link to={`/analytics/${story.id}`} className="btn btn-ghost">Analytics</Link>
-                <button type="button" className="btn btn-ghost" onClick={() => setEditing(story)} aria-label="Edit story">
-                  <Pencil size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => handleDelete(story)}
-                  disabled={deleting === story.id}
-                  aria-label="Archive story"
-                  style={{ color: 'var(--ember)' }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
+            <ManuscriptCard
+              key={story.id}
+              story={story}
+              variant="grid"
+              readerLink={readerLink}
+              onEdit={() => setEditing(story)}
+              onDelete={() => handleDelete(story)}
+              deleting={deleting === story.id}
+            />
           );
         })}
-
-        {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
-          <div className="cms-empty">
-            <PenLine size={40} className="cms-empty__icon" />
-            <h3 className="cms-empty__title">No stories yet</h3>
-            <p className="cms-empty__text">Create your first story to start building your audience.</p>
-            <Link to="/stories/new" className="dashboard-cta" style={{ marginTop: 20, display: 'inline-flex' }}>
-              <Plus size={18} />
-              Create New Story
-            </Link>
-          </div>
-        )}
       </div>
+      )}
+
+      {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
+        <div className="studio-empty">
+          <div className="studio-empty__glyph" aria-hidden><PenLine size={32} /></div>
+          <h3 className="studio-empty__title">Your shelf is waiting</h3>
+          <p className="studio-empty__title-te" lang="te">మీ గ్రంథాలయం మొదటి కథ కోసం సిద్ధంగా ఉంది</p>
+          <p className="studio-empty__text">
+            Every great Telugu story starts with a single chapter. Create yours today — readers are waiting to walk through the door you open.
+          </p>
+          <Link to="/stories/new" className="katha-cta katha-cta--maroon studio-empty__cta">
+            <Plus size={18} aria-hidden />
+            Create your first story
+          </Link>
+        </div>
+      )}
 
       {editing && (
         <StoryEditModal story={editing} onClose={() => setEditing(null)} onSaved={reload} />

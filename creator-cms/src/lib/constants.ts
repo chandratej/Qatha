@@ -1,17 +1,35 @@
-/** Synced with packages/shared/constants.ts — single source of truth for CMS */
+/** Synced with packages/shared/constants.ts + brand.ts — single source of truth for CMS */
+
+import { BRAND_IDENTITY, BRAND_COPY } from '../../../packages/shared/brand';
+
+/** Generative AI disabled per Katha Brand Identity System */
+export const CREATOR_AI = {
+  generativeEnabled: false,
+  planningNotesEnabled: false,
+} as const;
 
 export const BRAND = {
-  name: 'Katha',
+  name: BRAND_IDENTITY.name,
+  nameTelugu: BRAND_IDENTITY.nameTelugu,
+  mark: BRAND_IDENTITY.mark,
+  productName: BRAND_IDENTITY.productName,
+  productNameTelugu: BRAND_IDENTITY.productNameTelugu,
+  tagline: BRAND_IDENTITY.tagline,
+  taglineTelugu: BRAND_IDENTITY.taglineTelugu,
+  promise: BRAND_IDENTITY.promise,
+  promiseTelugu: BRAND_IDENTITY.promiseTelugu,
+  creatorPromise: BRAND_IDENTITY.creatorPromise,
+  creatorPromiseTelugu: BRAND_IDENTITY.creatorPromiseTelugu,
+  prideLine: BRAND_IDENTITY.prideLine,
+  prideLineTelugu: BRAND_IDENTITY.prideLineTelugu,
   creatorSharePct: 60,
   platformSharePct: 40,
   priceMonthly: 99,
 } as const;
 
-export const GENRES = [
-  { id: 'romance', label: 'Romance', labelTelugu: 'ప్రేమ కథలు', weight: 0.6 },
-  { id: 'family_drama', label: 'Family Drama', labelTelugu: 'కుటుంబ నాటకం', weight: 0.2 },
-  { id: 'suspense', label: 'Suspense', labelTelugu: 'సస్పెన్స్', weight: 0.2 },
-] as const;
+export { BRAND_COPY };
+
+export { GENRES } from './platformConstants';
 
 export const RELEASE_SCHEDULES = [
   { id: 'weekly', label: 'Every week' },

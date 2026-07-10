@@ -1,3 +1,5 @@
+import { CREATOR_AI } from './constants';
+
 export type AuthoringWorkspace = 'planning' | 'writing' | 'focus' | 'review';
 
 export interface AuthoringWorkspaceLayout {
@@ -80,7 +82,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         showSceneSidebar: true,
         showPreview: false,
         syncScroll: false,
-        showAiNotes: true,
+        showAiNotes: CREATOR_AI.planningNotesEnabled,
         toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-planning',
         canvasMaxWidth: 840,

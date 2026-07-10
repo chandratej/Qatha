@@ -21,10 +21,18 @@ import { ModerationRoute } from './components/ModerationRoute';
 import { OnboardingGate } from './components/OnboardingGate';
 import { Settings } from './pages/Settings';
 import { Schedule } from './pages/Schedule';
+import { Events } from './pages/Events';
+import { EventDetail } from './pages/EventDetail';
+import { EventCreate } from './pages/EventCreate';
+import { ReviewerMarketplace } from './pages/ReviewerMarketplace';
+import { TagsModeration } from './pages/TagsModeration';
+import { Monetization } from './pages/Monetization';
+import { PlatformMap } from './pages/PlatformMap';
 import './styles/theme.css';
 import './styles/scroll-overlay.css';
 import './styles/components.css';
 import './styles/dashboard.css';
+import './styles/studio.css';
 
 function App() {
   return (
@@ -52,6 +60,13 @@ function App() {
                   <Route path="/stories/:storyId" element={<StorySeasons />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/community" element={<Community />} />
+                  <Route path="/events" element={<Events />} />
+                  <Route path="/events/new" element={<EventCreate />} />
+                  <Route path="/events/:eventId" element={<EventDetail />} />
+                  <Route path="/reviewers" element={<ReviewerMarketplace />} />
+                  <Route path="/tags" element={<TagsModeration />} />
+                  <Route path="/monetization" element={<Monetization />} />
+                  <Route path="/platform" element={<PlatformMap />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />

@@ -103,6 +103,14 @@ export const api = {
     genre: string;
     cover_url?: string;
     release_schedule?: string;
+    content_type?: string;
+    age_rating?: string;
+    language?: string;
+    story_status?: string;
+    secondary_genres?: string[];
+    setting?: string;
+    themes?: string[];
+    tags?: string[];
   }) =>
     useSupabaseDirect()
       ? sb.sbCreateStory(body)

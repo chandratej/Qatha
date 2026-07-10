@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserCircle, BookOpen, PenLine, Rocket, Leaf } from 'lucide-react';
+import { UserCircle, BookOpen, PenLine, Rocket, Check } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { BrandMark } from '../components/studio/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { ONBOARDING_KEY, BRAND } from '../lib/constants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
@@ -39,15 +40,17 @@ export function Onboarding() {
       num: 1,
       icon: UserCircle,
       title: 'Create your account',
-      desc: 'Sign in with Google or email — free to start.',
+      titleTe: 'మీ ఖాతా సృష్టించండి',
+      desc: 'Sign in with Google or email — free to start, always.',
       done: accountReady,
       current: !accountReady,
     },
     {
       num: 2,
       icon: BookOpen,
-      title: 'Create your first story',
-      desc: 'Title, genre, cover image, and release schedule.',
+      title: 'Start your first manuscript',
+      titleTe: 'మీ మొదటి కథ ప్రారంభించండి',
+      desc: 'Title, genre, cover, and release rhythm — the bones of a great story.',
       done: hasStories,
       current: accountReady && !hasStories,
     },
@@ -55,15 +58,17 @@ export function Onboarding() {
       num: 3,
       icon: PenLine,
       title: 'Write chapter 1',
-      desc: 'Scene-based editor with live preview. Max 50,000 characters.',
+      titleTe: 'మొదటి అధ్యాయం రాయండి',
+      desc: 'Scene-based editor with live preview. Up to 50,000 characters of pure craft.',
       done: hasChapters,
       current: hasStories && !hasChapters,
     },
     {
       num: 4,
       icon: Rocket,
-      title: 'Publish & share',
-      desc: 'Chapter goes live after moderation (1–2 hours).',
+      title: 'Publish & share with pride',
+      titleTe: 'ప్రచురించి పంచుకోండి',
+      desc: 'Chapters go live after a careful review (usually 1–2 hours).',
       done: hasPublished,
       current: hasChapters && !hasPublished,
     },
@@ -78,6 +83,7 @@ export function Onboarding() {
   }, [hasStories, hasChapters, hasPublished, accountReady]);
 
   const markComplete = () => localStorage.setItem(ONBOARDING_KEY, 'true');
+  const completedCount = steps.filter((s) => s.done).length;
 
   return (
     <div className="cms-auth-page">
@@ -85,36 +91,54 @@ export function Onboarding() {
         <ThemeToggle compact />
       </div>
       <div className="cms-auth-card cms-auth-card--wide animate-in">
-        <div className="cms-auth-card__brand" style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
-            <div className="premium-sidebar__brand-icon">
-              <Leaf size={20} />
-            </div>
+        <div className="cms-auth-card__brand cms-auth-card__brand--onboarding">
+          <div className="cms-auth-card__brand-seal">
+            <BrandMark size="lg" ornate label="Katha" />
           </div>
-          <h1 className="cms-auth-card__logo">కథ</h1>
-          <p className="cms-auth-card__tagline">Welcome to Katha Creator Studio</p>
-          <p style={{ fontSize: '0.9375rem', marginTop: 12, color: 'var(--ink-soft)' }}>
-            Your stories. Your readers. <strong style={{ color: 'var(--ink)' }}>{BRAND.creatorSharePct}% revenue share.</strong>
+          <h1 className="cms-auth-card__logo">{BRAND.nameTelugu}</h1>
+          <p className="cms-auth-card__product">Welcome to {BRAND.productName}</p>
+          <p className="cms-auth-card__tagline-telugu">{BRAND.taglineTelugu}</p>
+          <p className="cms-auth-card__promise">
+            Your stories. Your readers.{' '}
+            <strong className="cms-auth-card__share">{BRAND.creatorSharePct}% revenue share.</strong>
           </p>
+          <div className="cms-onboarding-progress" aria-label={`Onboarding progress: ${completedCount} of ${steps.length} complete`}>
+            <div className="cms-onboarding-progress__track">
+              <span
+                className="cms-onboarding-progress__fill"
+                style={{ width: `${(completedCount / steps.length) * 100}%` }}
+              />
+            </div>
+            <span className="cms-onboarding-progress__label">{completedCount} of {steps.length} complete</span>
+          </div>
         </div>
 
-        {steps.map((step) => (
-          <div key={step.num} className="cms-onboarding-step">
-            <div className={`cms-step-badge ${step.done ? 'cms-step-badge--done' : ''} ${step.current ? 'cms-step-badge--current' : ''}`}>
-              {step.done ? '✓' : step.num}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink)' }}>
-                <step.icon size={18} color="var(--dash-gold)" />
-                {step.title}
+        <ol className="cms-onboarding-steps">
+          {steps.map((step) => (
+            <li
+              key={step.num}
+              className={`cms-onboarding-step${step.done ? ' cms-onboarding-step--done' : ''}${step.current ? ' cms-onboarding-step--current' : ''}`}
+            >
+              <div
+                className={`cms-step-badge${step.done ? ' cms-step-badge--done' : ''}${step.current ? ' cms-step-badge--current' : ''}`}
+                aria-hidden
+              >
+                {step.done ? <Check size={16} strokeWidth={2.5} /> : step.num}
               </div>
-              <div style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginTop: 4, lineHeight: 1.55 }}>{step.desc}</div>
-            </div>
-          </div>
-        ))}
+              <div className="cms-onboarding-step__body">
+                <div className="cms-onboarding-step__title">
+                  <step.icon size={18} className="cms-onboarding-step__icon" aria-hidden />
+                  <span>{step.title}</span>
+                </div>
+                <p className="cms-onboarding-step__title-te">{step.titleTe}</p>
+                <p className="cms-onboarding-step__desc">{step.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
 
         {user?.id && (
-          <div style={{ marginTop: 24 }}>
+          <div className="cms-onboarding-whatsapp">
             <WhatsAppCTA
               type="creator"
               contextId={user.id}
@@ -123,17 +147,18 @@ export function Onboarding() {
           </div>
         )}
 
-        <Link
-          to="/stories/new"
-          className="dashboard-cta"
-          style={{ width: '100%', justifyContent: 'center', marginTop: 28, border: 'none' }}
-          onClick={markComplete}
-        >
-          Continue to Create Story
-        </Link>
-        <Link to="/" className="btn btn-ghost" style={{ width: '100%', marginTop: 10 }} onClick={markComplete}>
-          Skip to dashboard
-        </Link>
+        <div className="cms-auth-actions cms-auth-actions--stack">
+          <Link
+            to="/stories/new"
+            className="dashboard-cta cms-auth-cta"
+            onClick={markComplete}
+          >
+            Begin your first manuscript
+          </Link>
+          <Link to="/" className="btn btn-ghost cms-auth-cta" onClick={markComplete}>
+            Skip to dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );

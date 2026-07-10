@@ -1,20 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertTriangle, BarChart3, Download, Lightbulb, Users } from 'lucide-react';
+import { AlertTriangle, BarChart3, Download, IndianRupee, Lightbulb, TrendingUp, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Area, Bar, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { api } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
-import { BackLink } from '../components/BackLink';
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { formatCompact } from '../lib/dashboardFormat';
 
 type DateRange = '7d' | '30d' | 'all';
 
 export function Analytics() {
   const { storyId } = useParams();
-  const { data, loading, error } = useApi(() => api.getAnalytics(storyId!), [storyId]);
+  const navigate = useNavigate();
+  const { data, loading, error, mutate } = useApi(() => api.getAnalytics(storyId!), [storyId]);
   const [dateRange, setDateRange] = useState<DateRange>('all');
 
   useEffect(() => {
@@ -58,44 +60,91 @@ export function Analytics() {
   };
 
   if (loading) {
-    return <div className="cms-page"><div className="dashboard-skeleton" style={{ height: 72, marginBottom: 32 }} /></div>;
+    return (
+      <div className="cms-page studio-page analytics-studio">
+        <div className="dashboard-skeleton" style={{ height: 72, marginBottom: 32 }} />
+        <div className="studio-metrics">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="dashboard-skeleton" style={{ height: 72 }} />)}
+        </div>
+      </div>
+    );
   }
   if (error || !data) {
-    return <div className="cms-page"><div className="cms-panel cms-error-text">{error || 'Analytics unavailable'}</div></div>;
+    return (
+      <div className="cms-page studio-page analytics-studio">
+        <div className="studio-empty">
+          <div className="studio-empty__glyph" aria-hidden><BarChart3 size={32} /></div>
+          <h2 className="studio-empty__title">Analytics unavailable</h2>
+          <p className="studio-empty__text">{error || 'We could not load analytics for this story.'}</p>
+          <div className="studio-empty__actions">
+            <button type="button" className="katha-cta katha-cta--soft" onClick={() => mutate()}>Try again</button>
+            <button type="button" className="btn btn-secondary" onClick={() => navigate('/stories')}>Back to library</button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const totalReads = filteredChapters.reduce((s, c) => s + c.total_views, 0);
   const avgCompletion = filteredChapters.length
     ? Math.round(filteredChapters.reduce((s, c) => s + c.completion_rate, 0) / filteredChapters.length)
     : 0;
+  const estRevenue = chartData.reduce((s, r) => s + r.revenue, 0);
 
   const insights = data.drop_off_insights ?? [];
 
   return (
-    <div className="cms-page">
-      <header className="cms-page-header">
-        <div className="cms-page-header__with-back">
-          <BackLink to={`/stories/${storyId}`} label="Back to chapters" />
-          <div>
-            <h1 className="cms-page-header__title">{data.story?.title || 'Story Analytics'}</h1>
-            <p className="cms-page-header__subtitle">Reads, retention, revenue, and reader insights.</p>
-          </div>
-        </div>
-        <div className="cms-page-header__actions">
-          <select className="cms-select" value={dateRange} onChange={(e) => setDateRange(e.target.value as DateRange)} aria-label="Chapter range">
-            <option value="7d">Last 7 chapters</option>
-            <option value="30d">Last 30 chapters</option>
-            <option value="all">All chapters</option>
-          </select>
-          <button type="button" className="btn btn-secondary" onClick={exportCsv}><Download size={16} aria-hidden /> Export CSV</button>
-        </div>
-      </header>
+    <div className="cms-page studio-page analytics-studio">
+      <StudioPageHeader
+        eyebrow="Reader insights"
+        eyebrowIcon={BarChart3}
+        title={data.story?.title || 'Story Analytics'}
+        subtitle="Reads, retention, revenue, and reader insights."
+        backTo={`/stories/${storyId}`}
+        backLabel="Back to chapters"
+        actions={(
+          <>
+            <select className="cms-select" value={dateRange} onChange={(e) => setDateRange(e.target.value as DateRange)} aria-label="Chapter range">
+              <option value="7d">Last 7 chapters</option>
+              <option value="30d">Last 30 chapters</option>
+              <option value="all">All chapters</option>
+            </select>
+            <button type="button" className="btn btn-secondary" onClick={exportCsv}>
+              <Download size={16} aria-hidden /> Export CSV
+            </button>
+          </>
+        )}
+      />
 
-      <div className="cms-kpi-grid">
-        <div className="cms-kpi-card" title="Total chapter views"><div className="cms-kpi-card__value">{totalReads.toLocaleString('en-IN')}</div><div className="cms-kpi-card__label">Total reads</div></div>
-        <div className="cms-kpi-card" title="Average completion"><div className="cms-kpi-card__value">{avgCompletion}%</div><div className="cms-kpi-card__label">Avg retention</div></div>
-        <div className="cms-kpi-card" title="Subscribers from this story"><div className="cms-kpi-card__value">{data.subscribers_gained}</div><div className="cms-kpi-card__label">Subscribers gained</div></div>
-        <div className="cms-kpi-card" title="Estimated revenue"><div className="cms-kpi-card__value">{formatCompact(chartData.reduce((s, r) => s + r.revenue, 0))}</div><div className="cms-kpi-card__label">Est. revenue (₹)</div></div>
+      <div className="studio-metrics" role="list" aria-label="Analytics metrics">
+        <div className="studio-metric studio-metric--reads" role="listitem">
+          <span className="studio-metric__icon"><TrendingUp size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{totalReads.toLocaleString('en-IN')}</span>
+            <span className="studio-metric__label">Total reads</span>
+          </span>
+        </div>
+        <div className="studio-metric studio-metric--retention" role="listitem">
+          <span className="studio-metric__icon"><BarChart3 size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{avgCompletion}%</span>
+            <span className="studio-metric__label">Avg retention</span>
+          </span>
+        </div>
+        <div className="studio-metric studio-metric--subscribers" role="listitem">
+          <span className="studio-metric__icon"><Users size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{data.subscribers_gained}</span>
+            <span className="studio-metric__label">Subscribers gained</span>
+          </span>
+        </div>
+        <div className="studio-metric studio-metric--revenue studio-metric--earnings" role="listitem">
+          <span className="studio-metric__icon"><IndianRupee size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{formatCompact(estRevenue)}</span>
+            <span className="studio-metric__label">Est. revenue (₹)</span>
+          </span>
+        </div>
       </div>
 
       <div className="analytics-charts-grid">
@@ -152,7 +201,7 @@ export function Analytics() {
             {insights.map((insight) => (
               <div key={insight.chapter_number} className="cms-insight-row">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <AlertTriangle size={16} color="#C47832" aria-hidden />
+                  <AlertTriangle size={16} color="var(--katha-turmeric)" aria-hidden />
                   <strong>Chapter {insight.chapter_number}</strong>
                   <span style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>−{insight.view_drop_pct}% readers</span>
                 </div>

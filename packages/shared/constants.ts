@@ -1,23 +1,89 @@
 /** Shared constants — Katha MVP. Research-validated, see RESEARCH_DEVIATION_LOG.md */
 
+export {
+  BRAND_IDENTITY,
+  BRAND_COLORS,
+  BRAND_TYPOGRAPHY,
+  BRAND_MOTION,
+  BRAND_ICONOGRAPHY,
+  BRAND_COPY,
+  CREATOR_AI,
+  DESIGN_MODES,
+} from './brand';
+export type { KathaDesignMode } from './brand';
+
+import { BRAND_IDENTITY } from './brand';
+
 export const BRAND = {
-  name: 'Katha',
-  nameTelugu: 'కథ',
-  tagline: 'Telugu stories. No ads. No coins.',
-  taglineTelugu: 'తెలుగు కథలు. యాడ్స్ లేవు. కాయిన్స్ లేవు.',
+  name: BRAND_IDENTITY.name,
+  nameTelugu: BRAND_IDENTITY.nameTelugu,
+  mark: BRAND_IDENTITY.mark,
+  productName: BRAND_IDENTITY.productName,
+  tagline: BRAND_IDENTITY.tagline,
+  taglineTelugu: BRAND_IDENTITY.taglineTelugu,
+  promise: BRAND_IDENTITY.promise,
+  promiseTelugu: BRAND_IDENTITY.promiseTelugu,
+  creatorPromise: BRAND_IDENTITY.creatorPromise,
+  prideLine: BRAND_IDENTITY.prideLine,
   priceMonthly: 99,
   priceMonthlyPaise: 9900,
   creatorSharePct: 60,
   platformSharePct: 40,
 } as const;
 
-export const GENRES = [
-  { id: 'romance', label: 'Romance', labelTelugu: 'ప్రేమ కథలు', weight: 0.6 },
-  { id: 'family_drama', label: 'Family Drama', labelTelugu: 'కుటుంబ నాటకం', weight: 0.2 },
-  { id: 'suspense', label: 'Suspense', labelTelugu: 'సస్పెన్స్', weight: 0.2 },
-] as const;
+export {
+  PRD_GENRES,
+  genreLabel,
+  GENRE_DISCOVER_WEIGHTS,
+} from './genres';
+export { CONTENT_TYPES, STORY_STATUSES, AGE_RATINGS, LANGUAGES } from './content-types';
+export type { ContentTypeId, StoryStatusId, AgeRatingId, LanguageId } from './content-types';
 
-export type GenreId = (typeof GENRES)[number]['id'];
+export { MOOD_TAGS, SEED_COMMUNITY_TAGS, TAG_REQUEST_STATUSES, TAG_WORKFLOW } from './tags';
+export type { TagRequestStatus } from './tags';
+
+export { AUTHOR_LEVELS, nextAuthorLevel } from './author-levels';
+export type { AuthorLevelId } from './author-levels';
+
+export { STORY_BADGES, badgeForReaders } from './story-badges';
+export type { StoryBadgeId } from './story-badges';
+
+export {
+  EVENT_TYPES, ORGANIZER_LEVELS, ENTRY_FEE_TIERS_INR, JUDGING_MODELS, RUBRIC_DIMENSIONS,
+  EVENT_STATUSES, EVENT_WIZARD_STEPS, DEFAULT_COMMISSION_SPLITS, ESCROW_RELEASE_CONDITIONS,
+  SUBMISSION_WORKFLOW_STEPS,
+} from './events';
+export type { EventTypeId, OrganizerLevelId, JudgingModelId, EventStatus } from './events';
+
+export { PLATFORM_ROLES, ROLE_PERMISSIONS, hasPermission, canHostPaidContest } from './rbac';
+export type { PlatformRole } from './rbac';
+
+export {
+  REVIEWER_ROLES, REVIEW_DECISIONS, REVIEWER_REPUTATION_TIERS, REVIEWER_METRICS,
+  REVIEW_PACKAGE, BETA_READER_MODES,
+} from './reviewer-marketplace';
+export type { ReviewerRoleId, ReviewDecisionId } from './reviewer-marketplace';
+
+export { REPORT_CATEGORIES, REPORT_STATUSES, GOVERNANCE_SAFEGUARDS } from './governance';
+export type { ReportCategoryId } from './governance';
+
+export { READER_MONETIZATION, CREATOR_MONETIZATION, PLATFORM_REVENUE } from './monetization';
+
+export { CONTEST_ROADMAP, CONTEST_REWARDS } from './contests';
+
+export { RECOMMENDATION_SIGNALS, READER_SYSTEMS } from './recommendations';
+
+/** CMS/reader genre picker — full PRD catalog */
+import { PRD_GENRES, GENRE_DISCOVER_WEIGHTS } from './genres';
+
+export const GENRES = PRD_GENRES.map((g) => ({
+  id: g.id,
+  label: g.label,
+  labelTelugu: g.labelTelugu,
+  weight: GENRE_DISCOVER_WEIGHTS[g.id] ?? 0.03,
+}));
+
+export type { GenreId } from './genres';
 
 /** DEV-005 — Founder decision: no star ratings (ever); no reader comments (for now). */
 export const SOCIAL_FEATURES = {

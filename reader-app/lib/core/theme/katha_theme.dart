@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// Katha Brand Identity System v1.0 — sync with packages/shared/brand-tokens.css
+
 class KathaColors {
   static const gold = Color(0xFFC4A052);
   static const goldLight = Color(0xFFE8D5A3);

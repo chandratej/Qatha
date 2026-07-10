@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, IndianRupee, Users } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { BookOpen, IndianRupee, TrendingUp, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import type { CreatorMilestone } from '../lib/api';
 import { useApi } from '../hooks/useApi';
@@ -10,17 +10,15 @@ import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { isSessionError } from '../lib/errors';
 import { buildActivityFeed } from '../lib/buildActivityFeed';
 import { formatCompact, formatInr } from '../lib/dashboardFormat';
-import { getTimeGreeting } from '../lib/dashboardGreeting';
 import { ensureDemoStreak, getProductivitySnapshot, getWritingStreak } from '../lib/writingStreak';
-import { DateRangePicker, defaultDateRange, type DateRange } from '../components/DateRangePicker';
-import { KpiCard } from '../components/dashboard/KpiCard';
+
 import { StoriesWidget } from '../components/dashboard/StoriesWidget';
 import { QuickActionsPanel } from '../components/dashboard/QuickActionsPanel';
 import { ActivityFeedPanel } from '../components/dashboard/ActivityFeedPanel';
 import { TopPerformingStories } from '../components/dashboard/TopPerformingStories';
-import { CompactStreakStrip } from '../components/dashboard/CompactStreakStrip';
 import { CreatorBadgeBar } from '../components/dashboard/CreatorBadgeBar';
-
+import { StudioHero } from '../components/studio/StudioHero';
+import { BrandMark } from '../components/studio/BrandMark';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -31,7 +29,7 @@ export function Dashboard() {
     api.getMilestones().catch(() => ({ milestones: [] as CreatorMilestone[] })),
   );
   const [activeMilestone, setActiveMilestone] = useState<CreatorMilestone | null>(null);
-  const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
+
   useEffect(() => { trackCreatorEvent('creator_dashboard_view'); }, []);
   useEffect(() => {
     if (milestonesData?.milestones?.length && !activeMilestone) {
@@ -50,36 +48,64 @@ export function Dashboard() {
     return map;
   }, [d]);
 
-  const spark = useMemo(() => (d?.subscriber_history ?? []).map((r) => r.count), [d]);
   const growth = d?.week_over_week_growth_pct;
   const activity = useMemo(() => (d ? buildActivityFeed(d, milestonesData?.milestones ?? []) : []), [d, milestonesData]);
   const topStories = useMemo(() => [...(d?.earnings_by_story ?? [])].sort((a, b) => b.total_readers - a.total_readers).slice(0, 4), [d]);
-  const wordGoalPct = Math.min(100, Math.round((productivity.wordsToday / productivity.dailyGoal) * 100));
   const analyticsHref = d?.stories[0]?.id ? `/analytics/${d.stories[0].id}` : undefined;
   const sharePct = d?.revenue_share_pct ?? BRAND.creatorSharePct;
 
-  const handleAcknowledge = async () => {
+  const continueStory = useMemo(() => {
+    const stories = storiesData?.stories ?? [];
+    if (!stories.length) return null;
+    return [...stories].sort((a, b) => b.chapter_count - a.chapter_count)[0];
+  }, [storiesData]);
+
+  const milestoneBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleAcknowledge = useCallback(async () => {
     if (!activeMilestone) return;
     await api.acknowledgeMilestone(activeMilestone.id);
     setActiveMilestone(null);
     mutateMilestones();
-  };
+  }, [activeMilestone, mutateMilestones]);
+
+  useEffect(() => {
+    if (!activeMilestone) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => milestoneBtnRef.current?.focus());
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleAcknowledge();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [activeMilestone, handleAcknowledge]);
 
   if (loading) {
     return (
-      <div className="cms-page dashboard-page">
-        <div className="dashboard-skeleton" style={{ height: 80, marginBottom: 36 }} />
-        <div className="dashboard-kpi-grid">{[1, 2, 3, 4].map((i) => <div key={i} className="dashboard-skeleton" style={{ height: 140 }} />)}</div>
+      <div className="cms-page dashboard-page studio-page">
+        <div className="dashboard-skeleton studio-skeleton-hero" aria-hidden />
+        <div className="studio-metrics" aria-busy="true" aria-label="Loading studio metrics">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="dashboard-skeleton studio-skeleton-metric" />)}
+        </div>
+        <p className="cms-loading cms-loading--inline">Lighting your studio…</p>
       </div>
     );
   }
 
   if (error || !d) {
     return (
-      <div className="cms-page dashboard-page">
-        <div className="cms-panel cms-panel--flat" style={{ padding: 32, textAlign: 'center' }}>
-          <p style={{ color: 'var(--ink-muted)', marginBottom: 20 }}>{error || 'We could not load your dashboard.'}</p>
-          <button type="button" className="dashboard-cta" style={{ border: 'none' }} onClick={() => (isSessionError(error) ? navigate('/login') : mutate())}>
+      <div className="cms-page dashboard-page studio-page">
+        <div className="studio-empty">
+          <div className="studio-empty__glyph" aria-hidden>
+            <BrandMark size="md" />
+          </div>
+          <h2 className="studio-empty__title">Studio paused</h2>
+          <p className="studio-empty__text">{error || 'We could not load your studio.'}</p>
+          <button type="button" className="katha-cta katha-cta--soft" onClick={() => (isSessionError(error) ? navigate('/login') : mutate())}>
             {isSessionError(error) ? 'Sign in again' : 'Try again'}
           </button>
         </div>
@@ -88,58 +114,72 @@ export function Dashboard() {
   }
 
   return (
-    <div className="cms-page dashboard-page">
+    <div className="cms-page dashboard-page studio-page">
       {activeMilestone && (
         <div className="milestone-modal-backdrop" role="presentation">
-          <div className="milestone-modal" role="dialog">
-            <div style={{ fontSize: '4rem', marginBottom: 16 }} aria-hidden>🎉</div>
-            <h2>Milestone unlocked!</h2>
-            <p style={{ color: 'var(--ink-muted)', marginBottom: 24 }}>Keep the momentum going on your creator journey.</p>
-            <button type="button" className="dashboard-cta" style={{ width: '100%', justifyContent: 'center' }} onClick={handleAcknowledge}>Awesome!</button>
+          <div className="milestone-modal" role="dialog" aria-labelledby="milestone-title" aria-modal="true">
+            <div className="studio-empty__glyph" aria-hidden><TrendingUp size={32} /></div>
+            <h2 id="milestone-title" className="studio-empty__title">Milestone unlocked</h2>
+            <p className="milestone-modal__te" lang="te">మీ ప్రయాణంలో మరో మైలురాయి</p>
+            <p className="studio-empty__text">Keep the lamp lit — your craft is building something readers will remember.</p>
+            <button ref={milestoneBtnRef} type="button" className="dashboard-cta cms-auth-cta" onClick={handleAcknowledge}>
+              Continue with pride
+            </button>
           </div>
         </div>
       )}
 
-      <div className="dashboard-page__anchor">
-        <header className="dashboard-header">
-          <div className="dashboard-header__main">
-            <h1 className="dashboard-header__title">{getTimeGreeting()}, {displayName}!</h1>
-            <p className="dashboard-header__subtitle">Here&apos;s how your stories and community are growing.</p>
-            <div className="dashboard-header__meta">
-              <span className="dashboard-header__chip dashboard-header__chip--goal">
-                <span className="dashboard-header__chip-label">Today</span>
-                <span className="dashboard-header__chip-value">{productivity.wordsToday.toLocaleString('en-IN')} / {productivity.dailyGoal}</span>
-                <span className="dashboard-header__chip-bar" role="progressbar" aria-valuenow={wordGoalPct} aria-valuemin={0} aria-valuemax={100}>
-                  <span className="dashboard-header__chip-fill" style={{ width: `${wordGoalPct}%` }} />
-                </span>
-              </span>
-              <CompactStreakStrip currentStreak={streak.currentStreak} longestStreak={streak.longestStreak} />
-            </div>
-          </div>
-          <div className="dashboard-header__actions">
-            <DateRangePicker value={dateRange} onChange={setDateRange} />
-          </div>
-        </header>
+      <StudioHero
+        displayName={displayName}
+        productivity={productivity}
+        streak={streak}
+        continueStoryHref={continueStory ? `/stories/${continueStory.id}` : undefined}
+        continueStoryTitle={continueStory?.title}
+        continueStoryCover={continueStory?.cover_url}
+      />
 
-        <CreatorBadgeBar totalReads={totalReads} revenueSharePct={sharePct} />
+      <CreatorBadgeBar totalReads={totalReads} revenueSharePct={sharePct} />
 
-        <div className="dashboard-kpi-grid">
-          <KpiCard icon={BookOpen} value={formatCompact(totalReads)} label="Total Reads" trend={growth} sparkline={spark} tooltip="Combined reads across all stories" onClick={() => navigate('/stories')} />
-          <KpiCard icon={Users} value={d.total_subscribers.toLocaleString('en-IN')} label="Active Subscribers" trend={growth} tone="purple" sparkline={spark} />
-          <KpiCard icon={IndianRupee} value={formatInr(d.earnings_this_month)} label="Earnings (This Month)" trend={growth} tooltip={`Est. payout ${formatInr(d.expected_payout_amount)}`} />
-          <KpiCard icon={BookOpen} value={`${sharePct}%`} label="Revenue Share" sub={`₹${BRAND.priceMonthly}/subscription`} tone="green" />
+      <div className="studio-metrics" role="list" aria-label="Studio metrics">
+        <button type="button" className="studio-metric" role="listitem" onClick={() => navigate('/stories')}>
+          <span className="studio-metric__icon"><BookOpen size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{formatCompact(totalReads)}</span>
+            <span className="studio-metric__label">Total reads</span>
+            {growth != null && <span className="studio-metric__trend">{growth >= 0 ? '+' : ''}{growth}% this week</span>}
+          </span>
+        </button>
+        <div className="studio-metric" role="listitem">
+          <span className="studio-metric__icon"><Users size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{d.total_subscribers.toLocaleString('en-IN')}</span>
+            <span className="studio-metric__label">Active subscribers</span>
+          </span>
         </div>
-
-        <QuickActionsPanel layout="bar" />
+        <div className="studio-metric studio-metric--earnings" role="listitem">
+          <span className="studio-metric__icon"><IndianRupee size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{formatInr(d.earnings_this_month)}</span>
+            <span className="studio-metric__label">Earnings this month</span>
+          </span>
+        </div>
+        <div className="studio-metric" role="listitem">
+          <span className="studio-metric__icon"><TrendingUp size={18} aria-hidden /></span>
+          <span>
+            <span className="studio-metric__value">{sharePct}%</span>
+            <span className="studio-metric__label">Your revenue share</span>
+          </span>
+        </div>
       </div>
 
-      <div className="dashboard-page__body">
+      <div className="studio-workspace">
         <StoriesWidget stories={storiesData?.stories ?? []} earningsMap={earningsMap} />
+        <QuickActionsPanel />
+      </div>
 
-        <div className="dashboard-bottom-grid">
-          <ActivityFeedPanel items={activity} />
-          <TopPerformingStories stories={topStories} analyticsHref={analyticsHref} />
-        </div>
+      <div className="dashboard-bottom-grid">
+        <ActivityFeedPanel items={activity} />
+        <TopPerformingStories stories={topStories} analyticsHref={analyticsHref} />
       </div>
     </div>
   );

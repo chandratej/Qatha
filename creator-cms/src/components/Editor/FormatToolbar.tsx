@@ -5,6 +5,7 @@ import {
   Undo2, Redo2, MoreHorizontal, Sparkles, SeparatorHorizontal,
 } from 'lucide-react';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
+import { ToolbarTooltip } from './ToolbarTooltip';
 
 interface FormatToolbarProps {
   phoneticLive: boolean;
@@ -70,7 +71,7 @@ export const FormatToolbar = memo(function FormatToolbar({
         <div className="katha-proto-fmt-divider" aria-hidden />
         <button
           type="button"
-          className={`katha-proto-fmt-btn${phoneticLive ? ' active' : ''}`}
+          className={`katha-proto-fmt-btn katha-proto-fmt-btn--telugu-moat${phoneticLive ? ' active' : ''}`}
           onClick={onTogglePhonetic}
           title="Phonetic Telugu typing"
           aria-pressed={phoneticLive}
@@ -120,9 +121,9 @@ export const FormatToolbar = memo(function FormatToolbar({
       <div className="katha-proto-fmt-group" aria-label="Telugu tools">
         <button
           type="button"
-          className={`katha-proto-fmt-btn${phoneticLive ? ' active' : ''}`}
+          className={`katha-proto-fmt-btn katha-proto-fmt-btn--telugu-moat${phoneticLive ? ' active' : ''}`}
           onClick={onTogglePhonetic}
-          title={phoneticLive ? 'Phonetic typing on — click to pause' : 'Phonetic typing off — click to enable'}
+          title={phoneticLive ? 'Phonetic Telugu on — built for Telugu writers' : 'Enable phonetic Telugu typing'}
           aria-pressed={phoneticLive}
           aria-label="Phonetic Telugu typing"
         >
@@ -144,51 +145,71 @@ export const FormatToolbar = memo(function FormatToolbar({
       <div className="katha-proto-fmt-divider" aria-hidden />
 
       <div className="katha-proto-fmt-group" aria-label="Text formatting">
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onBold} title="Bold (Ctrl+B)" aria-label="Bold">
-          <Bold size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onItalic} title="Italic (Ctrl+I)" aria-label="Italic">
-          <Italic size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onUnderline} title="Underline (Ctrl+U)" aria-label="Underline">
-          <Underline size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
+        <ToolbarTooltip label="Bold (Ctrl+B)">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onBold} aria-label="Bold">
+            <Bold size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
+        <ToolbarTooltip label="Italic (Ctrl+I)">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onItalic} aria-label="Italic">
+            <Italic size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
+        <ToolbarTooltip label="Underline (Ctrl+U)">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onUnderline} aria-label="Underline">
+            <Underline size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />
 
       <div className="katha-proto-fmt-group" aria-label="Paragraph alignment">
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('left')} title="Align left" aria-label="Align left">
-          <AlignLeft size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('center')} title="Align center" aria-label="Align center">
-          <AlignCenter size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('right')} title="Align right" aria-label="Align right">
-          <AlignRight size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
+        <ToolbarTooltip label="Align left">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('left')} aria-label="Align left">
+            <AlignLeft size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
+        <ToolbarTooltip label="Align center">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('center')} aria-label="Align center">
+            <AlignCenter size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
+        <ToolbarTooltip label="Align right">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={() => onAlign('right')} aria-label="Align right">
+            <AlignRight size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />
 
       <div className="katha-proto-fmt-group" aria-label="Insert">
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onLink} title="Insert link" aria-label="Insert link">
-          <Link size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onSceneBreak} title="Insert scene break" aria-label="Insert scene break">
-          <SeparatorHorizontal size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
+        <ToolbarTooltip label="Insert link">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onLink} aria-label="Insert link">
+            <Link size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
+        <ToolbarTooltip label="Scene break — fiction divider">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onSceneBreak} aria-label="Insert scene break">
+            <SeparatorHorizontal size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />
 
       <div className="katha-proto-fmt-group" aria-label="Undo and redo">
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onUndo} title="Undo (Ctrl+Z)" aria-label="Undo">
-          <Undo2 size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onRedo} title="Redo (Ctrl+Y)" aria-label="Redo">
-          <Redo2 size={15} strokeWidth={EDITOR_ICON_STROKE} />
-        </button>
+        <ToolbarTooltip label="Undo (Ctrl+Z)">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onUndo} aria-label="Undo">
+            <Undo2 size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
+        <ToolbarTooltip label="Redo (Ctrl+Y)">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onRedo} aria-label="Redo">
+            <Redo2 size={15} strokeWidth={EDITOR_ICON_STROKE} />
+          </button>
+        </ToolbarTooltip>
       </div>
 
       {onOpenAi && (

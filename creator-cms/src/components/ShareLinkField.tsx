@@ -1,14 +1,16 @@
 import { useCallback, useState } from 'react';
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import { openShareLinkAsAuthor } from '../lib/openShareLink';
+import { SharePreviewCard, type SharePreviewProps } from './studio/SharePreviewCard';
 
 interface Props {
   url: string;
   label?: string;
   compact?: boolean;
+  preview?: Omit<SharePreviewProps, 'url'>;
 }
 
-export function ShareLinkField({ url, label = 'Share link', compact = false }: Props) {
+export function ShareLinkField({ url, label = 'Share link', compact = false, preview }: Props) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -17,7 +19,6 @@ export function ShareLinkField({ url, label = 'Share link', compact = false }: P
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* fallback for older browsers */
       const el = document.createElement('textarea');
       el.value = url;
       document.body.appendChild(el);
@@ -46,6 +47,17 @@ export function ShareLinkField({ url, label = 'Share link', compact = false }: P
 
   return (
     <div className="share-link-field">
+      {preview && (
+        <SharePreviewCard
+          url={url}
+          storyTitle={preview.storyTitle}
+          chapterTitle={preview.chapterTitle}
+          chapterNumber={preview.chapterNumber}
+          authorName={preview.authorName}
+          coverUrl={preview.coverUrl}
+          excerpt={preview.excerpt}
+        />
+      )}
       <span className="share-link-field__label">{label}</span>
       <div className="share-link-field__row">
         <input

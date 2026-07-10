@@ -716,7 +716,7 @@ export function ChapterEditor() {
   }
 
   return (
-    <div className={`katha-proto-layout${focusMode ? ' focus-mode' : ''}`}>
+    <div className={`katha-proto-layout${focusMode ? ' focus-mode' : ''}`} data-katha-mode="creation">
       <ChapterFindBar
         open={findOpen}
         query={findQuery}
@@ -892,6 +892,7 @@ export function ChapterEditor() {
           focusMode={focusMode}
           canvasMaxWidth={canvasMaxWidth}
           toolbarMinimal={workspaceLayout.toolbarMinimal}
+          showSceneNav={sceneSidebarCollapsed || !workspaceLayout.showSceneSidebar}
           findOpen={findOpen}
           findActiveMatch={findActiveMatch}
           findSceneMatches={findMatches}

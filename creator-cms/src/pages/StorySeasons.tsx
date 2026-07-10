@@ -2,8 +2,9 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Plus, Edit3, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil, Link2 } from 'lucide-react';
 import { ShareLinkField } from '../components/ShareLinkField';
+import { BookSpine } from '../components/studio/BookSpine';
 import { buildChapterShareUrl, isChapterShareable, resolveStorySlug } from '../lib/shareLinks';
-import { BackLink } from '../components/BackLink';
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { Reorder } from 'framer-motion';
 import {
   getOrInitDemoData,
@@ -29,7 +30,13 @@ export function StorySeasons() {
 
   const [storyTitle, setStoryTitle] = useState(isDemo ? 'RRR - రాజమౌళి (Demo - Editor Validated)' : 'My Story');
   const [storySlug, setStorySlug] = useState<string | null>(null);
-  const [storyMeta, setStoryMeta] = useState<{ id: string; title: string; slug?: string | null } | null>(null);
+  const [storyMeta, setStoryMeta] = useState<{
+    id: string;
+    title: string;
+    slug?: string | null;
+    cover_url?: string | null;
+    description?: string | null;
+  } | null>(null);
   const [apiChapters, setApiChapters] = useState<ChapterListItem[]>([]);
   const [loading, setLoading] = useState(!isDemo);
   const [error, setError] = useState<string | null>(null);
@@ -38,10 +45,18 @@ export function StorySeasons() {
     setLoading(true);
     setError(null);
     try {
-      const { story, chapters } = await api.getStoryChapters(storyId);
+      const [{ story, chapters }, { stories }] = await Promise.all([
+        api.getStoryChapters(storyId),
+        api.getCreatorStories().catch(() => ({ stories: [] })),
+      ]);
+      const fullStory = stories?.find((s) => s.id === storyId);
       if (story?.title) setStoryTitle(story.title);
       if (story) {
-        setStoryMeta(story);
+        setStoryMeta({
+          ...story,
+          cover_url: fullStory?.cover_url ?? null,
+          description: fullStory?.description ?? null,
+        });
         setStorySlug(story.slug ?? null);
       }
       setApiChapters(chapters ?? []);
@@ -123,7 +138,7 @@ export function StorySeasons() {
   const statusBadge = (status?: string) => {
     if (!status || status === 'draft') return <span className="badge">Draft</span>;
     if (status === 'pending_review') return <span className="badge badge-gold">Pending review</span>;
-    if (status === 'published') return <span className="badge badge-success">Published</span>;
+    if (status === 'published') return <span className="badge badge-maroon">Published</span>;
     if (status === 'rejected' || status === 'needs_revision') return <span className="badge badge-error">Needs edits</span>;
     return <span className="badge">{status}</span>;
   };
@@ -140,30 +155,26 @@ export function StorySeasons() {
   }
 
   return (
-    <div className="cms-page">
-      <header className="cms-page-header">
-        <div className="cms-page-header__with-back">
-          <BackLink to="/stories" label="Back to stories" />
-          <div>
-            <h1 className="cms-page-header__title">{storyTitle}</h1>
-            <p className="cms-page-header__subtitle">
-              {isDemo
-                ? 'Seasons • Chapters • Scenes (for sequels, prequels & serialized novels)'
-                : 'Chapters — MVP uses flat chapter organization (seasons are demo-only)'}
-            </p>
-          </div>
-        </div>
-        {isDemo && (
-          <div className="cms-page-header__actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowAddSeason(!showAddSeason)}
-            >
-              <Plus size={16} /> Add Season (Sequel / Prequel)
-            </button>
-          </div>
-        )}
-      </header>
+    <div className="cms-page studio-page">
+      <StudioPageHeader
+        eyebrow="Manuscript"
+        eyebrowIcon={BookOpen}
+        title={storyTitle}
+        subtitle={isDemo
+          ? 'Seasons • Chapters • Scenes (for sequels, prequels & serialized novels)'
+          : 'Chapters — MVP uses flat chapter organization (seasons are demo-only)'}
+        backTo="/stories"
+        backLabel="Back to stories"
+        actions={isDemo ? (
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setShowAddSeason(!showAddSeason)}
+          >
+            <Plus size={16} /> Add Season (Sequel / Prequel)
+          </button>
+        ) : undefined}
+      />
 
       {error && (
         <div className="cms-panel cms-error-text cms-panel--flat" style={{ marginBottom: 20 }}>{error}</div>
@@ -180,19 +191,24 @@ export function StorySeasons() {
               </p>
             </div>
           </div>
-          {apiChapters.some((ch) => isChapterShareable(ch.status)) ? (
-            <ShareLinkField
-              url={buildChapterShareUrl(
-                resolveStorySlug({ ...storyMeta, slug: storySlug }),
-                Math.max(
-                  ...apiChapters
-                    .filter((ch) => isChapterShareable(ch.status))
-                    .map((ch) => ch.chapter_number),
-                ),
-              )}
-              label="Latest shareable chapter"
-            />
-          ) : (
+          {apiChapters.some((ch) => isChapterShareable(ch.status)) ? (() => {
+            const shareable = apiChapters.filter((ch) => isChapterShareable(ch.status));
+            const latest = shareable.reduce((a, b) => (a.chapter_number > b.chapter_number ? a : b));
+            const slug = resolveStorySlug({ ...storyMeta, slug: storySlug });
+            return (
+              <ShareLinkField
+                url={buildChapterShareUrl(slug, latest.chapter_number)}
+                label="Latest shareable chapter"
+                preview={{
+                  storyTitle: storyMeta.title,
+                  chapterTitle: latest.title,
+                  chapterNumber: latest.chapter_number,
+                  coverUrl: storyMeta.cover_url,
+                  excerpt: storyMeta.description ?? undefined,
+                }}
+              />
+            );
+          })() : (
             <p className="cms-share-panel__hint">Publish a chapter to get your first shareable reader link.</p>
           )}
         </div>
@@ -249,33 +265,34 @@ export function StorySeasons() {
           </aside>
         )}
 
-        <div className="cms-panel cms-panel--flat">
-          <div className="cms-panel__head">
+        <div className="cms-panel cms-panel--flat studio-manuscript-panel">
+          <div className="studio-manuscript-panel__head">
             <div>
-              <h2 className="cms-panel__title" style={{ margin: 0 }}>
-                {isDemo ? selectedSeason?.title : 'Chapters'}
+              <h2 className="studio-manuscript-panel__title">
+                {isDemo ? selectedSeason?.title : 'Chapter bookshelf'}
               </h2>
-              <span className="cms-panel__subtitle">
+              <span className="studio-manuscript-panel__subtitle">
                 {currentChapters.length} chapter{currentChapters.length === 1 ? '' : 's'}
                 {isDemo ? ' in this season • Drag to reorder' : ' • Click to edit with scenes'}
               </span>
             </div>
-            <button onClick={handleAddChapter} className="dashboard-cta">
+            <button type="button" onClick={handleAddChapter} className="katha-cta katha-cta--maroon">
               <Plus size={16} /> Add Chapter
             </button>
           </div>
 
           {currentChapters.length === 0 ? (
-            <div className="cms-empty" style={{ padding: '32px 24px' }}>
-              <BookOpen size={32} className="cms-empty__icon" />
-              <p className="cms-empty__text">No chapters yet. Use &ldquo;Add Chapter&rdquo; to start writing.</p>
+            <div className="studio-empty" style={{ padding: '32px 24px' }}>
+              <div className="studio-empty__glyph" aria-hidden><BookOpen size={28} /></div>
+              <h3 className="studio-empty__title">Empty bookshelf</h3>
+              <p className="studio-empty__text">Add your first chapter to begin this manuscript.</p>
             </div>
           ) : isDemo ? (
             <Reorder.Group
               axis="y"
               values={currentChapters}
               onReorder={handleReorderChapters}
-              className="cms-chapter-list"
+              className="studio-chapter-list"
             >
               {currentChapters.map((chNum) => {
                 const chTitle = getChapterTitle(storyId, chNum);
@@ -294,12 +311,13 @@ export function StorySeasons() {
               })}
             </Reorder.Group>
           ) : (
-            <div className="cms-chapter-list">
+            <div className="studio-chapter-list">
               {apiChapters.map((ch) => (
                 <ChapterRow
                   key={ch.chapter_number}
                   storyId={storyId}
                   storySlug={storyMeta ? resolveStorySlug({ ...storyMeta, slug: storySlug }) : undefined}
+                  coverUrl={storyMeta?.cover_url}
                   chNum={ch.chapter_number}
                   title={ch.title || `Chapter ${ch.chapter_number}`}
                   words={ch.word_count || 0}
@@ -360,6 +378,7 @@ export function StorySeasons() {
 function ChapterRow({
   storyId,
   storySlug,
+  coverUrl,
   chNum,
   title,
   words,
@@ -371,6 +390,7 @@ function ChapterRow({
 }: {
   storyId?: string;
   storySlug?: string;
+  coverUrl?: string | null;
   chNum: number;
   title: string;
   words: number;
@@ -425,28 +445,32 @@ function ChapterRow({
   };
 
   return (
-    <div className="cms-chapter-row">
-      <div className="cms-chapter-row__left">
-        <div className="cms-chapter-row__num">Ch {chNum}</div>
+    <div className="studio-chapter-row cms-chapter-row">
+      {coverUrl && (
+        <div className="studio-chapter-row__cover" aria-hidden>
+          <img src={coverUrl} alt="" />
+        </div>
+      )}
+      <BookSpine chapterNumber={chNum} title={title} status={status} />
+      <div className="studio-chapter-row__content">
         <div style={{ flex: 1, minWidth: 0 }}>
           {editing ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="cms-inline-form input"
-                style={{ flex: 1, padding: '6px 10px', fontSize: '0.875rem' }}
+                className="cms-input cms-inline-input"
               />
               <button type="button" className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={handleRename} disabled={busy}>Save</button>
               <button type="button" className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: '0.75rem' }} onClick={() => setEditing(false)}>Cancel</button>
             </div>
           ) : (
             <>
-              <div className="cms-chapter-row__title">
+              <div className="studio-chapter-row__title cms-chapter-row__title">
                 {title}
                 {statusBadge}
               </div>
-              <div className="cms-chapter-row__meta">
+              <div className="studio-chapter-row__meta cms-chapter-row__meta">
                 {displayWords} words • {displayScenes} scenes
               </div>
               {shareUrl && (

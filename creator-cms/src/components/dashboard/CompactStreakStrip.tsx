@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Flame } from 'lucide-react';
+import { DiyaIcon } from '../studio/DiyaIcon';
 import { getMonthHeatmap, getWeekHeatmap } from '../../lib/writingStreak';
 
 interface Props {
@@ -15,9 +15,9 @@ export function CompactStreakStrip({ currentStreak, longestStreak }: Props) {
   return (
     <div className="compact-streak" role="group" aria-label="Writing streak">
       <div className="compact-streak__summary">
-        <Flame size={15} className="compact-streak__flame" aria-hidden />
+        <DiyaIcon size={15} className="compact-streak__diya" />
         <span className="compact-streak__count">{currentStreak}</span>
-        <span className="compact-streak__label">day streak</span>
+        <span className="compact-streak__label">day lamp lit</span>
         <span className="compact-streak__sep" aria-hidden>·</span>
         <span className="compact-streak__best">best {longestStreak}</span>
       </div>

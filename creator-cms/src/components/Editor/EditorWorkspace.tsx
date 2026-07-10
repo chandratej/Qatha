@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
-import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, PenLine } from 'lucide-react';
 import { AiAssistantDock } from './AiAssistantDock';
+import { CREATOR_AI } from '../../lib/constants';
 import {
   getPhoneticSuggestions,
   getSemanticAlternatives,
@@ -17,6 +18,8 @@ import {
   type ChapterFindMatch,
 } from '../../lib/chapterFind';
 import { FormatToolbar } from './FormatToolbar';
+import { ScenePacingHint } from './ScenePacingHint';
+import { getSceneWordCount } from '../../lib/scenePacing';
 import { PhoneticTextInput } from './PhoneticTextInput';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 
@@ -115,6 +118,7 @@ interface EditorWorkspaceProps {
   focusMode?: boolean;
   canvasMaxWidth?: number;
   toolbarMinimal?: boolean;
+  showSceneNav?: boolean;
   findOpen?: boolean;
   findActiveMatch?: ChapterFindMatch | null;
   findSceneMatches?: ChapterFindMatch[];
@@ -141,6 +145,7 @@ export function EditorWorkspace({
   focusMode = false,
   canvasMaxWidth = 920,
   toolbarMinimal = false,
+  showSceneNav = true,
   findOpen = false,
   findActiveMatch = null,
   findSceneMatches = [],
@@ -369,7 +374,7 @@ export function EditorWorkspace({
       <main className="katha-proto-editor katha-proto-editor--empty">
         <div className="katha-proto-editor-empty">
           <div className="katha-proto-editor-empty__glyph" aria-hidden>
-            <Sparkles size={28} strokeWidth={EDITOR_ICON_STROKE} />
+            <PenLine size={28} strokeWidth={EDITOR_ICON_STROKE} />
           </div>
           <h2>No scene selected</h2>
           <p>Choose a scene from the sidebar, or create one to begin writing.</p>
@@ -397,6 +402,16 @@ export function EditorWorkspace({
         </div>
       )}
 
+      {activeScene && sceneCount > 0 && (
+        <div className="katha-proto-scene-pacing-bar">
+          <ScenePacingHint
+            wordCount={getSceneWordCount(activeScene.content)}
+            sceneIndex={activeSceneIndex}
+            sceneCount={sceneCount}
+          />
+        </div>
+      )}
+
       <FormatToolbar
         phoneticLive={phoneticLive}
         onTogglePhonetic={onTogglePhonetic}
@@ -410,10 +425,10 @@ export function EditorWorkspace({
         onSceneBreak={insertSceneBreak}
         onLink={insertLink}
         minimal={toolbarMinimal}
-        onOpenAi={() => setAiCompanionOpen(true)}
+        onOpenAi={CREATOR_AI.generativeEnabled ? () => setAiCompanionOpen(true) : undefined}
       />
 
-      {!focusMode && sceneCount > 1 && (
+      {!focusMode && showSceneNav && sceneCount > 1 && (
         <div className="katha-proto-scene-nav" role="navigation" aria-label="Scene navigation">
           <button
             type="button"
@@ -473,11 +488,13 @@ export function EditorWorkspace({
         </div>
       </div>
 
-      <AiAssistantDock
-        open={aiCompanionOpen}
-        onOpenChange={setAiCompanionOpen}
-        integrated={false}
-      />
+      {CREATOR_AI.generativeEnabled && (
+        <AiAssistantDock
+          open={aiCompanionOpen}
+          onOpenChange={setAiCompanionOpen}
+          integrated={false}
+        />
+      )}
 
       {showSuggestions && suggestions.length > 0 && (
         <div

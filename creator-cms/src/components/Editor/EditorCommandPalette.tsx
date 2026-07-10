@@ -16,6 +16,7 @@ import {
 import type { AuthoringWorkspace } from '../../lib/authoringWorkspace';
 import type { PreviewTheme } from '../../lib/editorPrefs';
 import { AUTHORING_WORKSPACES } from '../../lib/authoringWorkspace';
+import { CREATOR_AI } from '../../lib/constants';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 
 export interface EditorCommand {
@@ -171,14 +172,24 @@ export function buildEditorCommands(options: {
     { id: 'theme-dark', label: 'Preview theme: Dark', icon: Moon, run: () => options.onPreviewTheme('dark') },
   ];
 
-  return [
-    ...sceneCommands,
+  const utilityCommands: EditorCommand[] = [
     { id: 'chapters', label: 'Open chapter management', icon: History, keywords: ['chapters', 'manage'], run: options.onOpenChapters },
     ...workspaceCommands,
     ...themeCommands,
     { id: 'publish', label: 'Publish chapter', icon: Rocket, keywords: ['submit', 'review'], run: options.onPublish },
     { id: 'history', label: 'Version history', icon: Clock, run: options.onHistory },
-    { id: 'ai', label: 'AI writing companion', icon: Sparkles, keywords: ['companion', 'assist'], run: options.onOpenAi },
     { id: 'find', label: 'Find in chapter', hint: 'Ctrl+F', icon: Search, keywords: ['search', 'find'], run: options.onOpenFind },
   ];
+
+  if (CREATOR_AI.generativeEnabled) {
+    utilityCommands.splice(utilityCommands.length - 1, 0, {
+      id: 'ai',
+      label: 'AI writing companion',
+      icon: Sparkles,
+      keywords: ['companion', 'assist'],
+      run: options.onOpenAi,
+    });
+  }
+
+  return [...sceneCommands, ...utilityCommands];
 }

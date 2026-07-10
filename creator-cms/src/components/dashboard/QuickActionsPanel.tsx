@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Bot, Calendar, PenLine, Sparkles } from 'lucide-react';
+import { Calendar, PenLine } from 'lucide-react';
 
 interface Props {
   layout?: 'stack' | 'bar';
@@ -18,11 +18,6 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
             <Calendar size={16} aria-hidden />
             Schedule
           </Link>
-          <button type="button" className="quick-actions-bar__action quick-actions-bar__action--soon" disabled>
-            <Bot size={16} aria-hidden />
-            AI assist
-            <span className="quick-actions-bar__badge">Soon</span>
-          </button>
         </div>
       </nav>
     );
@@ -32,7 +27,6 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
     <div className="dashboard-panel dashboard-panel--compact quick-actions-panel">
       <div className="quick-actions-panel__head">
         <h3 className="dashboard-panel__title">Quick actions</h3>
-        <Sparkles size={16} className="quick-actions-panel__spark" aria-hidden />
       </div>
       <Link to="/stories/new" className="quick-action-btn quick-action-btn--hero">
         <span className="quick-action-btn__icon" aria-hidden><PenLine size={20} /></span>
@@ -46,11 +40,6 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
           <Calendar size={17} aria-hidden />
           <span>Schedule</span>
         </Link>
-        <button type="button" className="quick-action-btn quick-action-btn--tile quick-action-btn--soon" disabled>
-          <Bot size={17} aria-hidden />
-          <span>AI assist</span>
-          <span className="quick-action-btn__badge">Soon</span>
-        </button>
       </div>
     </div>
   );

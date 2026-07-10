@@ -29,8 +29,8 @@ describe('authoringWorkspace', () => {
     expect(layoutForWorkspace('writing').showSceneSidebar).toBe(true);
   });
 
-  it('shows AI notes and hides preview in planning mode', () => {
-    expect(layoutForWorkspace('planning').showAiNotes).toBe(true);
+  it('hides AI notes (brand policy) and hides preview in planning mode', () => {
+    expect(layoutForWorkspace('planning').showAiNotes).toBe(false);
     expect(layoutForWorkspace('planning').showPreview).toBe(false);
     expect(layoutForWorkspace('planning').previewCollapsed).toBe(true);
   });

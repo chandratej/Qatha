@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Clock, Loader2, Pencil, Trash2, BookOpen } from 'lucide-react';
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { api, type ScheduledPublishItem, type StoryData } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 
@@ -138,15 +139,13 @@ export function Schedule() {
   const loading = storiesLoading || scheduledLoading;
 
   return (
-    <div className="cms-page">
-      <header className="cms-page-header">
-        <div>
-          <h1 className="cms-page-header__title">Schedule</h1>
-          <p className="cms-page-header__subtitle">
-            Pick when a chapter goes live. It will publish automatically — you don&apos;t need to be online.
-          </p>
-        </div>
-      </header>
+    <div className="cms-page studio-page">
+      <StudioPageHeader
+        eyebrow="Publishing calendar"
+        eyebrowIcon={Calendar}
+        title="Schedule"
+        subtitle="Pick when a chapter goes live. It will publish automatically — you don't need to be online."
+      />
 
       <div className="schedule-layout">
         <section className="cms-panel schedule-form-panel">
@@ -163,10 +162,11 @@ export function Schedule() {
           )}
 
           {!storiesLoading && stories.length === 0 && (
-            <div className="schedule-empty">
-              <BookOpen size={28} aria-hidden />
-              <p>Create a story and write a chapter before scheduling a publish.</p>
-              <Link to="/stories/new" className="dashboard-cta">New story</Link>
+            <div className="studio-empty" style={{ padding: '32px 24px' }}>
+              <div className="studio-empty__glyph" aria-hidden><BookOpen size={28} /></div>
+              <h3 className="studio-empty__title">Nothing to schedule yet</h3>
+              <p className="studio-empty__text">Create a story and write a chapter before scheduling a publish.</p>
+              <Link to="/stories/new" className="katha-cta katha-cta--maroon" style={{ display: 'inline-flex' }}>New manuscript</Link>
             </div>
           )}
 
@@ -234,7 +234,7 @@ export function Schedule() {
 
               <button
                 type="submit"
-                className="dashboard-cta schedule-form__submit"
+                className="katha-cta katha-cta--maroon schedule-form__submit"
                 disabled={submitting || chapters.length === 0 || !selectedChapter}
               >
                 {submitting ? <Loader2 size={16} className="cms-loading__spin" /> : <Clock size={16} />}

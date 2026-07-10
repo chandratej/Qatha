@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { BrandMark } from './studio/BrandMark';
 
 interface Props {
   children?: ReactNode;
@@ -14,7 +15,7 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -29,36 +30,27 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="cms-auth-page">
-          <div className="cms-auth-card" style={{ textAlign: 'center' }}>
-            <AlertCircle size={40} style={{ color: 'var(--ember)', marginBottom: 16 }} />
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>
-              Something went wrong
-            </h1>
-            <p style={{ color: 'var(--ink-muted)', marginBottom: 28, fontSize: '0.9375rem', lineHeight: 'var(--line-height-body)' }}>
-              We&apos;ve encountered an unexpected error. Please reload the page to continue.
+          <div className="cms-auth-card cms-error-boundary-card">
+            <div className="cms-auth-card__brand-seal">
+              <BrandMark size="md" />
+            </div>
+            <AlertCircle size={28} className="cms-error-boundary__icon" aria-hidden />
+            <h1 className="cms-error-boundary__title">Something went wrong</h1>
+            <p className="cms-error-boundary__text">
+              Your studio hit an unexpected pause. Reload to pick up where you left off — your work is safe.
             </p>
             <button
-              className="dashboard-cta"
-              style={{ border: 'none' }}
+              type="button"
+              className="dashboard-cta cms-auth-cta"
               onClick={() => window.location.reload()}
             >
-              Reload Page
+              Reload studio
             </button>
-            <pre style={{
-              marginTop: 28,
-              padding: 16,
-              background: 'var(--dash-paper)',
-              borderRadius: 12,
-              fontSize: '0.75rem',
-              color: 'var(--ink-soft)',
-              textAlign: 'left',
-              overflow: 'auto',
-              maxHeight: 200,
-              border: '1px solid var(--dash-border)',
-              lineHeight: 'var(--line-height-body)',
-            }}>
-              {this.state.error?.message || 'Unknown error'}
-            </pre>
+            {this.state.error?.message && (
+              <pre className="cms-error-boundary__detail">
+                {this.state.error.message}
+              </pre>
+            )}
           </div>
         </div>
       );

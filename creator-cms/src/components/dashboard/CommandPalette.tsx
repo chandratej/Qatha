@@ -59,31 +59,93 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   ], [navigate]);
   const filtered = items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()));
 
+  const runActive = useCallback(() => {
+    const item = filtered[idx];
+    if (!item) return;
+    item.run();
+    onClose();
+  }, [filtered, idx, onClose]);
+
   useEffect(() => {
     if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     setQ('');
     setIdx(0);
     requestAnimationFrame(() => inputRef.current?.focus());
+    return () => { document.body.style.overflow = prev; };
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setIdx((i) => (filtered.length ? (i + 1) % filtered.length : 0));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setIdx((i) => (filtered.length ? (i - 1 + filtered.length) % filtered.length : 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runActive();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, filtered.length, onClose, runActive]);
+
+  useEffect(() => {
+    if (idx >= filtered.length) setIdx(Math.max(0, filtered.length - 1));
+  }, [filtered.length, idx]);
 
   if (!open) return null;
 
   return (
     <div className="command-palette-backdrop" onClick={onClose}>
-      <div className="command-palette" role="dialog" aria-label="Command palette" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="command-palette__search">
           <Search size={18} aria-hidden />
-          <input ref={inputRef} value={q} onChange={(e) => { setQ(e.target.value); setIdx(0); }} placeholder="Search actions…" aria-label="Search commands" />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => { setQ(e.target.value); setIdx(0); }}
+            placeholder="Search actions…"
+            aria-label="Search commands"
+          />
         </div>
         <ul className="command-palette__list">
-          {filtered.map((item, i) => (
-            <li key={item.id}>
-              <button type="button" className={`command-palette__item${i === idx ? ' command-palette__item--active' : ''}`} onMouseEnter={() => setIdx(i)} onClick={() => { item.run(); onClose(); }}>
-                <item.icon size={18} aria-hidden />
-                <span>{item.label}</span>
-              </button>
-            </li>
-          ))}
+          {filtered.length === 0 ? (
+            <li className="command-palette__empty">No matching commands</li>
+          ) : (
+            filtered.map((item, i) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className={`command-palette__item${i === idx ? ' command-palette__item--active' : ''}`}
+                  onMouseEnter={() => setIdx(i)}
+                  onClick={() => { item.run(); onClose(); }}
+                >
+                  <item.icon size={18} aria-hidden />
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       </div>
     </div>

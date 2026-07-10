@@ -3,6 +3,7 @@ import { Shield, Check, X, AlertTriangle, Loader2, RefreshCw } from 'lucide-reac
 import { api } from '../lib/api';
 import type { ModerationItem } from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 
 export function Moderation() {
   const { data, loading, error, reload } = useApi(() => api.getModerationQueue());
@@ -32,30 +33,30 @@ export function Moderation() {
   const pagedQueue = queue.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
-    <div className="cms-page">
-      <header className="cms-page-header">
-        <div>
-          <h1 className="cms-page-header__title">Moderation Queue</h1>
-          <p className="cms-page-header__subtitle">
-            Review flagged chapters — target 15 min/day. Zero tolerance for hard blocks.
-          </p>
-        </div>
-        <div className="cms-page-header__actions" style={{ display: 'flex', gap: 8 }}>
-          <select
-            className="cms-input"
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value as 'pending' | 'all'); setPage(0); }}
-            style={{ width: 'auto' }}
-          >
-            <option value="pending">Pending only</option>
-            <option value="all">All items</option>
-          </select>
-          <button type="button" className="btn btn-secondary" onClick={reload} disabled={loading}>
-            <RefreshCw size={16} />
-            Refresh
-          </button>
-        </div>
-      </header>
+    <div className="cms-page studio-page moderation-studio">
+      <StudioPageHeader
+        eyebrow="Trust & safety"
+        eyebrowIcon={Shield}
+        title="Moderation queue"
+        subtitle="Review flagged chapters — target 15 min/day. Zero tolerance for hard blocks."
+        actions={(
+          <>
+            <select
+              className="cms-select"
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value as 'pending' | 'all'); setPage(0); }}
+              aria-label="Filter queue"
+            >
+              <option value="pending">Pending only</option>
+              <option value="all">All items</option>
+            </select>
+            <button type="button" className="btn btn-secondary" onClick={reload} disabled={loading}>
+              <RefreshCw size={16} />
+              Refresh
+            </button>
+          </>
+        )}
+      />
 
       {loading && (
         <div className="cms-loading">
@@ -67,16 +68,19 @@ export function Moderation() {
       {error && <div className="cms-panel cms-error-text">{error}</div>}
 
       {!loading && queue.length === 0 && (
-        <div className="cms-empty">
-          <Shield size={48} className="cms-empty__icon" />
-          <h3 className="cms-empty__title">Queue is clear</h3>
-          <p className="cms-empty__text">No chapters pending review. Great job!</p>
+        <div className="studio-empty">
+          <div className="studio-empty__glyph" aria-hidden><Shield size={32} /></div>
+          <h3 className="studio-empty__title">Queue is clear</h3>
+          <p className="studio-empty__text">No chapters pending review. Great job!</p>
         </div>
       )}
 
       <div style={{ display: 'grid', gap: 20 }}>
         {pagedQueue.map((item: ModerationItem) => (
-          <div key={item.id} className="cms-panel cms-panel--flat">
+          <div
+            key={item.id}
+            className={`cms-panel cms-panel--flat moderation-item${item.toxicity_score != null && item.toxicity_score > 0.7 ? ' moderation-item--flagged' : ''}`}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -133,10 +137,9 @@ export function Moderation() {
               </button>
               <button
                 type="button"
-                className="btn btn-ghost"
+                className="btn btn-ghost btn-danger"
                 disabled={reviewing === item.id}
                 onClick={() => handleReview(item.id, 'rejected')}
-                style={{ color: '#C47832' }}
               >
                 <X size={18} /> Reject
               </button>

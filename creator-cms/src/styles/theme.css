@@ -1,33 +1,35 @@
-@import url('https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,300;1,9..144,400;1,9..144,600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Noto+Serif+Telugu:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import '../../../packages/shared/brand-tokens.css';
 
 /*
- * Katha Creator CMS — Sepia long-session design tokens
- * Tuned for 8+ hour writing: warm manuscript tones, matte surfaces,
- * reduced glare (no pure white), soft brown ink contrast.
+ * Katha Creator CMS — brand tokens with mode-specific atmosphere
+ * Management: warm white + white cards | Creation: parchment editor
+ * Spec: UI_UX/UI_UX_decisions/Brand Identity/Katha_Brand_Identity_System.md
  */
 
-:root {
-  /* Sepia foundation */
-  --sepia-base: #E8DFC8;
-  --sepia-warm: #E2D6BC;
-  --sepia-muted: #DDD0B4;
-  --sepia-deep: #D4C8AC;
-  --sepia-surface: #F0E9D8;
-  --sepia-surface-raised: #F5EFE2;
+:root,
+[data-katha-mode='management'] {
+  /* Management foundation (default CMS shell) */
+  --sepia-base: var(--katha-mode-bg);
+  --sepia-warm: var(--katha-mode-bg-warm);
+  --sepia-muted: var(--katha-mode-surface-raised);
+  --sepia-deep: var(--katha-mode-border);
+  --sepia-surface: var(--katha-mode-surface);
+  --sepia-surface-raised: var(--katha-mode-surface-raised);
   --sepia-night-base: #1C1814;
   --sepia-night-warm: #252019;
   --sepia-night-surface: #2E2820;
   --sepia-night-ink: #E5DCC8;
   --sepia-night-ink-soft: #C9BDA8;
 
-  --editor-canvas: #EDE4CF;
-  --editor-sidebar: var(--sepia-warm);
+  --editor-canvas: var(--katha-mode-surface-raised);
+  --editor-sidebar: var(--katha-mode-bg-warm);
 
-  /* Brand accents — antique gold, muted for comfort */
-  --gold: #A8864E;
-  --gold-light: #D4C4A0;
-  --gold-dark: #7A6340;
-  --ember: #7A4A52;
+  /* Brand accents */
+  --gold: var(--katha-gold);
+  --gold-light: var(--katha-gold-soft);
+  --gold-dark: var(--katha-gold-dark);
+  --ember: var(--katha-ember);
 
   /* Semantic accents (no harsh purple/green) */
   --accent-sage: #6B8570;
@@ -39,35 +41,34 @@
   --success: var(--accent-sage);
 
   /* Surfaces & ink */
-  --paper: var(--sepia-base);
-  --paper-warm: var(--sepia-warm);
-  --surface: var(--sepia-surface);
-  --surface-elevated: var(--sepia-surface-raised);
-  --ink: #4A3F32;
-  --ink-soft: #5C4F3E;
-  --ink-muted: #8A7B68;
-  --ink-faint: #A89882;
-  --border: #D4C8AE;
-  --border-subtle: rgba(74, 63, 50, 0.08);
-  --border-faint: rgba(74, 63, 50, 0.06);
-  --border-medium: rgba(74, 63, 50, 0.12);
+  --paper: var(--katha-mode-bg);
+  --paper-warm: var(--katha-mode-bg-warm);
+  --surface: var(--katha-mode-surface);
+  --surface-elevated: var(--katha-mode-surface-raised);
+  --ink: var(--katha-ink);
+  --ink-soft: var(--katha-ink-soft);
+  --ink-muted: var(--katha-ink-muted);
+  --ink-faint: var(--katha-ink-faint);
+  --border: var(--katha-mode-border);
+  --border-subtle: var(--katha-mode-border);
+  --border-faint: var(--katha-mode-border);
+  --border-medium: var(--katha-mode-border-strong);
 
-  /* Warm, low-glare elevation */
-  --shadow-sm: 0 1px 4px rgba(74, 63, 50, 0.05);
-  --shadow-md: 0 2px 12px rgba(74, 63, 50, 0.07);
-  --shadow-lg: 0 4px 20px rgba(74, 63, 50, 0.09);
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --spacing-unit: 8px;
-  --font-ui: 'Outfit', system-ui, sans-serif;
-  --font-reading: 'Literata', 'Noto Sans Telugu', Georgia, serif;
-  --font-telugu: 'Noto Sans Telugu', 'Literata', serif;
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --shadow-sm: var(--katha-mode-shadow-sm);
+  --shadow-md: var(--katha-mode-shadow);
+  --shadow-lg: var(--katha-mode-shadow-lg);
+  --radius-sm: var(--katha-radius-sm);
+  --radius-md: var(--katha-radius-md);
+  --radius-lg: var(--katha-radius-lg);
+  --spacing-unit: var(--katha-space-unit);
+  --font-ui: var(--katha-font-ui);
+  --font-reading: var(--katha-font-display), var(--katha-font-reading);
+  --font-telugu: var(--katha-font-reading);
+  --transition: var(--katha-duration) var(--katha-ease);
   --line-height-body: 1.7;
   --line-height-relaxed: 1.8;
   --letter-spacing-body: 0.012em;
-  --focus-ring: rgba(168, 134, 78, 0.22);
+  --focus-ring: var(--katha-focus-ring);
 
   /* Premium shell aliases */
   --dash-bg: var(--paper);
@@ -84,7 +85,44 @@
   --dash-sidebar-ink: #F6F1E7;
   --dash-sidebar-muted: #B8A898;
 
+  /* Premium brand semantic aliases */
+  --maroon: var(--katha-maroon);
+  --maroon-soft: var(--katha-maroon-soft);
+  --maroon-deep: var(--katha-maroon-deep);
+  --maroon-glow: var(--katha-maroon-glow);
+  --turmeric: var(--katha-turmeric);
+  --indigo: var(--katha-indigo);
+  --indigo-soft: var(--katha-indigo-soft);
+
   color-scheme: light;
+}
+
+/* Creation Mode — parchment editor atmosphere */
+[data-katha-mode='creation'] {
+  --sepia-base: var(--katha-mode-bg);
+  --sepia-warm: var(--katha-mode-bg-warm);
+  --sepia-surface: var(--katha-mode-surface);
+  --sepia-surface-raised: var(--katha-mode-surface-raised);
+  --editor-canvas: var(--katha-mode-canvas);
+  --editor-sidebar: var(--katha-mode-bg-warm);
+  --gold: var(--katha-gold-muted);
+  --gold-light: #d4c4a0;
+  --gold-dark: #7a6340;
+  --paper: var(--katha-mode-bg);
+  --paper-warm: var(--katha-mode-bg-warm);
+  --surface: var(--katha-mode-surface);
+  --surface-elevated: var(--katha-mode-surface-raised);
+  --ink: var(--katha-mode-ink);
+  --ink-soft: var(--katha-mode-ink-soft);
+  --ink-muted: var(--katha-mode-ink-muted);
+  --ink-faint: #a89882;
+  --border: var(--katha-mode-border);
+  --border-subtle: rgba(74, 63, 50, 0.08);
+  --border-faint: rgba(74, 63, 50, 0.06);
+  --border-medium: var(--katha-mode-border-strong);
+  --shadow-sm: var(--katha-mode-shadow-sm);
+  --shadow-md: var(--katha-mode-shadow);
+  --shadow-lg: var(--katha-mode-shadow-lg);
 }
 
 [data-theme='dark'] {
@@ -236,8 +274,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes shimmer {
@@ -245,15 +288,86 @@ h1, h2, h3, h4, h5, h6 {
   100% { background-position: 200% 0; }
 }
 
+@keyframes shimmerPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.94); }
   to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196, 160, 82, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(196, 160, 82, 0.14); }
+}
+
+@keyframes diyaFlicker {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(-1deg); }
+  25% { opacity: 0.92; transform: scale(0.98) rotate(1deg); }
+  75% { opacity: 0.96; transform: scale(1.02) rotate(-0.5deg); }
+}
+
 .animate-in {
-  animation: fadeInUp 0.5s var(--transition) both;
+  animation: fadeInUp var(--katha-duration-enter, 0.42s) var(--katha-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+
+/* Global focus-visible — gold ring, never harsh browser blue */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--focus-ring);
+}
+
+/* Prefer keyboard ring only; mouse clicks stay clean */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible),
+[role='button']:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Comfort scrollbar for auth surfaces (main scroll uses overlay-scroll.css) */
+.cms-auth-page {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196, 160, 82, 0.35) transparent;
+}
+
+.cms-auth-page::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.cms-auth-page::-webkit-scrollbar-thumb {
+  background: rgba(196, 160, 82, 0.35);
+  border-radius: 100px;
+}
+
+.cms-auth-page::-webkit-scrollbar-thumb:hover {
+  background: rgba(196, 160, 82, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .cms-page,
+  .dashboard-page,
+  .studio-metric {
+    animation: none !important;
+  }
+
+  .dashboard-cta:hover,
+  .studio-hero__continue:hover,
+  .manuscript-card:hover,
+  button.studio-metric:hover {
+    transform: none;
+  }
 }

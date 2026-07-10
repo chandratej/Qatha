@@ -39,7 +39,7 @@ export function StoryEditModal({ story, onClose, onSaved }: StoryEditModalProps)
       footer={(
         <div className="cms-modal__footer-actions">
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" form="story-edit-form" className="dashboard-cta" style={{ border: 'none' }} disabled={saving}>
+          <button type="submit" form="story-edit-form" className="katha-cta katha-cta--maroon" style={{ border: 'none' }} disabled={saving}>
             {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>

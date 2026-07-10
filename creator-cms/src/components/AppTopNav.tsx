@@ -3,9 +3,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Award,
   BookOpen,
+  BookOpenCheck,
+  Calendar,
   ChevronDown,
+  IndianRupee,
   LayoutDashboard,
-  Leaf,
+  Trophy,
   LogOut,
   Search,
   Settings,
@@ -20,11 +23,18 @@ import { useCommandPaletteControl } from './dashboard/CommandPalette';
 import { getWritingStreak, ensureDemoStreak } from '../lib/writingStreak';
 import { getCreatorBadge } from '../lib/creatorBadge';
 import { BRAND } from '../lib/constants';
+import { modKeyLabel } from '../lib/device';
+import { BrandMark } from './studio/BrandMark';
+import { DiyaIcon } from './studio/DiyaIcon';
 
 const PRIMARY_NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/stories', label: 'Stories', icon: BookOpen },
+  { to: '/events', label: 'Events', icon: Trophy },
+  { to: '/schedule', label: 'Schedule', icon: Calendar },
   { to: '/community', label: 'Community', icon: Users },
+  { to: '/reviewers', label: 'Reviewers', icon: BookOpenCheck },
+  { to: '/monetization', label: 'Earn', icon: IndianRupee },
 ] as const;
 
 function userInitials(name: string) {
@@ -73,11 +83,11 @@ export function AppTopNav() {
   return (
     <header className="app-topnav">
       <div className="app-topnav__primary">
-        <NavLink to="/" className="app-topnav__brand" aria-label="Katha Creator CMS home">
-          <div className="app-topnav__brand-icon"><Leaf size={18} aria-hidden /></div>
+        <NavLink to="/" className="app-topnav__brand" aria-label={`${BRAND.nameTelugu} ${BRAND.productName} home`}>
+          <div className="app-topnav__brand-icon"><BrandMark size="sm" /></div>
           <div className="app-topnav__brand-text">
-            <span className="app-topnav__brand-name">Katha</span>
-            <span className="app-topnav__brand-sub">Creator CMS</span>
+            <span className="app-topnav__brand-name">{BRAND.nameTelugu}</span>
+            <span className="app-topnav__brand-sub">{BRAND.productName}</span>
           </div>
           {isMockMode && <span className="badge badge-gold app-topnav__mock-badge">MOCK</span>}
         </NavLink>
@@ -114,7 +124,7 @@ export function AppTopNav() {
           >
             <Search size={16} aria-hidden />
             <span className="app-topnav__search-label">Search…</span>
-            <kbd>Ctrl+K</kbd>
+            <kbd>{modKeyLabel()}+K</kbd>
           </button>
           <NotificationBell />
           <ThemeToggle compact />
@@ -152,8 +162,12 @@ export function AppTopNav() {
       </div>
 
       <div className="app-topnav__stats" aria-label="Creator stats">
-        <span className="app-topnav__stat" title="Writing streak">
-          {streak.currentStreak} day streak
+        <span className="app-topnav__stat app-topnav__stat--pride" title={BRAND.prideLine}>
+          {BRAND.mark} · Telugu craft
+        </span>
+        <span className="app-topnav__stat app-topnav__stat--diya" title="Writing streak — lamp lit">
+          <DiyaIcon size={13} aria-hidden />
+          {streak.currentStreak} day lamp lit
         </span>
         <span className="app-topnav__stat" title="Creator badge">
           <Award size={13} aria-hidden /> {badge.label}

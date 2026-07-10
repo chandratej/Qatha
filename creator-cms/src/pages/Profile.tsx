@@ -8,7 +8,7 @@ import { GENRES } from '../lib/constants';
 import { getCreatorBadge, getNextBadge } from '../lib/creatorBadge';
 import { loadCreatorProfile, saveCreatorProfile } from '../lib/profilePrefs';
 import { formatCompact } from '../lib/dashboardFormat';
-
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 
 export function Profile() {
   const { user } = useAuth();
@@ -36,16 +36,16 @@ export function Profile() {
   };
 
   return (
-    <div className="cms-page">
-      <header className="cms-page-header">
-        <div>
-          <h1 className="cms-page-header__title">Creator Profile</h1>
-          <p className="cms-page-header__subtitle">Your public identity — keep it proud, polished, and up to date.</p>
-        </div>
-      </header>
+    <div className="cms-page studio-page">
+      <StudioPageHeader
+        eyebrow="Creator identity"
+        eyebrowIcon={User}
+        title="Your profile"
+        subtitle="Your public identity — keep it proud, polished, and up to date."
+      />
 
       <div className="profile-layout">
-        <aside className="profile-card cms-panel">
+        <aside className="profile-card profile-card--studio cms-panel">
           <div className="profile-card__avatar" aria-hidden>{profile.penName.slice(0, 2).toUpperCase()}</div>
           <h2 className="profile-card__name">{profile.penName}</h2>
           <p className="profile-card__tagline">{profile.tagline || 'Telugu storyteller on Katha'}</p>
@@ -98,7 +98,7 @@ export function Profile() {
           </div>
 
           <div className="profile-form__actions">
-            <button type="submit" className="dashboard-cta" style={{ border: 'none' }}>
+            <button type="submit" className="katha-cta katha-cta--soft" style={{ border: 'none' }}>
               <Save size={16} aria-hidden /> {saved ? 'Saved!' : 'Save profile'}
             </button>
             <Link to="/stories/new" className="btn btn-secondary"><PenLine size={16} /> Write something new</Link>

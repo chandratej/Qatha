@@ -6,7 +6,7 @@ import { CommandPaletteProvider } from './dashboard/CommandPalette';
 export function Layout() {
   return (
     <CommandPaletteProvider>
-      <div className="app-shell">
+      <div className="app-shell" data-katha-mode="management">
         <AppTopNav />
         <main className="premium-main overlay-scroll">
           <DeviceConflictNotice />

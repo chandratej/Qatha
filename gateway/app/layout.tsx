@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="te">
+    <html lang="te" data-katha-mode="reading">
       <body>{children}</body>
     </html>
   );
