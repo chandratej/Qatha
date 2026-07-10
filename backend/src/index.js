@@ -63,6 +63,34 @@ app.get('/health', (_, res) => {
   });
 });
 
+/** Ops: SPI batch stats (no secrets). Full recompute requires SPI_BATCH_SECRET header if set. */
+app.get('/api/ops/spi-stats', async (_, res) => {
+  try {
+    const { spiBatchStats } = await import('./services/storyTrustBatch.js');
+    res.json(await spiBatchStats());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/ops/spi-recompute', async (req, res) => {
+  const secret = process.env.SPI_BATCH_SECRET;
+  if (secret && req.headers['x-spi-batch-secret'] !== secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const { recomputeAllStoryTrust } = await import('./services/storyTrustBatch.js');
+    const limit = Math.min(Number(req.body?.limit) || 50, 200);
+    const result = await recomputeAllStoryTrust({
+      limit,
+      onlyStale: req.body?.only_stale !== false,
+    });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/stories', storiesRouter);
 app.use('/api/chapters', chaptersRouter);

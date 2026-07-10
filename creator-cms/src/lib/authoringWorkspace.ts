@@ -85,7 +85,8 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         showAiNotes: CREATOR_AI.planningNotesEnabled,
         toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-planning',
-        canvasMaxWidth: 840,
+        // DEC-009 / BR-012 — comfortable measure for long craft sessions
+        canvasMaxWidth: 720,
       };
     case 'writing':
       return {
@@ -98,7 +99,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         showAiNotes: false,
         toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-writing',
-        canvasMaxWidth: 960,
+        canvasMaxWidth: 720,
       };
     case 'focus':
       return {
@@ -111,7 +112,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         showAiNotes: false,
         toolbarMinimal: true,
         workspaceClass: 'katha-proto-workspace--mode-focus',
-        canvasMaxWidth: 940,
+        canvasMaxWidth: 680,
       };
     case 'review':
       return {
@@ -124,7 +125,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         showAiNotes: false,
         toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-review',
-        canvasMaxWidth: 720,
+        canvasMaxWidth: 680,
       };
     default:
       return {
@@ -137,7 +138,7 @@ export function layoutForWorkspace(mode: AuthoringWorkspace | unknown): Authorin
         showAiNotes: false,
         toolbarMinimal: false,
         workspaceClass: 'katha-proto-workspace--mode-writing',
-        canvasMaxWidth: 960,
+        canvasMaxWidth: 720,
       };
   }
 }

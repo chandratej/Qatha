@@ -1,6 +1,7 @@
 import { MessageCircle, Share2 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
-import { buildShareMessage, shareViaWhatsApp, shareViaX } from '../../lib/socialShare';
+import { buildShareMessage, shareViaWhatsApp, shareViaX, type ShareChannel } from '../../lib/socialShare';
+import { trackCreatorEvent } from '../../lib/analyticsEvents';
 
 export interface SharePreviewProps {
   url: string;
@@ -10,6 +11,7 @@ export interface SharePreviewProps {
   authorName?: string;
   coverUrl?: string | null;
   excerpt?: string;
+  storyId?: string;
 }
 
 export function SharePreviewCard({
@@ -20,10 +22,22 @@ export function SharePreviewCard({
   authorName = 'Katha Creator',
   coverUrl,
   excerpt,
+  storyId,
 }: SharePreviewProps) {
   const displayTitle = chapterTitle?.trim() || storyTitle;
   const pullQuote = excerpt?.trim() || 'తెలుగు కథలు. Read the next chapter on Katha.';
   const shareMessage = buildShareMessage(storyTitle, chapterTitle, chapterNumber);
+
+  const trackShare = (channel: ShareChannel) => {
+    const props = {
+      channel,
+      storyId,
+      chapterNumber,
+      storyTitle,
+    };
+    trackCreatorEvent('chapter_shared', props);
+    trackCreatorEvent('share_channel', props);
+  };
 
   return (
     <div className="share-preview" aria-label="Link preview — how readers see your chapter on social">
@@ -62,7 +76,10 @@ export function SharePreviewCard({
         <button
           type="button"
           className="share-preview__social share-preview__social--wa"
-          onClick={() => shareViaWhatsApp(url, shareMessage)}
+          onClick={() => {
+            trackShare('whatsapp');
+            shareViaWhatsApp(url, shareMessage);
+          }}
         >
           <MessageCircle size={16} aria-hidden />
           Share on WhatsApp
@@ -70,7 +87,10 @@ export function SharePreviewCard({
         <button
           type="button"
           className="share-preview__social share-preview__social--x"
-          onClick={() => shareViaX(url, shareMessage)}
+          onClick={() => {
+            trackShare('x');
+            shareViaX(url, shareMessage);
+          }}
         >
           Share on X
         </button>

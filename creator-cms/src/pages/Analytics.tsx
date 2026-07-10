@@ -9,7 +9,15 @@ import { api } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
+import { StoryTrustLadder } from '../components/studio/StoryTrustLadder';
 import { formatCompact } from '../lib/dashboardFormat';
+import {
+  SPI_WEIGHTS,
+  trustLevelForReaders,
+  effectiveCreatorSharePct,
+  type StoryTrustLevelId,
+} from '../lib/platformConstants';
 
 type DateRange = '7d' | '30d' | 'all';
 
@@ -18,10 +26,23 @@ export function Analytics() {
   const navigate = useNavigate();
   const { data, loading, error, mutate } = useApi(() => api.getAnalytics(storyId!), [storyId]);
   const [dateRange, setDateRange] = useState<DateRange>('all');
+  const [recomputing, setRecomputing] = useState(false);
 
   useEffect(() => {
     if (storyId) trackCreatorEvent('creator_analytics_view', { story_id: storyId });
   }, [storyId]);
+
+  const handleRecomputeTrust = async () => {
+    if (!storyId) return;
+    setRecomputing(true);
+    try {
+      await api.recomputeStoryTrust(storyId);
+      trackCreatorEvent('story_trust_recompute', { story_id: storyId });
+      await mutate();
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   const filteredChapters = useMemo(() => {
     if (!data?.chapters) return [];
@@ -86,6 +107,13 @@ export function Analytics() {
   }
 
   const totalReads = filteredChapters.reduce((s, c) => s + c.total_views, 0);
+  // Prefer live Story Trust from API (SPI); fall back to reader heuristic
+  const liveTrust = (data.story_trust?.trust_level
+    || data.story?.trust_level
+    || trustLevelForReaders(totalReads)) as StoryTrustLevelId;
+  const spiScore = data.story_trust?.spi_score ?? data.story?.spi_score ?? null;
+  const spiComponents = data.story_trust?.spi_components ?? data.story?.spi_components ?? null;
+  const authorShare = effectiveCreatorSharePct(liveTrust);
   const avgCompletion = filteredChapters.length
     ? Math.round(filteredChapters.reduce((s, c) => s + c.completion_rate, 0) / filteredChapters.length)
     : 0;
@@ -99,7 +127,7 @@ export function Analytics() {
         eyebrow="Reader insights"
         eyebrowIcon={BarChart3}
         title={data.story?.title || 'Story Analytics'}
-        subtitle="Reads, retention, revenue, and reader insights."
+        subtitle="Story Trust signals — retention, completion, and reader growth drive your literary earnings."
         backTo={`/stories/${storyId}`}
         backLabel="Back to chapters"
         actions={(
@@ -146,6 +174,57 @@ export function Analytics() {
           </span>
         </div>
       </div>
+
+      <section className="cms-panel analytics-trust-panel" aria-labelledby="analytics-trust-title">
+        <div className="analytics-trust-panel__head">
+          <h2 id="analytics-trust-title" className="dashboard-panel__title">
+            Story Trust & SPI
+            {spiScore != null && (
+              <span className="analytics-spi-score" title="Story Performance Index">
+                {' '}· SPI {Number(spiScore).toFixed(1)}
+              </span>
+            )}
+          </h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <StoryTrustBadge level={liveTrust} showShare />
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => { void handleRecomputeTrust(); }}
+              disabled={recomputing}
+            >
+              {recomputing ? 'Refreshing…' : 'Refresh SPI'}
+            </button>
+          </div>
+        </div>
+        <p className="monetization-panel__lead">
+          {authorShare > 0
+            ? `Live trust: ${liveTrust}. This story earns a ${authorShare}% author share on quarterly revenue (40% base × Story Trust multiplier, up to 60% at Apex).`
+            : 'Build reader value to reach Performing trust — the monetization gate. 40% base · up to 60% at Apex.'}
+        </p>
+        <div className="analytics-spi-grid">
+          <ul className="monetization-spi-list monetization-spi-list--compact">
+            {SPI_WEIGHTS.map((w) => {
+              const live = spiComponents?.[w.id];
+              return (
+                <li key={w.id} className="monetization-spi-item">
+                  <span className="monetization-spi-item__label">{w.label}</span>
+                  <div className="monetization-spi-item__bar-wrap">
+                    <div
+                      className="monetization-spi-item__bar"
+                      style={{ width: `${live != null ? Math.min(100, Number(live)) : w.weightPct}%` }}
+                    />
+                  </div>
+                  <span className="monetization-spi-item__pct">
+                    {live != null ? `${Math.round(Number(live))}` : `${w.weightPct}% wt`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <StoryTrustLadder activeLevel={liveTrust} />
+        </div>
+      </section>
 
       <div className="analytics-charts-grid">
         <div className="cms-panel">

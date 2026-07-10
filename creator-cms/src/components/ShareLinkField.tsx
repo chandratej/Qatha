@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import { openShareLinkAsAuthor } from '../lib/openShareLink';
 import { SharePreviewCard, type SharePreviewProps } from './studio/SharePreviewCard';
+import { trackCreatorEvent } from '../lib/analyticsEvents';
 
 interface Props {
   url: string;
@@ -17,6 +18,12 @@ export function ShareLinkField({ url, label = 'Share link', compact = false, pre
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      trackCreatorEvent('chapter_shared', {
+        channel: 'copy',
+        storyId: preview?.storyId,
+        chapterNumber: preview?.chapterNumber,
+      });
+      trackCreatorEvent('share_channel', { channel: 'copy', storyId: preview?.storyId });
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
       const el = document.createElement('textarea');
@@ -26,9 +33,14 @@ export function ShareLinkField({ url, label = 'Share link', compact = false, pre
       document.execCommand('copy');
       document.body.removeChild(el);
       setCopied(true);
+      trackCreatorEvent('chapter_shared', {
+        channel: 'copy',
+        storyId: preview?.storyId,
+        chapterNumber: preview?.chapterNumber,
+      });
       window.setTimeout(() => setCopied(false), 2000);
     }
-  }, [url]);
+  }, [url, preview?.storyId, preview?.chapterNumber]);
 
   if (compact) {
     return (

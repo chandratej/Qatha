@@ -38,5 +38,7 @@ class AppConfig {
   static const brandName = 'Katha';
   static const brandNameTelugu = 'కథ';
   static const priceMonthly = 99;
-  static const creatorSharePct = 60;
+  /// DEC-006: base share at Performing; ladder raises effective share to maxCreatorSharePct.
+  static const creatorSharePct = 40;
+  static const maxCreatorSharePct = 60;
 }

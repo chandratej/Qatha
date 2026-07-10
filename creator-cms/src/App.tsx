@@ -18,6 +18,7 @@ import { Profile } from './pages/Profile';
 import { Community } from './pages/Community';
 import { Moderation } from './pages/Moderation';
 import { ModerationRoute } from './components/ModerationRoute';
+import { LabsRoute } from './components/LabsRoute';
 import { OnboardingGate } from './components/OnboardingGate';
 import { Settings } from './pages/Settings';
 import { Schedule } from './pages/Schedule';
@@ -60,13 +61,15 @@ function App() {
                   <Route path="/stories/:storyId" element={<StorySeasons />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/community" element={<Community />} />
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/events/new" element={<EventCreate />} />
-                  <Route path="/events/:eventId" element={<EventDetail />} />
-                  <Route path="/reviewers" element={<ReviewerMarketplace />} />
-                  <Route path="/tags" element={<TagsModeration />} />
+                  <Route element={<LabsRoute />}>
+                    <Route path="/events" element={<Events />} />
+                    <Route path="/events/new" element={<EventCreate />} />
+                    <Route path="/events/:eventId" element={<EventDetail />} />
+                    <Route path="/reviewers" element={<ReviewerMarketplace />} />
+                    <Route path="/tags" element={<TagsModeration />} />
+                    <Route path="/platform" element={<PlatformMap />} />
+                  </Route>
                   <Route path="/monetization" element={<Monetization />} />
-                  <Route path="/platform" element={<PlatformMap />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />

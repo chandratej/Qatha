@@ -143,7 +143,7 @@ export function EditorWorkspace({
   onTogglePhonetic,
   editorComfortStyle,
   focusMode = false,
-  canvasMaxWidth = 920,
+  canvasMaxWidth = 720,
   toolbarMinimal = false,
   showSceneNav = true,
   findOpen = false,

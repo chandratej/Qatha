@@ -1,5 +1,7 @@
 /** Re-export PRD constants for CMS — synced with packages/shared */
 
+export { BRAND_IDENTITY } from '../../../packages/shared/brand';
+
 export {
   CONTENT_TYPES,
   STORY_STATUSES,
@@ -11,7 +13,20 @@ export {
   SEED_COMMUNITY_TAGS,
   TAG_WORKFLOW,
   AUTHOR_LEVELS,
+  authorLevelForStats,
   STORY_BADGES,
+  STORY_TRUST_LEVELS,
+  SPI_WEIGHTS,
+  PATRON_TIERS,
+  BRAND_VOCABULARY,
+  BASE_CREATOR_SHARE_PCT,
+  STABILITY_WINDOW_DAYS,
+  effectiveCreatorSharePct,
+  trustLevelForReaders,
+  nextTrustLevel,
+  QUARTERLY_PAYOUTS,
+  SHORT_STORY_ECONOMY,
+  FIRST_STORY_LAUNCH_FLOW,
   EVENT_TYPES,
   EVENT_WIZARD_STEPS,
   ENTRY_FEE_TIERS_INR,
@@ -35,3 +50,5 @@ export {
   SUBMISSION_WORKFLOW_STEPS,
   ESCROW_RELEASE_CONDITIONS,
 } from '../../../packages/shared/constants';
+
+export type { StoryTrustLevelId } from '../../../packages/shared/story-trust';

@@ -8,6 +8,7 @@ class KathaColors {
   static const goldLight = Color(0xFFE8D5A3);
   static const goldDark = Color(0xFF9A7B3A);
   static const ember = Color(0xFF8B3A62);
+  static const maroon = Color(0xFF6B2338);
   static const paper = Color(0xFFFAF8F5);
   static const paperWarm = Color(0xFFF5F0E8);
   static const ink = Color(0xFF1A1814);

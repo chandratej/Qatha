@@ -205,6 +205,7 @@ export function StorySeasons() {
                   chapterNumber: latest.chapter_number,
                   coverUrl: storyMeta.cover_url,
                   excerpt: storyMeta.description ?? undefined,
+                  storyId,
                 }}
               />
             );

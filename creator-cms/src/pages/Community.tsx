@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, Megaphone, MessageCircle, Share2, Users } from 'lucide-react';
 import { platformApi } from '../lib/platformApi';
 import { Link } from 'react-router-dom';
+import { isStudioLabsEnabled } from '../lib/featureFlags';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { DiyaIcon } from '../components/studio/DiyaIcon';
 import { BrandMark } from '../components/studio/BrandMark';
@@ -124,7 +125,12 @@ export function Community() {
             </li>
           ))}
         </ul>
-        <Link to="/platform" className="panel-view-all">Full platform map →</Link>
+        {/* Platform map is a Studio Labs surface (DEC-007) */}
+        {isStudioLabsEnabled() ? (
+          <Link to="/platform" className="panel-view-all">Full platform map →</Link>
+        ) : (
+          <Link to="/monetization" className="panel-view-all">Story Trust &amp; earnings →</Link>
+        )}
       </section>
     </div>
   );

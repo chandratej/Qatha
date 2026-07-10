@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Bell, Database, LogOut, Smartphone, Coffee, Settings2 } from 'lucide-react';
+import {
+  User, Bell, Database, LogOut, Smartphone, Coffee, Settings2, FlaskConical, IndianRupee, Download,
+} from 'lucide-react';
 import {
   loadComfortPrefs,
   saveComfortPrefs,
@@ -17,10 +19,12 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { clearDraftCache } from '../lib/draftCache';
 import { BRAND } from '../lib/constants';
-import { useSupabaseDirect } from '../lib/api';
+import { api, useSupabaseDirect } from '../lib/api';
 import { sbListUserDevices, sbRemoveUserDevice } from '../services';
 import { getDeviceId } from '../lib/device';
 import type { UserDevice } from '../types/database';
+import { isStudioLabsEnabled, setStudioLabsEnabled } from '../lib/featureFlags';
+import { trackCreatorEvent } from '../lib/analyticsEvents';
 
 export function Settings() {
   const { user, logout, isMockMode } = useAuth();
@@ -34,6 +38,12 @@ export function Settings() {
   const [devicesError, setDevicesError] = useState<string | null>(null);
   const currentDeviceId = getDeviceId();
   const [comfort, setComfort] = useState(() => loadComfortPrefs());
+  const [labsOn, setLabsOn] = useState(() => isStudioLabsEnabled());
+  const [payoutUpi, setPayoutUpi] = useState('');
+  const [legalName, setLegalName] = useState('');
+  const [taxId, setTaxId] = useState('');
+  const [payoutMsg, setPayoutMsg] = useState<string | null>(null);
+  const [payoutSaving, setPayoutSaving] = useState(false);
 
   const updateComfort = (patch: Parameters<typeof saveComfortPrefs>[0]) => {
     setComfort(saveComfortPrefs(patch));
@@ -45,6 +55,65 @@ export function Settings() {
       .then(setDevices)
       .catch((e) => setDevicesError(e instanceof Error ? e.message : 'Could not load devices'));
   }, [supabaseDirect, isMockMode]);
+
+  useEffect(() => {
+    api.getPayoutProfile()
+      .then((p) => {
+        setPayoutUpi(p.payout_upi || '');
+        setLegalName(p.legal_name || '');
+        setTaxId(p.tax_id || '');
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSavePayout = async () => {
+    setPayoutSaving(true);
+    setPayoutMsg(null);
+    try {
+      await api.updatePayoutProfile({
+        payout_upi: payoutUpi.trim() || null,
+        legal_name: legalName.trim() || null,
+        tax_id: taxId.trim() || null,
+      });
+      trackCreatorEvent('payout_profile_saved');
+      setPayoutMsg('Payout details saved. Quarterly reviews verify UPI before transfer.');
+    } catch (e) {
+      setPayoutMsg(e instanceof Error ? e.message : 'Could not save payout details');
+    } finally {
+      setPayoutSaving(false);
+    }
+  };
+
+  const handleExportEarnings = async () => {
+    try {
+      const d = await api.getDashboard();
+      const rows = [
+        ['Story ID', 'Title', 'Readers', 'Subscribers', 'Earnings this month (INR)'],
+        ...(d.earnings_by_story || []).map((r) => [
+          r.story_id,
+          r.title,
+          r.total_readers,
+          r.subscribers,
+          r.earnings_this_month,
+        ]),
+        [],
+        ['Total earnings this month', d.earnings_this_month],
+        ['Total earnings all time', d.total_earnings],
+        ['Next payout date', d.expected_payout_date],
+        ['Schedule', d.payout_schedule || 'quarterly'],
+      ];
+      const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `katha-earnings-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      trackCreatorEvent('earnings_csv_export');
+    } catch (e) {
+      setPayoutMsg(e instanceof Error ? e.message : 'Export failed');
+    }
+  };
 
   const handleClearCache = async () => {
     await clearDraftCache();
@@ -85,8 +154,101 @@ export function Settings() {
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--ink-muted)' }}>{user?.phone || '—'}</p>
             <p style={{ margin: '12px 0 0', fontSize: '0.8125rem', color: 'var(--ink-soft)' }}>
-              Revenue share: {BRAND.creatorSharePct}% creator / {BRAND.platformSharePct}% platform · Payouts on the 15th
+              Story Trust share: {BRAND.creatorSharePct}% base (up to 60% at Apex) · Quarterly payouts
             </p>
+          </div>
+        </section>
+
+        <section className="cms-panel studio-settings-section" aria-labelledby="payout-settings-title">
+          <div className="studio-settings-section__head">
+            <IndianRupee size={18} aria-hidden />
+            <h3 id="payout-settings-title">Payout readiness</h3>
+          </div>
+          <div className="studio-settings-section__body">
+            <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>
+              Quarterly Story Trust payouts require a verified UPI ID and legal name matching your tax records.
+              No coins, no tips — literary earnings only.
+            </p>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <label className="studio-settings-field">
+                <span>Legal name (as on UPI / PAN)</span>
+                <input
+                  className="cms-input"
+                  value={legalName}
+                  onChange={(e) => setLegalName(e.target.value)}
+                  placeholder="Full legal name"
+                  autoComplete="name"
+                />
+              </label>
+              <label className="studio-settings-field">
+                <span>UPI ID</span>
+                <input
+                  className="cms-input"
+                  value={payoutUpi}
+                  onChange={(e) => setPayoutUpi(e.target.value)}
+                  placeholder="name@upi"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="studio-settings-field">
+                <span>PAN / tax ID (optional until first payout)</span>
+                <input
+                  className="cms-input"
+                  value={taxId}
+                  onChange={(e) => setTaxId(e.target.value.toUpperCase())}
+                  placeholder="ABCDE1234F"
+                  maxLength={12}
+                  autoComplete="off"
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="katha-cta"
+                  onClick={() => { void handleSavePayout(); }}
+                  disabled={payoutSaving}
+                >
+                  {payoutSaving ? 'Saving…' : 'Save payout details'}
+                </button>
+                <button type="button" className="btn btn-secondary" onClick={() => { void handleExportEarnings(); }}>
+                  <Download size={16} aria-hidden /> Export earnings CSV
+                </button>
+              </div>
+              {payoutMsg && (
+                <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-soft)' }}>{payoutMsg}</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="cms-panel studio-settings-section">
+          <div className="studio-settings-section__head">
+            <FlaskConical size={18} aria-hidden />
+            <h3>Studio Labs</h3>
+          </div>
+          <div className="studio-settings-section__body">
+            <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55 }}>
+              Contests, reviewer marketplace, tags admin, and the platform map stay off by default so the
+              studio stays craft-first (DEC-007).
+            </p>
+            <label className="studio-settings-row" style={{ cursor: 'pointer' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>Enable Labs surfaces</span>
+              <input
+                type="checkbox"
+                checked={labsOn}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setStudioLabsEnabled(next);
+                  setLabsOn(next);
+                }}
+                aria-label="Enable Studio Labs"
+              />
+            </label>
+            {labsOn && (
+              <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
+                Reload the page if Events/Reviewers do not appear in the nav.
+              </p>
+            )}
           </div>
         </section>
 
@@ -168,7 +330,8 @@ export function Settings() {
           </div>
           <div className="studio-settings-section__body">
             <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>
-              Drafts autosave to IndexedDB offline and sync to Supabase when connected (72-hour version history).
+              Drafts autosave to IndexedDB offline (72-hour local history) and cloud version snapshots when connected
+              (Cycle 7). Publish status changes appear in the notification bell after moderation.
             </p>
             <button type="button" className="btn btn-secondary" onClick={handleClearCache}>
               Clear local version history

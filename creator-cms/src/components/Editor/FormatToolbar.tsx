@@ -128,7 +128,7 @@ export const FormatToolbar = memo(function FormatToolbar({
           aria-label="Phonetic Telugu typing"
         >
           <Keyboard size={15} strokeWidth={EDITOR_ICON_STROKE} />
-          <span className="katha-proto-fmt-btn__text">{phoneticLive ? 'Phonetic' : 'ABC'}</span>
+          <span className="katha-proto-fmt-btn__text">{phoneticLive ? 'తెలుగు · Phonetic' : 'ABC'}</span>
         </button>
         <button
           type="button"

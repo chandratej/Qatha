@@ -1,29 +1,54 @@
-import { Award, Percent } from 'lucide-react';
-import { getCreatorBadge, getNextBadge } from '../../lib/creatorBadge';
+import { Award, Percent, Shield } from 'lucide-react';
+import { getAuthorLevelBadge, getNextAuthorLevelBadge } from '../../lib/creatorBadge';
+import { StoryTrustBadge } from '../studio/StoryTrustBadge';
+import { trustLevelForReaders } from '../../../../packages/shared/story-trust';
+import { effectiveCreatorSharePct } from '../../../../packages/shared/story-trust';
 import { formatCompact } from '../../lib/dashboardFormat';
 
 interface Props {
   totalReads: number;
-  revenueSharePct: number;
+  publishedStories?: number;
+  verified?: boolean;
 }
 
-export function CreatorBadgeBar({ totalReads, revenueSharePct }: Props) {
-  const badge = getCreatorBadge(totalReads);
-  const next = getNextBadge(totalReads);
+export function CreatorBadgeBar({ totalReads, publishedStories = 0, verified }: Props) {
+  const authorLevel = getAuthorLevelBadge({
+    publishedStories: publishedStories || (totalReads > 0 ? 1 : 0),
+    totalReaders: totalReads,
+    verified,
+  });
+  const nextLevel = getNextAuthorLevelBadge(authorLevel.id);
+  const storyTrust = trustLevelForReaders(totalReads);
+  const effectiveShare = effectiveCreatorSharePct(storyTrust);
 
   return (
-    <div className="creator-badge-bar" role="region" aria-label="Creator status">
-      <div className="creator-badge-bar__item" title={`${revenueSharePct}% of each subscription goes to you`}>
-        <Percent size={16} aria-hidden />
-        <span><strong>{revenueSharePct}%</strong> revenue share</span>
-      </div>
-      <div className="creator-badge-bar__item" title={badge.description}>
+    <div className="creator-badge-bar" role="region" aria-label="Author status and Story Trust">
+      <div className="creator-badge-bar__item" title={authorLevel.description}>
         <Award size={16} aria-hidden />
-        <span>Badge: <strong>{badge.label}</strong></span>
+        <span>Author: <strong>{authorLevel.label}</strong></span>
       </div>
-      {next && (
+      <div className="creator-badge-bar__item">
+        <Shield size={16} aria-hidden />
+        <StoryTrustBadge level={storyTrust} compact />
+      </div>
+      <div
+        className="creator-badge-bar__item"
+        title="Base share × Story Trust multiplier — quarterly payouts"
+      >
+        <Percent size={16} aria-hidden />
+        <span>
+          <strong>{effectiveShare > 0 ? `${effectiveShare}%` : '—'}</strong>
+          {' '}author share
+        </span>
+      </div>
+      {nextLevel && (
         <div className="creator-badge-bar__next">
-          Next: {next.label} at {formatCompact(next.minReads)} reads
+          Next: {nextLevel.label}
+        </div>
+      )}
+      {totalReads > 0 && totalReads < 2000 && (
+        <div className="creator-badge-bar__hint">
+          {formatCompact(2000 - totalReads)} reads to Performing · monetization gate
         </div>
       )}
     </div>

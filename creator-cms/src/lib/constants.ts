@@ -1,6 +1,6 @@
 /** Synced with packages/shared/constants.ts + brand.ts — single source of truth for CMS */
 
-import { BRAND_IDENTITY, BRAND_COPY } from '../../../packages/shared/brand';
+import { BRAND_IDENTITY, BRAND_COPY as SHARED_BRAND_COPY } from '../../../packages/shared/brand';
 
 /** Generative AI disabled per Katha Brand Identity System */
 export const CREATOR_AI = {
@@ -22,12 +22,12 @@ export const BRAND = {
   creatorPromiseTelugu: BRAND_IDENTITY.creatorPromiseTelugu,
   prideLine: BRAND_IDENTITY.prideLine,
   prideLineTelugu: BRAND_IDENTITY.prideLineTelugu,
-  creatorSharePct: 60,
-  platformSharePct: 40,
+  creatorSharePct: 40,
+  platformSharePct: 60,
   priceMonthly: 99,
 } as const;
 
-export { BRAND_COPY };
+export const BRAND_COPY = SHARED_BRAND_COPY;
 
 export { GENRES } from './platformConstants';
 

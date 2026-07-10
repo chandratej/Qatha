@@ -42,6 +42,14 @@ export const BRAND_IDENTITY = {
     'timeless',
     'proud',
   ] as const,
+  /** Creator Economy charter — every feature reinforces these pillars */
+  charter: [
+    'Prestige',
+    'Literary excellence',
+    'Intellectual property ownership',
+    'Sustainable earnings',
+    'Reader trust',
+  ] as const,
   pillars: [
     {
       id: 'craft',
@@ -51,7 +59,7 @@ export const BRAND_IDENTITY = {
     {
       id: 'fairness',
       title: 'Fair by design',
-      description: 'Transparent revenue share, no coin gimmicks, no ad pollution.',
+      description: 'Story Trust rewards sustained reader value — not publishing alone. No coin gimmicks, no ad pollution.',
     },
     {
       id: 'heritage',
@@ -161,4 +169,10 @@ export const BRAND_COPY = {
   authFooter: 'By continuing you agree to our Terms & Privacy',
   loadingLibrary: 'Opening your library…',
   loadingStudio: 'Lighting your studio…',
+  /** Creator Economy — literary patronage, not social gifting */
+  patronageCta: 'Become a Patron',
+  patronageSubtitle: 'Support authors through literary patronage — not tips or coins.',
+  storyTrustEyebrow: 'విశ్వాసం · Story Trust',
+  quarterlyPayoutNote: 'Quarterly payouts after fraud review, refund handling, and appeals.',
+  monetizationGate: 'Monetization unlocks at Performing trust — earned through reader value.',
 } as const;

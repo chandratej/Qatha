@@ -52,9 +52,10 @@ class LaunchOfferConfig {
   );
 
   String get paywallSubtitle {
+    // DEC-006 ladder honesty — see PaywallCopy for full benefit list
     if (hasLaunchTrial) {
-      return '₹99/month after your $trialDays-day launch trial · 60% to writers';
+      return '₹99/month after your $trialDays-day launch trial · No ads · No coins · up to 60% to writers';
     }
-    return '₹99/month · No ads · No coins · 60% to writers';
+    return '₹99/month · No ads · No coins · 40% base · up to 60% at Apex';
   }
 }

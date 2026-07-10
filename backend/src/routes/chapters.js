@@ -214,7 +214,17 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
     const moderation = await moderateChapter(chapter.id, content, creatorId);
     if (moderation.status === 'approved') await notifyNewChapter(storyId, chapter.id);
-    res.json({ chapter, moderation });
+
+    // DEC-021: refresh Story Trust SPI after publish (non-blocking failure)
+    let story_trust = null;
+    try {
+      const { recomputeStoryTrust } = await import('../services/storyTrust.js');
+      story_trust = await recomputeStoryTrust(storyId);
+    } catch (e) {
+      console.warn('[publish] story trust recompute skipped:', e?.message);
+    }
+
+    res.json({ chapter, moderation, story_trust });
   } catch (err) {
     next(err);
   }

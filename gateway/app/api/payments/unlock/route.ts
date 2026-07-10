@@ -5,7 +5,7 @@ import { getChapterTeaser } from '@/lib/chapter';
 
 /**
  * POST /api/payments/unlock
- * Creates a Razorpay Order with Route destination charge (40% platform / 60% creator).
+ * Creates a Razorpay Order with Route destination charge (Story Trust base: 40% author / 60% platform).
  * Requires authenticated reader (session cookie / bearer from Supabase Auth).
  */
 export async function POST(req: NextRequest) {

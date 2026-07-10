@@ -8,6 +8,8 @@ import '../core/services/api_service.dart';
 import '../core/services/offline_cache.dart';
 import '../core/services/launch_offer_service.dart';
 import '../core/services/reading_progress_service.dart';
+import '../core/config/paywall_copy.dart';
+import '../core/services/razorpay_checkout.dart';
 import '../core/services/subscription_service.dart';
 import '../core/theme/katha_theme.dart';
 import '../widgets/error_state.dart';
@@ -571,8 +573,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
         title: trialEnded
             ? 'Your launch trial has ended'
             : 'Unlock unlimited reading',
-        subtitle: offer.paywallSubtitle,
-        actionLabel: 'Subscribe with UPI',
+        subtitle: PaywallCopy.subtitle(
+          hasLaunchTrial: offer.hasLaunchTrial && !trialEnded,
+          trialDays: offer.trialDays,
+        ),
+        actionLabel: 'Subscribe · ${PaywallCopy.priceMonthlyLabel}',
         isPremium: true,
         loading: false,
         onAction: () async {
@@ -653,27 +658,93 @@ class _ReaderScreenState extends State<ReaderScreen> {
       if (!context.read<AuthState>().isLoggedIn) return;
     }
 
+    final liveAuth = context.read<AuthState>();
     final sub = SubscriptionService(
-      userId: auth.user!.id,
-      subscriptionStatus: auth.user!.subscriptionStatus,
+      userId: liveAuth.user!.id,
+      subscriptionStatus: liveAuth.user!.subscriptionStatus,
+      accessToken: liveAuth.token,
     );
 
+    final checkoutUi = KathaRazorpayCheckout();
     try {
       final checkout = await sub.createCheckout(storyId: widget.storyId);
-      final status = await sub.confirmSubscription(
-        checkout['checkout_id'] as String,
-        storyId: widget.storyId,
-      );
-      await auth.setSubscriptionStatus(status);
-      AnalyticsService.instance.subscriptionConfirmed();
-      if (mounted) {
+
+      if (!checkout.canOpenNativeCheckout) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Welcome to Katha Unlimited!'),
-            backgroundColor: KathaColors.gold,
+          SnackBar(
+            content: Text(
+              checkout.orderError ??
+                  'Payments are being configured (${checkout.mode}). '
+                      '${PaywallCopy.shareTransparency}. Try again soon.',
+            ),
+            backgroundColor: KathaColors.ember,
           ),
         );
-        _loadChapter();
+        return;
+      }
+
+      final payment = await checkoutUi.open(
+        checkout: checkout,
+        email: liveAuth.user?.email,
+        contact: liveAuth.user?.phone,
+        name: liveAuth.user?.displayName,
+      );
+
+      if (!payment.success) {
+        if (!mounted) return;
+        final msg = payment.errorMessage ?? 'Payment cancelled';
+        if (!msg.toLowerCase().contains('cancel')) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        }
+        return;
+      }
+
+      final confirmed = await sub.confirmSubscription(
+        storyId: widget.storyId,
+        creatorId: checkout.notes?['creator_id_source'] as String?,
+        razorpayPaymentId: payment.paymentId,
+        razorpayOrderId: payment.orderId ?? checkout.orderId,
+        razorpaySignature: payment.signature,
+      );
+      final status = confirmed['subscription_status'] as String? ?? 'free';
+
+      if (status == 'active') {
+        await liveAuth.setSubscriptionStatus(status);
+        AnalyticsService.instance.subscriptionConfirmed();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Welcome to Katha Unlimited · ${checkout.shareLabel}',
+              ),
+              backgroundColor: KathaColors.gold,
+            ),
+          );
+          _loadChapter();
+        }
+        return;
+      }
+
+      if (status == 'pending_webhook' && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Payment received — activating your subscription. Open this chapter again in a moment.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Payment recorded ($status). If chapters stay locked, wait a moment and retry.',
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -681,6 +752,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
+    } finally {
+      checkoutUi.dispose();
     }
   }
 }
@@ -793,22 +866,41 @@ class _GateSheet extends StatelessWidget {
           ),
           if (isPremium) ...[
             const SizedBox(height: 16),
-            // Value-first benefits + transparency per UI/UX decisions (60/40, support creators)
+            // Value-first benefits + Story Trust ladder honesty (DEC-006)
             Container(
-              padding: const EdgeInsets.all(12),
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF222228) : const Color(0xFFF8F5F0),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: KathaColors.gold.withValues(alpha: 0.25),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Unlock the full story:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                  SizedBox(height: 6),
-                  Text('• Read every chapter the moment it drops', style: TextStyle(fontSize: 12)),
-                  Text('• Unlimited offline downloads', style: TextStyle(fontSize: 12)),
-                  Text('• Ad-free, distraction-free experience', style: TextStyle(fontSize: 12)),
-                  Text('• 60% of your ₹99 goes directly to Telugu writers', style: TextStyle(fontSize: 12, color: Color(0xFF854d0e))),
+                children: [
+                  const Text(
+                    'What you get',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 8),
+                  ...PaywallCopy.benefits.map(
+                    (b) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text('• $b', style: const TextStyle(fontSize: 12, height: 1.35)),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '• ${PaywallCopy.shareBullet}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: Color(0xFF6B2338),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -820,6 +912,7 @@ class _GateSheet extends StatelessWidget {
               onPressed: onAction,
               style: FilledButton.styleFrom(
                 backgroundColor: KathaColors.gold,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text(actionLabel),
@@ -827,8 +920,12 @@ class _GateSheet extends StatelessWidget {
           ),
           if (isPremium)
             const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Text('Cancel anytime • UPI auto-pay', style: TextStyle(fontSize: 11, color: Colors.black45)),
+              padding: EdgeInsets.only(top: 10),
+              child: Text(
+                PaywallCopy.trustLine,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 11, color: Colors.black45),
+              ),
             ),
         ],
       ),

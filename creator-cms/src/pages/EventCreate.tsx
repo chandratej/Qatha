@@ -84,7 +84,7 @@ export function EventCreate() {
         )}
 
         {step === 1 && (
-          <p className="studio-page-header__subtitle">Eligibility: Telugu language, author level New+, age rating per event rules. Configure in Phase 2 organizer dashboard.</p>
+          <p className="studio-page-header__subtitle">Eligibility: Telugu language, Author level+, age rating per event rules. Configure in Phase 2 organizer dashboard.</p>
         )}
 
         {step === 2 && (

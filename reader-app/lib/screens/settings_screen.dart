@@ -90,7 +90,19 @@ class SettingsScreen extends StatelessWidget {
               subtitle: _subscriptionLabel(auth),
               trailing: auth.isSubscribed
                   ? const Icon(Icons.check_circle, color: KathaColors.gold)
-                  : null,
+                  : TextButton(
+                      onPressed: () {
+                        // Deep-link readers to browse → pick a story for paywall context
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Open a locked chapter to subscribe with UPI — ₹99/mo · up to 60% to writers.',
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Subscribe'),
+                    ),
             ),
             _Tile(
               icon: Icons.logout,

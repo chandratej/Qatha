@@ -37,7 +37,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _OnboardPage(
       icon: Icons.volunteer_activism_rounded,
       title: 'No ads. No coins.',
-      subtitle: '₹99/month unlimited. ${AppConfig.creatorSharePct}% goes directly to writers you love.',
+      subtitle:
+          '₹${AppConfig.priceMonthly}/month unlimited. ${AppConfig.creatorSharePct}% base author share — up to ${AppConfig.maxCreatorSharePct}% at Apex Story Trust.',
     ),
     _OnboardPage(
       icon: Icons.favorite_rounded,

@@ -4,6 +4,7 @@ import { majorityReviewDecision, weightedRubricScore } from './judging';
 import { slugifyTag } from './tagWorkflow';
 import { reviewerPayoutEach } from './reviewerMatching';
 import { badgeForReaders } from '../../../packages/shared/story-badges';
+import { effectiveCreatorSharePct, trustLevelForReaders } from '../../../packages/shared/story-trust';
 
 describe('escrow', () => {
   it('splits entry fee into commission and prize pool', () => {
@@ -48,9 +49,19 @@ describe('reviewer payouts', () => {
   });
 });
 
-describe('story badges', () => {
-  it('maps readers to badge tier', () => {
+describe('story trust', () => {
+  it('maps readers to trust level', () => {
     expect(badgeForReaders(0)).toBe('incubation');
-    expect(badgeForReaders(2500)).toBe('performing');
+    expect(trustLevelForReaders(2500)).toBe('performing');
+    expect(trustLevelForReaders(500)).toBe('emerging');
+    expect(trustLevelForReaders(100)).toBe('foundation');
+  });
+
+  it('computes effective author share by trust level', () => {
+    expect(effectiveCreatorSharePct('incubation')).toBe(0);
+    expect(effectiveCreatorSharePct('performing')).toBe(40);
+    expect(effectiveCreatorSharePct('catalyst')).toBe(44);
+    expect(effectiveCreatorSharePct('anchor')).toBe(50);
+    expect(effectiveCreatorSharePct('apex')).toBe(60);
   });
 });

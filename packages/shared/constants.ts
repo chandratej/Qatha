@@ -27,8 +27,9 @@ export const BRAND = {
   prideLine: BRAND_IDENTITY.prideLine,
   priceMonthly: 99,
   priceMonthlyPaise: 9900,
-  creatorSharePct: 60,
-  platformSharePct: 40,
+  /** Base share before Story Trust multiplier — Performing = 40%, Apex = 60% */
+  creatorSharePct: 40,
+  platformSharePct: 60,
 } as const;
 
 export {
@@ -42,11 +43,41 @@ export type { ContentTypeId, StoryStatusId, AgeRatingId, LanguageId } from './co
 export { MOOD_TAGS, SEED_COMMUNITY_TAGS, TAG_REQUEST_STATUSES, TAG_WORKFLOW } from './tags';
 export type { TagRequestStatus } from './tags';
 
-export { AUTHOR_LEVELS, nextAuthorLevel } from './author-levels';
+export { AUTHOR_LEVELS, nextAuthorLevel, authorLevelForStats } from './author-levels';
 export type { AuthorLevelId } from './author-levels';
 
 export { STORY_BADGES, badgeForReaders } from './story-badges';
 export type { StoryBadgeId } from './story-badges';
+
+export {
+  BASE_CREATOR_SHARE_PCT,
+  STORY_LIFECYCLE,
+  STORY_TRUST_LEVELS,
+  STABILITY_WINDOW_DAYS,
+  SPI_WEIGHTS,
+  MONETIZATION_ELIGIBILITY,
+  QUARTERLY_PAYOUTS,
+  SHORT_STORY_ECONOMY,
+  PATRON_TIERS,
+  BRAND_VOCABULARY,
+  FIRST_STORY_LAUNCH_FLOW,
+  trustLevelById,
+  effectiveCreatorSharePct,
+  isMonetizationEligible,
+  nextTrustLevel,
+  trustLevelForReaders,
+} from './story-trust';
+export type { StoryLifecycleId, StoryTrustLevelId } from './story-trust';
+
+export {
+  computeSpi,
+  trustLevelFromSpiScore,
+  applyStabilityWindow,
+  readersToGrowthScore,
+  consistencyScore,
+  pickTrustLevel,
+} from './spi';
+export type { SpiInput, SpiResult, SpiComponents, StabilityDecision } from './spi';
 
 export {
   EVENT_TYPES, ORGANIZER_LEVELS, ENTRY_FEE_TIERS_INR, JUDGING_MODELS, RUBRIC_DIMENSIONS,

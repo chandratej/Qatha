@@ -26,15 +26,17 @@ import { BRAND } from '../lib/constants';
 import { modKeyLabel } from '../lib/device';
 import { BrandMark } from './studio/BrandMark';
 import { DiyaIcon } from './studio/DiyaIcon';
+import { isStudioLabsEnabled } from '../lib/featureFlags';
 
-const PRIMARY_NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/stories', label: 'Stories', icon: BookOpen },
-  { to: '/events', label: 'Events', icon: Trophy },
-  { to: '/schedule', label: 'Schedule', icon: Calendar },
-  { to: '/community', label: 'Community', icon: Users },
-  { to: '/reviewers', label: 'Reviewers', icon: BookOpenCheck },
-  { to: '/monetization', label: 'Earn', icon: IndianRupee },
+/** Core craft nav — labs (Events/Reviewers) gated by DEC-007 */
+const CORE_NAV = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true as const, lab: false },
+  { to: '/stories', label: 'Stories', icon: BookOpen, lab: false },
+  { to: '/events', label: 'Events', icon: Trophy, lab: true },
+  { to: '/schedule', label: 'Schedule', icon: Calendar, lab: false },
+  { to: '/community', label: 'Community', icon: Users, lab: false },
+  { to: '/reviewers', label: 'Reviewers', icon: BookOpenCheck, lab: true },
+  { to: '/monetization', label: 'Earn', icon: IndianRupee, lab: false },
 ] as const;
 
 function userInitials(name: string) {
@@ -57,6 +59,11 @@ export function AppTopNav() {
   }, []);
 
   const badge = useMemo(() => getCreatorBadge(1200), []);
+  const labsOn = isStudioLabsEnabled();
+  const primaryNav = useMemo(
+    () => CORE_NAV.filter((item) => !item.lab || labsOn),
+    [labsOn],
+  );
 
   const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
 
@@ -93,7 +100,7 @@ export function AppTopNav() {
         </NavLink>
 
         <nav className="app-topnav__nav" aria-label="Main navigation">
-          {PRIMARY_NAV.map((item) => (
+          {primaryNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -169,11 +176,11 @@ export function AppTopNav() {
           <DiyaIcon size={13} aria-hidden />
           {streak.currentStreak} day lamp lit
         </span>
-        <span className="app-topnav__stat" title="Creator badge">
+        <span className="app-topnav__stat" title={badge.description}>
           <Award size={13} aria-hidden /> {badge.label}
         </span>
-        <span className="app-topnav__stat" title="Revenue share">
-          {BRAND.creatorSharePct}% revenue share
+        <span className="app-topnav__stat" title="Base author share — scales with Story Trust up to 60%">
+          {BRAND.creatorSharePct}%+ Story Trust
         </span>
       </div>
     </header>

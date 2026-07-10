@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.payment-webhook]
 verify_jwt = false
 
+[functions.recompute-story-trust]
+verify_jwt = false
+
 [functions.whatsapp-otp]
 verify_jwt = false
 

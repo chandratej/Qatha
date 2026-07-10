@@ -4,7 +4,8 @@ import { platformApi } from '../lib/platformApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import {
   CONTEST_ROADMAP, READER_SYSTEMS, RECOMMENDATION_SIGNALS, PLATFORM_ROLES,
-  AUTHOR_LEVELS, STORY_BADGES, REPORT_CATEGORIES, EVENT_TYPES,
+  AUTHOR_LEVELS, STORY_TRUST_LEVELS, SPI_WEIGHTS, PATRON_TIERS,
+  REPORT_CATEGORIES, EVENT_TYPES,
 } from '../lib/platformConstants';
 
 export function PlatformMap() {
@@ -35,15 +36,17 @@ export function PlatformMap() {
         'Primary + secondary genres (14)', 'Age rating', 'Language', 'Story status', 'Setting', 'Themes', 'Tags',
       ]} status="partial" link="/stories/new" />
 
-      <FeatureSection title="Author journey" items={AUTHOR_LEVELS.map((l) => l.label)} status="partial" link="/profile" />
-      <FeatureSection title="Story performance badges" items={STORY_BADGES.map((b) => b.label)} status="planned" />
+      <FeatureSection title="Author progression" items={AUTHOR_LEVELS.map((l) => l.label)} status="partial" link="/profile" />
+      <FeatureSection title="Story Trust levels" items={STORY_TRUST_LEVELS.map((t) => `${t.glyph} ${t.label}`)} status="partial" link="/monetization" />
+      <FeatureSection title="Story Performance Index (SPI)" items={SPI_WEIGHTS.map((w) => `${w.label} (${w.weightPct}%)`)} status="planned" link="/monetization" />
+      <FeatureSection title="Patron tiers" items={PATRON_TIERS.map((p) => p.label)} status="planned" link="/monetization" />
       <FeatureSection title="Contest roadmap" items={CONTEST_ROADMAP.map((c) => `${c.label} (${c.status})`)} status="partial" link="/events" />
       <FeatureSection title="Event types (15)" items={EVENT_TYPES.map((e) => e.label)} status="partial" link="/events" />
       <FeatureSection title="Reader systems" items={READER_SYSTEMS.map((s) => `${s.label} — ${s.status}`)} status="partial" link="/community" />
       <FeatureSection title="Recommendation signals (rule-based, no AI)" items={RECOMMENDATION_SIGNALS.map((s) => `${s.id} (${s.status})`)} status="partial" />
       <FeatureSection title="Reviewer marketplace" items={['Anonymous 3-reviewer matching', 'Majority decision', '₹149–199 packages', 'Beta readers volunteer/paid', 'Reputation Bronze → Editorial Council']} status="partial" link="/reviewers" />
       <FeatureSection title="Community governance" items={[...REPORT_CATEGORIES.map((c) => c.label), 'Threshold triage', 'Appeals', 'Audit logs']} status="partial" link="/moderation" />
-      <FeatureSection title="Monetization (full PRD)" items={['Subscriptions ✓', 'Premium chapters ✓', 'Tips', 'Magazines', 'IP licensing', 'Sponsored contests', 'Print-on-demand']} status="partial" link="/monetization" />
+      <FeatureSection title="Creator economy & patronage" items={['Subscriptions ✓', 'Premium chapters ✓', 'Literary Patronage', "Editor's Spotlight", 'Story Trust payouts', 'Short story collections', 'IP licensing', 'Print-on-demand']} status="partial" link="/monetization" />
       <FeatureSection title="RBAC roles" items={[...PLATFORM_ROLES]} status="partial" />
       <FeatureSection title="Events platform modules" items={[
         'Event management', 'Registration', 'Wallet', 'Escrow', 'Payments', 'Leaderboards',

@@ -40,7 +40,8 @@ creatorsRouter.get('/dashboard', async (req, res, next) => {
 
     const earningsThisMonth = (monthlyEarnings || []).reduce((s, e) => s + Number(e.amount), 0);
     const { data: stories } = await supabase.from('stories')
-      .select('id, title, total_readers, views_this_week, chapter_count').eq('author_id', creatorId);
+      .select('id, title, total_readers, views_this_week, chapter_count, trust_level, spi_score, monetization_eligible')
+      .eq('author_id', creatorId);
     const { data: subscriberHistory } = await supabase.from('subscriptions').select('created_at, story_id_source')
       .eq('creator_id_source', creatorId).order('created_at');
 
@@ -799,7 +800,10 @@ creatorsRouter.get('/analytics/:storyId', async (req, res, next) => {
       return res.json({ ...getSeedAnalytics(storyId), mock: true });
     }
 
-    const { data: story } = await supabase.from('stories').select('id, title, author_id').eq('id', storyId).single();
+    const { data: story } = await supabase.from('stories')
+      .select('id, title, author_id, trust_level, spi_score, spi_components, monetization_eligible, trust_candidate_level, total_readers, chapter_count')
+      .eq('id', storyId)
+      .single();
     if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
 
     const { data: chapterStats } = await supabase.from('chapter_analytics').select('*')
@@ -821,7 +825,208 @@ creatorsRouter.get('/analytics/:storyId', async (req, res, next) => {
       chapters,
       subscribers_gained: subscribersGained || 0,
       drop_off_insights,
+      story_trust: {
+        trust_level: story.trust_level,
+        spi_score: story.spi_score,
+        spi_components: story.spi_components,
+        monetization_eligible: story.monetization_eligible,
+        trust_candidate_level: story.trust_candidate_level,
+      },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** DEC-021 — recompute Story Trust SPI for a story owned by the creator */
+creatorsRouter.post('/stories/:storyId/recompute-trust', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { storyId } = req.params;
+
+    if (isMockMode()) {
+      return res.json({
+        mock: true,
+        trust_level: 'incubation',
+        spi_score: 0,
+        effective_share_pct: 0,
+        note: 'SPI recompute is a no-op in mock mode',
+      });
+    }
+
+    const { data: story } = await supabase.from('stories').select('id, author_id').eq('id', storyId).single();
+    if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+
+    const { recomputeStoryTrust } = await import('../services/storyTrust.js');
+    const result = await recomputeStoryTrust(storyId);
+    res.json(result || { error: 'recompute_failed' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Cycle 7 — payout readiness (UPI + KYC fields) */
+creatorsRouter.get('/me/payout', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    if (isMockMode()) {
+      return res.json({
+        mock: true,
+        payout_upi: null,
+        legal_name: null,
+        tax_id: null,
+        payout_verified_at: null,
+        payout_schedule: 'quarterly',
+      });
+    }
+    const { data, error } = await supabase
+      .from('creators')
+      .select('payout_upi, legal_name, tax_id, payout_verified_at')
+      .eq('id', creatorId)
+      .maybeSingle();
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json({
+      payout_upi: data?.payout_upi || null,
+      legal_name: data?.legal_name || null,
+      tax_id: data?.tax_id || null,
+      payout_verified_at: data?.payout_verified_at || null,
+      payout_schedule: 'quarterly',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+creatorsRouter.patch('/me/payout', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { payout_upi, legal_name, tax_id } = req.body || {};
+
+    if (payout_upi != null && payout_upi !== '') {
+      const upi = String(payout_upi).trim();
+      if (!/^[\w.\-]{2,}@[\w]{2,}$/i.test(upi)) {
+        throw createAppError('INTERNAL_ERROR', 'Invalid UPI ID format (e.g. name@upi)', 400);
+      }
+    }
+
+    if (isMockMode()) {
+      return res.json({
+        mock: true,
+        saved: true,
+        payout_upi: payout_upi || null,
+        legal_name: legal_name || null,
+        tax_id: tax_id || null,
+      });
+    }
+
+    const patch = { updated_at: new Date().toISOString() };
+    if (payout_upi !== undefined) patch.payout_upi = payout_upi ? String(payout_upi).trim() : null;
+    if (legal_name !== undefined) patch.legal_name = legal_name ? String(legal_name).trim() : null;
+    if (tax_id !== undefined) patch.tax_id = tax_id ? String(tax_id).trim().toUpperCase() : null;
+
+    const { data, error } = await supabase
+      .from('creators')
+      .update(patch)
+      .eq('id', creatorId)
+      .select('payout_upi, legal_name, tax_id, payout_verified_at')
+      .maybeSingle();
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json({ saved: true, ...data, payout_schedule: 'quarterly' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Cycle 7 — cloud chapter version snapshots */
+creatorsRouter.post('/versions/snapshot', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const {
+      story_id,
+      chapter_number,
+      scene_id,
+      scene_title,
+      content,
+      source = 'autosave',
+    } = req.body || {};
+
+    if (!story_id || !chapter_number || !scene_id || content == null) {
+      throw createAppError('INTERNAL_ERROR', 'story_id, chapter_number, scene_id, content required', 400);
+    }
+
+    if (isMockMode()) {
+      return res.json({ mock: true, saved: true, id: `mock-v-${Date.now()}` });
+    }
+
+    const { data: story } = await supabase
+      .from('stories')
+      .select('id, author_id')
+      .eq('id', story_id)
+      .maybeSingle();
+    if (!story || story.author_id !== creatorId) {
+      throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+    }
+
+    const { data, error } = await supabase
+      .from('chapter_version_snapshots')
+      .insert({
+        creator_id: creatorId,
+        story_id,
+        chapter_number: Number(chapter_number),
+        scene_id: String(scene_id),
+        scene_title: scene_title || null,
+        content: String(content),
+        source: String(source).slice(0, 32),
+      })
+      .select('id, created_at')
+      .maybeSingle();
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+
+    // Best-effort prune
+    try {
+      await supabase.rpc('prune_chapter_versions', {
+        p_creator_id: creatorId,
+        p_story_id: story_id,
+        p_chapter_number: Number(chapter_number),
+        p_scene_id: String(scene_id),
+        p_keep: 50,
+      });
+    } catch { /* ignore if RPC missing until migration 016 */ }
+
+    res.json({ saved: true, id: data?.id, created_at: data?.created_at });
+  } catch (err) {
+    next(err);
+  }
+});
+
+creatorsRouter.get('/versions/:storyId/:chapterNumber', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { storyId, chapterNumber } = req.params;
+    if (isMockMode()) return res.json({ mock: true, versions: [] });
+
+    const { data: story } = await supabase
+      .from('stories')
+      .select('id, author_id')
+      .eq('id', storyId)
+      .maybeSingle();
+    if (!story || story.author_id !== creatorId) {
+      throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+    }
+
+    const { data, error } = await supabase
+      .from('chapter_version_snapshots')
+      .select('id, scene_id, scene_title, content, source, created_at')
+      .eq('creator_id', creatorId)
+      .eq('story_id', storyId)
+      .eq('chapter_number', Number(chapterNumber))
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json({ versions: data || [] });
   } catch (err) {
     next(err);
   }

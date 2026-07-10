@@ -1,21 +1,36 @@
-/** PRD §7 — Story performance badges */
+/**
+ * Story Trust badges — aligned with Creator Economy & Story Trust Framework.
+ * @deprecated Use STORY_TRUST_LEVELS from story-trust.ts for new code.
+ */
 
-export const STORY_BADGES = [
-  { id: 'incubation', label: 'Incubation', order: 0, minReaders: 0 },
-  { id: 'baseline', label: 'Baseline', order: 1, minReaders: 100 },
-  { id: 'emergent', label: 'Emergent', order: 2, minReaders: 500 },
-  { id: 'performing', label: 'Performing', order: 3, minReaders: 2000 },
-  { id: 'catalyst', label: 'Catalyst', order: 4, minReaders: 10000 },
-  { id: 'anchor', label: 'Anchor', order: 5, minReaders: 50000 },
-  { id: 'apex', label: 'Apex', order: 6, minReaders: 200000 },
-] as const;
+import {
+  STORY_TRUST_LEVELS,
+  trustLevelForReaders,
+  type StoryTrustLevelId,
+} from './story-trust';
 
-export type StoryBadgeId = (typeof STORY_BADGES)[number]['id'];
+const READER_THRESHOLDS: Record<StoryTrustLevelId, number> = {
+  incubation: 0,
+  foundation: 100,
+  emerging: 500,
+  performing: 2_000,
+  catalyst: 10_000,
+  anchor: 50_000,
+  apex: 200_000,
+};
+
+export const STORY_BADGES = STORY_TRUST_LEVELS.map((t) => ({
+  id: t.id,
+  label: t.label,
+  glyph: t.glyph,
+  order: t.order,
+  minReaders: READER_THRESHOLDS[t.id],
+  monetizationEligible: t.monetizationEligible,
+  revenueSharePct: t.revenueSharePct,
+}));
+
+export type StoryBadgeId = StoryTrustLevelId;
 
 export function badgeForReaders(totalReaders: number): StoryBadgeId {
-  let badge: StoryBadgeId = 'incubation';
-  for (const b of STORY_BADGES) {
-    if (totalReaders >= b.minReaders) badge = b.id;
-  }
-  return badge;
+  return trustLevelForReaders(totalReaders);
 }

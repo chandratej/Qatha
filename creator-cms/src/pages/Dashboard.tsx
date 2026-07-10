@@ -6,6 +6,7 @@ import type { CreatorMilestone } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { BRAND } from '../lib/constants';
+import { effectiveCreatorSharePct, trustLevelForReaders } from '../lib/platformConstants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { isSessionError } from '../lib/errors';
 import { buildActivityFeed } from '../lib/buildActivityFeed';
@@ -52,7 +53,9 @@ export function Dashboard() {
   const activity = useMemo(() => (d ? buildActivityFeed(d, milestonesData?.milestones ?? []) : []), [d, milestonesData]);
   const topStories = useMemo(() => [...(d?.earnings_by_story ?? [])].sort((a, b) => b.total_readers - a.total_readers).slice(0, 4), [d]);
   const analyticsHref = d?.stories[0]?.id ? `/analytics/${d.stories[0].id}` : undefined;
-  const sharePct = d?.revenue_share_pct ?? BRAND.creatorSharePct;
+  const publishedCount = storiesData?.stories?.filter((s) => s.moderation_status === 'published').length ?? 0;
+  const storyTrust = trustLevelForReaders(totalReads);
+  const effectiveSharePct = effectiveCreatorSharePct(storyTrust) || BRAND.creatorSharePct;
 
   const continueStory = useMemo(() => {
     const stories = storiesData?.stories ?? [];
@@ -138,7 +141,7 @@ export function Dashboard() {
         continueStoryCover={continueStory?.cover_url}
       />
 
-      <CreatorBadgeBar totalReads={totalReads} revenueSharePct={sharePct} />
+      <CreatorBadgeBar totalReads={totalReads} publishedStories={publishedCount} />
 
       <div className="studio-metrics" role="list" aria-label="Studio metrics">
         <button type="button" className="studio-metric" role="listitem" onClick={() => navigate('/stories')}>
@@ -163,13 +166,14 @@ export function Dashboard() {
             <span className="studio-metric__label">Earnings this month</span>
           </span>
         </div>
-        <div className="studio-metric" role="listitem">
+        <button type="button" className="studio-metric" role="listitem" onClick={() => navigate('/monetization')}>
           <span className="studio-metric__icon"><TrendingUp size={18} aria-hidden /></span>
           <span>
-            <span className="studio-metric__value">{sharePct}%</span>
-            <span className="studio-metric__label">Your revenue share</span>
+            <span className="studio-metric__value">{effectiveSharePct}%+</span>
+            <span className="studio-metric__label">Story Trust share</span>
+            <span className="studio-metric__trend">Up to 60% at Apex</span>
           </span>
-        </div>
+        </button>
       </div>
 
       <div className="studio-workspace">

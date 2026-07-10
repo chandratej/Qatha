@@ -403,6 +403,15 @@ body {
   letter-spacing: -0.02em;
 }
 
+.paywall__eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--katha-gold-muted, #a8864e);
+  font-weight: 600;
+}
+
 .paywall__subtitle {
   margin: 0 0 20px;
   font-size: 0.875rem;
@@ -411,6 +420,37 @@ body {
   max-width: 28rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+.paywall__benefits {
+  list-style: none;
+  margin: 0 auto 18px;
+  padding: 12px 14px;
+  max-width: 22rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--katha-ink-soft);
+  background: rgba(196, 160, 82, 0.06);
+  border: 1px solid rgba(196, 160, 82, 0.14);
+  border-radius: 12px;
+}
+
+.paywall__benefits li {
+  margin: 0 0 6px;
+  padding-left: 0.1rem;
+}
+
+.paywall__benefits li:last-child {
+  margin-bottom: 0;
+}
+
+.paywall__benefits-share {
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px solid rgba(196, 160, 82, 0.16);
+  color: var(--katha-maroon, #6b2338);
+  font-weight: 500;
 }
 
 .paywall__price-row {

@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 
 import { publishDueScheduledChapters } from './scheduledPublish.js';
+import { recomputeAllStoryTrust } from './storyTrustBatch.js';
 
 export function scheduleNotifications(cron) {
   cron.schedule('0 10 * * 0', notifyTrendingStories);
@@ -8,6 +9,9 @@ export function scheduleNotifications(cron) {
   cron.schedule('0 * * * *', notifyScheduledReleases);
   cron.schedule('0 20 * * *', notifyStreakReminders); // 8 PM daily trigger
   cron.schedule('* * * * *', publishDueScheduledChapters);
+  // DEC-021: Story Trust SPI batch — 02:15 UTC daily + every 6h catch-up for stale rows
+  cron.schedule('15 2 * * *', () => recomputeAllStoryTrust({ onlyStale: false }));
+  cron.schedule('20 */6 * * *', () => recomputeAllStoryTrust({ onlyStale: true }));
 }
 
 async function sendPush(token, title, body) {

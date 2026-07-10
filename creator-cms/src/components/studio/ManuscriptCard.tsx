@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { BarChart3, BookOpen, Link2, Pencil, PenLine, Trash2 } from 'lucide-react';
 import type { StoryData } from '../../types/database';
 import { storyStatusBadge } from '../../lib/storyStatus';
+import { StoryTrustBadge } from './StoryTrustBadge';
+import { trustLevelForReaders } from '../../../../packages/shared/story-trust';
 import { GENRES } from '../../lib/constants';
 import { ShareLinkField } from '../ShareLinkField';
 
@@ -45,6 +47,7 @@ export function ManuscriptCard({
   earnings,
 }: ManuscriptCardProps) {
   const badge = storyStatusBadge(story.moderation_status);
+  const trustLevel = trustLevelForReaders(story.total_readers);
 
   const showSharePreview = variant !== 'grid';
 
@@ -72,6 +75,7 @@ export function ManuscriptCard({
           <p className="manuscript-card__excerpt">{story.description}</p>
         )}
         <div className="manuscript-card__meta">
+          <StoryTrustBadge level={trustLevel} compact />
           <span><BookOpen size={13} aria-hidden /> {story.chapter_count} chapters</span>
           <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
           {earnings != null && earnings > 0 && <span>₹{earnings.toLocaleString('en-IN')} this month</span>}

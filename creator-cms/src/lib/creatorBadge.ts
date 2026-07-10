@@ -1,29 +1,64 @@
-export interface CreatorBadge {
-  id: string;
+import { AUTHOR_LEVELS, authorLevelForStats } from '../../../packages/shared/author-levels';
+import type { AuthorLevelId } from '../../../packages/shared/author-levels';
+
+export interface AuthorLevelBadge {
+  id: AuthorLevelId;
   label: string;
+  labelTelugu?: string;
   tier: number;
-  minReads: number;
   description: string;
 }
 
-export const CREATOR_BADGES: CreatorBadge[] = [
-  { id: 'newcomer', label: 'Newcomer', tier: 1, minReads: 0, description: 'Just getting started' },
-  { id: 'rising', label: 'Rising Voice', tier: 2, minReads: 500, description: 'Building an audience' },
-  { id: 'storyteller', label: 'Storyteller', tier: 3, minReads: 5_000, description: 'Readers are noticing you' },
-  { id: 'bestseller', label: 'Bestseller Track', tier: 4, minReads: 100_000, description: 'On the path to bestseller' },
-  { id: 'top_creator', label: 'Top Creator', tier: 5, minReads: 500_000, description: 'Elite creator status' },
-];
+const LEVEL_DESCRIPTIONS: Record<AuthorLevelId, string> = {
+  writer: 'Crafting your first manuscript',
+  author: 'Published — your literary journey has begun',
+  certified_author: 'Verified author — trusted by Katha readers',
+  featured_author: 'Readers are gathering around your work',
+  katha_creator: 'A defining voice in the Telugu literary ecosystem',
+  katha_fellow: 'Recognized literary achievement — platform curated',
+  katha_laureate: 'The highest honour in the Katha publishing ecosystem',
+};
 
-export function getCreatorBadge(totalReads: number): CreatorBadge {
-  let current = CREATOR_BADGES[0];
-  for (const badge of CREATOR_BADGES) {
-    if (totalReads >= badge.minReads) current = badge;
-  }
-  return current;
+export function getAuthorLevelBadge(stats: {
+  publishedStories: number;
+  totalReaders: number;
+  verified?: boolean;
+  performingStories?: number;
+}): AuthorLevelBadge {
+  const id = authorLevelForStats(stats);
+  const level = AUTHOR_LEVELS.find((l) => l.id === id)!;
+  return {
+    id,
+    label: level.label,
+    labelTelugu: 'labelTelugu' in level ? level.labelTelugu : undefined,
+    tier: level.order,
+    description: LEVEL_DESCRIPTIONS[id],
+  };
 }
 
-export function getNextBadge(totalReads: number): CreatorBadge | null {
+/** @deprecated Use getAuthorLevelBadge — kept for nav compatibility */
+export function getCreatorBadge(totalReads: number): AuthorLevelBadge {
+  return getAuthorLevelBadge({
+    publishedStories: totalReads > 0 ? 1 : 0,
+    totalReaders: totalReads,
+  });
+}
+
+export function getNextAuthorLevelBadge(currentId: AuthorLevelId): AuthorLevelBadge | null {
+  const idx = AUTHOR_LEVELS.findIndex((l) => l.id === currentId);
+  if (idx < 0 || idx >= AUTHOR_LEVELS.length - 1) return null;
+  const next = AUTHOR_LEVELS[idx + 1];
+  return {
+    id: next.id,
+    label: next.label,
+    labelTelugu: 'labelTelugu' in next ? next.labelTelugu : undefined,
+    tier: next.order,
+    description: LEVEL_DESCRIPTIONS[next.id],
+  };
+}
+
+/** @deprecated Use getNextAuthorLevelBadge */
+export function getNextBadge(totalReads: number): AuthorLevelBadge | null {
   const current = getCreatorBadge(totalReads);
-  const idx = CREATOR_BADGES.findIndex((b) => b.id === current.id);
-  return idx < CREATOR_BADGES.length - 1 ? CREATOR_BADGES[idx + 1] : null;
+  return getNextAuthorLevelBadge(current.id);
 }

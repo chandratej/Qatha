@@ -175,7 +175,7 @@ export function getSeedDiscover(genre) {
 }
 
 export function getSeedDashboard() {
-  const creatorSharePct = 60;
+  const creatorSharePct = 40;
   const priceInr = 99;
   const perSubEarning = (priceInr * creatorSharePct) / 100;
 
@@ -197,7 +197,7 @@ export function getSeedDashboard() {
     revenue_share_pct: creatorSharePct,
     platform_share_pct: 100 - creatorSharePct,
     creator_earnings_per_subscription_inr: perSubEarning,
-    payout_schedule: '15th of each month',
+    payout_schedule: 'quarterly',
     week_over_week_growth_pct: 12,
     earnings_by_story: earningsByStory,
     stories: getCreatorSeedStories(DEMO_CREATOR_ID).map((s) => ({

@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import type { ModerationItem } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { sanitizeHtml } from '../lib/sanitizeHtml';
 
 export function Moderation() {
   const { data, loading, error, reload } = useApi(() => api.getModerationQueue());
@@ -106,7 +107,7 @@ export function Moderation() {
 
             <div
               className="cms-moderation-preview"
-              dangerouslySetInnerHTML={{ __html: item.chapters.content }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.chapters.content || '') }}
             />
 
             <div className="input-group" style={{ marginBottom: 16 }}>

@@ -49,7 +49,7 @@ moderationRouter.post('/:id/review', async (req, res, next) => {
 
     const { data: item } = await supabase
       .from('moderation_queue')
-      .select('chapter_id')
+      .select('chapter_id, creator_id, chapters(title, chapter_number, story_id)')
       .eq('id', req.params.id)
       .single();
 
@@ -63,11 +63,42 @@ moderationRouter.post('/:id/review', async (req, res, next) => {
       await supabase.from('chapters').update({
         status: decision === 'approved' ? 'published' : 'draft',
         moderation_status: decision,
+        moderation_reason: notes || null,
         published_at: decision === 'approved' ? new Date().toISOString() : null,
       }).eq('id', item.chapter_id);
+
+      // Cycle 7 — notify creator (milestone + console/push hook)
+      try {
+        const ch = item.chapters;
+        const chTitle = ch?.title || `Chapter ${ch?.chapter_number || ''}`;
+        const label =
+          decision === 'approved'
+            ? `Published: ${chTitle}`
+            : decision === 'needs_revision'
+              ? `Edits requested: ${chTitle}`
+              : `Not approved: ${chTitle}`;
+
+        if (item.creator_id) {
+          await supabase.from('creator_milestones').insert({
+            creator_id: item.creator_id,
+            milestone_type: `MODERATION_${decision.toUpperCase()}`,
+            metadata: {
+              chapter_id: item.chapter_id,
+              story_id: ch?.story_id || null,
+              notes: notes || null,
+              label,
+            },
+          }).then(() => {}).catch(() => {});
+
+          // Log for ops; push delivery via existing notify channel when wired
+          console.log(`[Moderation notify] creator=${item.creator_id} decision=${decision} ${label}`);
+        }
+      } catch (notifyErr) {
+        console.warn('[Moderation] notify failed:', notifyErr?.message);
+      }
     }
 
-    res.json({ reviewed: true, decision });
+    res.json({ reviewed: true, decision, notified: Boolean(item?.creator_id) });
   } catch (err) {
     next(err);
   }

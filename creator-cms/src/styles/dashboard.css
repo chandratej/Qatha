@@ -2208,6 +2208,7 @@
 .creator-badge-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; padding: 12px 16px; border-radius: var(--dash-radius); background: var(--dash-paper); border: 1px solid var(--dash-border); }
 .creator-badge-bar__item { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--ink-soft); }
 .creator-badge-bar__next { font-size: 0.8125rem; color: var(--ink-muted); margin-left: auto; }
+.creator-badge-bar__hint { width: 100%; font-size: 0.75rem; color: var(--katha-gold-dark); padding-top: 4px; border-top: 1px dashed var(--dash-border); }
 .kpi-card--clickable { cursor: pointer; text-align: left; width: 100%; border: 1px solid var(--dash-border); }
 .kpi-card__top { display: flex; justify-content: space-between; align-items: flex-start; }
 .kpi-card__trend--down { color: var(--ember); }

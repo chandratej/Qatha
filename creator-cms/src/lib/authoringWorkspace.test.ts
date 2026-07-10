@@ -14,10 +14,12 @@ describe('authoringWorkspace', () => {
     expect(normalizeAuthoringWorkspace('invalid')).toBe('writing');
   });
 
-  it('always returns a layout object', () => {
+  it('always returns a layout object with comfort measure (BR-012)', () => {
     const layout = layoutForWorkspace(undefined);
     expect(layout.sceneSidebarCollapsed).toBe(false);
-    expect(layout.canvasMaxWidth).toBe(960);
+    expect(layout.canvasMaxWidth).toBe(720);
+    expect(layoutForWorkspace('focus').canvasMaxWidth).toBe(680);
+    expect(layoutForWorkspace('writing').canvasMaxWidth).toBeLessThanOrEqual(720);
   });
 
   it('enables sync scroll in review mode', () => {

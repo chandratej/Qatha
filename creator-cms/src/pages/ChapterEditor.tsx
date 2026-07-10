@@ -22,6 +22,15 @@ import { useAuth } from '../context/AuthContext';
 import { PhoneVerificationModal } from '../components/PhoneVerificationModal';
 import { aggregateScenesToHtml, scenesFromChapterPayload, scenesToContentDelta } from '../lib/sceneUtils';
 import { saveDraftToCache, loadDraftFromCache } from '../lib/draftCache';
+import {
+  fingerprintDraft,
+  resolveDraftConflict,
+  sceneContentEmpty,
+  type DraftConflictChoice,
+} from '../lib/draftConflict';
+import { DraftConflictModal } from '../components/Editor/DraftConflictModal';
+import { enqueuePublishJob, isLikelyOfflineError } from '../lib/publishQueue';
+import { backupSceneVersionCloud } from '../lib/cloudVersions';
 import { useAutosave } from '../hooks/useAutosave';
 import { useVersionHistory } from '../hooks/useVersionHistory';
 import { useWritingBreakReminder } from '../hooks/useWritingBreakReminder';
@@ -165,6 +174,18 @@ export function ChapterEditor() {
   const [findMatchIndex, setFindMatchIndex] = useState(0);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [aiCompanionOpen, setAiCompanionOpen] = useState(false);
+  const [draftConflictOpen, setDraftConflictOpen] = useState(false);
+  const [draftConflictPrefer, setDraftConflictPrefer] = useState<DraftConflictChoice>('local');
+  const [pendingLocalDraft, setPendingLocalDraft] = useState<{
+    title: string;
+    scenes: SceneBlock[];
+    updatedAt: number;
+  } | null>(null);
+  const [pendingCloudDraft, setPendingCloudDraft] = useState<{
+    title: string;
+    scenes: SceneBlock[];
+    updatedAt: number | null;
+  } | null>(null);
 
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const editorScrollRef = useRef<HTMLDivElement>(null);
@@ -313,15 +334,60 @@ export function ChapterEditor() {
         if (cancelled) return;
 
         const cached = await loadDraftFromCache(storyId, chapterNumber).catch(() => null);
-        const loadedScenes = cached?.scenes?.length
-          ? cached.scenes
-          : scenesFromChapterPayload(chapter);
-        const title = cached?.title || chapter.title || `Chapter ${chapterNumber}`;
-        setScenes(loadedScenes);
-        setActiveSceneId(loadedScenes[0]?.id || '');
-        setChapterTitle(title);
-        dirtyBaselineRef.current = JSON.stringify({ title, scenes: loadedScenes });
-        setDirty(false);
+        const cloudScenes = scenesFromChapterPayload(chapter);
+        const cloudTitle = chapter.title || `Chapter ${chapterNumber}`;
+        const cloudUpdatedRaw = chapter.last_saved_at || chapter.updated_at || null;
+        const cloudUpdatedAt = cloudUpdatedRaw ? Date.parse(cloudUpdatedRaw) || null : null;
+
+        const applyDraft = (title: string, loadedScenes: SceneBlock[], markDirty: boolean) => {
+          setScenes(loadedScenes);
+          setActiveSceneId(loadedScenes[0]?.id || '');
+          setChapterTitle(title);
+          dirtyBaselineRef.current = JSON.stringify({ title, scenes: loadedScenes });
+          setDirty(markDirty);
+        };
+
+        if (cached?.scenes?.length) {
+          const decision = resolveDraftConflict(
+            {
+              updatedAt: cached.updated_at ?? null,
+              fingerprint: fingerprintDraft(cached.title, cached.scenes),
+              hasContent: !sceneContentEmpty(cached.scenes),
+            },
+            {
+              updatedAt: cloudUpdatedAt,
+              fingerprint: fingerprintDraft(cloudTitle, cloudScenes),
+              hasContent: !sceneContentEmpty(cloudScenes),
+            },
+          );
+
+          if (decision.hasConflict) {
+            setPendingLocalDraft({
+              title: cached.title,
+              scenes: cached.scenes,
+              updatedAt: cached.updated_at,
+            });
+            setPendingCloudDraft({
+              title: cloudTitle,
+              scenes: cloudScenes,
+              updatedAt: cloudUpdatedAt,
+            });
+            setDraftConflictPrefer(decision.prefer);
+            setDraftConflictOpen(true);
+            // Load preferred side while modal is open so editor is never blank
+            if (decision.prefer === 'local') {
+              applyDraft(cached.title, cached.scenes, true);
+            } else {
+              applyDraft(cloudTitle, cloudScenes, false);
+            }
+          } else if (decision.prefer === 'local') {
+            applyDraft(cached.title, cached.scenes, true);
+          } else {
+            applyDraft(cloudTitle, cloudScenes.length ? cloudScenes : cached.scenes, false);
+          }
+        } else {
+          applyDraft(cloudTitle, cloudScenes.length ? cloudScenes : [createDefaultScene()], false);
+        }
 
         setModerationStatus(chapter.moderation_status || chapter.status || null);
         setModerationNotes(chapter.moderation_reason || null);
@@ -424,7 +490,20 @@ export function ChapterEditor() {
     setScenes(prev => {
       const next = prev.map(s => s.id === id ? { ...s, content: html } : s);
       const scene = next.find(s => s.id === id);
-      if (scene) saveSceneVersion(id, scene.title, html);
+      if (scene) {
+        void saveSceneVersion(id, scene.title, html);
+        // Cycle 7 — throttled cloud version backup (IndexedDB remains primary offline)
+        if (!isDemo) {
+          void backupSceneVersionCloud({
+            storyId,
+            chapterNumber,
+            sceneId: id,
+            sceneTitle: scene.title,
+            content: html,
+            source: 'autosave',
+          });
+        }
+      }
       return next;
     });
   };
@@ -597,15 +676,50 @@ export function ChapterEditor() {
       }
 
       if (!isDemo) {
-        await cloudSaveDraft();
-        const result = await api.publishChapter(storyId, {
+        try {
+          await cloudSaveDraft();
+        } catch (draftErr) {
+          if (!isLikelyOfflineError(draftErr)) throw draftErr;
+          // Continue — publish may still queue offline
+        }
+
+        const publishBody = {
           chapter_number: chapterNumber,
           title: chapterTitle,
           content,
+          content_delta: scenesToContentDelta(scenes),
           appeal_note: needsResubmit && appealNote.trim() ? appealNote.trim() : undefined,
-        }) as { moderation?: { status?: string; note?: string } };
-        setModerationStatus(result.moderation?.status || 'pending_review');
-        setPublishSuccess('Submitted for moderation — typically reviewed within 1–2 hours.');
+        };
+
+        try {
+          const result = await api.publishChapter(storyId, publishBody) as {
+            moderation?: { status?: string; note?: string };
+            story_trust?: { suggestedTrustLevel?: string; score?: number };
+          };
+          setModerationStatus(result.moderation?.status || 'pending_review');
+          const trustNote = result.story_trust?.score != null
+            ? ` Story Trust SPI: ${result.story_trust.score}.`
+            : '';
+          setPublishSuccess(`Submitted for moderation — typically reviewed within 1–2 hours.${trustNote}`);
+        } catch (pubErr) {
+          if (isLikelyOfflineError(pubErr)) {
+            await enqueuePublishJob({
+              storyId,
+              chapterNumber,
+              title: chapterTitle,
+              content,
+              content_delta: publishBody.content_delta,
+              appeal_note: publishBody.appeal_note,
+            });
+            persistDraft();
+            setModerationStatus('pending_review');
+            setPublishSuccess(
+              'You are offline — chapter queued. It will submit automatically when you reconnect.',
+            );
+          } else {
+            throw pubErr;
+          }
+        }
       } else {
         persistDraft();
         setPublishSuccess('Demo draft saved locally');
@@ -1017,6 +1131,44 @@ export function ChapterEditor() {
         activeSceneId={activeSceneId}
         versions={versions}
         onRestore={handleRestoreVersion}
+      />
+
+      <DraftConflictModal
+        open={draftConflictOpen}
+        preferred={draftConflictPrefer}
+        localUpdatedLabel={
+          pendingLocalDraft
+            ? new Date(pendingLocalDraft.updatedAt).toLocaleString()
+            : 'Unknown'
+        }
+        cloudUpdatedLabel={
+          pendingCloudDraft?.updatedAt
+            ? new Date(pendingCloudDraft.updatedAt).toLocaleString()
+            : 'Cloud draft'
+        }
+        onChoose={(choice) => {
+          const side = choice === 'local' ? pendingLocalDraft : pendingCloudDraft;
+          if (side) {
+            setScenes(side.scenes);
+            setActiveSceneId(side.scenes[0]?.id || '');
+            setChapterTitle(side.title);
+            dirtyBaselineRef.current = JSON.stringify({ title: side.title, scenes: side.scenes });
+            setDirty(choice === 'local');
+            if (choice === 'local' && storyId) {
+              saveDraftToCache({
+                key: `${storyId}:${chapterNumber}`,
+                story_id: storyId,
+                chapter_number: chapterNumber,
+                title: side.title,
+                scenes: side.scenes,
+                updated_at: Date.now(),
+              }).catch(() => {});
+            }
+          }
+          setDraftConflictOpen(false);
+          setPendingLocalDraft(null);
+          setPendingCloudDraft(null);
+        }}
       />
     </div>
   );

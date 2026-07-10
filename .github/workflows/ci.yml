@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  creator-cms:
+    name: Creator Studio — test & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: creator-cms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: creator-cms/package-lock.json
+      - run: npm ci
+      - run: npm test -- --run
+      - run: npm run build
+        env:
+          VITE_MOCK_MODE: 'true'
+          VITE_API_URL: http://localhost:3001/api
+
+  creator-cms-e2e:
+    name: Creator Studio — Playwright smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: creator-cms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: creator-cms/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+        env:
+          CI: true
+          VITE_MOCK_MODE: 'true'
+          VITE_API_URL: http://127.0.0.1:3001/api
+          VITE_STUDIO_LABS: 'false'
+
+  backend:
+    name: Backend — unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm test

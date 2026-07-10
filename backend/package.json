@@ -9,7 +9,8 @@
     "stop": "node scripts/free-port.mjs 3001",
     "dev:restart": "npm run stop && npm run dev",
     "lint": "eslint src/",
-    "test": "node --test src/middleware/authenticate.test.js src/lib/supabaseKeys.test.js src/lib/mockMode.test.js src/services/moderation/gateway.test.js"
+    "test": "node --test src/middleware/authenticate.test.js src/lib/supabaseKeys.test.js src/lib/mockMode.test.js src/services/moderation/gateway.test.js src/services/storyTrust.test.js src/services/storyTrustBatch.test.js src/services/razorpayOrders.test.js",
+    "spi:batch": "node -e \"import('./src/services/storyTrustBatch.js').then(m => m.recomputeAllStoryTrust({ onlyStale: false }).then(console.log))\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

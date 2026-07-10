@@ -9,9 +9,10 @@ export interface RevenueConfig {
   subscription_price_paise: number;
 }
 
+/** DEC-006: base author share 40% (Performing); ladder can raise effective share to 60% at Apex. */
 const DEFAULTS: RevenueConfig = {
-  creator_share_pct: 60,
-  platform_share_pct: 40,
+  creator_share_pct: 40,
+  platform_share_pct: 60,
   subscription_price_inr: 99,
   subscription_price_paise: 9900,
 };

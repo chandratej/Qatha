@@ -26,6 +26,9 @@ export interface DashboardData {
     chapter_count: number;
     subscribers?: number;
     earnings_this_month?: number;
+    trust_level?: string;
+    spi_score?: number;
+    monetization_eligible?: boolean;
   }>;
   subscriber_history: Array<{ month: string; count: number }>;
 }
@@ -75,6 +78,9 @@ export interface ChapterDraftData {
   status?: string;
   moderation_status?: string;
   moderation_reason?: string;
+  /** Cloud draft timestamp for conflict resolution (DEC-023) */
+  last_saved_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface DropOffInsight {
@@ -86,7 +92,17 @@ export interface DropOffInsight {
 }
 
 export interface AnalyticsData {
-  story: { id: string; title: string };
+  story: {
+    id: string;
+    title: string;
+    trust_level?: string;
+    spi_score?: number;
+    spi_components?: Record<string, number>;
+    monetization_eligible?: boolean;
+    trust_candidate_level?: string | null;
+    total_readers?: number;
+    chapter_count?: number;
+  };
   chapters: Array<{
     chapter_number: number;
     total_views: number;
@@ -98,6 +114,13 @@ export interface AnalyticsData {
   demographics?: Array<{ label: string; pct: number }>;
   retention_history?: Array<{ month: string; retention_pct: number }>;
   revenue_by_month?: Array<{ month: string; revenue_inr: number }>;
+  story_trust?: {
+    trust_level?: string;
+    spi_score?: number;
+    spi_components?: Record<string, number>;
+    monetization_eligible?: boolean;
+    trust_candidate_level?: string | null;
+  };
 }
 
 export interface CreatorMilestone {

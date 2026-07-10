@@ -100,7 +100,7 @@ export function Onboarding() {
           <p className="cms-auth-card__tagline-telugu">{BRAND.taglineTelugu}</p>
           <p className="cms-auth-card__promise">
             Your stories. Your readers.{' '}
-            <strong className="cms-auth-card__share">{BRAND.creatorSharePct}% revenue share.</strong>
+            <strong className="cms-auth-card__share">{BRAND.creatorSharePct}%+ Story Trust share.</strong>
           </p>
           <div className="cms-onboarding-progress" aria-label={`Onboarding progress: ${completedCount} of ${steps.length} complete`}>
             <div className="cms-onboarding-progress__track">

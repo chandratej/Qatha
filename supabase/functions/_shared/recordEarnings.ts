@@ -1,5 +1,5 @@
 /**
- * SVC-MONEY-01: Record creator earnings (60/40 split).
+ * SVC-MONEY-01: Record creator earnings (Story Trust ladder — DEC-006).
  * Called by payment-webhook — never client-trusted.
  */
 
@@ -16,7 +16,19 @@ export interface RecordEarningsInput {
 export interface RecordEarningsResult {
   creator_share_inr: number;
   ledger_id?: string;
+  effective_share_pct?: number;
+  trust_level?: string;
 }
+
+const TRUST_MULTIPLIER: Record<string, number> = {
+  incubation: 0,
+  foundation: 0,
+  emerging: 0,
+  performing: 1,
+  catalyst: 1.1,
+  anchor: 1.25,
+  apex: 1.5,
+};
 
 export async function recordEarnings(
   admin: SupabaseClient,
@@ -28,7 +40,28 @@ export async function recordEarnings(
   }
 
   const revenue = await loadRevenueConfig(admin);
-  const creatorShare = creatorShareFromPaise(amount_paise, revenue.creator_share_pct);
+  let sharePct = revenue.creator_share_pct;
+  let trustLevel = 'performing';
+
+  if (story_id) {
+    const { data: story } = await admin
+      .from('stories')
+      .select('trust_level')
+      .eq('id', story_id)
+      .maybeSingle();
+    if (story?.trust_level) {
+      trustLevel = story.trust_level;
+      const m = TRUST_MULTIPLIER[trustLevel] ?? 0;
+      if (m > 0) {
+        sharePct = Math.round(40 * m);
+      } else {
+        // Not monetization-eligible — still attribute at base env share for founding subs if any
+        sharePct = revenue.creator_share_pct;
+      }
+    }
+  }
+
+  const creatorShare = creatorShareFromPaise(amount_paise, sharePct);
   const month = new Date().toISOString().split('T')[0].slice(0, 7) + '-01';
 
   const { data: ledger, error: ledgerError } = await admin
@@ -39,6 +72,8 @@ export async function recordEarnings(
       story_id: story_id || null,
       amount: creatorShare,
       month,
+      effective_share_pct: sharePct,
+      trust_level_at_payment: trustLevel,
     })
     .select('id')
     .single();
@@ -90,5 +125,10 @@ export async function recordEarnings(
     updated_at: new Date().toISOString(),
   }, { onConflict: 'creator_id' });
 
-  return { creator_share_inr: creatorShare, ledger_id: ledger?.id };
+  return {
+    creator_share_inr: creatorShare,
+    ledger_id: ledger?.id,
+    effective_share_pct: sharePct,
+    trust_level: trustLevel,
+  };
 }

@@ -157,6 +157,7 @@ export const api = {
     chapter_number: number;
     title?: string;
     content: string;
+    content_delta?: { scenes: Array<{ id: string; title: string; content: string }> };
     appeal_note?: string;
   }) => {
     const nodePublish = () => request(`/chapters/${storyId}/publish`, {
@@ -180,6 +181,53 @@ export const api = {
     useSupabaseDirect()
       ? sb.sbGetAnalytics(storyId)
       : request<AnalyticsData>(`/creators/analytics/${storyId}`),
+  /** DEC-021 — recompute Story Trust SPI for a story */
+  recomputeStoryTrust: (storyId: string) =>
+    request<Record<string, unknown>>(`/creators/stories/${storyId}/recompute-trust`, {
+      method: 'POST',
+      body: '{}',
+    }),
+  getPayoutProfile: () =>
+    request<{
+      payout_upi: string | null;
+      legal_name: string | null;
+      tax_id: string | null;
+      payout_verified_at: string | null;
+      payout_schedule: string;
+      mock?: boolean;
+    }>('/creators/me/payout'),
+  updatePayoutProfile: (body: {
+    payout_upi?: string | null;
+    legal_name?: string | null;
+    tax_id?: string | null;
+  }) =>
+    request<{ saved: boolean }>('/creators/me/payout', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  postVersionSnapshot: (body: {
+    story_id: string;
+    chapter_number: number;
+    scene_id: string;
+    scene_title?: string;
+    content: string;
+    source?: string;
+  }) =>
+    request<{ saved: boolean; id?: string }>('/creators/versions/snapshot', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getCloudVersions: (storyId: string, chapterNumber: number) =>
+    request<{
+      versions: Array<{
+        id: string;
+        scene_id: string;
+        scene_title: string | null;
+        content: string;
+        source: string;
+        created_at: string;
+      }>;
+    }>(`/creators/versions/${storyId}/${chapterNumber}`),
   getModerationQueue: () =>
     useSupabaseDirect()
       ? sb.sbGetModerationQueue()
