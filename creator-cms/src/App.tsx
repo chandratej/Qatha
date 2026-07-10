@@ -26,6 +26,7 @@ import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
 import { EventCreate } from './pages/EventCreate';
 import { ReviewerMarketplace } from './pages/ReviewerMarketplace';
+import { ReviewWorkspace } from './pages/ReviewWorkspace';
 import { TagsModeration } from './pages/TagsModeration';
 import { Monetization } from './pages/Monetization';
 import { PlatformMap } from './pages/PlatformMap';
@@ -65,8 +66,9 @@ function App() {
                   <Route path="/events" element={<Events />} />
                   <Route path="/events/new" element={<EventCreate />} />
                   <Route path="/events/:eventId" element={<EventDetail />} />
+                  {/* Literary Council is core trust infrastructure — not Labs-gated (DEC-007 revision) */}
+                  <Route path="/reviewers" element={<ReviewerMarketplace />} />
                   <Route element={<LabsRoute />}>
-                    <Route path="/reviewers" element={<ReviewerMarketplace />} />
                     <Route path="/tags" element={<TagsModeration />} />
                     <Route path="/platform" element={<PlatformMap />} />
                   </Route>
@@ -75,6 +77,7 @@ function App() {
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />
                 <Route path="/stories/:storyId/chapters/:chapterNum" element={<ChapterEditor />} />
+                <Route path="/reviewers/assignments/:assignmentId" element={<ReviewWorkspace />} />
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

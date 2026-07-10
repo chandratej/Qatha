@@ -90,14 +90,26 @@ export interface ReviewerPoolMember {
 
 export interface StructuredReviewComment {
   chapter_ref?: string;
+  scene_ref?: string;
   paragraph_ref?: string;
   sentence_ref?: string;
+  passage_ref?: string;
+  anchor_start?: number;
+  anchor_end?: number;
   category: string;
   priority: 'low' | 'medium' | 'high';
   reason: string;
   recommendation: string;
   expected_impact: string;
   reviewer_confidence: number;
+}
+
+export interface ReviewSubmissionSummary {
+  overall_review: string;
+  strengths: string;
+  weaknesses: string;
+  recommendation: string;
+  majority_decision: string;
 }
 
 export interface PeerReviewRequest {
@@ -154,6 +166,7 @@ export interface ReviewerAssignment {
   invited_at: string;
   accepted_at?: string;
   submitted_at?: string;
+  review_summary?: ReviewSubmissionSummary;
 }
 
 export type CouncilAuditStatus = 'pending' | 'cleared' | 'flagged' | 'appealed';

@@ -37,7 +37,7 @@ describe('featureFlags (DEC-007 / BR-010)', () => {
   it('recognizes lab paths (Events are core, not labs)', () => {
     expect(isStudioLabPath('/events')).toBe(false);
     expect(isStudioLabPath('/events/new')).toBe(false);
-    expect(isStudioLabPath('/reviewers')).toBe(true);
+    expect(isStudioLabPath('/reviewers')).toBe(false);
     expect(isStudioLabPath('/tags')).toBe(true);
     expect(isStudioLabPath('/platform')).toBe(true);
     expect(isStudioLabPath('/stories')).toBe(false);

@@ -37,6 +37,7 @@ import {
 } from '../business/reviewerMatching';
 import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
 import { REVIEW_PACKAGE } from '../../../packages/shared/reviewer-marketplace';
+import { isReviewDevSandbox } from './reviewDevSandbox';
 
 const EVENTS_KEY = 'katha_platform_events';
 const REGS_KEY = 'katha_event_registrations';
@@ -465,6 +466,62 @@ function saveReviewerPool(pool: ReviewerPoolMember[]) {
   localStorage.setItem(REVIEWER_POOL_KEY, JSON.stringify(pool));
 }
 
+/** Drop active request + inbox rows for one author/manuscript (dev + retry flows) */
+export function clearActiveReviewForStory(authorId: string, storyId: string): void {
+  const toRemove = loadPeerReviewRequests().filter(
+    (r) => r.author_id === authorId
+      && r.story_id === storyId
+      && !['completed', 'cancelled'].includes(r.status),
+  );
+  if (!toRemove.length) return;
+
+  const removeIds = new Set(toRemove.map((r) => r.id));
+  savePeerReviewRequests(loadPeerReviewRequests().filter((r) => !removeIds.has(r.id)));
+  saveReviewerAssignments(loadReviewerAssignments().filter((a) => !removeIds.has(a.request_id)));
+}
+
+/** Restore pool capacity when reviewers were marked busy but assignments completed or pool over-drained */
+export function ensureReviewerPoolCapacity(): void {
+  if (isReviewDevSandbox()) {
+    let pool = loadReviewerPool();
+    if (!pool.length) pool = loadReviewerPool();
+    pool = pool.map((m) => ({
+      ...m,
+      is_available: true,
+      conduct_score: Math.max(m.conduct_score, 80),
+    }));
+    saveReviewerPool(pool);
+    return;
+  }
+
+  let pool = loadReviewerPool();
+  const activeAssignments = loadReviewerAssignments().filter(
+    (a) => !['submitted', 'validated', 'paid_out', 'declined'].includes(a.status),
+  );
+  const busyPoolIds = new Set(activeAssignments.map((a) => a.reviewer_pool_id));
+
+  pool = pool.map((m) =>
+    busyPoolIds.has(m.id) ? m : { ...m, is_available: true },
+  );
+  saveReviewerPool(pool);
+
+  const available = pool.filter((m) => m.is_available).length;
+  if (available < REVIEW_PACKAGE.reviewerCount) {
+    try {
+      localStorage.removeItem(REVIEWER_POOL_KEY);
+    } catch { /* ignore */ }
+    loadReviewerPool();
+  }
+}
+
+/** Prepare localStorage state immediately before a review request */
+export function prepareReviewRequest(authorId: string, storyId: string): void {
+  if (isReviewDevSandbox()) {
+    clearActiveReviewForStory(authorId, storyId);
+  }
+  ensureReviewerPoolCapacity();
+}
+
 function loadPeerReviewRequests(): PeerReviewRequest[] {
   try {
     const raw = localStorage.getItem(PEER_REVIEWS_KEY);
@@ -482,6 +539,7 @@ export function getReviewerPool(): ReviewerPoolMember[] {
 }
 
 export function getReviewerPoolSummary() {
+  ensureReviewerPoolCapacity();
   return poolAvailabilitySummary(loadReviewerPool() as ReviewerCandidate[]);
 }
 
@@ -489,6 +547,30 @@ export function getPeerReviewRequests(authorId?: string): PeerReviewRequest[] {
   const all = loadPeerReviewRequests();
   if (!authorId) return all;
   return all.filter((r) => r.author_id === authorId);
+}
+
+const SUBMITTED_ASSIGNMENT_STATUSES = new Set<ReviewerAssignment['status']>([
+  'submitted', 'validated', 'paid_out',
+]);
+
+export interface AuthorReviewFeedbackBundle {
+  request: PeerReviewRequest;
+  submissions: ReviewerAssignment[];
+}
+
+export function getAuthorReviewFeedback(authorId?: string): AuthorReviewFeedbackBundle[] {
+  const requests = getPeerReviewRequests(authorId);
+  const assignments = loadReviewerAssignments();
+  return requests.map((request) => ({
+    request,
+    submissions: assignments
+      .filter((a) => a.request_id === request.id && SUBMITTED_ASSIGNMENT_STATUSES.has(a.status))
+      .sort((a, b) => (a.submitted_at ?? '').localeCompare(b.submitted_at ?? '')),
+  }));
+}
+
+export function getReviewerAssignmentsForRequest(requestId: string): ReviewerAssignment[] {
+  return loadReviewerAssignments().filter((a) => a.request_id === requestId);
 }
 
 /** @deprecated use getPeerReviewRequests */
@@ -516,7 +598,7 @@ export function requestPeerReview(opts: {
   const storyGenre = normalizeStoryGenre(opts.storyGenre);
   const authorTrust = opts.authorTrustLevel ?? 'emerging';
 
-  if (opts.mode === 'paid') {
+  if (opts.mode === 'paid' && !isReviewDevSandbox()) {
     const eligibility = checkPaidReviewEligibility({
       verifiedAuthor: opts.authorVerified !== false,
       storyTrustLevel: authorTrust,
@@ -537,15 +619,20 @@ export function requestPeerReview(opts: {
     storyGenre,
   });
 
-  const existing = loadPeerReviewRequests().find(
-    (r) => r.author_id === opts.authorId
-      && r.story_id === opts.storyId
-      && !['completed', 'cancelled'].includes(r.status),
-  );
-  if (existing) {
-    throw new Error('You already have an active review request for this story');
+  if (!isReviewDevSandbox()) {
+    const existing = loadPeerReviewRequests().find(
+      (r) => r.author_id === opts.authorId
+        && r.story_id === opts.storyId
+        && !['completed', 'cancelled'].includes(r.status),
+    );
+    if (existing) {
+      throw new Error('You already have an active review request for this story');
+    }
+  } else {
+    prepareReviewRequest(opts.authorId, opts.storyId);
   }
 
+  ensureReviewerPoolCapacity();
   const pool = loadReviewerPool();
   const poolCandidates = pool as ReviewerCandidate[];
   const summary = poolAvailabilitySummary(poolCandidates);
@@ -644,6 +731,7 @@ function createAssignmentsForRequest(
       id: `asgn-${request.id}-${i}`,
       request_id: request.id,
       reviewer_pool_id: a.reviewer.id,
+      /** Council invitation slots 1–3 (demo inbox); distinct from reviewer pool_slot */
       reviewer_slot: `slot-${i + 1}`,
       matching_score: a.matchingScore,
       status: 'invited',
@@ -679,6 +767,32 @@ export function getLinkedReviewerSlot(_userId?: string): string {
 
 export function setLinkedReviewerSlot(slot: string): void {
   localStorage.setItem(REVIEWER_SLOT_KEY, slot);
+}
+
+export function getReviewerAssignmentById(assignmentId: string): ReviewerAssignment | null {
+  return loadReviewerAssignments().find((a) => a.id === assignmentId) ?? null;
+}
+
+export function getPeerReviewRequestById(requestId: string): PeerReviewRequest | null {
+  return loadPeerReviewRequests().find((r) => r.id === requestId) ?? null;
+}
+
+export function startReviewerAssignment(assignmentId: string, reviewerSlot: string): ReviewerAssignment {
+  const rows = loadReviewerAssignments();
+  const idx = rows.findIndex((a) => a.id === assignmentId);
+  if (idx < 0) throw new Error('Assignment not found');
+  const row = rows[idx]!;
+  if (row.reviewer_slot !== reviewerSlot) throw new Error('Not your assignment');
+  if (!['accepted', 'in_review'].includes(row.status)) {
+    throw new Error('Accept the invitation before opening the review workspace');
+  }
+  if (row.status === 'accepted') {
+    const updated: ReviewerAssignment = { ...row, status: 'in_review' };
+    rows[idx] = updated;
+    saveReviewerAssignments(rows);
+    return updated;
+  }
+  return row;
 }
 
 export function getReviewerAssignmentsForSlot(reviewerSlot: string): ReviewerAssignment[] {
@@ -724,20 +838,37 @@ export function acceptReviewerAssignment(assignmentId: string, reviewerSlot: str
   return updated;
 }
 
-export function submitReviewerAssignment(assignmentId: string, reviewerSlot: string): ReviewerAssignment {
+export function submitReviewerAssignment(
+  assignmentId: string,
+  reviewerSlot: string,
+  payload?: {
+    structured_comments?: PeerReviewRequest['structured_comments'];
+    majority_decision?: string;
+    review_summary?: ReviewerAssignment['review_summary'];
+  },
+): ReviewerAssignment {
   const rows = loadReviewerAssignments();
   const idx = rows.findIndex((a) => a.id === assignmentId);
   if (idx < 0) throw new Error('Assignment not found');
   const row = rows[idx]!;
-  if (row.reviewer_slot !== reviewerSlot) throw new Error('Not your assignment');
+  if (row.reviewer_slot && row.reviewer_slot !== reviewerSlot) {
+    throw new Error(`This review belongs to council slot ${row.reviewer_slot.replace('slot-', '#')}. Switch slots in your inbox and try again.`);
+  }
+  if (row.status === 'submitted') {
+    throw new Error('This review was already submitted.');
+  }
   if (!['accepted', 'in_review'].includes(row.status)) {
     throw new Error('Accept the invitation before submitting');
+  }
+  if (!payload?.majority_decision?.trim()) {
+    throw new Error('Select a council decision before submitting.');
   }
 
   const updated: ReviewerAssignment = {
     ...row,
     status: 'submitted',
     submitted_at: new Date().toISOString(),
+    review_summary: payload?.review_summary,
   };
   rows[idx] = updated;
   saveReviewerAssignments(rows);
@@ -747,8 +878,14 @@ export function submitReviewerAssignment(assignmentId: string, reviewerSlot: str
   if (reqIdx >= 0) {
     const req = requests[reqIdx]!;
     const submitted = rows.filter((a) => a.request_id === req.id && a.status === 'submitted').length;
+    const mergedComments = [
+      ...(req.structured_comments ?? []),
+      ...(payload?.structured_comments ?? []),
+    ];
     requests[reqIdx] = {
       ...req,
+      structured_comments: mergedComments,
+      majority_decision: payload?.majority_decision ?? req.majority_decision,
       reviews_received: submitted,
       status: submitted >= REVIEW_PACKAGE.reviewerCount ? 'decision_ready' : 'in_review',
       consensus_pct: submitted >= REVIEW_PACKAGE.reviewerCount ? 78 : undefined,

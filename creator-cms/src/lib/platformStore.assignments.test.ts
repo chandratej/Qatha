@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   acceptReviewerAssignment,
+  getAuthorReviewFeedback,
   getCouncilAuditQueue,
   getReviewerAssignmentsForSlot,
   requestPeerReview,
@@ -48,9 +49,88 @@ describe('platformStore reviewer assignments', () => {
     const first = invited.find((a) => a.status === 'invited');
     expect(first).toBeDefined();
     acceptReviewerAssignment(first!.id, 'slot-1');
-    submitReviewerAssignment(first!.id, 'slot-1');
+    submitReviewerAssignment(first!.id, 'slot-1', {
+      majority_decision: 'minor_revision',
+      review_summary: {
+        overall_review: 'Solid craft with room to grow.',
+        strengths: 'Voice',
+        weaknesses: 'Pacing',
+        recommendation: 'Tighten act one',
+        majority_decision: 'minor_revision',
+      },
+    });
     const updated = getReviewerAssignmentsForSlot('slot-1').find((a) => a.id === first!.id);
     expect(updated?.status).toBe('submitted');
+    expect(updated?.review_summary?.overall_review).toContain('Solid craft');
+  });
+
+  it('rejects submit without council decision', () => {
+    requestPeerReview({
+      authorId: 'author-d',
+      storyId: 'story-4',
+      storyTitle: 'No Decision',
+      mode: 'volunteer',
+      packageFeeInr: 0,
+    });
+    const invited = getReviewerAssignmentsForSlot('slot-1');
+    const first = invited.find((a) => a.status === 'invited');
+    acceptReviewerAssignment(first!.id, 'slot-1');
+    expect(() => submitReviewerAssignment(first!.id, 'slot-1')).toThrow(/council decision/i);
+  });
+
+  it('rejects submit when linked slot mismatches assignment slot', () => {
+    requestPeerReview({
+      authorId: 'author-e',
+      storyId: 'story-5',
+      storyTitle: 'Slot Mismatch',
+      mode: 'volunteer',
+      packageFeeInr: 0,
+    });
+    const slot2 = getReviewerAssignmentsForSlot('slot-2').find((a) => a.status === 'invited');
+    expect(slot2).toBeDefined();
+    acceptReviewerAssignment(slot2!.id, 'slot-2');
+    expect(() => submitReviewerAssignment(slot2!.id, 'slot-1', {
+      majority_decision: 'accept',
+    })).toThrow(/council slot/i);
+  });
+
+  it('bundles author-readable feedback after submit', () => {
+    requestPeerReview({
+      authorId: 'author-feedback',
+      storyId: 'story-fb',
+      storyTitle: 'Feedback Story',
+      mode: 'volunteer',
+      packageFeeInr: 0,
+    });
+    const invited = getReviewerAssignmentsForSlot('slot-1');
+    const first = invited.find((a) => a.status === 'invited');
+    acceptReviewerAssignment(first!.id, 'slot-1');
+    submitReviewerAssignment(first!.id, 'slot-1', {
+      majority_decision: 'accept',
+      structured_comments: [{
+        chapter_ref: 'Chapter 1',
+        paragraph_ref: '¶2',
+        passage_ref: 'The rain fell hard.',
+        category: 'plot',
+        priority: 'medium',
+        reason: 'Strong atmosphere.',
+        recommendation: 'Keep the sensory detail.',
+        expected_impact: 'Reader immersion',
+        reviewer_confidence: 80,
+      }],
+      review_summary: {
+        overall_review: 'A compelling opening.',
+        strengths: 'Voice',
+        weaknesses: 'Pacing',
+        recommendation: 'Continue',
+        majority_decision: 'accept',
+      },
+    });
+    const bundles = getAuthorReviewFeedback('author-feedback');
+    expect(bundles).toHaveLength(1);
+    expect(bundles[0]?.submissions).toHaveLength(1);
+    expect(bundles[0]?.request.structured_comments).toHaveLength(1);
+    expect(bundles[0]?.submissions[0]?.review_summary?.overall_review).toContain('compelling');
   });
 
   it('exposes admin audit queue', () => {

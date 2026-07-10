@@ -11,10 +11,16 @@ import {
   createPlatformEvent,
   acceptReviewerAssignment,
   clearCouncilAudit,
+  ensureReviewerPoolCapacity,
+  prepareReviewRequest,
   getCouncilAuditQueue,
   getLinkedReviewerSlot,
+  getAuthorReviewFeedback,
+  getPeerReviewRequestById,
   getPeerReviewRequests,
+  getReviewerAssignmentById,
   getReviewerAssignmentsForSlot,
+  startReviewerAssignment,
   getReviewerPool,
   getReviewerPoolSummary,
   setLinkedReviewerSlot,
@@ -39,6 +45,7 @@ import {
   EVENT_WIZARD_STEPS, REVIEWER_ROLES, REVIEW_PACKAGE,
 } from '../../../packages/shared/constants';
 import { eventAcceptsRegistration, platformRevenueFromEntry } from '../business/eventRegistration';
+import { resetReviewDevData, seedReviewDevScenario } from './seedReviewDevData';
 
 export const platformApi = {
   getEvents: () => Promise.resolve({ events: getPlatformEvents() }),
@@ -109,6 +116,8 @@ export const platformApi = {
   requestTag: (label: string) => Promise.resolve({ request: requestNewTag(label) }),
   getPeerReviews: (authorId?: string) =>
     Promise.resolve({ requests: getPeerReviewRequests(authorId) }),
+  getAuthorReviewFeedback: (authorId?: string) =>
+    Promise.resolve({ bundles: getAuthorReviewFeedback(authorId) }),
   getReviewerPool: () => Promise.resolve({ pool: getReviewerPool() }),
   getReviewerPoolSummary: () => Promise.resolve(getReviewerPoolSummary()),
   getLinkedReviewerSlot: (userId?: string) =>
@@ -119,6 +128,20 @@ export const platformApi = {
   },
   getReviewerAssignments: (reviewerSlot: string) =>
     Promise.resolve({ assignments: getReviewerAssignmentsForSlot(reviewerSlot) }),
+  getReviewerAssignment: (assignmentId: string) => {
+    const assignment = getReviewerAssignmentById(assignmentId);
+    if (!assignment) return Promise.reject(new Error('Assignment not found'));
+    const request = getPeerReviewRequestById(assignment.request_id);
+    if (!request) return Promise.reject(new Error('Review request not found'));
+    return Promise.resolve({ assignment, request });
+  },
+  startReviewerAssignment: (assignmentId: string, reviewerSlot: string) => {
+    try {
+      return Promise.resolve({ assignment: startReviewerAssignment(assignmentId, reviewerSlot) });
+    } catch (e) {
+      return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  },
   acceptReviewerAssignment: (assignmentId: string, reviewerSlot: string) => {
     try {
       return Promise.resolve({ assignment: acceptReviewerAssignment(assignmentId, reviewerSlot) });
@@ -126,9 +149,19 @@ export const platformApi = {
       return Promise.reject(e instanceof Error ? e : new Error(String(e)));
     }
   },
-  submitReviewerAssignment: (assignmentId: string, reviewerSlot: string) => {
+  submitReviewerAssignment: (
+    assignmentId: string,
+    reviewerSlot: string,
+    payload?: {
+      structured_comments?: import('../types/platform').StructuredReviewComment[];
+      majority_decision?: string;
+      review_summary?: import('../types/platform').ReviewSubmissionSummary;
+    },
+  ) => {
     try {
-      return Promise.resolve({ assignment: submitReviewerAssignment(assignmentId, reviewerSlot) });
+      return Promise.resolve({
+        assignment: submitReviewerAssignment(assignmentId, reviewerSlot, payload),
+      });
     } catch (e) {
       return Promise.reject(e instanceof Error ? e : new Error(String(e)));
     }
@@ -140,6 +173,10 @@ export const platformApi = {
     } catch (e) {
       return Promise.reject(e instanceof Error ? e : new Error(String(e)));
     }
+  },
+  prepareReviewRequest: (authorId: string, storyId: string) => {
+    prepareReviewRequest(authorId, storyId);
+    return Promise.resolve({ ok: true as const });
   },
   requestPeerReview: (opts: {
     authorId: string;
@@ -160,6 +197,14 @@ export const platformApi = {
     } catch (e) {
       return Promise.reject(e instanceof Error ? e : new Error(String(e)));
     }
+  },
+  seedReviewDevScenario: (authorId?: string) => {
+    ensureReviewerPoolCapacity();
+    return Promise.resolve(seedReviewDevScenario(authorId));
+  },
+  resetReviewDevData: () => {
+    resetReviewDevData();
+    return Promise.resolve({ ok: true as const });
   },
   getReviewerMarketplace: () => Promise.resolve({
     roles: REVIEWER_ROLES,

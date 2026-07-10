@@ -228,8 +228,8 @@ export function Settings() {
           </div>
           <div className="studio-settings-section__body">
             <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55 }}>
-              Reviewer marketplace, tags admin, and the platform map stay off by default so the studio
-              stays craft-first (DEC-007). Events &amp; contests are always available in core nav.
+              Tags admin and the platform map stay off by default (DEC-007). Literary Council reviews
+              and Events are always in core nav — trust and contests are not experiments.
             </p>
             <label className="studio-settings-row" style={{ cursor: 'pointer' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>Enable Labs surfaces</span>
@@ -246,7 +246,7 @@ export function Settings() {
             </label>
             {labsOn && (
               <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
-                Reload the page if Reviewers does not appear in the nav.
+                Tags and Platform map are now available in Community and command palette.
               </p>
             )}
           </div>

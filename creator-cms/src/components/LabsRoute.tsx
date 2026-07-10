@@ -21,9 +21,9 @@ export function LabsRoute() {
         </p>
         <h1 className="labs-locked__title">Studio Labs is off</h1>
         <p className="labs-locked__body">
-          Reviewer marketplace, tags admin, and the platform map stay behind
-          Labs until the core craft loop is proven. Events &amp; contests are
-          always in core nav — focus on writing, publishing, and Story Trust.
+          Tags admin and the platform map stay behind Labs. Literary Council
+          reviews and Events are always in core nav — Katha builds trust through
+          professional literary feedback, not hidden experiments.
         </p>
         <p className="labs-locked__hint">
           Operators can enable Labs with <code>VITE_STUDIO_LABS=true</code> or{' '}

@@ -1,8 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, BookOpenCheck, Calendar, LayoutDashboard, PenLine, Search, Settings, Trophy, User, Users } from 'lucide-react';
-import { isStudioLabsEnabled } from '../../lib/featureFlags';
-
 interface CommandPaletteContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -49,28 +47,17 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const labsOn = isStudioLabsEnabled();
-  const items = useMemo(() => {
-    const base = [
-      { id: 'd', label: 'Dashboard', icon: LayoutDashboard, run: () => navigate('/') },
-      { id: 's', label: 'Stories', icon: BookOpen, run: () => navigate('/stories') },
-      { id: 'n', label: 'New Story', icon: PenLine, run: () => navigate('/stories/new') },
-      { id: 'sch', label: 'Schedule', icon: Calendar, run: () => navigate('/schedule') },
-      { id: 'ev', label: 'Events & Contests', icon: Trophy, run: () => navigate('/events') },
-      { id: 'p', label: 'Profile', icon: User, run: () => navigate('/profile') },
-      { id: 'c', label: 'Community', icon: Users, run: () => navigate('/community') },
-      { id: 'set', label: 'Settings', icon: Settings, run: () => navigate('/settings') },
-    ];
-    if (labsOn) {
-      base.splice(5, 0, {
-        id: 'rev',
-        label: 'Literary Council Reviews',
-        icon: BookOpenCheck,
-        run: () => navigate('/reviewers'),
-      });
-    }
-    return base;
-  }, [navigate, labsOn]);
+  const items = useMemo(() => [
+    { id: 'd', label: 'Dashboard', icon: LayoutDashboard, run: () => navigate('/') },
+    { id: 's', label: 'Stories', icon: BookOpen, run: () => navigate('/stories') },
+    { id: 'n', label: 'New Story', icon: PenLine, run: () => navigate('/stories/new') },
+    { id: 'sch', label: 'Schedule', icon: Calendar, run: () => navigate('/schedule') },
+    { id: 'ev', label: 'Events & Contests', icon: Trophy, run: () => navigate('/events') },
+    { id: 'rev', label: 'Literary Council Reviews', icon: BookOpenCheck, run: () => navigate('/reviewers') },
+    { id: 'p', label: 'Profile', icon: User, run: () => navigate('/profile') },
+    { id: 'c', label: 'Community', icon: Users, run: () => navigate('/community') },
+    { id: 'set', label: 'Settings', icon: Settings, run: () => navigate('/settings') },
+  ], [navigate]);
   const filtered = items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()));
 
   const runActive = useCallback(() => {

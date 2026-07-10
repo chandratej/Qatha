@@ -28,14 +28,14 @@ import { BrandMark } from './studio/BrandMark';
 import { DiyaIcon } from './studio/DiyaIcon';
 import { isStudioLabsEnabled } from '../lib/featureFlags';
 
-/** Core craft + Events (contests = GTM/revenue). Labs: Reviewers only. */
+/** Core craft + Events + Literary Council. Labs: Tags & Platform map only. */
 const CORE_NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true as const, lab: false },
   { to: '/stories', label: 'Stories', icon: BookOpen, lab: false },
   { to: '/events', label: 'Events', icon: Trophy, lab: false },
   { to: '/schedule', label: 'Schedule', icon: Calendar, lab: false },
   { to: '/community', label: 'Community', icon: Users, lab: false },
-  { to: '/reviewers', label: 'Reviewers', icon: BookOpenCheck, lab: true },
+  { to: '/reviewers', label: 'Reviewers', icon: BookOpenCheck, lab: false },
   { to: '/monetization', label: 'Earn', icon: IndianRupee, lab: false },
 ] as const;
 

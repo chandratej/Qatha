@@ -1,8 +1,8 @@
 /**
  * Runtime feature flags — ADR-001, DEC-007 / BR-010
  *
- * Labs surfaces (Reviewers, Tags, Platform map) stay hidden until activation
- * metrics justify expanding Creator Studio IA. Events are core nav (GTM/revenue).
+ * Labs surfaces (Tags, Platform map) stay hidden until activation metrics justify
+ * expanding operator tooling. Reviewers + Events are core nav (trust + revenue).
  */
 
 const LABS_STORAGE_KEY = 'katha_studio_labs';
@@ -14,7 +14,7 @@ function envFlagTrue(value: unknown): boolean {
   return v === '1' || v === 'true' || v === 'yes' || v === 'on';
 }
 
-/** Studio Labs: reviewers, tags, platform map (Events promoted to core nav for registration revenue) */
+/** Studio Labs: tags admin, platform map. Reviewers + Events are core nav (Literary Council trust). */
 export function isStudioLabsEnabled(): boolean {
   if (envFlagTrue(import.meta.env.VITE_STUDIO_LABS)) return true;
   try {
@@ -39,7 +39,6 @@ export function setStudioLabsEnabled(enabled: boolean): void {
 }
 
 export const STUDIO_LAB_PATHS = [
-  '/reviewers',
   '/tags',
   '/platform',
 ] as const;
