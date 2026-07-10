@@ -8,7 +8,9 @@ import type {
   EventRevenueLedgerEntry,
   EventSubmission,
   KathaEvent,
+  CouncilAuditEntry,
   PeerReviewRequest,
+  ReviewerAssignment,
   ReviewerPoolMember,
   TagRecord,
   TagRequest,
@@ -43,6 +45,8 @@ const REVENUE_KEY = 'katha_event_revenue_ledger';
 const TAG_REQUESTS_KEY = 'katha_tag_requests';
 const PEER_REVIEWS_KEY = 'katha_peer_review_requests';
 const REVIEWER_POOL_KEY = 'katha_reviewer_pool';
+const REVIEWER_ASSIGNMENTS_KEY = 'katha_reviewer_assignments';
+const REVIEWER_SLOT_KEY = 'katha_reviewer_slot';
 
 function seedEvents(): KathaEvent[] {
   const now = new Date();
@@ -593,18 +597,212 @@ export function requestPeerReview(opts: {
     created_at: new Date().toISOString(),
   };
 
-  // Demo: advance to awaiting_reviewers after matching (invitation accept simulation)
   request.status = 'awaiting_reviewers';
+  request.audit_status = 'pending';
+  request.fraud_risk_score = computeFraudRiskScore(request);
+
+  const payoutEachInr = reviewerPayoutEach(fee);
+  const assignments = createAssignmentsForRequest(request, assigned, pool, payoutEachInr);
 
   const requests = loadPeerReviewRequests();
   requests.unshift(request);
   savePeerReviewRequests(requests);
+  saveReviewerAssignments([...assignments, ...loadReviewerAssignments()]);
 
   return {
     request,
-    payoutEach: reviewerPayoutEach(fee),
+    payoutEach: payoutEachInr,
     matchingAvgScore: matchingAvg,
   };
+}
+
+function loadReviewerAssignments(): ReviewerAssignment[] {
+  try {
+    const raw = localStorage.getItem(REVIEWER_ASSIGNMENTS_KEY);
+    if (raw) return JSON.parse(raw) as ReviewerAssignment[];
+  } catch { /* ignore */ }
+  return [];
+}
+
+function saveReviewerAssignments(rows: ReviewerAssignment[]) {
+  localStorage.setItem(REVIEWER_ASSIGNMENTS_KEY, JSON.stringify(rows));
+}
+
+function blindManuscriptLabel(requestId: string): string {
+  return `Manuscript #${requestId.slice(-6).toUpperCase()}`;
+}
+
+function createAssignmentsForRequest(
+  request: PeerReviewRequest,
+  assigned: Array<{ reviewer: { id: string }; matchingScore: number }>,
+  _pool: ReviewerPoolMember[],
+  payoutEachInr: number,
+): ReviewerAssignment[] {
+  const now = new Date().toISOString();
+  return assigned.map((a, i) => {
+    return {
+      id: `asgn-${request.id}-${i}`,
+      request_id: request.id,
+      reviewer_pool_id: a.reviewer.id,
+      reviewer_slot: `slot-${i + 1}`,
+      matching_score: a.matchingScore,
+      status: 'invited',
+      manuscript_label: blindManuscriptLabel(request.id),
+      professional_role: request.professional_role,
+      story_genre: request.story_genre,
+      mode: request.mode,
+      payout_inr: payoutEachInr,
+      invited_at: now,
+    };
+  });
+}
+
+function computeFraudRiskScore(request: PeerReviewRequest): number {
+  let risk = 8;
+  if (request.mode === 'paid' && request.package_fee_inr >= 199) risk += 5;
+  if (request.reviewers_matched < 3) risk += 15;
+  return Math.min(100, risk);
+}
+
+/** Demo: link signed-in user to a council reviewer pool slot */
+export function getLinkedReviewerSlot(_userId?: string): string {
+  try {
+    const raw = localStorage.getItem(REVIEWER_SLOT_KEY);
+    if (raw) return raw;
+  } catch { /* ignore */ }
+  const slot = 'slot-1';
+  try {
+    localStorage.setItem(REVIEWER_SLOT_KEY, slot);
+  } catch { /* ignore */ }
+  return slot;
+}
+
+export function setLinkedReviewerSlot(slot: string): void {
+  localStorage.setItem(REVIEWER_SLOT_KEY, slot);
+}
+
+export function getReviewerAssignmentsForSlot(reviewerSlot: string): ReviewerAssignment[] {
+  const pool = loadReviewerPool();
+  const slotIds = new Set(
+    pool.filter((p) => p.pool_slot === reviewerSlot).map((p) => p.id),
+  );
+  return loadReviewerAssignments().filter(
+    (a) => a.reviewer_slot === reviewerSlot || slotIds.has(a.reviewer_pool_id),
+  );
+}
+
+export function acceptReviewerAssignment(assignmentId: string, reviewerSlot: string): ReviewerAssignment {
+  const rows = loadReviewerAssignments();
+  const idx = rows.findIndex((a) => a.id === assignmentId);
+  if (idx < 0) throw new Error('Assignment not found');
+  const row = rows[idx]!;
+  if (row.reviewer_slot !== reviewerSlot) {
+    throw new Error('This invitation is assigned to a different reviewer slot');
+  }
+  if (row.status !== 'invited') throw new Error('Assignment already actioned');
+
+  const updated: ReviewerAssignment = {
+    ...row,
+    status: 'accepted',
+    accepted_at: new Date().toISOString(),
+  };
+  rows[idx] = updated;
+  saveReviewerAssignments(rows);
+
+  const requests = loadPeerReviewRequests();
+  const reqIdx = requests.findIndex((r) => r.id === row.request_id);
+  if (reqIdx >= 0) {
+    const req = requests[reqIdx]!;
+    const acceptedCount = rows.filter(
+      (a) => a.request_id === req.id && ['accepted', 'in_review', 'submitted', 'validated', 'paid_out'].includes(a.status),
+    ).length;
+    if (acceptedCount >= 1) {
+      requests[reqIdx] = { ...req, status: 'in_review' };
+      savePeerReviewRequests(requests);
+    }
+  }
+  return updated;
+}
+
+export function submitReviewerAssignment(assignmentId: string, reviewerSlot: string): ReviewerAssignment {
+  const rows = loadReviewerAssignments();
+  const idx = rows.findIndex((a) => a.id === assignmentId);
+  if (idx < 0) throw new Error('Assignment not found');
+  const row = rows[idx]!;
+  if (row.reviewer_slot !== reviewerSlot) throw new Error('Not your assignment');
+  if (!['accepted', 'in_review'].includes(row.status)) {
+    throw new Error('Accept the invitation before submitting');
+  }
+
+  const updated: ReviewerAssignment = {
+    ...row,
+    status: 'submitted',
+    submitted_at: new Date().toISOString(),
+  };
+  rows[idx] = updated;
+  saveReviewerAssignments(rows);
+
+  const requests = loadPeerReviewRequests();
+  const reqIdx = requests.findIndex((r) => r.id === row.request_id);
+  if (reqIdx >= 0) {
+    const req = requests[reqIdx]!;
+    const submitted = rows.filter((a) => a.request_id === req.id && a.status === 'submitted').length;
+    requests[reqIdx] = {
+      ...req,
+      reviews_received: submitted,
+      status: submitted >= REVIEW_PACKAGE.reviewerCount ? 'decision_ready' : 'in_review',
+      consensus_pct: submitted >= REVIEW_PACKAGE.reviewerCount ? 78 : undefined,
+    };
+    savePeerReviewRequests(requests);
+  }
+  return updated;
+}
+
+export function getCouncilAuditQueue(): CouncilAuditEntry[] {
+  return loadPeerReviewRequests().map((r) => ({
+    request_id: r.id,
+    story_title: r.story_title,
+    author_id: r.author_id,
+    status: r.status,
+    audit_status: r.audit_status ?? 'pending',
+    fraud_risk_score: r.fraud_risk_score ?? computeFraudRiskScore(r),
+    escrow_status: r.escrow_status,
+    escrow_inr: r.package_fee_inr,
+    reviewers_matched: r.reviewers_matched,
+    reviews_received: r.reviews_received,
+    double_blind: r.double_blind,
+    created_at: r.created_at,
+    flags: buildAuditFlags(r),
+  }));
+}
+
+function buildAuditFlags(request: PeerReviewRequest): string[] {
+  const flags: string[] = [];
+  if (request.fraud_risk_score && request.fraud_risk_score > 20) flags.push('elevated_risk');
+  if (request.escrow_status === 'held' && request.reviews_received >= 3) flags.push('ready_for_escrow_release');
+  if (request.double_blind) flags.push('double_blind_active');
+  if (request.mode === 'volunteer') flags.push('community_review');
+  return flags;
+}
+
+export function clearCouncilAudit(requestId: string): PeerReviewRequest {
+  const requests = loadPeerReviewRequests();
+  const idx = requests.findIndex((r) => r.id === requestId);
+  if (idx < 0) throw new Error('Request not found');
+  requests[idx] = {
+    ...requests[idx]!,
+    audit_status: 'cleared',
+    fraud_risk_score: Math.max(0, (requests[idx]!.fraud_risk_score ?? 10) - 10),
+  };
+  if (requests[idx]!.status === 'decision_ready') {
+    requests[idx] = {
+      ...requests[idx]!,
+      status: 'completed',
+      escrow_status: requests[idx]!.escrow_status === 'held' ? 'released' : requests[idx]!.escrow_status,
+    };
+  }
+  savePeerReviewRequests(requests);
+  return requests[idx]!;
 }
 
 export function releaseReviewersForRequest(requestId: string): void {

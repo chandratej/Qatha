@@ -9,9 +9,16 @@ import type {
 import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
 import {
   createPlatformEvent,
+  acceptReviewerAssignment,
+  clearCouncilAudit,
+  getCouncilAuditQueue,
+  getLinkedReviewerSlot,
   getPeerReviewRequests,
+  getReviewerAssignmentsForSlot,
   getReviewerPool,
   getReviewerPoolSummary,
+  setLinkedReviewerSlot,
+  submitReviewerAssignment,
   getEventRevenueSummary,
   getMyEventRegistration,
   getMyEventRegistrations,
@@ -104,6 +111,36 @@ export const platformApi = {
     Promise.resolve({ requests: getPeerReviewRequests(authorId) }),
   getReviewerPool: () => Promise.resolve({ pool: getReviewerPool() }),
   getReviewerPoolSummary: () => Promise.resolve(getReviewerPoolSummary()),
+  getLinkedReviewerSlot: (userId?: string) =>
+    Promise.resolve({ slot: getLinkedReviewerSlot(userId) }),
+  setLinkedReviewerSlot: (slot: string) => {
+    setLinkedReviewerSlot(slot);
+    return Promise.resolve({ slot });
+  },
+  getReviewerAssignments: (reviewerSlot: string) =>
+    Promise.resolve({ assignments: getReviewerAssignmentsForSlot(reviewerSlot) }),
+  acceptReviewerAssignment: (assignmentId: string, reviewerSlot: string) => {
+    try {
+      return Promise.resolve({ assignment: acceptReviewerAssignment(assignmentId, reviewerSlot) });
+    } catch (e) {
+      return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  },
+  submitReviewerAssignment: (assignmentId: string, reviewerSlot: string) => {
+    try {
+      return Promise.resolve({ assignment: submitReviewerAssignment(assignmentId, reviewerSlot) });
+    } catch (e) {
+      return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  },
+  getCouncilAuditQueue: () => Promise.resolve({ entries: getCouncilAuditQueue() }),
+  clearCouncilAudit: (requestId: string) => {
+    try {
+      return Promise.resolve({ request: clearCouncilAudit(requestId) });
+    } catch (e) {
+      return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  },
   requestPeerReview: (opts: {
     authorId: string;
     storyId: string;

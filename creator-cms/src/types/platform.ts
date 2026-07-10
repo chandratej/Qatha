@@ -125,6 +125,53 @@ export interface PeerReviewRequest {
   created_at: string;
   payment_status?: 'pending' | 'paid' | 'waived';
   structured_comments?: StructuredReviewComment[];
+  audit_status?: CouncilAuditStatus;
+  fraud_risk_score?: number;
+}
+
+export type ReviewerAssignmentStatus =
+  | 'invited'
+  | 'accepted'
+  | 'in_review'
+  | 'submitted'
+  | 'validated'
+  | 'paid_out'
+  | 'declined';
+
+export interface ReviewerAssignment {
+  id: string;
+  request_id: string;
+  reviewer_pool_id: string;
+  reviewer_slot: string;
+  matching_score: number;
+  status: ReviewerAssignmentStatus;
+  /** Double-blind — author identity hidden until all reviews in */
+  manuscript_label: string;
+  professional_role: string;
+  story_genre: string;
+  mode: 'volunteer' | 'paid';
+  payout_inr: number;
+  invited_at: string;
+  accepted_at?: string;
+  submitted_at?: string;
+}
+
+export type CouncilAuditStatus = 'pending' | 'cleared' | 'flagged' | 'appealed';
+
+export interface CouncilAuditEntry {
+  request_id: string;
+  story_title: string;
+  author_id: string;
+  status: PeerReviewStatus;
+  audit_status: CouncilAuditStatus;
+  fraud_risk_score: number;
+  escrow_status: PeerReviewRequest['escrow_status'];
+  escrow_inr: number;
+  reviewers_matched: number;
+  reviews_received: number;
+  double_blind: boolean;
+  created_at: string;
+  flags: string[];
 }
 
 export interface TagRecord {

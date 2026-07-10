@@ -102,6 +102,10 @@ test.describe('Creator Studio golden path', () => {
 
     await page.getByRole('button', { name: /Request community review/i }).click();
     await expect(page.getByText(/community review queued|Literary Council matched/i)).toBeVisible({ timeout: 10_000 });
+
+    await page.getByRole('button', { name: /Reviewer inbox/i }).click();
+    await expect(page.getByRole('heading', { name: /Reviewer assignments inbox/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Invitations \(\d+\)/)).toBeVisible();
   });
 });
 
