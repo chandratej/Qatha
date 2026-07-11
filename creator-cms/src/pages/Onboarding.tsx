@@ -8,6 +8,7 @@ import { BrandMark } from '../components/studio/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { ONBOARDING_KEY, BRAND } from '../lib/constants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
+import { syncCreatorProfileFromOnboarding } from '../lib/creatorLifecycle';
 import { WhatsAppCTA } from '../components/WhatsAppCTA';
 
 export function Onboarding() {
@@ -82,7 +83,16 @@ export function Onboarding() {
     });
   }, [hasStories, hasChapters, hasPublished, accountReady]);
 
-  const markComplete = () => localStorage.setItem(ONBOARDING_KEY, 'true');
+  const markComplete = () => {
+    localStorage.setItem(ONBOARDING_KEY, 'true');
+    void syncCreatorProfileFromOnboarding({
+      accountReady,
+      hasStories,
+      hasChapters,
+      hasPublished,
+      onboardingComplete: true,
+    });
+  };
   const completedCount = steps.filter((s) => s.done).length;
 
   return (

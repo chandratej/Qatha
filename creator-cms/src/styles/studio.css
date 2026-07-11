@@ -2645,6 +2645,15 @@ button.studio-metric:focus-visible {
 
 .platform-feature-section .dashboard-panel__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .platform-feature-list { columns: 2; column-gap: 24px; margin: 0; padding-left: 18px; font-size: 0.875rem; color: var(--ink-soft); line-height: 1.7; }
+.platform-prd-id {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
 .platform-status-pill { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; }
 .platform-status-pill--live { background: rgba(107, 133, 112, 0.14); color: var(--accent-sage); }
 .platform-status-pill--partial { background: rgba(196, 160, 82, 0.14); color: var(--gold-dark); }

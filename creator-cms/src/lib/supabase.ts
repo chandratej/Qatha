@@ -37,7 +37,9 @@ function hasPlaceholderConfig(): boolean {
 }
 
 const explicitMock = envFlag('VITE_MOCK_MODE');
-export const isMockMode = explicitMock !== null ? explicitMock : hasPlaceholderConfig();
+/** ARC-02: production builds never auto-fallback to mock */
+export const isMockMode =
+  explicitMock !== null ? explicitMock : import.meta.env.PROD ? false : hasPlaceholderConfig();
 
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {

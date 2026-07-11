@@ -16,6 +16,7 @@ import {
 } from '../data/seed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { getAuthenticatedUserId } from '../middleware/authenticate.js';
+import { requireStoryRole } from '../middleware/requireStoryRole.js';
 import { moderateChapterForSchedule } from '../services/moderation/index.js';
 import { generateUniqueStorySlug } from '../lib/slugify.js';
 
@@ -117,7 +118,7 @@ creatorsRouter.get('/stories', async (req, res, next) => {
   }
 });
 
-creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
+creatorsRouter.get('/stories/:storyId/chapters', requireStoryRole('story.read'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
@@ -185,7 +186,7 @@ creatorsRouter.get('/stories/:storyId/chapters', async (req, res, next) => {
   }
 });
 
-creatorsRouter.get('/stories/:storyId/chapters/:chapterNumber', async (req, res, next) => {
+creatorsRouter.get('/stories/:storyId/chapters/:chapterNumber', requireStoryRole('story.read'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -261,7 +262,7 @@ creatorsRouter.get('/stories/:storyId/chapters/:chapterNumber', async (req, res,
   }
 });
 
-creatorsRouter.patch('/stories/:storyId', async (req, res, next) => {
+creatorsRouter.patch('/stories/:storyId', requireStoryRole('story.edit'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
@@ -296,7 +297,7 @@ creatorsRouter.patch('/stories/:storyId', async (req, res, next) => {
   }
 });
 
-creatorsRouter.delete('/stories/:storyId', async (req, res, next) => {
+creatorsRouter.delete('/stories/:storyId', requireStoryRole('story.delete'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
@@ -325,7 +326,7 @@ creatorsRouter.delete('/stories/:storyId', async (req, res, next) => {
   }
 });
 
-creatorsRouter.patch('/stories/:storyId/chapters/:chapterNumber', async (req, res, next) => {
+creatorsRouter.patch('/stories/:storyId/chapters/:chapterNumber', requireStoryRole('story.edit'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -364,7 +365,7 @@ creatorsRouter.patch('/stories/:storyId/chapters/:chapterNumber', async (req, re
   }
 });
 
-creatorsRouter.delete('/stories/:storyId/chapters/:chapterNumber', async (req, res, next) => {
+creatorsRouter.delete('/stories/:storyId/chapters/:chapterNumber', requireStoryRole('story.delete'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -389,7 +390,7 @@ creatorsRouter.delete('/stories/:storyId/chapters/:chapterNumber', async (req, r
   }
 });
 
-creatorsRouter.post('/stories/:storyId/chapters/:chapterNumber/duplicate', async (req, res, next) => {
+creatorsRouter.post('/stories/:storyId/chapters/:chapterNumber/duplicate', requireStoryRole('story.edit'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -512,7 +513,7 @@ creatorsRouter.get('/schedule', async (req, res, next) => {
   }
 });
 
-creatorsRouter.post('/schedule', async (req, res, next) => {
+creatorsRouter.post('/schedule', requireStoryRole('story.publish', { bodyField: 'story_id' }), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { story_id, chapter_number, scheduled_publish_at } = req.body;
@@ -650,7 +651,7 @@ creatorsRouter.post('/schedule', async (req, res, next) => {
   }
 });
 
-creatorsRouter.patch('/schedule/:storyId/:chapterNumber', async (req, res, next) => {
+creatorsRouter.patch('/schedule/:storyId/:chapterNumber', requireStoryRole('story.publish'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -722,7 +723,7 @@ creatorsRouter.patch('/schedule/:storyId/:chapterNumber', async (req, res, next)
   }
 });
 
-creatorsRouter.delete('/schedule/:storyId/:chapterNumber', async (req, res, next) => {
+creatorsRouter.delete('/schedule/:storyId/:chapterNumber', requireStoryRole('story.publish'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -791,7 +792,7 @@ creatorsRouter.post('/stories', async (req, res, next) => {
   }
 });
 
-creatorsRouter.get('/analytics/:storyId', async (req, res, next) => {
+creatorsRouter.get('/analytics/:storyId', requireStoryRole('story.read'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
@@ -839,7 +840,7 @@ creatorsRouter.get('/analytics/:storyId', async (req, res, next) => {
 });
 
 /** DEC-021 — recompute Story Trust SPI for a story owned by the creator */
-creatorsRouter.post('/stories/:storyId/recompute-trust', async (req, res, next) => {
+creatorsRouter.post('/stories/:storyId/recompute-trust', requireStoryRole('story.edit'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
@@ -939,7 +940,7 @@ creatorsRouter.patch('/me/payout', async (req, res, next) => {
 });
 
 /** Cycle 7 — cloud chapter version snapshots */
-creatorsRouter.post('/versions/snapshot', async (req, res, next) => {
+creatorsRouter.post('/versions/snapshot', requireStoryRole('story.edit', { bodyField: 'story_id' }), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const {
@@ -1001,7 +1002,7 @@ creatorsRouter.post('/versions/snapshot', async (req, res, next) => {
   }
 });
 
-creatorsRouter.get('/versions/:storyId/:chapterNumber', async (req, res, next) => {
+creatorsRouter.get('/versions/:storyId/:chapterNumber', requireStoryRole('story.read'), async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId, chapterNumber } = req.params;
@@ -1076,6 +1077,60 @@ function buildDropOffInsights(chapterStats) {
   }
   return insights;
 }
+
+/** Creator lifecycle — Vol_01-03 (migration 017) */
+creatorsRouter.get('/lifecycle', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    if (isMockMode()) {
+      return res.json({
+        lifecycle_stage: 'active',
+        creator_persona: 'solo_author',
+        mock: true,
+      });
+    }
+    const { data, error } = await supabase
+      .from('creators')
+      .select('lifecycle_stage, creator_persona, is_verified')
+      .eq('id', creatorId)
+      .single();
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json({
+      lifecycle_stage: data?.lifecycle_stage || 'registered',
+      creator_persona: data?.creator_persona || 'solo_author',
+      is_verified: data?.is_verified ?? false,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+creatorsRouter.patch('/lifecycle', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const { lifecycle_stage, creator_persona } = req.body || {};
+    if (isMockMode()) {
+      return res.json({
+        lifecycle_stage: lifecycle_stage || 'active',
+        creator_persona: creator_persona || 'solo_author',
+        mock: true,
+      });
+    }
+    const patch = {};
+    if (lifecycle_stage) patch.lifecycle_stage = lifecycle_stage;
+    if (creator_persona) patch.creator_persona = creator_persona;
+    const { data, error } = await supabase
+      .from('creators')
+      .update(patch)
+      .eq('id', creatorId)
+      .select('lifecycle_stage, creator_persona')
+      .single();
+    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
 
 function getNextPayoutDate() {
   const now = new Date();

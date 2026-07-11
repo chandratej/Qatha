@@ -268,6 +268,19 @@ export const api = {
     useSupabaseDirect()
       ? sb.sbCancelScheduledPublish(storyId, chapterNumber)
       : request<{ cancelled: boolean }>(`/creators/schedule/${storyId}/${chapterNumber}`, { method: 'DELETE' }),
+  getCreatorLifecycle: () =>
+    request<{
+      lifecycle_stage: string;
+      creator_persona: string;
+      is_verified?: boolean;
+      mock?: boolean;
+    }>('/creators/lifecycle'),
+  patchCreatorLifecycle: (body: { lifecycle_stage?: string; creator_persona?: string }) =>
+    request<{
+      lifecycle_stage: string;
+      creator_persona: string;
+      mock?: boolean;
+    }>('/creators/lifecycle', { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 async function uploadImageViaNode(file: File): Promise<{ url: string }> {

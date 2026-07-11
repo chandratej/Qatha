@@ -11,6 +11,10 @@ export function isMockMode() {
   const explicit = parseMockFlag();
   if (explicit !== null) return explicit;
 
+  // ARC-02: never auto-enable mock in production/staging (Lean Playbook)
+  const nodeEnv = (process.env.NODE_ENV || '').trim().toLowerCase();
+  if (nodeEnv === 'production' || nodeEnv === 'staging') return false;
+
   const secretKey = getSecretKey();
   return (
     !process.env.SUPABASE_URL ||

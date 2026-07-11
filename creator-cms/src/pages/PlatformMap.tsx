@@ -31,24 +31,24 @@ export function PlatformMap() {
         <span>{stats.reportCategories} report categories</span>
       </div>
 
-      <FeatureSection title="Content types & metadata" items={[
+      <FeatureSection prdId="Vol_03-01" title="Content types & metadata" items={[
         'Novel', 'Serialized Story', 'Short Story', 'Short Story Collection', 'Flash Fiction', 'Kids Stories',
         'Primary + secondary genres (14)', 'Age rating', 'Language', 'Story status', 'Setting', 'Themes', 'Tags',
       ]} status="partial" link="/stories/new" />
 
-      <FeatureSection title="Author progression" items={AUTHOR_LEVELS.map((l) => l.label)} status="partial" link="/profile" />
-      <FeatureSection title="Story Trust levels" items={STORY_TRUST_LEVELS.map((t) => `${t.glyph} ${t.label}`)} status="partial" link="/monetization" />
-      <FeatureSection title="Story Performance Index (SPI)" items={SPI_WEIGHTS.map((w) => `${w.label} (${w.weightPct}%)`)} status="planned" link="/monetization" />
-      <FeatureSection title="Patron tiers" items={PATRON_TIERS.map((p) => p.label)} status="planned" link="/monetization" />
-      <FeatureSection title="Contest roadmap" items={CONTEST_ROADMAP.map((c) => `${c.label} (${c.status})`)} status="partial" link="/events" />
-      <FeatureSection title="Event types (15)" items={EVENT_TYPES.map((e) => e.label)} status="partial" link="/events" />
-      <FeatureSection title="Reader systems" items={READER_SYSTEMS.map((s) => `${s.label} — ${s.status}`)} status="partial" link="/community" />
-      <FeatureSection title="Recommendation signals (rule-based, no AI)" items={RECOMMENDATION_SIGNALS.map((s) => `${s.id} (${s.status})`)} status="partial" />
-      <FeatureSection title="Reviewer marketplace" items={['Anonymous 3-reviewer matching', 'Majority decision', '₹149–199 packages', 'Beta readers volunteer/paid', 'Reputation Bronze → Editorial Council']} status="partial" link="/reviewers" />
-      <FeatureSection title="Community governance" items={[...REPORT_CATEGORIES.map((c) => c.label), 'Threshold triage', 'Appeals', 'Audit logs']} status="partial" link="/moderation" />
-      <FeatureSection title="Creator economy & patronage" items={['Subscriptions ✓', 'Premium chapters ✓', 'Literary Patronage', "Editor's Spotlight", 'Story Trust payouts', 'Short story collections', 'IP licensing', 'Print-on-demand']} status="partial" link="/monetization" />
-      <FeatureSection title="RBAC roles" items={[...PLATFORM_ROLES]} status="partial" />
-      <FeatureSection title="Events platform modules" items={[
+      <FeatureSection prdId="Vol_01-03" title="Author progression" items={AUTHOR_LEVELS.map((l) => l.label)} status="partial" link="/profile" />
+      <FeatureSection prdId="Vol_01-05" title="Story Trust levels" items={STORY_TRUST_LEVELS.map((t) => `${t.glyph} ${t.label}`)} status="partial" link="/monetization" />
+      <FeatureSection prdId="Vol_06-06" title="Story Performance Index (SPI)" items={SPI_WEIGHTS.map((w) => `${w.label} (${w.weightPct}%)`)} status="planned" link="/monetization" />
+      <FeatureSection prdId="Vol_06-05" title="Patron tiers" items={PATRON_TIERS.map((p) => p.label)} status="planned" link="/monetization" />
+      <FeatureSection prdId="Vol_07-07" title="Contest roadmap" items={CONTEST_ROADMAP.map((c) => `${c.label} (${c.status})`)} status="partial" link="/events" />
+      <FeatureSection prdId="Vol_07-06" title="Event types (15)" items={EVENT_TYPES.map((e) => e.label)} status="partial" link="/events" />
+      <FeatureSection prdId="Vol_07-01" title="Reader systems" items={READER_SYSTEMS.map((s) => `${s.label} — ${s.status}`)} status="partial" link="/community" />
+      <FeatureSection prdId="Vol_08_02" title="Recommendation signals (rule-based, no AI)" items={RECOMMENDATION_SIGNALS.map((s) => `${s.id} (${s.status})`)} status="partial" />
+      <FeatureSection prdId="Vol_05-Reviewer_Studio" title="Reviewer marketplace" items={['Anonymous 3-reviewer matching', 'Majority decision', '₹149–199 packages', 'Beta readers volunteer/paid', 'Reputation Bronze → Editorial Council']} status="partial" link="/reviewers" />
+      <FeatureSection prdId="Vol_09-09" title="Community governance" items={[...REPORT_CATEGORIES.map((c) => c.label), 'Threshold triage', 'Appeals', 'Audit logs']} status="partial" link="/moderation" />
+      <FeatureSection prdId="Vol_06-05" title="Creator economy & patronage" items={['Subscriptions ✓', 'Premium chapters ✓', 'Literary Patronage', "Editor's Spotlight", 'Story Trust payouts', 'Short story collections', 'IP licensing', 'Print-on-demand']} status="partial" link="/monetization" />
+      <FeatureSection prdId="Vol_01-04" title="RBAC roles" items={[...PLATFORM_ROLES]} status="partial" />
+      <FeatureSection prdId="Vol_07-06" title="Events platform modules" items={[
         'Event management', 'Registration', 'Wallet', 'Escrow', 'Payments', 'Leaderboards',
         'Certificates', 'Notifications', 'Reporting', 'Sponsor management', 'Organizer dashboards',
         'Participant dashboards', 'Anti-fraud', 'Appeals',
@@ -57,13 +57,16 @@ export function PlatformMap() {
   );
 }
 
-function FeatureSection({ title, items, status, link }: {
-  title: string; items: string[]; status: string; link?: string;
+function FeatureSection({ prdId, title, items, status, link }: {
+  prdId?: string; title: string; items: string[]; status: string; link?: string;
 }) {
   return (
-    <section className="cms-panel platform-feature-section cms-mb-4">
+    <section className="cms-panel platform-feature-section cms-mb-4" data-prd-id={prdId}>
       <div className="dashboard-panel__head">
-        <h3 className="dashboard-panel__title">{title}</h3>
+        <h3 className="dashboard-panel__title">
+          {title}
+          {prdId && <span className="platform-prd-id">{prdId}</span>}
+        </h3>
         <span className={`platform-status-pill platform-status-pill--${status}`}>{status}</span>
       </div>
       <ul className="platform-feature-list">

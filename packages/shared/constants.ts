@@ -90,6 +90,55 @@ export { PLATFORM_ROLES, ROLE_PERMISSIONS, hasPermission, canHostPaidContest } f
 export type { PlatformRole } from './rbac';
 
 export {
+  STORY_ROLES,
+  STORY_PERMISSIONS,
+  STORY_ROLE_PERMISSIONS,
+  hasStoryPermission,
+  canPerformStoryAction,
+} from './story-rbac';
+export type { StoryRole, StoryPermission } from './story-rbac';
+
+export {
+  CREATOR_PERSONAS,
+  DEFERRED_PERSONAS,
+  PERSONA_LABELS,
+  defaultPersonaFromOnboarding,
+  isShippedPersona,
+} from './creator-persona';
+export type { CreatorPersona, DeferredPersona } from './creator-persona';
+
+export {
+  NOTIFICATION_DOMAINS,
+  NOTIFICATION_PRIORITIES,
+  NOTIFICATION_PRIORITY_SLA_MINUTES,
+  NOTIFICATION_CHANNELS,
+  NOTIFICATION_TYPES,
+  notificationTypeById,
+} from './notifications';
+export type {
+  NotificationDomain,
+  NotificationPriority,
+  NotificationChannel,
+  NotificationTypeDef,
+} from './notifications';
+
+export {
+  createFsm,
+  peerReviewRequestFsm,
+  reviewerAssignmentFsm,
+  creatorLifecycleFsm,
+  PEER_REVIEW_REQUEST_STATES,
+  REVIEWER_ASSIGNMENT_STATES,
+  CREATOR_LIFECYCLE_STAGES,
+  lifecycleEventFromSignals,
+} from './fsm';
+export type {
+  PeerReviewRequestState,
+  ReviewerAssignmentState,
+  CreatorLifecycleStage,
+} from './fsm';
+
+export {
   REVIEWER_ROLES, REVIEW_DECISIONS, REVIEWER_REPUTATION_TIERS, REVIEWER_METRICS,
   REVIEW_PACKAGE, BETA_READER_MODES,
 } from './reviewer-marketplace';

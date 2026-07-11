@@ -10,6 +10,7 @@ import { moderateChapter, moderateContent, riskScoreFromResult } from '../servic
 import { generateUniqueStorySlug } from '../lib/slugify.js';
 import { notifyNewChapter } from '../services/notifications.js';
 import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
+import { requireStoryRole } from '../middleware/requireStoryRole.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
@@ -74,7 +75,7 @@ chaptersRouter.get('/:storyId/:chapterNumber', requireAuth({ optional: true }), 
   }
 });
 
-chaptersRouter.post('/:storyId/draft', requireAuth(), async (req, res, next) => {
+chaptersRouter.post('/:storyId/draft', requireAuth(), requireStoryRole('story.edit'), async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const creatorId = getAuthenticatedUserId(req);
@@ -104,9 +105,6 @@ chaptersRouter.post('/:storyId/draft', requireAuth(), async (req, res, next) => 
       mockChapterStore.set(key, draft);
       return res.json({ saved: true, draft, mock: true });
     }
-
-    const { data: story } = await supabase.from('stories').select('author_id').eq('id', storyId).single();
-    if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
 
     const word_count = countDraftWords({ content, content_delta });
     const scene_count = content_delta?.scenes?.length || 1;
@@ -138,7 +136,7 @@ chaptersRouter.post('/:storyId/draft', requireAuth(), async (req, res, next) => 
   }
 });
 
-chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) => {
+chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.publish'), async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const creatorId = getAuthenticatedUserId(req);
@@ -192,7 +190,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), async (req, res, next) =
     }
 
     const { data: story } = await supabase.from('stories').select('author_id, title, slug, is_published').eq('id', storyId).single();
-    if (!story || story.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
+    if (!story) throw createAppError('INTERNAL_ERROR', 'Story not found', 404);
 
     if (!story.slug) {
       const slug = await generateUniqueStorySlug(supabase, story.title, storyId);

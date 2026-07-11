@@ -1,25 +1,34 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, GraduationCap, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import {
-  applyToReviewerPool,
-  completeReviewerTraining,
-  loadReviewerOnboarding,
-  type ReviewerOnboardingRecord,
-} from '../../lib/reviewerOnboarding';
+import type { ReviewerOnboardingRecord } from '../../lib/reviewerOnboarding';
+import { platformApi } from '../../lib/platformApi';
 import { GENRE_SPECIALIZATIONS } from '../../lib/platformConstants';
 
 export function ReviewerOnboardingPanel() {
   const { user } = useAuth();
   const userId = user?.id || 'anonymous-creator';
-  const [record, setRecord] = useState<ReviewerOnboardingRecord>(() => loadReviewerOnboarding(userId));
-  const [genres, setGenres] = useState<string[]>(record.genres);
-  const [motivation, setMotivation] = useState(record.motivation);
+  const [record, setRecord] = useState<ReviewerOnboardingRecord | null>(null);
+  const [genres, setGenres] = useState<string[]>([]);
+  const [motivation, setMotivation] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const { record: next } = await platformApi.getReviewerOnboarding(userId);
+      setRecord(next);
+      setGenres(next.genres);
+      setMotivation(next.motivation);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load onboarding status');
+    }
+  }, [userId]);
 
   useEffect(() => {
-    setRecord(loadReviewerOnboarding(userId));
-  }, [userId]);
+    void refresh();
+  }, [refresh]);
 
   const toggleGenre = (id: string) => {
     setGenres((prev) =>
@@ -27,22 +36,43 @@ export function ReviewerOnboardingPanel() {
     );
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     setBusy(true);
-    const next = applyToReviewerPool(userId, {
-      genres,
-      languages: ['telugu', 'english'],
-      motivation: motivation.trim(),
-    });
-    setRecord(next);
-    setBusy(false);
+    setError(null);
+    try {
+      const { record: next } = await platformApi.applyReviewerOnboarding(userId, {
+        genres,
+        languages: ['telugu', 'english'],
+        motivation: motivation.trim(),
+      });
+      setRecord(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Application failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleTraining = () => {
+  const handleTraining = async () => {
     setBusy(true);
-    setRecord(completeReviewerTraining(userId));
-    setBusy(false);
+    setError(null);
+    try {
+      const { record: next } = await platformApi.certifyReviewerOnboarding(userId);
+      setRecord(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Certification failed');
+    } finally {
+      setBusy(false);
+    }
   };
+
+  if (!record) {
+    return (
+      <section className="reviewer-onboarding" aria-busy="true">
+        <p className="input-hint">Loading reviewer onboarding…</p>
+      </section>
+    );
+  }
 
   if (record.status === 'certified') {
     return (
@@ -67,6 +97,12 @@ export function ReviewerOnboardingPanel() {
           </p>
         </div>
       </header>
+
+      {error && (
+        <p className="input-hint" role="alert" style={{ color: 'var(--katha-danger, #b42318)' }}>
+          {error}
+        </p>
+      )}
 
       {record.status === 'not_applied' && (
         <div className="reviewer-onboarding__form">
@@ -99,7 +135,7 @@ export function ReviewerOnboardingPanel() {
             type="button"
             className="katha-cta katha-cta--maroon"
             disabled={busy || genres.length === 0 || motivation.trim().length < 20}
-            onClick={handleApply}
+            onClick={() => void handleApply()}
           >
             {busy ? 'Submitting…' : 'Apply to Reviewer Pool'}
           </button>
@@ -120,7 +156,12 @@ export function ReviewerOnboardingPanel() {
               <li>Respect author voice and regional language</li>
               <li>Council decision maps to clear next steps</li>
             </ul>
-            <button type="button" className="katha-cta katha-cta--maroon" disabled={busy} onClick={handleTraining}>
+            <button
+              type="button"
+              className="katha-cta katha-cta--maroon"
+              disabled={busy}
+              onClick={() => void handleTraining()}
+            >
               {busy ? '…' : 'Complete training & get certified'}
             </button>
           </div>
