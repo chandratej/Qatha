@@ -12,6 +12,7 @@ import { isSessionError } from '../lib/errors';
 import { buildActivityFeed } from '../lib/buildActivityFeed';
 import { formatCompact, formatInr } from '../lib/dashboardFormat';
 import { ensureDemoStreak, getProductivitySnapshot, getWritingStreak } from '../lib/writingStreak';
+import { buildDashboardTasks } from '../lib/dashboardTasks';
 
 import { StoriesWidget } from '../components/dashboard/StoriesWidget';
 import { QuickActionsPanel } from '../components/dashboard/QuickActionsPanel';
@@ -22,11 +23,15 @@ import { CreatorBadgeBar } from '../components/dashboard/CreatorBadgeBar';
 import { StudioHero } from '../components/studio/StudioHero';
 import { BrandMark } from '../components/studio/BrandMark';
 import { ReviewerPersonaDashboard } from '../components/dashboard/ReviewerPersonaDashboard';
+import { DashboardNotificationsWidget } from '../components/dashboard/DashboardNotificationsWidget';
+import { ReviewerPoolSummaryWidget } from '../components/dashboard/ReviewerPoolSummaryWidget';
+import { ScheduleCalendarWidget } from '../components/dashboard/ScheduleCalendarWidget';
+import { TasksPanel } from '../components/dashboard/TasksPanel';
 import { useCreatorPersona } from '../hooks/useCreatorPersona';
 
 export function Dashboard() {
-  const { user } = useAuth();
-  const { persona, loading: personaLoading } = useCreatorPersona();
+  const { user, isMockMode } = useAuth();
+  const { persona, lifecycleStage, loading: personaLoading } = useCreatorPersona();
   const navigate = useNavigate();
   const { data: d, loading, error, mutate } = useApi(() => api.getDashboard());
   const { data: storiesData } = useApi(() => api.getCreatorStories().catch(() => ({ stories: [] })));
@@ -44,7 +49,11 @@ export function Dashboard() {
 
   const displayName = user?.display_name || 'Creator';
   const totalReads = useMemo(() => (d?.stories ?? []).reduce((s, x) => s + x.total_readers, 0), [d]);
-  const streak = useMemo(() => (d ? ensureDemoStreak(totalReads) : getWritingStreak()), [d, totalReads]);
+  const streak = useMemo(() => {
+    if (!d) return getWritingStreak();
+    if (isMockMode) return ensureDemoStreak(totalReads);
+    return getWritingStreak();
+  }, [d, totalReads, isMockMode]);
   const productivity = useMemo(() => getProductivitySnapshot(), [streak]);
 
   const earningsMap = useMemo(() => {
@@ -53,13 +62,20 @@ export function Dashboard() {
     return map;
   }, [d]);
 
+  const isDemoMetrics = isMockMode || Boolean(d?.mock);
   const growth = d?.week_over_week_growth_pct;
+  const showGrowthTrend = growth != null && (isDemoMetrics || growth !== 0);
   const activity = useMemo(() => (d ? buildActivityFeed(d, milestonesData?.milestones ?? []) : []), [d, milestonesData]);
   const topStories = useMemo(() => [...(d?.earnings_by_story ?? [])].sort((a, b) => b.total_readers - a.total_readers).slice(0, 4), [d]);
   const analyticsHref = d?.stories[0]?.id ? `/analytics/${d.stories[0].id}` : undefined;
   const publishedCount = storiesData?.stories?.filter((s) => s.moderation_status === 'published').length ?? 0;
   const storyTrust = trustLevelForReaders(totalReads);
   const effectiveSharePct = effectiveCreatorSharePct(storyTrust) || BRAND.creatorSharePct;
+
+  const dashboardTasks = useMemo(
+    () => buildDashboardTasks(storiesData?.stories ?? [], lifecycleStage),
+    [storiesData, lifecycleStage],
+  );
 
   const continueStory = useMemo(() => {
     const stories = storiesData?.stories ?? [];
@@ -144,6 +160,12 @@ export function Dashboard() {
         </div>
       )}
 
+      {isDemoMetrics && (
+        <p className="dashboard-demo-banner" role="status">
+          Demo studio metrics — live reads, earnings, and subscribers appear when your stories publish on Supabase.
+        </p>
+      )}
+
       <StudioHero
         displayName={displayName}
         productivity={productivity}
@@ -161,7 +183,9 @@ export function Dashboard() {
           <span>
             <span className="studio-metric__value">{formatCompact(totalReads)}</span>
             <span className="studio-metric__label">Total reads</span>
-            {growth != null && <span className="studio-metric__trend">{growth >= 0 ? '+' : ''}{growth}% this week</span>}
+            {showGrowthTrend && (
+              <span className="studio-metric__trend">{growth! >= 0 ? '+' : ''}{growth}% this week</span>
+            )}
           </span>
         </button>
         <div className="studio-metric" role="listitem">
@@ -191,12 +215,16 @@ export function Dashboard() {
       <div className="studio-workspace">
         <StoriesWidget stories={storiesData?.stories ?? []} earningsMap={earningsMap} />
         <div className="studio-workspace__aside">
+          <DashboardNotificationsWidget />
+          <ReviewerPoolSummaryWidget />
           <EventsSpotlight />
           <QuickActionsPanel />
         </div>
       </div>
 
       <div className="dashboard-bottom-grid">
+        <TasksPanel tasks={dashboardTasks} />
+        <ScheduleCalendarWidget />
         <ActivityFeedPanel items={activity} />
         <TopPerformingStories stories={topStories} analyticsHref={analyticsHref} />
       </div>

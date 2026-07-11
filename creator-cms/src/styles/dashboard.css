@@ -2215,6 +2215,118 @@
 .dashboard-prototype-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
 .dashboard-bottom-grid { margin-bottom: 0; }
 
+.dashboard-demo-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--dash-radius);
+  background: var(--dash-paper);
+  border: 1px dashed var(--dash-border);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.dashboard-notifications-widget,
+.dashboard-reviewer-pool-widget {
+  margin-bottom: 16px;
+}
+
+.dashboard-notifications-widget__head,
+.dashboard-reviewer-pool-widget__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dashboard-notifications-widget__badge {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 100px;
+  background: var(--dash-gold-soft);
+  color: var(--gold-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dashboard-notifications-widget__list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.dashboard-notifications-widget__item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dash-border);
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.8125rem;
+}
+
+.dashboard-notifications-widget__item strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dashboard-notifications-widget__item span {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.dashboard-notifications-widget__all {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--katha-maroon);
+  text-decoration: none;
+}
+
+.dashboard-reviewer-pool-widget .katha-cta {
+  margin-top: 10px;
+}
+
+.dashboard-schedule-widget {
+  margin-bottom: 16px;
+}
+
+.dashboard-schedule-widget__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dashboard-schedule-widget__list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+}
+
+.dashboard-schedule-widget__item {
+  display: grid;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dash-border);
+  font-size: 0.8125rem;
+}
+
+.dashboard-schedule-widget__item strong {
+  color: var(--ink);
+}
+
+.dashboard-schedule-widget__item span {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.dashboard-schedule-widget .katha-cta {
+  margin-top: 4px;
+}
+
 .dashboard-panel--compact { padding: 20px; }
 .stories-widget__table-wrap {
   overflow-x: auto;

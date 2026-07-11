@@ -19,6 +19,7 @@ import { getAuthenticatedUserId } from '../middleware/authenticate.js';
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
 import { moderateChapterForSchedule } from '../services/moderation/index.js';
 import { generateUniqueStorySlug } from '../lib/slugify.js';
+import { notifyChapterScheduled } from '../services/notificationsStore.js';
 
 export const creatorsRouter = Router();
 
@@ -553,6 +554,13 @@ creatorsRouter.post('/schedule', requireStoryRole('story.publish', { bodyField: 
       };
       mockChapterStore.set(key, entry);
       const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === story_id);
+      await notifyChapterScheduled(creatorId, {
+        storyId: story_id,
+        storyTitle: story?.title,
+        chapterNumber: entry.chapter_number,
+        chapterTitle: entry.title,
+        scheduledAt: entry.scheduled_publish_at,
+      });
       return res.json({
         item: {
           id: entry.id,
@@ -635,6 +643,14 @@ creatorsRouter.post('/schedule', requireStoryRole('story.publish', { bodyField: 
       .eq('id', chapter.id)
       .single();
 
+    await notifyChapterScheduled(creatorId, {
+      storyId: story_id,
+      storyTitle: story.title,
+      chapterNumber: ready.chapter_number,
+      chapterTitle: ready.title,
+      scheduledAt: ready.scheduled_publish_at,
+    });
+
     res.json({
       item: {
         id: ready.id,
@@ -676,6 +692,13 @@ creatorsRouter.patch('/schedule/:storyId/:chapterNumber', requireStoryRole('stor
       entry.scheduled_publish_at = publishAt.toISOString();
       mockChapterStore.set(key, entry);
       const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId);
+      await notifyChapterScheduled(creatorId, {
+        storyId,
+        storyTitle: story?.title,
+        chapterNumber: num,
+        chapterTitle: entry.title,
+        scheduledAt: entry.scheduled_publish_at,
+      });
       return res.json({
         item: {
           id: entry.id,
@@ -706,6 +729,14 @@ creatorsRouter.patch('/schedule/:storyId/:chapterNumber', requireStoryRole('stor
       .single();
 
     if (error || !chapter) throw createAppError('CHAPTER_NOT_FOUND', 'Scheduled chapter not found', 404);
+
+    await notifyChapterScheduled(creatorId, {
+      storyId,
+      storyTitle: story.title,
+      chapterNumber: chapter.chapter_number,
+      chapterTitle: chapter.title,
+      scheduledAt: chapter.scheduled_publish_at,
+    });
 
     res.json({
       item: {

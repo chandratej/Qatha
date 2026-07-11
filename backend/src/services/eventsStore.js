@@ -12,6 +12,8 @@ const DEFAULT_SPLIT = { platformPct: 15, organizerPct: 10, taxPct: 18 };
 const eventsDb = new Map();
 /** @type {Map<string, object>} */
 const registrationsDb = new Map();
+/** @type {Map<string, object>} */
+const submissionsDb = new Map();
 
 export const EVENT_TYPES = [
   'writing_contest', 'first_chapter_challenge', 'short_story_challenge', 'novel_challenge',
@@ -32,6 +34,35 @@ export function acceptsRegistration(event) {
   if (!['registration_open', 'submissions_open', 'published'].includes(event.status)) return false;
   if (event.registration_closes_at && Date.parse(event.registration_closes_at) < Date.now()) return false;
   return true;
+}
+
+export function acceptsSubmission(event) {
+  if (!['submissions_open', 'registration_open'].includes(event.status)) {
+    if (event.status !== 'published') return false;
+  }
+  if (event.submissions_close_at && Date.parse(event.submissions_close_at) < Date.now()) return false;
+  return acceptsRegistration(event) || event.status === 'submissions_open';
+}
+
+function enrichRegistration(reg, submission) {
+  if (!submission) return reg;
+  return {
+    ...reg,
+    story_id: submission.story_id ?? reg.story_id ?? null,
+    story_title: submission.story_title ?? submission.content ?? reg.story_title ?? null,
+  };
+}
+
+function rowToSubmission(row) {
+  return {
+    id: row.id,
+    event_id: row.event_id,
+    registration_id: row.registration_id,
+    story_id: row.story_id ?? null,
+    story_title: row.story_title ?? row.content ?? null,
+    validation_status: row.validation_status,
+    submitted_at: row.submitted_at,
+  };
 }
 
 function rowToEvent(row, counts = {}) {
@@ -278,7 +309,10 @@ export async function registerForEvent(userId, eventId) {
 export async function getRegistration(eventId, userId) {
   if (isMockMode()) {
     seedIfEmpty();
-    return registrationsDb.get(`${eventId}:${userId}`) || null;
+    const reg = registrationsDb.get(`${eventId}:${userId}`);
+    if (!reg) return null;
+    const submission = [...submissionsDb.values()].find((s) => s.registration_id === reg.id);
+    return enrichRegistration(reg, submission);
   }
   const { data } = await supabase
     .from('event_registrations')
@@ -286,7 +320,44 @@ export async function getRegistration(eventId, userId) {
     .eq('event_id', eventId)
     .eq('participant_id', userId)
     .maybeSingle();
-  return data;
+  if (!data) return null;
+  const { data: submission } = await supabase
+    .from('event_submissions')
+    .select('*')
+    .eq('registration_id', data.id)
+    .maybeSingle();
+  return enrichRegistration(data, submission ? rowToSubmission(submission) : null);
+}
+
+export async function listRegistrationsForUser(userId) {
+  if (isMockMode()) {
+    seedIfEmpty();
+    return [...registrationsDb.values()]
+      .filter((r) => r.participant_id === userId)
+      .map((reg) => {
+        const submission = [...submissionsDb.values()].find((s) => s.registration_id === reg.id);
+        return enrichRegistration(reg, submission);
+      })
+      .sort((a, b) => Date.parse(b.registered_at) - Date.parse(a.registered_at));
+  }
+
+  const { data: regs, error } = await supabase
+    .from('event_registrations')
+    .select('*')
+    .eq('participant_id', userId)
+    .order('registered_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  if (!regs?.length) return [];
+
+  const regIds = regs.map((r) => r.id);
+  const { data: subs, error: subErr } = await supabase
+    .from('event_submissions')
+    .select('*')
+    .in('registration_id', regIds);
+  if (subErr) throw new Error(subErr.message);
+
+  const subByReg = new Map((subs || []).map((s) => [s.registration_id, rowToSubmission(s)]));
+  return regs.map((reg) => enrichRegistration(reg, subByReg.get(reg.id) || null));
 }
 
 export async function submitToEvent(userId, eventId, { story_id, story_title }) {
@@ -294,6 +365,7 @@ export async function submitToEvent(userId, eventId, { story_id, story_title }) 
 
   const event = await getEventById(eventId);
   if (!event) throw new Error('Event not found');
+  if (!acceptsSubmission(event)) throw new Error('Submissions are closed for this event');
 
   const reg = await getRegistration(eventId, userId);
   if (!reg) throw new Error('Register before submitting');
@@ -301,37 +373,74 @@ export async function submitToEvent(userId, eventId, { story_id, story_title }) 
     throw new Error('Complete entry payment first');
   }
 
+  const now = new Date().toISOString();
+
   if (isMockMode()) {
-    reg.story_id = story_id;
-    reg.story_title = story_title || null;
-    registrationsDb.set(`${eventId}:${userId}`, reg);
-    event.submission_count = (event.submission_count || 0) + 1;
-    eventsDb.set(eventId, event);
-    return {
-      submission: {
+    const existing = [...submissionsDb.values()].find((s) => s.registration_id === reg.id);
+    let submission;
+    if (existing) {
+      submission = {
+        ...existing,
+        story_id,
+        story_title: story_title || null,
+        validation_status: 'pending',
+        submitted_at: now,
+      };
+      submissionsDb.set(existing.id, submission);
+    } else {
+      submission = {
         id: `esub-${Date.now()}`,
         event_id: eventId,
         registration_id: reg.id,
         story_id,
-        story_title,
+        story_title: story_title || null,
         validation_status: 'pending',
-        submitted_at: new Date().toISOString(),
-      },
-      registration: reg,
-    };
+        submitted_at: now,
+      };
+      submissionsDb.set(submission.id, submission);
+      event.submission_count = (event.submission_count || 0) + 1;
+      eventsDb.set(eventId, event);
+    }
+    const updatedReg = enrichRegistration(reg, submission);
+    registrationsDb.set(`${eventId}:${userId}`, updatedReg);
+    return { submission, registration: updatedReg };
   }
 
-  const { data: submission, error } = await supabase.from('event_submissions').insert({
-    event_id: eventId,
-    registration_id: reg.id,
-    story_id,
-    content: story_title || null,
-    validation_status: 'pending',
-    submitted_at: new Date().toISOString(),
-  }).select('*').single();
-  if (error) throw new Error(error.message);
+  const { data: existing } = await supabase
+    .from('event_submissions')
+    .select('*')
+    .eq('registration_id', reg.id)
+    .maybeSingle();
 
-  return { submission, registration: reg };
+  let submission;
+  if (existing) {
+    const { data, error } = await supabase
+      .from('event_submissions')
+      .update({
+        story_id,
+        content: story_title || null,
+        validation_status: 'pending',
+        submitted_at: now,
+      })
+      .eq('id', existing.id)
+      .select('*')
+      .single();
+    if (error) throw new Error(error.message);
+    submission = rowToSubmission(data);
+  } else {
+    const { data, error } = await supabase.from('event_submissions').insert({
+      event_id: eventId,
+      registration_id: reg.id,
+      story_id,
+      content: story_title || null,
+      validation_status: 'pending',
+      submitted_at: now,
+    }).select('*').single();
+    if (error) throw new Error(error.message);
+    submission = rowToSubmission(data);
+  }
+
+  return { submission, registration: enrichRegistration(reg, submission) };
 }
 
 /** @type {object[]} */

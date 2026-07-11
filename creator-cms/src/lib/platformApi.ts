@@ -64,6 +64,11 @@ import {
   markAllLocalNotificationsRead,
   markLocalNotificationRead,
 } from './notificationsLocal';
+import {
+  loadLocalNotificationPrefs,
+  saveLocalNotificationPrefs,
+  type CreatorNotificationDomainPrefs,
+} from './creatorNotificationPrefsLocal';
 
 function mapOnboardingRecord(userId: string, onboarding: {
   status: string;
@@ -163,7 +168,10 @@ export const platformApi = {
       () => ({ registration: getMyEventRegistration(eventId, participantId) ?? null }),
     ),
   getMyRegistrations: (participantId: string) =>
-    Promise.resolve({ registrations: getMyEventRegistrations(participantId) }),
+    withPlatformFallback(
+      () => platformBackend.getMyEventRegistrations(),
+      () => ({ registrations: getMyEventRegistrations(participantId) }),
+    ),
   submitToEvent: (opts: {
     eventId: string;
     participantId: string;
@@ -427,6 +435,16 @@ export const platformApi = {
     withPlatformFallback(
       () => platformBackend.markAllNotificationsRead(),
       () => ({ marked: markAllLocalNotificationsRead(userId || 'anonymous-creator') }),
+    ),
+  getNotificationPreferences: (userId: string) =>
+    withPlatformFallback(
+      () => platformBackend.getNotificationPreferences(),
+      () => ({ preferences: loadLocalNotificationPrefs(userId) }),
+    ),
+  updateNotificationPreferences: (userId: string, domains: CreatorNotificationDomainPrefs) =>
+    withPlatformFallback(
+      () => platformBackend.updateNotificationPreferences(domains),
+      () => ({ preferences: saveLocalNotificationPrefs(userId, domains) }),
     ),
   getCouncilAuditQueue: () =>
     withPlatformFallback(

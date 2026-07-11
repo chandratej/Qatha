@@ -5,6 +5,7 @@ import { isShippedPersona } from '../../../packages/shared/creator-persona';
 
 export function useCreatorPersona() {
   const [persona, setPersona] = useState<CreatorPersona | null>(null);
+  const [lifecycleStage, setLifecycleStage] = useState<string>('active');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -14,9 +15,13 @@ export function useCreatorPersona() {
         if (cancelled) return;
         const p = r.creator_persona;
         setPersona(isShippedPersona(p) ? p : 'solo_author');
+        setLifecycleStage(r.lifecycle_stage || 'active');
       })
       .catch(() => {
-        if (!cancelled) setPersona('solo_author');
+        if (!cancelled) {
+          setPersona('solo_author');
+          setLifecycleStage('active');
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -24,5 +29,5 @@ export function useCreatorPersona() {
     return () => { cancelled = true; };
   }, []);
 
-  return { persona: persona ?? 'solo_author', loading };
+  return { persona: persona ?? 'solo_author', lifecycleStage, loading };
 }

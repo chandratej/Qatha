@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:strict": "playwright test e2e/reviewer-pool-strict.spec.ts --project=chromium",
+    "test:e2e:events-strict": "playwright test e2e/events-strict.spec.ts --project=chromium",
     "test:e2e:install": "playwright install chromium firefox webkit",
     "preview": "vite preview"
   },

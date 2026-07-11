@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
+import { isNotificationDomainEnabled } from './creatorNotificationPrefsStore.js';
 
 /** Mirrors packages/shared/notifications.ts NOTIFICATION_TYPES subset */
 const TYPE_META = {
@@ -28,6 +29,16 @@ const TYPE_META = {
     priority: 'actionable',
     title: 'Reviewer application update',
   },
+  chapter_scheduled: {
+    domain: 'publishing',
+    priority: 'informational',
+    title: 'Chapter scheduled',
+  },
+  chapter_published: {
+    domain: 'publishing',
+    priority: 'informational',
+    title: 'Chapter published',
+  },
 };
 
 /** @type {Map<string, object[]>} */
@@ -36,6 +47,9 @@ const mockFeed = new Map();
 export async function createInAppNotification(userId, typeId, opts = {}) {
   const meta = TYPE_META[typeId];
   if (!meta) throw new Error(`Unknown notification type: ${typeId}`);
+
+  const enabled = await isNotificationDomainEnabled(userId, meta.domain);
+  if (!enabled) return null;
 
   const row = {
     user_id: userId,
@@ -121,6 +135,24 @@ export async function markAllNotificationsRead(userId) {
     .select('id');
   if (error) throw new Error(error.message);
   return (data || []).length;
+}
+
+/** Product Council — confirm schedule in-app (retention-driving publishing loop). */
+export async function notifyChapterScheduled(creatorId, { storyTitle, chapterNumber, chapterTitle, scheduledAt, storyId }) {
+  const when = scheduledAt ? new Date(scheduledAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'soon';
+  return createInAppNotification(creatorId, 'chapter_scheduled', {
+    title: 'Chapter scheduled',
+    body: `"${chapterTitle || `Chapter ${chapterNumber}`}" of ${storyTitle || 'your story'} publishes ${when}.`,
+    action_url: storyId ? `/schedule` : '/schedule',
+  });
+}
+
+export async function notifyChapterPublished(creatorId, { storyTitle, chapterNumber, chapterTitle, storyId }) {
+  return createInAppNotification(creatorId, 'chapter_published', {
+    title: 'Chapter is live',
+    body: `"${chapterTitle || `Chapter ${chapterNumber}`}" of ${storyTitle || 'your story'} is now published.`,
+    action_url: storyId ? `/stories/${storyId}` : '/stories',
+  });
 }
 
 /** Legal & Trust Council — notify applicant after moderator decision (Wave 2). */

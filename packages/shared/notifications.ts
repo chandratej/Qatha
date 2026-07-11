@@ -68,6 +68,13 @@ export const NOTIFICATION_TYPES: readonly NotificationTypeDef[] = [
     retentionDays: 60,
   },
   {
+    id: 'chapter_published',
+    domain: 'publishing',
+    priority: 'informational',
+    defaultChannels: ['in_app'],
+    retentionDays: 90,
+  },
+  {
     id: 'moderation_outcome',
     domain: 'moderation',
     priority: 'actionable',

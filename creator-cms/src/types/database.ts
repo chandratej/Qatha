@@ -31,6 +31,8 @@ export interface DashboardData {
     monetization_eligible?: boolean;
   }>;
   subscriber_history: Array<{ month: string; count: number }>;
+  /** Present when backend serves demo seed (`MOCK_MODE=true`). */
+  mock?: boolean;
 }
 
 export interface StoryData {

@@ -41,6 +41,10 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '../services/notificationsStore.js';
+import {
+  getCreatorNotificationPrefs,
+  updateCreatorNotificationPrefs,
+} from '../services/creatorNotificationPrefsStore.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import {
   listEvents,
@@ -48,6 +52,7 @@ import {
   createEvent,
   registerForEvent,
   getRegistration,
+  listRegistrationsForUser,
   submitToEvent,
   acceptsRegistration,
   escrowSplit,
@@ -161,6 +166,16 @@ platformRouter.get('/events/revenue/summary', async (req, res, next) => {
     const userId = getAuthenticatedUserId(req);
     const summary = await getEventRevenueSummary(userId);
     res.json({ summary });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
+platformRouter.get('/events/registrations/me', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const registrations = await listRegistrationsForUser(userId);
+    res.json({ registrations });
   } catch (err) {
     next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
   }
@@ -330,6 +345,30 @@ platformRouter.post('/notifications/:id/read', async (req, res, next) => {
     const userId = getAuthenticatedUserId(req);
     const notification = await markNotificationRead(userId, req.params.id);
     res.json({ notification });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/notification-preferences', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const preferences = await getCreatorNotificationPrefs(userId);
+    res.json({ preferences });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
+platformRouter.patch('/notification-preferences', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { domains } = req.body || {};
+    if (!domains || typeof domains !== 'object') {
+      throw createAppError('BAD_REQUEST', 'domains object required', 400);
+    }
+    const preferences = await updateCreatorNotificationPrefs(userId, domains);
+    res.json({ preferences });
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }

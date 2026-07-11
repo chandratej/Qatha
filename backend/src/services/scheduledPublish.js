@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { mockChapterStore } from '../data/seed.js';
 import { notifyNewChapter } from './notifications.js';
+import { notifyChapterPublished } from './notificationsStore.js';
 
 /** Publish chapters that were pre-approved when scheduled and are now due. */
 export async function publishDueScheduledChapters() {
@@ -17,6 +18,15 @@ export async function publishDueScheduledChapters() {
       entry.published_at = new Date().toISOString();
       entry.scheduled_publish_at = null;
       mockChapterStore.set(key, entry);
+      if (entry.creator_id) {
+        const [storyId, chapterNum] = key.split(':');
+        await notifyChapterPublished(entry.creator_id, {
+          storyId,
+          storyTitle: entry.story_title,
+          chapterNumber: Number(chapterNum),
+          chapterTitle: entry.title,
+        });
+      }
     }
     return;
   }
@@ -24,7 +34,7 @@ export async function publishDueScheduledChapters() {
   const now = new Date().toISOString();
   const { data: due, error } = await supabase
     .from('chapters')
-    .select('id, story_id')
+    .select('id, story_id, chapter_number, title, stories(title, author_id)')
     .eq('status', 'scheduled')
     .eq('moderation_status', 'approved')
     .lte('scheduled_publish_at', now)
@@ -45,6 +55,15 @@ export async function publishDueScheduledChapters() {
 
       if (updateError) throw updateError;
       await notifyNewChapter(chapter.story_id, chapter.id);
+      const story = chapter.stories;
+      if (story?.author_id) {
+        await notifyChapterPublished(story.author_id, {
+          storyId: chapter.story_id,
+          storyTitle: story.title,
+          chapterNumber: chapter.chapter_number,
+          chapterTitle: chapter.title,
+        });
+      }
     } catch (err) {
       console.error(`[ScheduledPublish] failed for chapter ${chapter.id}:`, err.message);
     }

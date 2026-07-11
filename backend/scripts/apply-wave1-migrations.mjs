@@ -25,6 +25,8 @@ const MIGRATIONS = [
   '../../supabase/migrations/019_wave1e_reviewer_pool_revenue.sql',
   '../../supabase/migrations/020_wave1f_reviewer_onboarding.sql',
   '../../supabase/migrations/021_wave1h_reviewer_moderation.sql',
+  '../../supabase/migrations/022_wave2b_creator_notification_prefs.sql',
+  '../../supabase/migrations/023_wave3a_event_submissions_rls.sql',
 ];
 
 async function execSql(sql) {

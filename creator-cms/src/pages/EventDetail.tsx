@@ -124,7 +124,7 @@ export function EventDetail() {
         storyId: story.id,
         storyTitle: story.title,
       });
-      setRegistration(result.registration);
+      if (result.registration) setRegistration(result.registration);
       trackCreatorEvent('event_submission', { event_id: eventId, story_id: story.id });
       setStatusMsg(`Submitted “${story.title}” for judging. Validation pending.`);
       await reload();

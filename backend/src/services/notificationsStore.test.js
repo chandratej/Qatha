@@ -37,4 +37,45 @@ describe('notificationsStore', () => {
     const marked = await markAllNotificationsRead(userId);
     assert.equal(marked, 1);
   });
+
+  it('creates chapter_scheduled and chapter_published notifications', async () => {
+    const { notifyChapterScheduled, notifyChapterPublished, listNotificationsForUser } = await import(
+      `./notificationsStore.js?test=${Date.now()}-publish`
+    );
+    const userId = `user-publish-${Date.now()}`;
+    const scheduled = await notifyChapterScheduled(userId, {
+      storyTitle: 'Test Story',
+      chapterNumber: 3,
+      chapterTitle: 'The Lamp',
+      scheduledAt: '2026-08-01T10:00:00Z',
+      storyId: 'story-1',
+    });
+    assert.equal(scheduled.notification_type, 'chapter_scheduled');
+    assert.equal(scheduled.domain, 'publishing');
+
+    const published = await notifyChapterPublished(userId, {
+      storyTitle: 'Test Story',
+      chapterNumber: 3,
+      chapterTitle: 'The Lamp',
+      storyId: 'story-1',
+    });
+    assert.equal(published.notification_type, 'chapter_published');
+
+    const feed = await listNotificationsForUser(userId);
+    assert.equal(feed.length, 2);
+  });
+
+  it('skips notification when domain is opted out', async () => {
+    const suffix = Date.now();
+    const { updateCreatorNotificationPrefs } = await import('./creatorNotificationPrefsStore.js');
+    const { createInAppNotification, listNotificationsForUser } = await import(
+      `./notificationsStore.js?test=${suffix}-optout`
+    );
+    const userId = `user-optout-${suffix}`;
+    await updateCreatorNotificationPrefs(userId, { reviews: false });
+    const skipped = await createInAppNotification(userId, 'review_assigned', { body: 'Should not appear.' });
+    assert.equal(skipped, null);
+    const feed = await listNotificationsForUser(userId);
+    assert.equal(feed.length, 0);
+  });
 });

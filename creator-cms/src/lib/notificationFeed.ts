@@ -16,17 +16,27 @@ const FILTER_DOMAINS: Record<Exclude<NotificationFilter, 'all'>, readonly string
   revenue: ['revenue_payments', 'moderation'],
 };
 
-export function normalizePlatformNotification(row: Record<string, unknown>): PlatformNotification {
+export function normalizePlatformNotification(
+  row: PlatformNotification | Record<string, unknown>,
+): PlatformNotification {
+  if (
+    typeof row.id === 'string'
+    && typeof row.title === 'string'
+    && typeof row.notification_type === 'string'
+  ) {
+    return row as PlatformNotification;
+  }
+  const raw = row as Record<string, unknown>;
   return {
-    id: String(row.id ?? ''),
-    notification_type: String(row.notification_type ?? 'unknown'),
-    domain: String(row.domain ?? 'system_platform'),
-    priority: String(row.priority ?? 'informational'),
-    title: String(row.title ?? 'Notification'),
-    body: row.body != null ? String(row.body) : null,
-    action_url: row.action_url != null ? String(row.action_url) : null,
-    read_at: row.read_at != null ? String(row.read_at) : null,
-    created_at: String(row.created_at ?? new Date().toISOString()),
+    id: String(raw.id ?? ''),
+    notification_type: String(raw.notification_type ?? 'unknown'),
+    domain: String(raw.domain ?? 'system_platform'),
+    priority: String(raw.priority ?? 'informational'),
+    title: String(raw.title ?? 'Notification'),
+    body: raw.body != null ? String(raw.body) : null,
+    action_url: raw.action_url != null ? String(raw.action_url) : null,
+    read_at: raw.read_at != null ? String(raw.read_at) : null,
+    created_at: String(raw.created_at ?? new Date().toISOString()),
   };
 }
 

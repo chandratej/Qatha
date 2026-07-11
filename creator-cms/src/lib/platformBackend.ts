@@ -3,7 +3,10 @@
  * Calls /api/platform when not in CMS mock mode.
  */
 
+import type { EscrowSplitResult } from '../business/escrow';
 import { isMockMode } from './supabase';
+import type { PlatformNotification } from './notificationsLocal';
+import type { ReviewerOnboardingRecord } from './reviewerOnboarding';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -54,7 +57,7 @@ export const platformBackend = {
   getEvent: (id: string) =>
     platformFetch<{
       event: import('../types/platform').KathaEvent;
-      escrowPreview: unknown;
+      escrowPreview: EscrowSplitResult;
       acceptsRegistration: boolean;
     }>(`/events/${id}`),
 
@@ -77,8 +80,16 @@ export const platformBackend = {
       `/events/${eventId}/registration/me`,
     ),
 
+  getMyEventRegistrations: () =>
+    platformFetch<{ registrations: import('../types/platform').EventRegistration[] }>(
+      '/events/registrations/me',
+    ),
+
   submitToEvent: (eventId: string, body: { story_id: string; story_title?: string }) =>
-    platformFetch<{ submission: import('../types/platform').EventSubmission }>(`/events/${eventId}/submit`, {
+    platformFetch<{
+      submission: import('../types/platform').EventSubmission;
+      registration?: import('../types/platform').EventRegistration;
+    }>(`/events/${eventId}/submit`, {
       method: 'POST',
       body: JSON.stringify(body),
     }),
@@ -132,7 +143,16 @@ export const platformBackend = {
     }>('/reviewer-onboarding/pending'),
 
   moderateReviewerApplication: (userId: string, decision: 'approve' | 'reject', notes?: string) =>
-    platformFetch<{ application: Record<string, unknown>; onboarding: Record<string, unknown> }>(
+    platformFetch<{
+      application: {
+        user_id: string;
+        status: string;
+        genres: string[];
+        motivation: string;
+        pool_slot?: string;
+      };
+      onboarding: ReviewerOnboardingRecord;
+    }>(
       `/reviewer-onboarding/${userId}/moderate`,
       { method: 'POST', body: JSON.stringify({ decision, notes }) },
     ),
@@ -160,16 +180,31 @@ export const platformBackend = {
     ),
 
   getNotifications: () =>
-    platformFetch<{ notifications: Array<Record<string, unknown>> }>('/notifications'),
+    platformFetch<{ notifications: PlatformNotification[] }>('/notifications'),
 
   markNotificationRead: (id: string) =>
-    platformFetch<{ notification: Record<string, unknown> }>(`/notifications/${id}/read`, {
+    platformFetch<{ notification: PlatformNotification }>(`/notifications/${id}/read`, {
       method: 'POST',
       body: '{}',
     }),
 
   markAllNotificationsRead: () =>
     platformFetch<{ marked: number }>('/notifications/read-all', { method: 'POST', body: '{}' }),
+
+  getNotificationPreferences: () =>
+    platformFetch<{ preferences: import('./creatorNotificationPrefsLocal').CreatorNotificationDomainPrefs }>(
+      '/notification-preferences',
+    ),
+
+  updateNotificationPreferences: (
+    domains: import('./creatorNotificationPrefsLocal').CreatorNotificationDomainPrefs,
+  ) =>
+    platformFetch<{ preferences: import('./creatorNotificationPrefsLocal').CreatorNotificationDomainPrefs }>(
+      '/notification-preferences',
+      {
+      method: 'PATCH',
+      body: JSON.stringify({ domains }),
+    }),
 
   getPeerReviews: (authorId?: string) => {
     const q = authorId ? `?author_id=${encodeURIComponent(authorId)}` : '';

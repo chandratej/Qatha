@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Bell, Database, LogOut, Smartphone, Coffee, Settings2, FlaskConical, IndianRupee, Download,
+  User, Database, LogOut, Smartphone, Coffee, Settings2, FlaskConical, IndianRupee, Download,
 } from 'lucide-react';
 import {
   loadComfortPrefs,
@@ -25,6 +25,7 @@ import { getDeviceId } from '../lib/device';
 import type { UserDevice } from '../types/database';
 import { isStudioLabsEnabled, setStudioLabsEnabled } from '../lib/featureFlags';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
+import { NotificationPreferencesPanel } from '../components/settings/NotificationPreferencesPanel';
 
 export function Settings() {
   const { user, logout, isMockMode } = useAuth();
@@ -401,17 +402,7 @@ export function Settings() {
           </section>
         )}
 
-        <section className="cms-panel studio-settings-section">
-          <div className="studio-settings-section__head">
-            <Bell size={18} aria-hidden />
-            <h3>Notifications</h3>
-          </div>
-          <div className="studio-settings-section__body">
-            <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', margin: 0 }}>
-              In-app alerts for moderation updates and milestones appear in the notification bell. Email notifications coming soon.
-            </p>
-          </div>
-        </section>
+        <NotificationPreferencesPanel />
       </div>
 
       <button type="button" className="btn btn-ghost" onClick={handleLogout} style={{ color: 'var(--ember)', marginTop: 8 }}>

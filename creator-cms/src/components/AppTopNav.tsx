@@ -55,10 +55,11 @@ export function AppTopNav() {
 
   const streak = useMemo(() => {
     const s = getWritingStreak();
-    return s.lastWriteDate ? s : ensureDemoStreak(1200);
-  }, []);
+    if (s.lastWriteDate || !isMockMode) return s;
+    return ensureDemoStreak(1200);
+  }, [isMockMode]);
 
-  const badge = useMemo(() => getCreatorBadge(1200), []);
+  const badge = useMemo(() => getCreatorBadge(isMockMode ? 1200 : 0), [isMockMode]);
   const labsOn = isStudioLabsEnabled();
   const primaryNav = useMemo(
     () => CORE_NAV.filter((item) => !item.lab || labsOn),
