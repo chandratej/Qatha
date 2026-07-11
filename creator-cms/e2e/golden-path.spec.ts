@@ -1,8 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
 /**
- * Golden path smoke — DEC-019 / DEC-007
+ * Golden path smoke — DEC-019 / V09-13-D3
  * Mock mode: email OTP code 123456 (see Login.tsx).
+ * Product + Quality Council: Reviewer Pool author → reviewer → workspace loop.
  */
 
 /** Events are core nav — bypass onboarding gate for contest E2E */
@@ -17,6 +18,36 @@ async function enterStudioShell(page: Page, email: string) {
   await page.evaluate(() => localStorage.setItem('katha_onboarding_complete', 'true'));
   await page.goto('/');
   await page.waitForURL((url) => !url.pathname.includes('/onboarding'), { timeout: 15_000 });
+}
+
+async function openReviewerPool(page: Page) {
+  await page.goto('/reviewers');
+  await expect(page.getByRole('heading', { name: /Trusted reviewers/i })).toBeVisible({ timeout: 15_000 });
+}
+
+function reviewerPoolNav(page: Page) {
+  return page.getByRole('navigation', { name: 'Reviewer Pool' });
+}
+
+async function switchToAuthorView(page: Page) {
+  await reviewerPoolNav(page).getByRole('button', { name: /Request/i }).click();
+  await expect(page.getByRole('button', { name: /Request community review/i })).toBeVisible({ timeout: 10_000 });
+}
+
+async function seedDevReviewScenario(page: Page) {
+  await page.getByRole('button', { name: /Open dev review sandbox/i }).click();
+  await page.getByRole('button', { name: /Load demo/i }).click();
+  await expect(page.getByText(/Dev scenario ready/i)).toBeVisible({ timeout: 10_000 });
+}
+
+/** Prevent dev auto-seed from masking fresh review-request invitations (slot-1). */
+async function resetReviewState(page: Page) {
+  await page.evaluate(() => {
+    localStorage.setItem('katha_review_dev_seed_v', '3');
+    localStorage.removeItem('katha_peer_review_requests');
+    localStorage.removeItem('katha_reviewer_assignments');
+    localStorage.removeItem('katha_reviewer_slot');
+  });
 }
 
 test.describe('Creator Studio golden path', () => {
@@ -40,7 +71,6 @@ test.describe('Creator Studio golden path', () => {
 
     await page.getByRole('button', { name: /Enter your studio/i }).click();
 
-    // Onboarding or dashboard
     await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
     await expect(page).not.toHaveURL(/\/login$/);
     await expect(page.locator('body')).toContainText(/కథ|Dashboard|Stories|Onboarding|Studio|shelf/i);
@@ -55,7 +85,6 @@ test.describe('Creator Studio golden path', () => {
 
     await page.goto('/events');
     await expect(page.getByRole('heading', { name: /Events & Contests/i })).toBeVisible({ timeout: 15_000 });
-    // Should NOT be Labs-locked
     await expect(page.getByText(/Studio Labs is off/i)).toHaveCount(0);
   });
 
@@ -75,7 +104,7 @@ test.describe('Creator Studio golden path', () => {
     await expect(page.getByRole('status')).toContainText(/Registered free/i);
   });
 
-  test('author can request peer review when Labs is on', async ({ page }) => {
+  test('author can request peer review and reviewer sees invitation', async ({ page }) => {
     await page.route('**/creators/stories', async (route) => {
       await route.fulfill({
         status: 200,
@@ -86,6 +115,8 @@ test.describe('Creator Studio golden path', () => {
             title: 'E2E Manuscript for Review',
             chapter_count: 1,
             moderation_status: 'draft',
+            genre: 'romance',
+            total_readers: 120,
           }],
           mock: true,
         }),
@@ -93,19 +124,54 @@ test.describe('Creator Studio golden path', () => {
     });
 
     await enterStudioShell(page, 'e2e.review@katha.test');
-    await page.evaluate(() => localStorage.setItem('katha_studio_labs', '1'));
-    await page.reload();
-
-    await page.goto('/reviewers');
-    await expect(page.getByRole('heading', { name: /Professional Review Ecosystem/i })).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/Studio Labs is off/i)).toHaveCount(0);
-
+    await resetReviewState(page);
+    await openReviewerPool(page);
+    await switchToAuthorView(page);
     await page.getByRole('button', { name: /Request community review/i }).click();
-    await expect(page.getByText(/community review queued|Literary Council matched/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/Community review queued|reviewers matched/i)).toBeVisible({ timeout: 10_000 });
 
-    await page.getByRole('button', { name: /Reviewer inbox/i }).click();
-    await expect(page.getByRole('heading', { name: /Reviewer assignments inbox/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/Invitations \(\d+\)/)).toBeVisible();
+    await reviewerPoolNav(page).getByRole('button', { name: /Review/i }).click();
+    await expect(page.getByRole('heading', { name: /Your review inbox/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Invitations' })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.reviewer-dashboard__kpi').filter({ hasText: 'Invitations' })).toContainText(/[1-9]/);
+  });
+
+  test('reviewer can open workspace from dev seed assignment', async ({ page }) => {
+    await enterStudioShell(page, 'e2e.workspace@katha.test');
+    await openReviewerPool(page);
+    await seedDevReviewScenario(page);
+
+    await page.getByRole('link', { name: /Open workspace/i }).click();
+    await expect(page).toHaveURL(/\/reviewers\/assignments\//, { timeout: 10_000 });
+    await expect(page.locator('body')).toContainText(/Submit review|సమీక్ష/i);
+  });
+
+  test('author feedback inbox shows waiting manuscripts after request', async ({ page }) => {
+    await page.route('**/creators/stories', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          stories: [{
+            id: 'e2e-story-feedback',
+            title: 'E2E Feedback Manuscript',
+            chapter_count: 2,
+            moderation_status: 'draft',
+            genre: 'mythology',
+            total_readers: 80,
+          }],
+          mock: true,
+        }),
+      });
+    });
+
+    await enterStudioShell(page, 'e2e.feedback@katha.test');
+    await openReviewerPool(page);
+    await switchToAuthorView(page);
+    await page.getByRole('button', { name: /Request community review/i }).click();
+    await expect(page.getByText(/Community review queued|reviewers matched/i)).toBeVisible({ timeout: 10_000 });
+
+    await expect(page.getByRole('heading', { name: /Your council feedback/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('heading', { name: 'Awaiting reviewers' })).toBeVisible();
   });
 });
-

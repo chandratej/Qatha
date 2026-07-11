@@ -21,6 +21,7 @@ import { ModerationRoute } from './components/ModerationRoute';
 import { LabsRoute } from './components/LabsRoute';
 import { OnboardingGate } from './components/OnboardingGate';
 import { Settings } from './pages/Settings';
+import { Notifications } from './pages/Notifications';
 import { Schedule } from './pages/Schedule';
 import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
@@ -74,6 +75,7 @@ function App() {
                   </Route>
                   <Route path="/monetization" element={<Monetization />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/notifications" element={<Notifications />} />
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />
                 <Route path="/stories/:storyId/chapters/:chapterNum" element={<ChapterEditor />} />

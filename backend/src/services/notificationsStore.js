@@ -23,6 +23,11 @@ const TYPE_META = {
     priority: 'actionable',
     title: 'Council decision ready',
   },
+  moderation_outcome: {
+    domain: 'moderation',
+    priority: 'actionable',
+    title: 'Reviewer application update',
+  },
 };
 
 /** @type {Map<string, object[]>} */
@@ -68,6 +73,66 @@ export async function listNotificationsForUser(userId, limit = 50) {
     .limit(limit);
   if (error) throw new Error(error.message);
   return data || [];
+}
+
+export async function markNotificationRead(userId, notificationId) {
+  const now = new Date().toISOString();
+
+  if (isMockMode()) {
+    const feed = mockFeed.get(userId) || [];
+    const idx = feed.findIndex((n) => n.id === notificationId);
+    if (idx < 0) throw new Error('Notification not found');
+    feed[idx] = { ...feed[idx], read_at: now };
+    mockFeed.set(userId, feed);
+    return feed[idx];
+  }
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ read_at: now })
+    .eq('id', notificationId)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function markAllNotificationsRead(userId) {
+  const now = new Date().toISOString();
+
+  if (isMockMode()) {
+    const feed = mockFeed.get(userId) || [];
+    let marked = 0;
+    const updated = feed.map((n) => {
+      if (n.read_at) return n;
+      marked += 1;
+      return { ...n, read_at: now };
+    });
+    mockFeed.set(userId, updated);
+    return marked;
+  }
+
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ read_at: now })
+    .eq('user_id', userId)
+    .is('read_at', null)
+    .select('id');
+  if (error) throw new Error(error.message);
+  return (data || []).length;
+}
+
+/** Legal & Trust Council — notify applicant after moderator decision (Wave 2). */
+export async function notifyReviewerModerationOutcome(reviewerId, decision) {
+  const approved = decision === 'approve';
+  return createInAppNotification(reviewerId, 'moderation_outcome', {
+    title: approved ? 'Reviewer Pool application approved' : 'Reviewer application decision',
+    body: approved
+      ? 'Welcome to the Reviewer Pool. Complete training to receive assignments.'
+      : 'Your Reviewer Pool application was not approved. You may reapply after addressing feedback.',
+    action_url: '/reviewers',
+  });
 }
 
 const SLA_WARN_MS = 24 * 60 * 60 * 1000;

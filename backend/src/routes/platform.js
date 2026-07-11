@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import { requireAuth, getAuthenticatedUserId } from '../middleware/authenticate.js';
+import { requireRole } from '../middleware/requireRole.js';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 /** Keep in sync with packages/shared/tags.ts SEED_COMMUNITY_TAGS */
@@ -31,9 +32,15 @@ import {
   getReviewerOnboarding,
   applyToReviewerPool,
   certifyReviewer,
+  listPendingReviewerApplications,
+  moderateReviewerApplication,
 } from '../services/reviewerProfileStore.js';
 import { getReviewerDashboardStats } from '../services/reviewerDashboardStore.js';
-import { listNotificationsForUser } from '../services/notificationsStore.js';
+import {
+  listNotificationsForUser,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from '../services/notificationsStore.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import {
   listEvents,
@@ -235,6 +242,31 @@ platformRouter.post('/reviewer-onboarding/apply', async (req, res, next) => {
   }
 });
 
+platformRouter.get('/reviewer-onboarding/pending', requireRole('moderator', 'admin'), async (_req, res, next) => {
+  try {
+    const applications = await listPendingReviewerApplications();
+    res.json({ applications });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
+platformRouter.post('/reviewer-onboarding/:userId/moderate', requireRole('moderator', 'admin'), async (req, res, next) => {
+  try {
+    const moderatorId = getAuthenticatedUserId(req);
+    const { decision, notes } = req.body || {};
+    const result = await moderateReviewerApplication(
+      moderatorId,
+      req.params.userId,
+      decision,
+      notes,
+    );
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
 platformRouter.post('/reviewer-onboarding/certify', async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
@@ -280,6 +312,26 @@ platformRouter.get('/notifications', async (req, res, next) => {
     res.json({ notifications });
   } catch (err) {
     next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
+platformRouter.post('/notifications/read-all', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const marked = await markAllNotificationsRead(userId);
+    res.json({ marked });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
+platformRouter.post('/notifications/:id/read', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const notification = await markNotificationRead(userId, req.params.id);
+    res.json({ notification });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }
 });
 

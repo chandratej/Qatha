@@ -2271,6 +2271,32 @@
 .notification-bell__filter { padding: 4px 8px; border-radius: 6px; border: 1px solid var(--dash-border); background: transparent; font-size: 0.6875rem; cursor: pointer; }
 .notification-bell__filter--active { background: var(--dash-paper); color: var(--dash-gold); }
 .notification-bell__group-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; color: var(--ink-muted); margin: 8px 0 4px; }
+.notification-bell__title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.notification-bell__view-all { font-size: 0.75rem; color: var(--dash-gold); text-decoration: none; }
+.notification-bell__view-all:hover { text-decoration: underline; }
+.notification-bell__item { display: flex; flex-direction: column; gap: 2px; text-decoration: none; }
+.notification-bell__item-label { font-weight: 600; color: var(--ink); }
+.notification-bell__item-hint { font-size: 0.75rem; color: var(--ink-muted); }
+
+.notifications-page { max-width: 720px; }
+.notifications-page__head { display: flex; align-items: flex-start; gap: 12px; }
+.notifications-page__filters { margin: 16px 0; }
+.notifications-page__empty { padding: 24px; color: var(--ink-muted); }
+.notifications-page__feed { display: flex; flex-direction: column; gap: 12px; }
+
+.notification-card {
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-surface);
+}
+.notification-card--unread { border-color: var(--dash-gold-soft); box-shadow: 0 0 0 1px var(--dash-gold-soft); }
+.notification-card[data-priority="critical"] { border-left: 3px solid var(--maroon, #8b2942); }
+.notification-card__meta { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 0.75rem; color: var(--ink-muted); text-transform: capitalize; }
+.notification-card__title { margin: 0 0 6px; font-size: 0.9375rem; font-weight: 600; }
+.notification-card__body { margin: 0 0 10px; font-size: 0.8125rem; color: var(--ink-soft); line-height: 1.5; }
+.notification-card__cta { font-size: 0.8125rem; font-weight: 600; color: var(--dash-gold); text-decoration: none; }
+.notification-card__cta:hover { text-decoration: underline; }
 .share-link-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
 .share-link-field__label { font-size: 0.75rem; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 .share-link-field__row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }

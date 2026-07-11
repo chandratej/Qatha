@@ -117,6 +117,26 @@ export const platformBackend = {
       body: '{}',
     }),
 
+  getPendingReviewerApplications: () =>
+    platformFetch<{
+      applications: Array<{
+        user_id: string;
+        status: string;
+        genres: string[];
+        languages: string[];
+        motivation: string;
+        applied_at?: string;
+        pool_slot?: string;
+        rqi?: number;
+      }>;
+    }>('/reviewer-onboarding/pending'),
+
+  moderateReviewerApplication: (userId: string, decision: 'approve' | 'reject', notes?: string) =>
+    platformFetch<{ application: Record<string, unknown>; onboarding: Record<string, unknown> }>(
+      `/reviewer-onboarding/${userId}/moderate`,
+      { method: 'POST', body: JSON.stringify({ decision, notes }) },
+    ),
+
   getReviewerDashboardStats: (reviewerSlot: string) =>
     platformFetch<{ stats: import('../types/platform').ReviewerDashboardStats }>(
       `/reviewer-dashboard/stats?reviewer_slot=${encodeURIComponent(reviewerSlot)}`,
@@ -141,6 +161,15 @@ export const platformBackend = {
 
   getNotifications: () =>
     platformFetch<{ notifications: Array<Record<string, unknown>> }>('/notifications'),
+
+  markNotificationRead: (id: string) =>
+    platformFetch<{ notification: Record<string, unknown> }>(`/notifications/${id}/read`, {
+      method: 'POST',
+      body: '{}',
+    }),
+
+  markAllNotificationsRead: () =>
+    platformFetch<{ marked: number }>('/notifications/read-all', { method: 'POST', body: '{}' }),
 
   getPeerReviews: (authorId?: string) => {
     const q = authorId ? `?author_id=${encodeURIComponent(authorId)}` : '';

@@ -9,6 +9,7 @@ import { ReviewerAssignmentsInbox } from '../components/reviewers/ReviewerAssign
 import { ReviewerPoolBrowse } from '../components/reviewers/ReviewerPoolBrowse';
 import { ReviewerOnboardingPanel } from '../components/reviewers/ReviewerOnboardingPanel';
 import { CouncilAdminQueue } from '../components/reviewers/CouncilAdminQueue';
+import { ReviewerModerationQueue } from '../components/reviewers/ReviewerModerationQueue';
 import { ReviewDevSandboxPanel } from '../components/reviewers/ReviewDevSandboxPanel';
 import { CouncilHero } from '../components/reviewers/CouncilHero';
 import { LiteraryCouncilPhilosophy } from '../components/reviewers/LiteraryCouncilPhilosophy';
@@ -106,7 +107,10 @@ export function ReviewerMarketplace() {
         )}
 
         {view === 'admin' && isAdmin && (
-          <CouncilAdminQueue onAction={reload} />
+          <div className="council-admin-stack">
+            <ReviewerModerationQueue onAction={reload} />
+            <CouncilAdminQueue onAction={reload} />
+          </div>
         )}
       </div>
 

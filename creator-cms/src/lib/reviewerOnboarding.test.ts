@@ -17,7 +17,7 @@ describe('reviewerOnboarding', () => {
     });
     expect(applied.status).toBe('applied');
     const certified = completeReviewerTraining('user-1');
-    expect(certified.status).toBe('certified');
+    expect(certified.status).toBe('pending_moderation');
     expect(loadReviewerOnboarding('user-1').trainingCompleted).toBe(true);
   });
 });

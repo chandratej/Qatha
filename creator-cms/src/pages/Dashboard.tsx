@@ -21,9 +21,12 @@ import { TopPerformingStories } from '../components/dashboard/TopPerformingStori
 import { CreatorBadgeBar } from '../components/dashboard/CreatorBadgeBar';
 import { StudioHero } from '../components/studio/StudioHero';
 import { BrandMark } from '../components/studio/BrandMark';
+import { ReviewerPersonaDashboard } from '../components/dashboard/ReviewerPersonaDashboard';
+import { useCreatorPersona } from '../hooks/useCreatorPersona';
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { persona, loading: personaLoading } = useCreatorPersona();
   const navigate = useNavigate();
   const { data: d, loading, error, mutate } = useApi(() => api.getDashboard());
   const { data: storiesData } = useApi(() => api.getCreatorStories().catch(() => ({ stories: [] })));
@@ -88,7 +91,7 @@ export function Dashboard() {
     };
   }, [activeMilestone, handleAcknowledge]);
 
-  if (loading) {
+  if (loading || personaLoading) {
     return (
       <div className="cms-page dashboard-page studio-page">
         <div className="dashboard-skeleton studio-skeleton-hero" aria-hidden />
@@ -113,6 +116,14 @@ export function Dashboard() {
             {isSessionError(error) ? 'Sign in again' : 'Try again'}
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (persona === 'reviewer') {
+    return (
+      <div className="cms-page dashboard-page studio-page">
+        <ReviewerPersonaDashboard displayName={displayName} />
       </div>
     );
   }

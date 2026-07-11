@@ -10,6 +10,9 @@ import { defineConfig, devices } from '@playwright/test';
  * CI installs chromium+firefox+webkit via --with-deps.
  */
 const isCI = !!process.env.CI;
+const strictPlatform =
+  process.env.E2E_STRICT_PLATFORM === 'true'
+  || process.argv.some((arg) => arg.includes('reviewer-pool-strict'));
 
 export default defineConfig({
   testDir: './e2e',
@@ -37,6 +40,7 @@ export default defineConfig({
     env: {
       ...process.env,
       VITE_MOCK_MODE: 'true',
+      VITE_USE_PLATFORM_API: strictPlatform ? 'true' : 'false',
       VITE_API_URL: process.env.VITE_API_URL || 'http://127.0.0.1:3001/api',
       VITE_STUDIO_LABS: 'false',
     },

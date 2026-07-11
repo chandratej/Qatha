@@ -74,6 +74,20 @@ export function ReviewerOnboardingPanel() {
     );
   }
 
+  if (record.status === 'pending_moderation') {
+    return (
+      <section className="reviewer-onboarding reviewer-onboarding--done" aria-labelledby="onboard-pending-title">
+        <GraduationCap size={22} aria-hidden />
+        <div>
+          <h3 id="onboard-pending-title">Training complete — awaiting council review</h3>
+          <p className="input-hint">
+            A Literary Council moderator will review your motivation and genre expertise. You&apos;ll be notified when approved.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   if (record.status === 'certified') {
     return (
       <section className="reviewer-onboarding reviewer-onboarding--done" aria-labelledby="onboard-done-title">
@@ -82,6 +96,15 @@ export function ReviewerOnboardingPanel() {
           <h3 id="onboard-done-title">You&apos;re certified in the Reviewer Pool</h3>
           <p className="input-hint">Switch to the Review tab to accept assignments and open Review Studio.</p>
         </div>
+      </section>
+    );
+  }
+
+  if (record.status === 'suspended') {
+    return (
+      <section className="reviewer-onboarding" aria-labelledby="onboard-suspended-title">
+        <h3 id="onboard-suspended-title">Application not approved</h3>
+        <p className="input-hint">Contact support if you believe this was a mistake.</p>
       </section>
     );
   }

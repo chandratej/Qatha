@@ -24,6 +24,7 @@ const MIGRATIONS = [
   '../../supabase/migrations/018_wave1_rls_backfill.sql',
   '../../supabase/migrations/019_wave1e_reviewer_pool_revenue.sql',
   '../../supabase/migrations/020_wave1f_reviewer_onboarding.sql',
+  '../../supabase/migrations/021_wave1h_reviewer_moderation.sql',
 ];
 
 async function execSql(sql) {

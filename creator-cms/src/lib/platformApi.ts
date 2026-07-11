@@ -52,11 +52,18 @@ import { resetReviewDevData, seedReviewDevScenario } from './seedReviewDevData';
 import {
   applyToReviewerPool as applyToReviewerPoolLocal,
   completeReviewerTraining as completeReviewerTrainingLocal,
+  listPendingReviewerApplicationsLocal,
   loadReviewerOnboarding,
+  moderateReviewerApplicationLocal,
   type ReviewerOnboardingRecord,
 } from './reviewerOnboarding';
 import { syncCreatorProfileFromOnboarding } from './creatorLifecycle';
 import { platformBackend, usePlatformBackend } from './platformBackend';
+import {
+  listLocalNotifications,
+  markAllLocalNotificationsRead,
+  markLocalNotificationRead,
+} from './notificationsLocal';
 
 function mapOnboardingRecord(userId: string, onboarding: {
   status: string;
@@ -277,7 +284,6 @@ export const platformApi = {
           wantsToReview: true,
           onboardingComplete: true,
         });
-        if (result.pool_slot) setLinkedReviewerSlot(result.pool_slot);
         return {
           record: mapOnboardingRecord(userId, result.onboarding as Parameters<typeof mapOnboardingRecord>[1]),
           pool_slot: result.pool_slot,
@@ -291,6 +297,43 @@ export const platformApi = {
           onboardingComplete: true,
         });
         return { record, pool_slot: getLinkedReviewerSlot(userId) };
+      },
+    ),
+  getPendingReviewerApplications: () =>
+    withPlatformFallback(
+      () => platformBackend.getPendingReviewerApplications(),
+      () => ({ applications: listPendingReviewerApplicationsLocal() }),
+    ),
+  moderateReviewerApplication: (userId: string, decision: 'approve' | 'reject', notes?: string) =>
+    withPlatformFallback(
+      async () => {
+        const result = await platformBackend.moderateReviewerApplication(userId, decision, notes);
+        if (decision === 'approve') {
+          const poolSlot = (result.application as { pool_slot?: string }).pool_slot;
+          if (poolSlot) setLinkedReviewerSlot(poolSlot);
+        }
+        return result;
+      },
+      () => {
+        const record = moderateReviewerApplicationLocal(userId, decision);
+        if (decision === 'approve') setLinkedReviewerSlot(getLinkedReviewerSlot(userId));
+        return {
+          application: {
+            user_id: record.userId,
+            status: record.status,
+            genres: record.genres,
+            motivation: record.motivation,
+          },
+          onboarding: mapOnboardingRecord(userId, {
+            status: record.status,
+            genres: record.genres,
+            languages: record.languages,
+            motivation: record.motivation,
+            trainingCompleted: record.trainingCompleted,
+            certified_at: record.certifiedAt,
+            applied_at: record.appliedAt,
+          }),
+        };
       },
     ),
   getReviewerPool: () =>
@@ -365,6 +408,25 @@ export const platformApi = {
           throw e instanceof Error ? e : new Error(String(e));
         }
       },
+    ),
+  getNotifications: (userId?: string) =>
+    withPlatformFallback(
+      () => platformBackend.getNotifications(),
+      () => ({ notifications: listLocalNotifications(userId || 'anonymous-creator') }),
+    ),
+  markNotificationRead: (notificationId: string) =>
+    withPlatformFallback(
+      () => platformBackend.markNotificationRead(notificationId),
+      () => {
+        const notification = markLocalNotificationRead(notificationId);
+        if (!notification) throw new Error('Notification not found');
+        return { notification };
+      },
+    ),
+  markAllNotificationsRead: (userId?: string) =>
+    withPlatformFallback(
+      () => platformBackend.markAllNotificationsRead(),
+      () => ({ marked: markAllLocalNotificationsRead(userId || 'anonymous-creator') }),
     ),
   getCouncilAuditQueue: () =>
     withPlatformFallback(

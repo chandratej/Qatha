@@ -8,6 +8,7 @@
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { invalidateReviewerPoolCache } from './reviewerPoolStore.js';
+import { notifyReviewerModerationOutcome } from './notificationsStore.js';
 
 const DEFAULT_SPECIALIZATIONS = ['story_reviewer', 'beta_reader'];
 
@@ -35,10 +36,25 @@ function rowToOnboarding(row) {
     genres: row.genre_expertise || [],
     languages: row.languages || ['telugu'],
     motivation: row.motivation || '',
-    trainingCompleted: row.onboarding_status === 'certified',
+    trainingCompleted: ['certified', 'pending_moderation'].includes(row.onboarding_status),
     pool_slot: row.pool_slot || null,
     certified_at: row.certified_at,
     applied_at: row.applied_at,
+    moderation_notes: row.moderation_notes || null,
+  };
+}
+
+function rowToModerationEntry(row) {
+  return {
+    user_id: row.id,
+    status: row.onboarding_status,
+    genres: row.genre_expertise || [],
+    languages: row.languages || ['telugu'],
+    motivation: row.motivation || '',
+    applied_at: row.applied_at,
+    pool_slot: row.pool_slot,
+    reputation_tier: row.reputation_tier,
+    rqi: Number(row.rqi) || 58,
   };
 }
 
@@ -123,9 +139,9 @@ export async function certifyReviewer(userId) {
   const poolSlot = current.pool_slot || assignPoolSlot(userId);
 
   const patch = {
-    onboarding_status: 'certified',
-    is_available: true,
-    certified_at: now,
+    onboarding_status: 'pending_moderation',
+    is_available: false,
+    certified_at: null,
     pool_slot: poolSlot,
     reputation_tier: 'bronze',
     agreement_score: 62,
@@ -175,4 +191,79 @@ export async function certifyReviewer(userId) {
 
   invalidateReviewerPoolCache();
   return { onboarding: rowToOnboarding(data), pool_slot: poolSlot };
+}
+
+export async function listPendingReviewerApplications() {
+  if (isMockMode()) {
+    return [...mockProfiles.values()]
+      .filter((r) => r.onboarding_status === 'pending_moderation')
+      .map(rowToModerationEntry);
+  }
+
+  const { data, error } = await supabase
+    .from('reviewer_profiles')
+    .select('*')
+    .eq('onboarding_status', 'pending_moderation')
+    .order('applied_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data || []).map(rowToModerationEntry);
+}
+
+export async function moderateReviewerApplication(moderatorId, reviewerId, decision, notes) {
+  if (!['approve', 'reject'].includes(decision)) {
+    throw new Error('decision must be approve or reject');
+  }
+
+  const now = new Date().toISOString();
+
+  if (isMockMode()) {
+    const row = mockProfiles.get(reviewerId);
+    if (!row || row.onboarding_status !== 'pending_moderation') {
+      throw new Error('No pending application for this reviewer');
+    }
+    const merged = {
+      ...row,
+      onboarding_status: decision === 'approve' ? 'certified' : 'suspended',
+      is_available: decision === 'approve',
+      certified_at: decision === 'approve' ? now : row.certified_at,
+      moderation_notes: notes || null,
+      moderated_by: moderatorId,
+      moderated_at: now,
+    };
+    mockProfiles.set(reviewerId, merged);
+    if (decision === 'approve') invalidateReviewerPoolCache();
+    await notifyReviewerModerationOutcome(reviewerId, decision);
+    return { application: rowToModerationEntry(merged), onboarding: rowToOnboarding(merged) };
+  }
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from('reviewer_profiles')
+    .select('*')
+    .eq('id', reviewerId)
+    .maybeSingle();
+  if (fetchErr) throw new Error(fetchErr.message);
+  if (!existing || existing.onboarding_status !== 'pending_moderation') {
+    throw new Error('No pending application for this reviewer');
+  }
+
+  const patch = {
+    onboarding_status: decision === 'approve' ? 'certified' : 'suspended',
+    is_available: decision === 'approve',
+    certified_at: decision === 'approve' ? now : existing.certified_at,
+    moderation_notes: notes || null,
+    moderated_by: moderatorId,
+    moderated_at: now,
+  };
+
+  const { data, error } = await supabase
+    .from('reviewer_profiles')
+    .update(patch)
+    .eq('id', reviewerId)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+
+  if (decision === 'approve') invalidateReviewerPoolCache();
+  await notifyReviewerModerationOutcome(reviewerId, decision);
+  return { application: rowToModerationEntry(data), onboarding: rowToOnboarding(data) };
 }
