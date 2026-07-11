@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   acceptReviewerAssignment,
+  declineReviewerAssignment,
   getAuthorReviewFeedback,
   getCouncilAuditQueue,
   getReviewerAssignmentsForSlot,
+  getReviewerDashboardStats,
   requestPeerReview,
   submitReviewerAssignment,
 } from './platformStore';
@@ -131,6 +133,27 @@ describe('platformStore reviewer assignments', () => {
     expect(bundles[0]?.submissions).toHaveLength(1);
     expect(bundles[0]?.request.structured_comments).toHaveLength(1);
     expect(bundles[0]?.submissions[0]?.review_summary?.overall_review).toContain('compelling');
+  });
+
+  it('declines invitation and frees pool slot', () => {
+    requestPeerReview({
+      authorId: 'author-decline',
+      storyId: 'story-d',
+      storyTitle: 'Decline Test',
+      mode: 'volunteer',
+      packageFeeInr: 0,
+    });
+    const invited = getReviewerAssignmentsForSlot('slot-1');
+    const first = invited.find((a) => a.status === 'invited');
+    declineReviewerAssignment(first!.id, 'slot-1');
+    const updated = getReviewerAssignmentsForSlot('slot-1').find((a) => a.id === first!.id);
+    expect(updated?.status).toBe('declined');
+  });
+
+  it('exposes reviewer dashboard stats', () => {
+    const stats = getReviewerDashboardStats('slot-1');
+    expect(stats.rqi).toBeGreaterThan(0);
+    expect(stats.slot).toBe('slot-1');
   });
 
   it('exposes admin audit queue', () => {

@@ -88,7 +88,10 @@ export interface ReviewerPoolMember {
   response_time_hours: number;
 }
 
+export type AuthorCommentResolution = 'pending' | 'accepted' | 'rejected' | 'deferred';
+
 export interface StructuredReviewComment {
+  id?: string;
   chapter_ref?: string;
   scene_ref?: string;
   paragraph_ref?: string;
@@ -102,6 +105,8 @@ export interface StructuredReviewComment {
   recommendation: string;
   expected_impact: string;
   reviewer_confidence: number;
+  author_resolution?: AuthorCommentResolution;
+  resolved_at?: string;
 }
 
 export interface ReviewSubmissionSummary {
@@ -148,7 +153,8 @@ export type ReviewerAssignmentStatus =
   | 'submitted'
   | 'validated'
   | 'paid_out'
-  | 'declined';
+  | 'declined'
+  | 'cancelled';
 
 export interface ReviewerAssignment {
   id: string;
@@ -166,7 +172,24 @@ export interface ReviewerAssignment {
   invited_at: string;
   accepted_at?: string;
   submitted_at?: string;
+  due_at?: string;
+  priority?: 'standard' | 'premium' | 'escalation';
   review_summary?: ReviewSubmissionSummary;
+}
+
+export interface ReviewerDashboardStats {
+  slot: string;
+  rqi: number;
+  councilLevel: string;
+  reputationTier: string;
+  reviewsCompleted: number;
+  reviewsInProgress: number;
+  invitationsPending: number;
+  avgTurnaroundHours: number;
+  acceptanceRate: number;
+  badges: string[];
+  draftCount: number;
+  overdueCount: number;
 }
 
 export type CouncilAuditStatus = 'pending' | 'cleared' | 'flagged' | 'appealed';

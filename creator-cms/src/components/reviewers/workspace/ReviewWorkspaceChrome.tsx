@@ -40,7 +40,7 @@ export function ReviewWorkspaceChrome({
   return (
     <header className="rw-chrome rw-chrome--immersive">
       <div className="rw-chrome__cluster">
-        <Link to="/reviewers" className="rw-chrome__back" aria-label="Back to Literary Council">
+        <Link to="/reviewers" className="rw-chrome__back" aria-label="Back to Reviewer Pool">
           <ArrowLeft size={17} aria-hidden />
         </Link>
         <div className="rw-chrome__title-block">

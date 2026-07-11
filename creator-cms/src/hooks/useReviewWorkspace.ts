@@ -219,6 +219,7 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
 
   const toStructuredComments = useCallback(() =>
     draft.comments.map((c) => ({
+      id: c.id,
       chapter_ref: `Chapter ${c.chapterNum}`,
       scene_ref: c.sceneId ? `Scene ${c.sceneId}` : undefined,
       paragraph_ref: `¶${c.paragraphIndex + 1}`,

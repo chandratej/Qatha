@@ -15,11 +15,14 @@ import {
   prepareReviewRequest,
   getCouncilAuditQueue,
   getLinkedReviewerSlot,
+  declineReviewerAssignment,
   getAuthorReviewFeedback,
   getPeerReviewRequestById,
   getPeerReviewRequests,
   getReviewerAssignmentById,
   getReviewerAssignmentsForSlot,
+  getReviewerDashboardStats,
+  resolveAuthorComment,
   startReviewerAssignment,
   getReviewerPool,
   getReviewerPoolSummary,
@@ -118,6 +121,26 @@ export const platformApi = {
     Promise.resolve({ requests: getPeerReviewRequests(authorId) }),
   getAuthorReviewFeedback: (authorId?: string) =>
     Promise.resolve({ bundles: getAuthorReviewFeedback(authorId) }),
+  getReviewerDashboardStats: (reviewerSlot: string) =>
+    Promise.resolve({ stats: getReviewerDashboardStats(reviewerSlot) }),
+  declineReviewerAssignment: (assignmentId: string, reviewerSlot: string) => {
+    try {
+      return Promise.resolve({ assignment: declineReviewerAssignment(assignmentId, reviewerSlot) });
+    } catch (e) {
+      return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  },
+  resolveAuthorComment: (
+    requestId: string,
+    commentId: string,
+    resolution: import('../types/platform').AuthorCommentResolution,
+  ) => {
+    try {
+      return Promise.resolve({ request: resolveAuthorComment(requestId, commentId, resolution) });
+    } catch (e) {
+      return Promise.reject(e instanceof Error ? e : new Error(String(e)));
+    }
+  },
   getReviewerPool: () => Promise.resolve({ pool: getReviewerPool() }),
   getReviewerPoolSummary: () => Promise.resolve(getReviewerPoolSummary()),
   getLinkedReviewerSlot: (userId?: string) =>

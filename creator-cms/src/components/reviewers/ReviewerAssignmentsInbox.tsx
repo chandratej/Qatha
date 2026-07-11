@@ -39,6 +39,20 @@ export function ReviewerAssignmentsInbox({ onAction }: Props) {
     platformApi.setLinkedReviewerSlot(next);
   };
 
+  const handleDecline = async (assignment: ReviewerAssignment) => {
+    setBusyId(assignment.id);
+    setError(null);
+    try {
+      await platformApi.declineReviewerAssignment(assignment.id, assignment.reviewer_slot);
+      reload();
+      onAction();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not decline');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const handleAccept = async (assignment: ReviewerAssignment) => {
     setBusyId(assignment.id);
     setError(null);
@@ -114,14 +128,24 @@ export function ReviewerAssignmentsInbox({ onAction }: Props) {
                     assignment={a}
                     variant="invite"
                     action={(
-                      <button
-                        type="button"
-                        className="katha-cta katha-cta--maroon"
-                        disabled={busyId === a.id}
-                        onClick={() => { void handleAccept(a); }}
-                      >
-                        {busyId === a.id ? 'Accepting…' : 'Accept & begin'}
-                      </button>
+                      <div className="reviewer-inbox__action-row">
+                        <button
+                          type="button"
+                          className="katha-cta katha-cta--maroon reviewer-inbox__primary-cta"
+                          disabled={busyId === a.id}
+                          onClick={() => { void handleAccept(a); }}
+                        >
+                          {busyId === a.id ? 'Accepting…' : 'Accept & begin'}
+                        </button>
+                        <button
+                          type="button"
+                          className="reviewer-inbox__secondary-cta"
+                          disabled={busyId === a.id}
+                          onClick={() => { void handleDecline(a); }}
+                        >
+                          Decline
+                        </button>
+                      </div>
                     )}
                   />
                 ))}
@@ -196,6 +220,14 @@ function AssignmentCard({
 }) {
   const role = PROFESSIONAL_REVIEW_ROLES.find((r) => r.id === a.professional_role)?.label ?? a.professional_role;
   const genre = GENRE_SPECIALIZATIONS.find((g) => g.id === a.story_genre)?.label ?? a.story_genre;
+  const due = a.due_at
+    ? (() => {
+      const hours = Math.round((new Date(a.due_at).getTime() - Date.now()) / 3600000);
+      if (hours < 0) return `${Math.abs(hours)}h overdue`;
+      if (hours < 48) return `${hours}h left`;
+      return `${Math.round(hours / 24)}d left`;
+    })()
+    : null;
 
   return (
     <li className={`reviewer-inbox__card reviewer-inbox__card--${variant}`}>
@@ -204,6 +236,7 @@ function AssignmentCard({
         <p className="reviewer-inbox__card-meta">
           {role} · {genre} · {a.matching_score}% match
           {a.mode === 'paid' ? ` · ₹${a.payout_inr}` : ' · volunteer'}
+          {due ? ` · ${due}` : ''}
         </p>
         <span className={`review-status review-status--${a.status}`}>{statusLabel(a.status)}</span>
       </div>

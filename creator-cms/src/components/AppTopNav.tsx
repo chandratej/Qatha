@@ -35,7 +35,7 @@ const CORE_NAV = [
   { to: '/events', label: 'Events', icon: Trophy, lab: false },
   { to: '/schedule', label: 'Schedule', icon: Calendar, lab: false },
   { to: '/community', label: 'Community', icon: Users, lab: false },
-  { to: '/reviewers', label: 'Reviewers', icon: BookOpenCheck, lab: false },
+  { to: '/reviewers', label: 'Reviewer Pool', icon: BookOpenCheck, lab: false },
   { to: '/monetization', label: 'Earn', icon: IndianRupee, lab: false },
 ] as const;
 

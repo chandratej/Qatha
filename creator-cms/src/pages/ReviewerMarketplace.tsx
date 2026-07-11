@@ -4,7 +4,10 @@ import type { PeerReviewRequest } from '../types/platform';
 import { AuthorFeedbackInbox } from '../components/reviewers/AuthorFeedbackInbox';
 import { ReviewRequestPanel } from '../components/reviewers/ReviewRequestPanel';
 import type { AuthorReviewFeedbackBundle } from '../lib/platformStore';
+import { ReviewerDashboard } from '../components/reviewers/ReviewerDashboard';
 import { ReviewerAssignmentsInbox } from '../components/reviewers/ReviewerAssignmentsInbox';
+import { ReviewerPoolBrowse } from '../components/reviewers/ReviewerPoolBrowse';
+import { ReviewerOnboardingPanel } from '../components/reviewers/ReviewerOnboardingPanel';
 import { CouncilAdminQueue } from '../components/reviewers/CouncilAdminQueue';
 import { ReviewDevSandboxPanel } from '../components/reviewers/ReviewDevSandboxPanel';
 import { CouncilHero } from '../components/reviewers/CouncilHero';
@@ -13,14 +16,14 @@ import { useAuth } from '../context/AuthContext';
 import { devSeedApplied, isReviewDevSandbox } from '../lib/reviewDevSandbox';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 
-type CouncilView = 'author' | 'reviewer' | 'admin';
+type PoolView = 'author' | 'reviewer' | 'pool' | 'admin';
 
 export function ReviewerMarketplace() {
   const { user } = useAuth();
   const authorId = user?.id || 'anonymous-creator';
   const isAdmin = user?.role === 'admin' || user?.role === 'moderator';
 
-  const [view, setView] = useState<CouncilView>('reviewer');
+  const [view, setView] = useState<PoolView>('reviewer');
   const [requests, setRequests] = useState<PeerReviewRequest[]>([]);
   const [feedbackBundles, setFeedbackBundles] = useState<AuthorReviewFeedbackBundle[]>([]);
   const [inboxCount, setInboxCount] = useState(0);
@@ -38,7 +41,7 @@ export function ReviewerMarketplace() {
   }, [authorId, user?.id]);
 
   useEffect(() => {
-    trackCreatorEvent('literary_council_view');
+    trackCreatorEvent('reviewer_pool_view');
     reload();
   }, [reload]);
 
@@ -67,13 +70,14 @@ export function ReviewerMarketplace() {
         isAdmin={isAdmin}
         onAuthorView={() => setView('author')}
         onReviewerView={() => setView('reviewer')}
+        onPoolView={() => setView('pool')}
         onAdminView={() => setView('admin')}
       />
 
-      <div className="literary-council-sanctuary__content">
+      <div className={`literary-council-sanctuary__content${view === 'pool' ? ' literary-council-sanctuary__content--wide' : ''}`}>
         {view === 'author' && (
           <div className="council-author-flow">
-            <AuthorFeedbackInbox bundles={feedbackBundles} />
+            <AuthorFeedbackInbox bundles={feedbackBundles} onResolve={reload} />
             <ReviewRequestPanel onRequested={reload} />
             <button
               type="button"
@@ -81,14 +85,24 @@ export function ReviewerMarketplace() {
               onClick={() => setShowDetails((v) => !v)}
               aria-expanded={showDetails}
             >
-              {showDetails ? 'Hide' : 'Learn about'} the Literary Council
+              {showDetails ? 'Hide' : 'Learn about'} the Reviewer Pool
             </button>
             {showDetails && <LiteraryCouncilPhilosophy />}
           </div>
         )}
 
         {view === 'reviewer' && (
-          <ReviewerAssignmentsInbox onAction={reload} />
+          <div className="reviewer-pool-workspace">
+            <ReviewerDashboard onAction={reload} />
+            <ReviewerAssignmentsInbox onAction={reload} />
+          </div>
+        )}
+
+        {view === 'pool' && (
+          <div className="reviewer-pool-discover">
+            <ReviewerOnboardingPanel />
+            <ReviewerPoolBrowse />
+          </div>
         )}
 
         {view === 'admin' && isAdmin && (

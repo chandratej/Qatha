@@ -185,7 +185,7 @@ function ReviewWorkspaceLoaded({
         },
       });
       clearReviewDraft(assignmentId);
-      navigate('/reviewers', { state: { message: 'Review submitted to Literary Council.' } });
+      navigate('/reviewers', { state: { message: 'Review submitted to the Reviewer Pool.' } });
     } catch (e) {
       ws.setError(e instanceof Error ? e.message : 'Submit failed');
       ws.updatePrefs({ bottomPanelCollapsed: false, focusMode: false });

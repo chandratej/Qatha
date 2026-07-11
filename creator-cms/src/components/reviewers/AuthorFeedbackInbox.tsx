@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   BookOpen, ChevronDown, MessageSquareQuote, ScrollText, Sparkles,
 } from 'lucide-react';
+import { platformApi } from '../../lib/platformApi';
 import type { AuthorReviewFeedbackBundle } from '../../lib/platformStore';
-import type { ReviewSubmissionSummary, StructuredReviewComment } from '../../types/platform';
+import type { AuthorCommentResolution, ReviewSubmissionSummary, StructuredReviewComment } from '../../types/platform';
 import { GENRE_SPECIALIZATIONS, REVIEW_DECISIONS } from '../../lib/platformConstants';
 
 function statusLabel(s: string) {
@@ -37,9 +38,10 @@ function commentLocation(c: StructuredReviewComment): string {
 
 interface Props {
   bundles: AuthorReviewFeedbackBundle[];
+  onResolve?: () => void;
 }
 
-export function AuthorFeedbackInbox({ bundles }: Props) {
+export function AuthorFeedbackInbox({ bundles, onResolve }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(() => {
     const ready = bundles.find((b) => hasReadableFeedback(b));
     return ready?.request.id ?? null;
@@ -63,7 +65,7 @@ export function AuthorFeedbackInbox({ bundles }: Props) {
         </div>
         <div className="author-feedback__empty">
           <p>No review requests yet.</p>
-          <p className="input-hint">Request a community review below to invite Literary Council readers.</p>
+          <p className="input-hint">Request a community review below to invite Reviewer Pool readers.</p>
         </div>
       </section>
     );
@@ -91,6 +93,7 @@ export function AuthorFeedbackInbox({ bundles }: Props) {
                 bundle={bundle}
                 expanded={expandedId === bundle.request.id}
                 onToggle={() => setExpandedId((id) => (id === bundle.request.id ? null : bundle.request.id))}
+                onResolve={onResolve}
               />
             ))}
           </ul>
@@ -135,12 +138,25 @@ function FeedbackCard({
   bundle,
   expanded,
   onToggle,
+  onResolve,
 }: {
   bundle: AuthorReviewFeedbackBundle;
   expanded: boolean;
   onToggle: () => void;
+  onResolve?: () => void;
 }) {
   const { request, submissions } = bundle;
+  const [busyComment, setBusyComment] = useState<string | null>(null);
+
+  const resolveComment = async (commentId: string, resolution: AuthorCommentResolution) => {
+    setBusyComment(commentId);
+    try {
+      await platformApi.resolveAuthorComment(request.id, commentId, resolution);
+      onResolve?.();
+    } finally {
+      setBusyComment(null);
+    }
+  };
   const comments = request.structured_comments ?? [];
   const pct = Math.round((request.reviews_received / Math.max(1, request.reviewers_matched)) * 100);
   const genre = GENRE_SPECIALIZATIONS.find((g) => g.id === request.story_genre)?.label ?? request.story_genre;
@@ -216,6 +232,42 @@ function FeedbackCard({
                       <p className="author-feedback__note-impact">
                         <strong>Impact:</strong> {c.expected_impact}
                       </p>
+                    )}
+                    {c.id && (
+                      <div className="author-feedback__note-actions">
+                        {c.author_resolution && c.author_resolution !== 'pending' ? (
+                          <span className={`author-feedback__resolution author-feedback__resolution--${c.author_resolution}`}>
+                            {c.author_resolution}
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="studio-chip"
+                              disabled={busyComment === c.id}
+                              onClick={() => { void resolveComment(c.id!, 'accepted'); }}
+                            >
+                              Accept suggestion
+                            </button>
+                            <button
+                              type="button"
+                              className="studio-chip"
+                              disabled={busyComment === c.id}
+                              onClick={() => { void resolveComment(c.id!, 'deferred'); }}
+                            >
+                              Defer
+                            </button>
+                            <button
+                              type="button"
+                              className="studio-chip"
+                              disabled={busyComment === c.id}
+                              onClick={() => { void resolveComment(c.id!, 'rejected'); }}
+                            >
+                              Decline
+                            </button>
+                          </>
+                        )}
+                      </div>
                     )}
                   </li>
                 ))}

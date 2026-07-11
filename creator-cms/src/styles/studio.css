@@ -4538,3 +4538,385 @@ button.studio-metric:focus-visible {
   font-size: 0.75rem;
   color: var(--ink-faint);
 }
+
+.literary-council-sanctuary__content--wide {
+  max-width: 920px;
+}
+
+.reviewer-pool-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.reviewer-pool-discover {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Reviewer dashboard — PRD 03 */
+.reviewer-dashboard {
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(107, 45, 60, 0.12);
+  background: linear-gradient(145deg, rgba(255, 252, 246, 0.98), rgba(248, 244, 236, 0.92));
+}
+
+.reviewer-dashboard__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.reviewer-dashboard__title {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--katha-maroon);
+}
+
+.reviewer-dashboard__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.reviewer-dashboard__availability {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-sage);
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: rgba(107, 133, 112, 0.1);
+}
+
+.reviewer-dashboard__avail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-sage);
+}
+
+.reviewer-dashboard__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reviewer-dashboard__kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--dash-paper);
+  border: 1px solid var(--dash-border);
+  color: var(--ink-muted);
+}
+
+.reviewer-dashboard__kpi-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--katha-maroon);
+}
+
+.reviewer-dashboard__kpi-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reviewer-dashboard__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--katha-gold-dark);
+}
+
+.reviewer-dashboard__alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(139, 58, 58, 0.08);
+  color: #8b3a3a;
+  font-size: 0.875rem;
+}
+
+.reviewer-dashboard__section {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.reviewer-dashboard__queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reviewer-dashboard__queue-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--dash-border);
+}
+
+.reviewer-dashboard__queue-item:last-child {
+  border-bottom: none;
+}
+
+.reviewer-dashboard__queue-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+.katha-cta--compact {
+  padding: 8px 14px;
+  font-size: 0.8125rem;
+}
+
+/* Pool browse — PRD marketplace discovery */
+.reviewer-pool-browse {
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid rgba(107, 45, 60, 0.1);
+  background: rgba(255, 252, 246, 0.95);
+}
+
+.reviewer-pool-browse__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.reviewer-pool-browse__title {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 1.25rem;
+  color: var(--katha-maroon);
+}
+
+.reviewer-pool-browse__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  max-width: 48ch;
+}
+
+.reviewer-pool-browse__shield {
+  color: var(--katha-gold-dark);
+}
+
+.reviewer-pool-browse__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.reviewer-pool-browse__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--dash-border);
+  background: var(--dash-paper);
+}
+
+.reviewer-pool-browse__search input {
+  border: none;
+  background: transparent;
+  flex: 1;
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.reviewer-pool-browse__grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 14px;
+}
+
+.reviewer-pool-browse__card {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(107, 45, 60, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.reviewer-pool-browse__card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reviewer-pool-browse__anon {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.reviewer-pool-browse__avail {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent-sage);
+}
+
+.reviewer-pool-browse__avail--busy {
+  color: var(--ink-muted);
+}
+
+.reviewer-pool-browse__role {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.reviewer-pool-browse__genres {
+  margin: 0 0 10px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.reviewer-pool-browse__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.reviewer-pool-browse__metrics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reviewer-pool-browse__level {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--katha-maroon);
+}
+
+.reviewer-pool-browse__note {
+  margin-top: 16px;
+}
+
+/* Reviewer onboarding — PRD 02 */
+.reviewer-onboarding {
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px dashed rgba(107, 45, 60, 0.2);
+  background: rgba(255, 252, 246, 0.9);
+}
+
+.reviewer-onboarding--done {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--accent-sage);
+}
+
+.reviewer-onboarding__head {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  color: var(--katha-maroon);
+}
+
+.reviewer-onboarding__intro {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+
+.reviewer-onboarding__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reviewer-onboarding__field span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.reviewer-onboarding__training {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.reviewer-onboarding__checklist {
+  margin: 12px 0 16px;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+.author-feedback__note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.author-feedback__resolution {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 100px;
+}
+
+.author-feedback__resolution--accepted {
+  background: rgba(107, 133, 112, 0.12);
+  color: var(--accent-sage);
+}
+
+.author-feedback__resolution--rejected {
+  background: rgba(139, 58, 58, 0.1);
+  color: #8b3a3a;
+}
+
+.author-feedback__resolution--deferred {
+  background: rgba(196, 160, 82, 0.12);
+  color: var(--katha-gold-dark);
+}

@@ -11,7 +11,9 @@ import type {
   CouncilAuditEntry,
   PeerReviewRequest,
   ReviewerAssignment,
+  ReviewerDashboardStats,
   ReviewerPoolMember,
+  StructuredReviewComment,
   TagRecord,
   TagRequest,
 } from '../types/platform';
@@ -36,8 +38,13 @@ import {
   type ReviewerCandidate,
 } from '../business/reviewerMatching';
 import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
+import { REVIEWERS_ASSIGNED_COUNT } from '../../../packages/shared/literary-council';
 import { REVIEW_PACKAGE } from '../../../packages/shared/reviewer-marketplace';
+import type { ReviewDecisionId } from '../../../packages/shared/reviewer-marketplace';
+import { computeReviewConsensus } from '../business/reviewConsensus';
 import { isReviewDevSandbox } from './reviewDevSandbox';
+import { REVIEW_SLA_DAYS, REVIEWERS_REQUIRED } from './reviewerPoolConstants';
+import { applyReputationToPoolMember, badgesForReviewer, reputationGainFromReview } from './reviewerReputation';
 
 const EVENTS_KEY = 'katha_platform_events';
 const REGS_KEY = 'katha_event_registrations';
@@ -640,16 +647,16 @@ export function requestPeerReview(opts: {
     throw new Error('Reviewer pool is temporarily thin — try again later or broaden specializations');
   }
 
-  const { assigned } = matchReviewersForRequest(poolCandidates, {
+  const { assigned, invited } = matchReviewersForRequest(poolCandidates, {
     storyGenre,
     authorTrustLevel: authorTrust,
     preferredRoles,
   });
-  if (assigned.length < REVIEW_PACKAGE.reviewerCount) {
+  if (assigned.length < REVIEWERS_REQUIRED) {
     throw new Error('Not enough reviewers match your preferences — try fewer specializations');
   }
 
-  const matchedIds = new Set(assigned.map((m) => m.reviewer.id));
+  const matchedIds = new Set(invited.map((m) => m.reviewer.id));
   const updatedPool = pool.map((m) =>
     matchedIds.has(m.id) ? { ...m, is_available: false } : m,
   );
@@ -676,7 +683,7 @@ export function requestPeerReview(opts: {
     double_blind: true,
     escrow_status: paid ? 'held' : 'none',
     reviews_received: 0,
-    reviewers_matched: assigned.length,
+    reviewers_matched: REVIEWERS_REQUIRED,
     matching_avg_score: matchingAvg,
     sqi_before: sqiBefore,
     platform_fee_inr: platformFee,
@@ -689,7 +696,7 @@ export function requestPeerReview(opts: {
   request.fraud_risk_score = computeFraudRiskScore(request);
 
   const payoutEachInr = reviewerPayoutEach(fee);
-  const assignments = createAssignmentsForRequest(request, assigned, pool, payoutEachInr);
+  const assignments = createAssignmentsForRequest(request, invited, pool, payoutEachInr);
 
   const requests = loadPeerReviewRequests();
   requests.unshift(request);
@@ -719,19 +726,26 @@ function blindManuscriptLabel(requestId: string): string {
   return `Manuscript #${requestId.slice(-6).toUpperCase()}`;
 }
 
+function slaDueAt(fromIso: string): string {
+  const d = new Date(fromIso);
+  d.setDate(d.getDate() + REVIEW_SLA_DAYS);
+  return d.toISOString();
+}
+
 function createAssignmentsForRequest(
   request: PeerReviewRequest,
-  assigned: Array<{ reviewer: { id: string }; matchingScore: number }>,
+  invited: Array<{ reviewer: { id: string }; matchingScore: number }>,
   _pool: ReviewerPoolMember[],
   payoutEachInr: number,
 ): ReviewerAssignment[] {
   const now = new Date().toISOString();
-  return assigned.map((a, i) => {
+  const due = slaDueAt(now);
+  const priority = request.mode === 'paid' ? 'premium' as const : 'standard' as const;
+  return invited.map((a, i) => {
     return {
       id: `asgn-${request.id}-${i}`,
       request_id: request.id,
       reviewer_pool_id: a.reviewer.id,
-      /** Council invitation slots 1–3 (demo inbox); distinct from reviewer pool_slot */
       reviewer_slot: `slot-${i + 1}`,
       matching_score: a.matchingScore,
       status: 'invited',
@@ -741,8 +755,28 @@ function createAssignmentsForRequest(
       mode: request.mode,
       payout_inr: payoutEachInr,
       invited_at: now,
+      due_at: due,
+      priority,
     };
   });
+}
+
+const ACTIVE_ASSIGNMENT_STATUSES = new Set<ReviewerAssignment['status']>([
+  'accepted', 'in_review', 'submitted', 'validated', 'paid_out',
+]);
+
+function activeAssignmentsForRequest(rows: ReviewerAssignment[], requestId: string): number {
+  return rows.filter((a) => a.request_id === requestId && ACTIVE_ASSIGNMENT_STATUSES.has(a.status)).length;
+}
+
+function tagStructuredComments(
+  comments: PeerReviewRequest['structured_comments'],
+): StructuredReviewComment[] {
+  return (comments ?? []).map((c, i) => ({
+    ...c,
+    id: c.id ?? `cmt-${Date.now()}-${i}`,
+    author_resolution: c.author_resolution ?? 'pending',
+  }));
 }
 
 function computeFraudRiskScore(request: PeerReviewRequest): number {
@@ -815,6 +849,11 @@ export function acceptReviewerAssignment(assignmentId: string, reviewerSlot: str
   }
   if (row.status !== 'invited') throw new Error('Assignment already actioned');
 
+  const active = activeAssignmentsForRequest(rows, row.request_id);
+  if (active >= REVIEWERS_ASSIGNED_COUNT) {
+    throw new Error('This review package already has enough reviewers — invitation expired');
+  }
+
   const updated: ReviewerAssignment = {
     ...row,
     status: 'accepted',
@@ -827,13 +866,37 @@ export function acceptReviewerAssignment(assignmentId: string, reviewerSlot: str
   const reqIdx = requests.findIndex((r) => r.id === row.request_id);
   if (reqIdx >= 0) {
     const req = requests[reqIdx]!;
-    const acceptedCount = rows.filter(
-      (a) => a.request_id === req.id && ['accepted', 'in_review', 'submitted', 'validated', 'paid_out'].includes(a.status),
-    ).length;
+    const acceptedCount = activeAssignmentsForRequest(rows, req.id);
     if (acceptedCount >= 1) {
       requests[reqIdx] = { ...req, status: 'in_review' };
       savePeerReviewRequests(requests);
     }
+  }
+  return updated;
+}
+
+export function declineReviewerAssignment(assignmentId: string, reviewerSlot: string): ReviewerAssignment {
+  const rows = loadReviewerAssignments();
+  const idx = rows.findIndex((a) => a.id === assignmentId);
+  if (idx < 0) throw new Error('Assignment not found');
+  const row = rows[idx]!;
+  if (row.reviewer_slot !== reviewerSlot) {
+    throw new Error('This invitation is assigned to a different reviewer slot');
+  }
+  if (row.status !== 'invited') throw new Error('Only pending invitations can be declined');
+
+  const updated: ReviewerAssignment = {
+    ...row,
+    status: 'declined',
+  };
+  rows[idx] = updated;
+  saveReviewerAssignments(rows);
+
+  const pool = loadReviewerPool();
+  const poolIdx = pool.findIndex((m) => m.id === row.reviewer_pool_id);
+  if (poolIdx >= 0) {
+    pool[poolIdx] = { ...pool[poolIdx]!, is_available: true };
+    saveReviewerPool(pool);
   }
   return updated;
 }
@@ -873,26 +936,127 @@ export function submitReviewerAssignment(
   rows[idx] = updated;
   saveReviewerAssignments(rows);
 
+  const submittedBeforeDue = row.due_at
+    ? new Date().toISOString() <= row.due_at
+    : true;
+  const commentsCount = payload?.structured_comments?.length ?? 0;
+  const pool = loadReviewerPool();
+  const poolIdx = pool.findIndex((m) => m.id === row.reviewer_pool_id);
+  if (poolIdx >= 0) {
+    const gain = reputationGainFromReview({
+      commentsCount,
+      submittedBeforeDue,
+      hasSummary: Boolean(payload?.review_summary?.overall_review),
+    });
+    pool[poolIdx] = applyReputationToPoolMember(pool[poolIdx]!, gain);
+    saveReviewerPool(pool);
+  }
+
   const requests = loadPeerReviewRequests();
   const reqIdx = requests.findIndex((r) => r.id === row.request_id);
   if (reqIdx >= 0) {
     const req = requests[reqIdx]!;
-    const submitted = rows.filter((a) => a.request_id === req.id && a.status === 'submitted').length;
-    const mergedComments = [
+    const submittedRows = rows.filter((a) => a.request_id === req.id && a.status === 'submitted');
+    const submitted = submittedRows.length;
+    const mergedComments = tagStructuredComments([
       ...(req.structured_comments ?? []),
       ...(payload?.structured_comments ?? []),
-    ];
+    ]);
+    const opinions = submittedRows
+      .filter((a) => a.review_summary?.majority_decision)
+      .map((a) => ({
+        reviewer_slot: a.reviewer_slot,
+        decision: a.review_summary!.majority_decision as ReviewDecisionId,
+        confidence: 80,
+        summary: a.review_summary!.overall_review,
+      }));
+    const consensus = computeReviewConsensus(opinions);
     requests[reqIdx] = {
       ...req,
       structured_comments: mergedComments,
-      majority_decision: payload?.majority_decision ?? req.majority_decision,
+      majority_decision: submitted >= REVIEWERS_REQUIRED
+        ? (consensus.majorityDecision ?? payload?.majority_decision ?? req.majority_decision)
+        : (payload?.majority_decision ?? req.majority_decision),
       reviews_received: submitted,
-      status: submitted >= REVIEW_PACKAGE.reviewerCount ? 'decision_ready' : 'in_review',
-      consensus_pct: submitted >= REVIEW_PACKAGE.reviewerCount ? 78 : undefined,
+      status: submitted >= REVIEWERS_REQUIRED ? 'decision_ready' : 'in_review',
+      consensus_pct: submitted >= REVIEWERS_REQUIRED ? consensus.consensusPct : undefined,
     };
     savePeerReviewRequests(requests);
   }
   return updated;
+}
+
+export function resolveAuthorComment(
+  requestId: string,
+  commentId: string,
+  resolution: StructuredReviewComment['author_resolution'],
+): PeerReviewRequest {
+  const requests = loadPeerReviewRequests();
+  const idx = requests.findIndex((r) => r.id === requestId);
+  if (idx < 0) throw new Error('Review request not found');
+  const req = requests[idx]!;
+  const comments = tagStructuredComments(req.structured_comments);
+  const cIdx = comments.findIndex((c) => c.id === commentId);
+  if (cIdx < 0) throw new Error('Comment not found');
+  comments[cIdx] = {
+    ...comments[cIdx]!,
+    author_resolution: resolution ?? 'pending',
+    resolved_at: new Date().toISOString(),
+  };
+  requests[idx] = { ...req, structured_comments: comments };
+  savePeerReviewRequests(requests);
+  return requests[idx]!;
+}
+
+export function getReviewerDashboardStats(reviewerSlot: string): ReviewerDashboardStats {
+  const pool = loadReviewerPool();
+  const member = pool.find((p) => p.pool_slot === reviewerSlot) ?? pool[0];
+  const assignments = getReviewerAssignmentsForSlot(reviewerSlot);
+  const completed = assignments.filter((a) => ['submitted', 'validated', 'paid_out'].includes(a.status));
+  const inProgress = assignments.filter((a) => ['accepted', 'in_review'].includes(a.status));
+  const pending = assignments.filter((a) => a.status === 'invited');
+  const overdue = inProgress.filter((a) => a.due_at && new Date(a.due_at) < new Date());
+
+  let draftCount = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('katha_review_workspace_')) continue;
+      const assignmentId = key.replace('katha_review_workspace_', '');
+      if (assignments.some((a) => a.id === assignmentId && ['accepted', 'in_review'].includes(a.status))) {
+        draftCount += 1;
+      }
+    }
+  } catch { /* ignore */ }
+
+  const accepted = assignments.filter((a) => a.status !== 'invited' && a.status !== 'declined').length;
+  const offered = assignments.filter((a) => a.status !== 'cancelled').length;
+  const acceptanceRate = offered > 0 ? Math.round((accepted / offered) * 100) : 0;
+
+  const turnaroundSamples = completed
+    .filter((a) => a.accepted_at && a.submitted_at)
+    .map((a) => (new Date(a.submitted_at!).getTime() - new Date(a.accepted_at!).getTime()) / 3600000);
+  const avgTurnaroundHours = turnaroundSamples.length
+    ? Math.round(turnaroundSamples.reduce((s, h) => s + h, 0) / turnaroundSamples.length)
+    : 0;
+
+  const rqi = member?.rqi ?? 62;
+  const reviewCount = member?.review_experience_count ?? 0;
+
+  return {
+    slot: reviewerSlot,
+    rqi,
+    councilLevel: member?.council_level ?? 'certified_reviewer',
+    reputationTier: member?.reputation_tier ?? 'bronze',
+    reviewsCompleted: completed.length,
+    reviewsInProgress: inProgress.length,
+    invitationsPending: pending.length,
+    avgTurnaroundHours,
+    acceptanceRate,
+    badges: badgesForReviewer(reviewCount, rqi),
+    draftCount,
+    overdueCount: overdue.length,
+  };
 }
 
 export function getCouncilAuditQueue(): CouncilAuditEntry[] {
