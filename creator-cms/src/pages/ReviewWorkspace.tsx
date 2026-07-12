@@ -37,7 +37,7 @@ export function ReviewWorkspace() {
       .getReviewerAssignment(assignmentId)
       .then(async ({ assignment: a, request: r }) => {
         if (!['accepted', 'in_review', 'submitted'].includes(a.status)) {
-          throw new Error('Open the review workspace after accepting the invitation.');
+          throw new Error('OPEN_AFTER_ACCEPT');
         }
         platformApi.setLinkedReviewerSlot(a.reviewer_slot);
         let current = a;
@@ -50,10 +50,18 @@ export function ReviewWorkspace() {
           setRequest(r);
         }
       })
-      .catch((e) => { if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to load assignment'); })
+      .catch((e) => {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : '';
+        setLoadError(
+          msg === 'OPEN_AFTER_ACCEPT'
+            ? t('reviewWorkspace.openAfterAccept')
+            : (e instanceof Error ? e.message : t('reviewWorkspace.loadFailed')),
+        );
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [assignmentId, user?.id]);
+  }, [assignmentId, user?.id, t]);
 
   if (loading) {
     return (
@@ -66,8 +74,8 @@ export function ReviewWorkspace() {
   if (loadError || !assignment || !request) {
     return (
       <div className="rw-shell rw-shell--premium rw-shell--error" data-katha-mode="creation">
-        <p className="cms-error-text">{loadError ?? 'Assignment not found'}</p>
-        <Link to="/reviewers" className="katha-cta katha-cta--soft">Back to inbox</Link>
+        <p className="cms-error-text">{loadError ?? t('reviewWorkspace.assignmentNotFound')}</p>
+        <Link to="/reviewers" className="katha-cta katha-cta--soft">{t('reviewWorkspace.backToInbox')}</Link>
       </div>
     );
   }
@@ -168,11 +176,11 @@ function ReviewWorkspaceLoaded({
 
   const handleSubmit = useCallback(async () => {
     if (isSubmitted) {
-      ws.setError('This review was already submitted.');
+      ws.setError(t('reviewWorkspace.alreadySubmitted'));
       return;
     }
     if (!ws.draft.summary.decision) {
-      ws.setError('Select a council decision before submitting.');
+      ws.setError(t('reviewWorkspace.selectDecision'));
       ws.updatePrefs({ bottomPanelCollapsed: false, focusMode: false });
       return;
     }
@@ -193,23 +201,23 @@ function ReviewWorkspaceLoaded({
       clearReviewDraft(assignmentId);
       navigate('/reviewers', { state: { message: 'Review submitted to the Reviewer Pool.' } });
     } catch (e) {
-      ws.setError(e instanceof Error ? e.message : 'Submit failed');
+      ws.setError(e instanceof Error ? e.message : t('reviewWorkspace.submitFailed'));
       ws.updatePrefs({ bottomPanelCollapsed: false, focusMode: false });
     } finally {
       ws.setSubmitting(false);
     }
-  }, [ws, assignmentId, reviewerSlot, navigate, isSubmitted]);
+  }, [ws, assignmentId, reviewerSlot, navigate, isSubmitted, t]);
 
   const commands = useMemo(() => [
-    { id: 'save', label: 'Save draft', shortcut: '⌘S', run: () => ws.saveDraftNow() },
-    { id: 'nav', label: 'Toggle chapters', run: () => ws.updatePrefs({ leftPanelCollapsed: !navOpen, focusMode: false }) },
-    { id: 'notes', label: 'Toggle notes', run: () => ws.updatePrefs({ rightPanelCollapsed: !notesOpen, focusMode: false }) },
-    { id: 'finish', label: 'Finish review', run: () => ws.updatePrefs({ bottomPanelCollapsed: false, focusMode: false }) },
-    { id: 'palette', label: 'Command palette', shortcut: '⌘K', run: () => setPaletteOpen(true) },
-    { id: 'submit', label: 'Submit review', run: () => { void handleSubmit(); } },
-    { id: 'ch-next', label: 'Next chapter', run: () => goChapter(1) },
-    { id: 'ch-prev', label: 'Previous chapter', run: () => goChapter(-1) },
-  ], [ws, navOpen, notesOpen, goChapter, handleSubmit]);
+    { id: 'save', label: t('reviewWorkspace.cmdSaveDraft'), shortcut: '⌘S', run: () => ws.saveDraftNow() },
+    { id: 'nav', label: t('reviewWorkspace.cmdToggleChapters'), run: () => ws.updatePrefs({ leftPanelCollapsed: !navOpen, focusMode: false }) },
+    { id: 'notes', label: t('reviewWorkspace.cmdToggleNotes'), run: () => ws.updatePrefs({ rightPanelCollapsed: !notesOpen, focusMode: false }) },
+    { id: 'finish', label: t('reviewWorkspace.cmdFinish'), run: () => ws.updatePrefs({ bottomPanelCollapsed: false, focusMode: false }) },
+    { id: 'palette', label: t('reviewWorkspace.cmdPalette'), shortcut: '⌘K', run: () => setPaletteOpen(true) },
+    { id: 'submit', label: t('reviewWorkspace.cmdSubmit'), run: () => { void handleSubmit(); } },
+    { id: 'ch-next', label: t('reviewWorkspace.cmdNextChapter'), run: () => goChapter(1) },
+    { id: 'ch-prev', label: t('reviewWorkspace.cmdPrevChapter'), run: () => goChapter(-1) },
+  ], [ws, navOpen, notesOpen, goChapter, handleSubmit, t]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -311,7 +319,7 @@ function ReviewWorkspaceLoaded({
         />
 
       {sheetOpen && (
-        <button type="button" className="rw-backdrop" aria-label="Close panels" onClick={closeSheets} />
+        <button type="button" className="rw-backdrop" aria-label={t('reviewWorkspace.closePanels')} onClick={closeSheets} />
       )}
 
       {navOpen && (
@@ -385,8 +393,8 @@ function ReviewWorkspaceLoaded({
         >
           <PenLine size={14} aria-hidden />
           {ws.draft.comments.length > 0
-            ? `Finish review · ${ws.draft.comments.length} notes`
-            : 'Finish & submit review'}
+            ? `${t('reviewWorkspace.cmdFinish')} · ${ws.draft.comments.length}`
+            : t('reviewWorkspace.finishSubmit')}
         </button>
       )}
 

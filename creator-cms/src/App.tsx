@@ -54,6 +54,8 @@ import './styles/secondary-pages-premium.css';
 import './styles/alternate-editors-premium.css';
 import './styles/hub-pages-premium.css';
 import './styles/layout-rhythm-v2.css';
+import './styles/empty-state-system.css';
+import './styles/cohesion-wave12.css';
 
 function App() {
   return (

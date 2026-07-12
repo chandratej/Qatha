@@ -94,7 +94,7 @@ export function Onboarding() {
   const completedCount = steps.filter((s) => s.done).length;
 
   return (
-    <div className="cms-auth-page">
+    <div className="cms-auth-page cms-auth-page--v2 wc-page-enter">
       <div className="cms-auth-page__theme">
         <button type="button" className="btn btn-ghost" onClick={toggleLocale} aria-label={t('nav.languageToggleAria')}>
           {t('nav.languageToggle')}
@@ -112,7 +112,7 @@ export function Onboarding() {
           <div className="cms-onboarding-progress" aria-label={`${completedCount} / ${steps.length}`}>
             <div className="cms-onboarding-progress__track">
               <span
-                className="cms-onboarding-progress__fill"
+                className="cms-onboarding-progress__fill wc-progress-delight"
                 style={{ width: `${(completedCount / steps.length) * 100}%` }}
               />
             </div>

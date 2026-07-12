@@ -206,15 +206,17 @@ export function EventDetail() {
   const isDebut = event.event_type === 'debut_season';
 
   return (
-    <div className="cms-page studio-page event-detail-page event-detail-page--premium">
+    <div className="cms-page studio-page event-detail-page event-detail-page--premium event-detail-page--streamlined wc-page-enter">
       <BackLink to="/events" label={t('events.title')} />
       <StudioPageHeader
+        variant="hero"
         title={event.title}
         subtitle={event.description}
         eyebrow={isDebut ? t('events.debutSeasonEyebrow') : t('events.creativeContest')}
         eyebrowIcon={Trophy}
       />
 
+      <div className="wc-stagger-children">
       <EventProgressStepper steps={progressSteps} />
 
       {(regDeadline || subDeadline || resultsDate) && (
@@ -401,6 +403,7 @@ export function EventDetail() {
             ))}
           </ul>
         </section>
+      </div>
       </div>
     </div>
   );

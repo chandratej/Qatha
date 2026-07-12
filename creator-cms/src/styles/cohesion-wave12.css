@@ -1,0 +1,114 @@
+/**
+ * Wave 12 cohesion — Schedule, Event Detail, Auth v2
+ */
+
+/* Schedule atmospheric + motion */
+.schedule-studio-page--premium {
+  position: relative;
+  z-index: 1;
+}
+
+.schedule-studio-page--premium::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: var(--wc-paper-texture);
+  opacity: 0.88;
+}
+
+.schedule-studio-page--premium .schedule-layout--calendar {
+  gap: 22px;
+}
+
+.schedule-studio-page--premium .schedule-calendar__cell--today {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--katha-gold) 45%, transparent);
+}
+
+.schedule-studio-page--premium .schedule-field--pro .cms-select,
+.schedule-studio-page--premium .schedule-field--pro input {
+  border-radius: 12px;
+  border: 1.5px solid var(--premium-border);
+  min-height: 44px;
+}
+
+/* Event detail streamlined */
+.event-detail-page--streamlined .platform-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.event-detail-page--streamlined .event-deadlines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: color-mix(in srgb, var(--katha-gold) 5%, var(--premium-surface));
+  border: 1px solid var(--premium-border);
+}
+
+.event-detail-page--streamlined .event-deadline {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.event-detail-page--streamlined .event-progress-stepper {
+  margin-bottom: 18px;
+}
+
+.event-detail-page--premium.event-detail-page--streamlined {
+  position: relative;
+  z-index: 1;
+}
+
+.event-detail-page--streamlined::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: var(--wc-paper-texture);
+  opacity: 0.88;
+}
+
+/* Auth v2 — login + onboarding */
+.cms-auth-page--v2 .cms-auth-card {
+  border-radius: var(--wc-radius-xl, 24px);
+  box-shadow:
+    var(--premium-shadow-modal),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+.cms-auth-page--v2 .cms-auth-card__logo {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--katha-maroon) 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cms-auth-page--v2 .cms-auth-cta.dashboard-cta {
+  background: linear-gradient(135deg, var(--katha-maroon), color-mix(in srgb, var(--katha-maroon) 85%, #000));
+  box-shadow: 0 6px 24px rgba(107, 35, 56, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cms-auth-page--v2 .cms-auth-cta.dashboard-cta:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 32px rgba(107, 35, 56, 0.34);
+}
+
+.cms-auth-page--v2 .cms-onboarding-progress__fill {
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cms-auth-page--v2 .cms-onboarding-step--current {
+  background: color-mix(in srgb, var(--katha-gold) 5%, var(--premium-surface));
+}

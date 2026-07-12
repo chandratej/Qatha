@@ -251,15 +251,16 @@ export function Schedule() {
   const loading = storiesLoading || scheduledLoading;
 
   return (
-    <div className="cms-page studio-page schedule-studio-page schedule-studio-page--premium">
+    <div className="cms-page studio-page schedule-studio-page schedule-studio-page--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('schedule.eyebrow')}
         eyebrowIcon={Calendar}
         title={t('schedule.title')}
         subtitle={t('schedule.subtitle')}
       />
 
-      <div className="schedule-layout schedule-layout--calendar">
+      <div className="schedule-layout schedule-layout--calendar wc-stagger-children">
         <section className="cms-panel schedule-form-panel schedule-form-panel--pro">
           <div className="schedule-form-panel__intro">
             <div className="schedule-form-panel__icon" aria-hidden>
@@ -279,7 +280,7 @@ export function Schedule() {
           )}
 
           {!storiesLoading && stories.length === 0 && (
-            <div className="studio-empty schedule-empty-state">
+            <div className="studio-empty studio-empty--v2 schedule-empty-state">
               <div className="studio-empty__glyph" aria-hidden><BookOpen size={28} /></div>
               <h3 className="studio-empty__title">{t('schedule.noScheduled')}</h3>
               <p className="studio-empty__text">{t('schedule.emptyStories')}</p>

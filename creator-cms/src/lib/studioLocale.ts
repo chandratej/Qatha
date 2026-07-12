@@ -645,6 +645,29 @@ export type StudioStringKey =
   | 'reviewWorkspace.toggleSummary'
   | 'reviewWorkspace.loading'
   | 'reviewWorkspace.opening'
+  | 'reviewWorkspace.assignmentNotFound'
+  | 'reviewWorkspace.backToInbox'
+  | 'reviewWorkspace.openAfterAccept'
+  | 'reviewWorkspace.loadFailed'
+  | 'reviewWorkspace.alreadySubmitted'
+  | 'reviewWorkspace.selectDecision'
+  | 'reviewWorkspace.submitFailed'
+  | 'reviewWorkspace.closePanels'
+  | 'reviewWorkspace.finishSubmit'
+  | 'reviewWorkspace.cmdSaveDraft'
+  | 'reviewWorkspace.cmdToggleChapters'
+  | 'reviewWorkspace.cmdToggleNotes'
+  | 'reviewWorkspace.cmdFinish'
+  | 'reviewWorkspace.cmdPalette'
+  | 'reviewWorkspace.cmdSubmit'
+  | 'reviewWorkspace.cmdNextChapter'
+  | 'reviewWorkspace.cmdPrevChapter'
+  | 'reviewWorkspace.toolbarAria'
+  | 'reviewWorkspace.toolbarLess'
+  | 'reviewWorkspace.toolbarMore'
+  | 'reviewWorkspace.toolbarComment'
+  | 'reviewWorkspace.toolbarSuggest'
+  | 'reviewWorkspace.toolbarCritical'
   | 'dashboard.debutEyebrow'
   | 'dashboard.debutTitle'
   | 'dashboard.debutHint'
@@ -1301,6 +1324,29 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'reviewWorkspace.toggleSummary': 'సారాంశం',
     'reviewWorkspace.loading': 'గ్రంథం లోడ్ అవుతోంది…',
     'reviewWorkspace.opening': 'గ్రంథం తెరుస్తోంది…',
+    'reviewWorkspace.assignmentNotFound': 'అసైన్‌మెంట్ కనుగొనబడలేదు',
+    'reviewWorkspace.backToInbox': 'ఇన్‌బాక్స్‌కు వెనక్కి',
+    'reviewWorkspace.openAfterAccept': 'ఆహ్వానం అంగీకరించిన తర్వాత సమీక్ష వర్క్‌స్పేస్ తెరవండి.',
+    'reviewWorkspace.loadFailed': 'అసైన్‌మెంట్ లోడ్ చేయలేకపోయాం',
+    'reviewWorkspace.alreadySubmitted': 'ఈ సమీక్ష ఇప్పటికే సమర్పించబడింది.',
+    'reviewWorkspace.selectDecision': 'సమర్పించే ముందు మండలి నిర్ణయం ఎంచుకోండి.',
+    'reviewWorkspace.submitFailed': 'సమర్పణ విఫలమైంది',
+    'reviewWorkspace.closePanels': 'ప్యానెల్‌లు మూసివేయండి',
+    'reviewWorkspace.finishSubmit': 'పూర్తి చేసి సమర్పించండి',
+    'reviewWorkspace.cmdSaveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'reviewWorkspace.cmdToggleChapters': 'అధ్యాయాలు టాగిల్',
+    'reviewWorkspace.cmdToggleNotes': 'గమనికలు టాగిల్',
+    'reviewWorkspace.cmdFinish': 'సమీక్ష పూర్తి',
+    'reviewWorkspace.cmdPalette': 'కమాండ్ పాలెట్',
+    'reviewWorkspace.cmdSubmit': 'సమీక్ష సమర్పించండి',
+    'reviewWorkspace.cmdNextChapter': 'తదుపరి అధ్యాయం',
+    'reviewWorkspace.cmdPrevChapter': 'మునుపటి అధ్యాయం',
+    'reviewWorkspace.toolbarAria': 'ఎంచుకున్న పాసేజ్‌కు సమీక్ష',
+    'reviewWorkspace.toolbarLess': 'తక్కువ',
+    'reviewWorkspace.toolbarMore': 'మరిన్ని…',
+    'reviewWorkspace.toolbarComment': 'వ్యాఖ్య',
+    'reviewWorkspace.toolbarSuggest': 'సూచన',
+    'reviewWorkspace.toolbarCritical': 'క్రిటికల్',
     'dashboard.debutEyebrow': 'అవతరణ కాలం',
     'dashboard.debutTitle': 'మీ మొదటి నవల — గౌరవ మార్గం',
     'dashboard.debutHint': '50 అధ్యాయాలు పూర్తి చేసి Debut Author బ్యాడ్జ్ పొందండి — తర్వాత మోనెటైజేషన్ & పోటీలు.',
@@ -1954,6 +2000,29 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'reviewWorkspace.toggleSummary': 'Toggle review summary',
     'reviewWorkspace.loading': 'Loading manuscript…',
     'reviewWorkspace.opening': 'Opening manuscript…',
+    'reviewWorkspace.assignmentNotFound': 'Assignment not found',
+    'reviewWorkspace.backToInbox': 'Back to inbox',
+    'reviewWorkspace.openAfterAccept': 'Open the review workspace after accepting the invitation.',
+    'reviewWorkspace.loadFailed': 'Failed to load assignment',
+    'reviewWorkspace.alreadySubmitted': 'This review was already submitted.',
+    'reviewWorkspace.selectDecision': 'Select a council decision before submitting.',
+    'reviewWorkspace.submitFailed': 'Submit failed',
+    'reviewWorkspace.closePanels': 'Close panels',
+    'reviewWorkspace.finishSubmit': 'Finish & submit review',
+    'reviewWorkspace.cmdSaveDraft': 'Save draft',
+    'reviewWorkspace.cmdToggleChapters': 'Toggle chapters',
+    'reviewWorkspace.cmdToggleNotes': 'Toggle notes',
+    'reviewWorkspace.cmdFinish': 'Finish review',
+    'reviewWorkspace.cmdPalette': 'Command palette',
+    'reviewWorkspace.cmdSubmit': 'Submit review',
+    'reviewWorkspace.cmdNextChapter': 'Next chapter',
+    'reviewWorkspace.cmdPrevChapter': 'Previous chapter',
+    'reviewWorkspace.toolbarAria': 'Review selected passage',
+    'reviewWorkspace.toolbarLess': 'Less',
+    'reviewWorkspace.toolbarMore': 'More…',
+    'reviewWorkspace.toolbarComment': 'Comment',
+    'reviewWorkspace.toolbarSuggest': 'Suggest',
+    'reviewWorkspace.toolbarCritical': 'Critical',
     'dashboard.debutEyebrow': 'Debut Season',
     'dashboard.debutTitle': 'Your first novel — the prestige path',
     'dashboard.debutHint': 'Complete 50 chapters to earn the Debut Author badge — then monetization and contests unlock.',

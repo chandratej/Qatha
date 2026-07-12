@@ -1,0 +1,63 @@
+/**
+ * Unified empty-state system — Wave 12
+ * Consistent glyph ring, typography, and CTA placement
+ */
+
+.studio-empty--v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: clamp(32px, 5vw, 48px) clamp(20px, 4vw, 32px);
+  border-radius: var(--wc-radius-xl, 24px);
+  background: color-mix(in srgb, var(--katha-gold) 4%, var(--premium-surface, var(--surface)));
+  border: 1px dashed color-mix(in srgb, var(--katha-gold) 28%, var(--premium-border, var(--dash-border)));
+  box-shadow: var(--premium-shadow-rest, var(--shadow-sm));
+}
+
+.studio-empty--v2 .studio-empty__glyph {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--katha-maroon) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 25%, transparent);
+  color: var(--katha-maroon);
+  box-shadow: 0 8px 28px rgba(107, 35, 56, 0.1);
+}
+
+.studio-empty--v2 .studio-empty__title {
+  font-size: clamp(1.125rem, 2.5vw, 1.375rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.studio-empty--v2 .studio-empty__title-te {
+  font-size: 1rem;
+  color: var(--katha-maroon);
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+
+.studio-empty--v2 .studio-empty__text {
+  max-width: 42ch;
+  margin: 0 0 20px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.studio-empty--v2 .studio-empty__cta,
+.studio-empty--v2 .katha-cta {
+  margin-top: 4px;
+}
+
+.studio-empty--v2.studio-empty--compact {
+  padding: 24px 20px;
+}
+
+.studio-empty--v2.studio-empty--inline {
+  margin: 16px 0;
+}
