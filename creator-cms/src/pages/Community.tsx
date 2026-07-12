@@ -35,10 +35,11 @@ export function Community() {
   }, [reloadFeed]);
 
   return (
-    <div className="cms-page studio-page community-studio community-studio--premium">
+    <div className="cms-page studio-page community-studio community-studio--premium wc-page-enter">
       <div className="community-studio__hero community-studio__hero--uplift">
         <div className="community-hero__glow" aria-hidden />
         <StudioPageHeader
+          variant="hero"
           eyebrow={t('community.eyebrow')}
           eyebrowIcon={Users}
           title={t('community.heroTitle')}
@@ -46,6 +47,7 @@ export function Community() {
         />
       </div>
 
+      <div className="wc-stagger-children">
       <CommunityComposer stories={stories} onPosted={reloadFeed} />
 
       <section className="community-feed-section" aria-labelledby="community-feed-title">
@@ -79,6 +81,7 @@ export function Community() {
           </div>
         ))}
       </section>
+      </div>
     </div>
   );
 }

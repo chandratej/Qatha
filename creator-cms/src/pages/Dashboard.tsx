@@ -238,7 +238,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="cms-page dashboard-page dashboard-page--premium studio-page studio-page--elevated">
+    <div className="cms-page dashboard-page dashboard-page--premium studio-page studio-page--elevated wc-page-enter">
       {showDebutGraduation && (
         <DebutGraduationModal
           storyTitle={debutDisplayTitle}
@@ -267,7 +267,7 @@ export function Dashboard() {
         </p>
       )}
 
-      <div className="dashboard-bento">
+      <div className="dashboard-bento wc-stagger-children">
         <div className="dashboard-bento__main">
           <StudioHero
             displayName={displayName}

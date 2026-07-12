@@ -71,7 +71,7 @@ export function ReviewerMarketplace() {
   ).length;
 
   return (
-    <div className="literary-council-sanctuary">
+    <div className="literary-council-sanctuary literary-council-sanctuary--premium wc-page-enter">
       <CouncilHero
         inboxCount={inboxCount}
         activeRequests={activeRequests.length}

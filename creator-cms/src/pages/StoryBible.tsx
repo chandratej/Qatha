@@ -183,8 +183,9 @@ export function StoryBible() {
   };
 
   return (
-    <div className="cms-page studio-page story-bible-page">
+    <div className="cms-page studio-page story-bible-page story-bible-page--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('storyBible.eyebrow')}
         eyebrowIcon={BookMarked}
         title={storyTitle}
@@ -209,25 +210,26 @@ export function StoryBible() {
       </nav>
 
       {error && <p className="cms-error-text" role="alert">{error}</p>}
-      {loading && <p className="cms-loading cms-loading--inline">Loading story bible…</p>}
+      {loading && <p className="cms-loading cms-loading--inline">{t('storyBible.loading')}</p>}
 
+      <div className="wc-stagger-children">
       {!loading && tab === 'characters' && (
         <section className="cms-panel story-bible-section">
           <h2 className="dashboard-panel__title">{t('storyBible.characters')}</h2>
           <div className="story-bible-form">
-            <input className="cms-input" placeholder="Character name" value={charName} onChange={(e) => setCharName(e.target.value)} />
-            <textarea className="cms-input" placeholder="Bio & voice notes" rows={2} value={charBio} onChange={(e) => setCharBio(e.target.value)} />
+            <input className="cms-input" placeholder={t('storyBible.charNamePlaceholder')} value={charName} onChange={(e) => setCharName(e.target.value)} />
+            <textarea className="cms-input" placeholder={t('storyBible.charBioPlaceholder')} rows={2} value={charBio} onChange={(e) => setCharBio(e.target.value)} />
             <button type="button" className="katha-cta katha-cta--maroon" disabled={busy} onClick={() => { void addCharacter(); }}>
               <Plus size={16} aria-hidden /> {t('storyBible.addCharacter')}
             </button>
           </div>
           <ul className="story-bible-list">
-            {characters.length === 0 && <li className="input-hint">No characters yet — add your protagonist and key cast.</li>}
+            {characters.length === 0 && <li className="input-hint">{t('storyBible.noCharacters')}</li>}
             {characters.map((c) => (
               <li key={c.id} className="story-bible-card">
                 <strong>{c.name}</strong>
                 {c.bio && <p>{c.bio}</p>}
-                {c.arc_summary && <p className="input-hint">Arc: {c.arc_summary}</p>}
+                {c.arc_summary && <p className="input-hint">{t('storyBible.arc')}: {c.arc_summary}</p>}
                 <button type="button" className="btn btn-ghost" aria-label={`Delete ${c.name}`} onClick={() => { void api.deleteStoryCharacter(storyId, c.id).then(reload); }}>
                   <Trash2 size={14} />
                 </button>
@@ -242,21 +244,21 @@ export function StoryBible() {
           <div className="story-bible-section__head">
             <h2 className="dashboard-panel__title"><Globe2 size={16} aria-hidden /> {t('storyBible.world')}</h2>
             <button type="button" className="katha-cta katha-cta--soft" disabled={busy} onClick={() => { void exportGlossary(); }}>
-              <Download size={16} aria-hidden /> Export glossary
+              <Download size={16} aria-hidden /> {t('storyBible.exportGlossary')}
             </button>
           </div>
           <div className="story-bible-form">
             <select className="cms-input" value={loreCategory} onChange={(e) => setLoreCategory(e.target.value)}>
               {LORE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input className="cms-input" placeholder="Entry title" value={loreTitle} onChange={(e) => setLoreTitle(e.target.value)} />
-            <textarea className="cms-input" placeholder="Lore details" rows={3} value={loreBody} onChange={(e) => setLoreBody(e.target.value)} />
+            <input className="cms-input" placeholder={t('storyBible.entryTitlePlaceholder')} value={loreTitle} onChange={(e) => setLoreTitle(e.target.value)} />
+            <textarea className="cms-input" placeholder={t('storyBible.loreDetailsPlaceholder')} rows={3} value={loreBody} onChange={(e) => setLoreBody(e.target.value)} />
             <button type="button" className="katha-cta katha-cta--maroon" disabled={busy} onClick={() => { void addLore(); }}>
               <Plus size={16} aria-hidden /> {t('storyBible.addEntry')}
             </button>
           </div>
           <ul className="story-bible-list">
-            {lore.length === 0 && <li className="input-hint">Build your world bible — locations, cultures, glossary terms.</li>}
+            {lore.length === 0 && <li className="input-hint">{t('storyBible.noLore')}</li>}
             {lore.map((e) => (
               <li key={e.id} className="story-bible-card">
                 <span className="story-bible-card__tag">{e.category}</span>
@@ -283,7 +285,7 @@ export function StoryBible() {
             <input
               className="cms-input"
               type="email"
-              placeholder="Co-author email"
+              placeholder={t('storyBible.inviteEmailPlaceholder')}
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
             />
@@ -294,12 +296,12 @@ export function StoryBible() {
               className="cms-input"
               type="number"
               min={1}
-              placeholder="Chapter # (optional)"
+              placeholder={t('storyBible.chapterOptional')}
               value={inviteChapter}
               onChange={(e) => setInviteChapter(e.target.value)}
             />
             <button type="button" className="katha-cta katha-cta--maroon" disabled={busy} onClick={() => { void sendInvite(); }}>
-              Invite
+              {t('storyBible.invite')}
             </button>
           </div>
           {invites.length > 0 && (
@@ -308,21 +310,27 @@ export function StoryBible() {
                 <li key={i.id} className="story-bible-card">
                   <span className="story-bible-card__tag">{i.role}</span>
                   <strong>{i.invitee_email || i.invitee_user_id}</strong>
-                  {i.chapter_number && <p className="input-hint">Chapter {i.chapter_number} assignment</p>}
+                  {i.chapter_number && (
+                    <p className="input-hint">
+                      {t('storyBible.chapterAssignmentPrefix')} {i.chapter_number} {t('storyBible.chapterAssignmentSuffix')}
+                    </p>
+                  )}
                 </li>
               ))}
             </ul>
           )}
           {attributions.length > 0 && (
             <div className="story-bible-attributions">
-              <h3 className="input-hint">Contributor attribution</h3>
+              <h3 className="input-hint">{t('storyBible.contributorAttribution')}</h3>
               <ul className="story-bible-list">
                 {attributions.map((a) => (
                   <li key={a.id} className="story-bible-card story-bible-card--compact">
                     <span className="story-bible-card__tag">{a.role}</span>
                     <strong>{a.display_name || a.user_id}</strong>
                     {(a.revenue_share_bps ?? 0) > 0 && (
-                      <p className="input-hint">{(a.revenue_share_bps ?? 0) / 100}% revenue share (basis points scaffold)</p>
+                      <p className="input-hint">
+                        {(a.revenue_share_bps ?? 0) / 100}% {t('storyBible.revenueSharePrefix')} {t('storyBible.revenueShareSuffix')}
+                      </p>
                     )}
                   </li>
                 ))}
@@ -352,10 +360,10 @@ export function StoryBible() {
             </button>
           </div>
           <ul className="story-bible-list">
-            {tasks.length === 0 && <li className="input-hint">Async tasks for co-authors and editors.</li>}
+            {tasks.length === 0 && <li className="input-hint">{t('storyBible.noTasks')}</li>}
             {tasks.map((task) => (
               <li key={task.id} className="story-bible-card story-bible-card--task">
-                <button type="button" className="story-bible-task-toggle" onClick={() => { void toggleTask(task); }} aria-label={task.status === 'done' ? 'Mark open' : 'Mark done'}>
+                <button type="button" className="story-bible-task-toggle" onClick={() => { void toggleTask(task); }} aria-label={task.status === 'done' ? t('storyBible.markOpen') : t('storyBible.markDone')}>
                   {task.status === 'done' ? <CheckCircle2 size={18} /> : <Circle size={18} />}
                 </button>
                 <span className={task.status === 'done' ? 'is-done' : ''}>
@@ -369,6 +377,7 @@ export function StoryBible() {
           </ul>
         </section>
       )}
+      </div>
     </div>
   );
 }

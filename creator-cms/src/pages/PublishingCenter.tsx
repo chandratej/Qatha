@@ -106,8 +106,9 @@ export function PublishingCenter() {
   const loading = storiesLoading || scheduledLoading || queueLoading;
 
   return (
-    <div className="cms-page studio-page publishing-center-page publishing-center-page--premium">
+    <div className="cms-page studio-page publishing-center-page publishing-center-page--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('publishing.eyebrow')}
         eyebrowIcon={Send}
         title={t('publishing.title')}
@@ -138,6 +139,7 @@ export function PublishingCenter() {
         </button>
       </nav>
 
+      <div className="wc-stagger-children">
       {loading && (
         <p className="cms-loading cms-loading--inline">
           <Loader2 size={16} className="cms-loading__spin" aria-hidden />
@@ -281,6 +283,7 @@ export function PublishingCenter() {
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }

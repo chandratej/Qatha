@@ -25,7 +25,94 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--katha-maroon) 0%, var(--katha-gold-dark) 100%);
-  transition: width 0.45s var(--katha-ease);
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Wave 10 — streamlined single-column wizard (density reduction) */
+.event-wizard--streamlined .event-wizard__layout {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+
+.event-wizard--streamlined .event-wizard__sidebar {
+  position: static;
+}
+
+.event-wizard--streamlined .event-wizard__steps {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(26, 24, 20, 0.04);
+  border: 1px solid var(--premium-border);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.event-wizard--streamlined .event-wizard__steps::-webkit-scrollbar {
+  display: none;
+}
+
+.event-wizard--streamlined .event-wizard__step-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  gap: 8px;
+}
+
+.event-wizard--streamlined .event-wizard__step-index {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6875rem;
+}
+
+.event-wizard--streamlined .event-wizard__step-label {
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.event-wizard--streamlined .event-wizard__panel {
+  padding: clamp(20px, 3vw, 28px);
+}
+
+.event-wizard--streamlined .event-wizard__body {
+  min-height: 120px;
+}
+
+.event-wizard--streamlined .event-wizard__body--dense {
+  min-height: 0;
+}
+
+.event-wizard--streamlined .event-wizard__actions {
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.event-wizard__info-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: color-mix(in srgb, var(--katha-gold) 5%, var(--premium-surface));
+  border: 1px solid var(--premium-border);
+}
+
+.event-wizard__info-card__icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--katha-maroon) 8%, transparent);
+  color: var(--katha-maroon);
+}
+
+.event-create-page--premium .studio-page-header--hero {
+  margin-bottom: 20px;
 }
 
 .event-wizard__meta {

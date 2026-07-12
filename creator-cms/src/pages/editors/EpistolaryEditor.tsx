@@ -1,6 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageCircle, Plus, User } from 'lucide-react';
+import { useLocale } from '../../context/LocaleContext';
+import type { StudioStringKey } from '../../lib/studioLocale';
 import '../../styles/editor-prototype.css';
 
 type ChatSpeaker = 'protagonist' | 'antagonist' | 'narrator';
@@ -13,10 +15,10 @@ interface ChatBubble {
   timestamp: string;
 }
 
-const SPEAKER_LABELS: Record<ChatSpeaker, string> = {
-  protagonist: 'Protagonist',
-  antagonist: 'Antagonist',
-  narrator: 'Narrator',
+const SPEAKER_ROLE_KEYS: Record<ChatSpeaker, StudioStringKey> = {
+  protagonist: 'epistolaryEditor.roleProtagonist',
+  antagonist: 'epistolaryEditor.roleAntagonist',
+  narrator: 'epistolaryEditor.roleNarrator',
 };
 
 const DEMO_BUBBLES: ChatBubble[] = [
@@ -56,15 +58,20 @@ function createBubble(index: number): ChatBubble {
 /**
  * Phase 1 epistolary editor — chat-bubble scaffold.
  * Route: /stories/:storyId/epistolary/:chapterNum
- * Does not modify the Telugu scene-based ChapterEditor.
  */
 export function EpistolaryEditor() {
   const { storyId, chapterNum } = useParams<{ storyId: string; chapterNum: string }>();
   const navigate = useNavigate();
+  const { t } = useLocale();
   const chapter = Number(chapterNum) || 1;
 
   const [chapterTitle, setChapterTitle] = useState(`Chapter ${chapter}`);
   const [bubbles, setBubbles] = useState<ChatBubble[]>(DEMO_BUBBLES);
+
+  const speakerRoles = useMemo(
+    () => (Object.keys(SPEAKER_ROLE_KEYS) as ChatSpeaker[]),
+    [],
+  );
 
   const addBubble = useCallback(() => {
     setBubbles((prev) => [...prev, createBubble(prev.length)]);
@@ -75,7 +82,7 @@ export function EpistolaryEditor() {
   }, []);
 
   return (
-    <div className="katha-proto-layout epistolary-editor" data-katha-mode="creation">
+    <div className="katha-proto-layout katha-proto-layout--premium epistolary-editor wc-page-enter" data-katha-mode="creation">
       <header className="katha-editor-chrome epistolary-editor__chrome">
         <div className="katha-editor-chrome__row katha-editor-chrome__row--primary">
           <div className="katha-editor-chrome__leading">
@@ -83,19 +90,19 @@ export function EpistolaryEditor() {
               type="button"
               className="katha-icon-btn"
               onClick={() => navigate(`/stories/${storyId}`)}
-              aria-label="Back to manuscript"
+              aria-label={t('epistolaryEditor.back')}
             >
               <ArrowLeft size={18} aria-hidden />
             </button>
             <span className="epistolary-editor__badge">
               <MessageCircle size={14} aria-hidden />
-              Epistolary · Phase 1
+              {t('epistolaryEditor.badge')}
             </span>
           </div>
           <div className="katha-editor-doc-actions">
             <button type="button" className="katha-btn katha-btn--ghost" onClick={addBubble}>
               <Plus size={16} aria-hidden />
-              Add message
+              {t('epistolaryEditor.addMessage')}
             </button>
           </div>
         </div>
@@ -104,14 +111,14 @@ export function EpistolaryEditor() {
             className="katha-inline-title-input epistolary-editor__title"
             value={chapterTitle}
             onChange={(e) => setChapterTitle(e.target.value)}
-            aria-label="Chapter title"
+            aria-label={t('epistolaryEditor.chapterTitle')}
           />
           <span className="katha-editor-doc-meta__sep" aria-hidden>·</span>
-          <span className="input-hint">Chat-bubble editor scaffold — persistence coming in phase 2</span>
+          <span className="input-hint">{t('epistolaryEditor.scaffoldHint')}</span>
         </div>
       </header>
 
-      <main className="epistolary-editor__thread" aria-label="Chat thread">
+      <main className="epistolary-editor__thread wc-stagger-children" aria-label="Chat thread">
         {bubbles.map((bubble) => (
           <article
             key={bubble.id}
@@ -126,16 +133,16 @@ export function EpistolaryEditor() {
                   className="epistolary-bubble__name"
                   value={bubble.speakerName}
                   onChange={(e) => updateBubble(bubble.id, { speakerName: e.target.value })}
-                  aria-label="Speaker name"
+                  aria-label={t('epistolaryEditor.speakerName')}
                 />
                 <select
                   className="epistolary-bubble__role"
                   value={bubble.speaker}
                   onChange={(e) => updateBubble(bubble.id, { speaker: e.target.value as ChatSpeaker })}
-                  aria-label="Speaker role"
+                  aria-label={t('epistolaryEditor.speakerRole')}
                 >
-                  {(Object.keys(SPEAKER_LABELS) as ChatSpeaker[]).map((role) => (
-                    <option key={role} value={role}>{SPEAKER_LABELS[role]}</option>
+                  {speakerRoles.map((role) => (
+                    <option key={role} value={role}>{t(SPEAKER_ROLE_KEYS[role])}</option>
                   ))}
                 </select>
                 <time className="epistolary-bubble__time">{bubble.timestamp}</time>
@@ -145,7 +152,7 @@ export function EpistolaryEditor() {
               className="epistolary-bubble__body"
               value={bubble.text}
               onChange={(e) => updateBubble(bubble.id, { text: e.target.value })}
-              placeholder="Type the message…"
+              placeholder={t('epistolaryEditor.messagePlaceholder')}
               rows={2}
             />
           </article>

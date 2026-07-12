@@ -65,7 +65,7 @@ export function Stories() {
   }, []);
 
   return (
-    <div className="cms-page studio-page stories-studio--premium">
+    <div className="cms-page studio-page stories-studio--premium wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('stories.eyebrow')}
@@ -80,6 +80,7 @@ export function Stories() {
         )}
       />
 
+      <div className="wc-stagger-children">
       {loading && (
         <div className="cms-loading" role="status" aria-live="polite">
           <Loader2 size={20} className="cms-loading__spin" aria-hidden />
@@ -205,6 +206,7 @@ export function Stories() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

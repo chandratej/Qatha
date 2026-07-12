@@ -98,7 +98,7 @@ export function AppTopNav() {
   const productName = locale === 'te' ? BRAND.productNameTelugu : BRAND.productName;
 
   return (
-    <header className="app-topnav">
+    <header className="app-topnav app-topnav--premium">
       <div className="app-topnav__primary">
         <NavLink to="/" className="app-topnav__brand" aria-label={`${BRAND.nameTelugu} ${productName} home`}>
           <div className="app-topnav__brand-icon"><BrandMark size="sm" /></div>

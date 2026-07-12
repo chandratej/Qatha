@@ -49,19 +49,20 @@ export function Profile() {
   };
 
   return (
-    <div className="cms-page studio-page">
+    <div className="cms-page studio-page profile-studio--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('profile.eyebrow')}
         eyebrowIcon={User}
         title={t('profile.title')}
         subtitle={t('profile.subtitle')}
       />
 
-      <div className="profile-layout">
+      <div className="profile-layout wc-stagger-children">
         <aside className="profile-card profile-card--studio cms-panel">
           <div className="profile-card__avatar" aria-hidden>{profile.penName.slice(0, 2).toUpperCase()}</div>
           <h2 className="profile-card__name">{profile.penName}</h2>
-          <p className="profile-card__tagline">{profile.tagline || 'Telugu storyteller on Katha'}</p>
+          <p className="profile-card__tagline">{profile.tagline || t('profile.defaultTagline')}</p>
           <div className="profile-card__badge">
             <Award size={16} aria-hidden />
             {badge.label}
@@ -76,18 +77,18 @@ export function Profile() {
           )}
           {repData?.reputation && (
             <div className="profile-reputation-summary">
-              <p className="profile-reputation-summary__label">Story Trust (read-only)</p>
+              <p className="profile-reputation-summary__label">{t('profile.trustReadOnly')}</p>
               <StoryTrustBadge level={repData.reputation.top_trust_level as StoryTrustLevelId} showShare />
               {repData.reputation.top_story_spi != null && (
-                <p className="input-hint">SPI {Number(repData.reputation.top_story_spi).toFixed(1)} · explainable craft signal</p>
+                <p className="input-hint">SPI {Number(repData.reputation.top_story_spi).toFixed(1)} · {t('profile.spiHint')}</p>
               )}
-              <Link to="/monetization" className="katha-cta katha-cta--soft">View Story Trust ladder</Link>
+              <Link to="/monetization" className="katha-cta katha-cta--soft">{t('profile.viewTrustLadder')}</Link>
             </div>
           )}
         </aside>
 
         <form className="cms-panel profile-form" onSubmit={handleSave}>
-          <h3 className="cms-panel__title"><User size={18} aria-hidden /> Public details</h3>
+          <h3 className="cms-panel__title"><User size={18} aria-hidden /> {t('profile.publicDetails')}</h3>
           <div className="profile-form__grid">
             <label className="input-group">
               <span>{t('profile.penName')}</span>
@@ -98,15 +99,15 @@ export function Profile() {
               <input className="cms-input" value={profile.tagline} onChange={(e) => setProfile({ ...profile, tagline: e.target.value })} placeholder="e.g. Fantasy & romance serialist" />
             </label>
             <label className="input-group profile-form__full">
-              <span>Bio</span>
+              <span>{t('profile.bio')}</span>
               <textarea className="cms-input cms-textarea" rows={4} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Tell readers what makes your stories special…" />
             </label>
             <label className="input-group">
-              <span>Website</span>
+              <span>{t('profile.website')}</span>
               <input className="cms-input" type="url" value={profile.website} onChange={(e) => setProfile({ ...profile, website: e.target.value })} placeholder="https://" />
             </label>
             <label className="input-group">
-              <span>Social handle</span>
+              <span>{t('profile.socialHandle')}</span>
               <input className="cms-input" value={profile.twitter} onChange={(e) => setProfile({ ...profile, twitter: e.target.value })} placeholder="@yourhandle" />
             </label>
           </div>
@@ -124,7 +125,7 @@ export function Profile() {
             <button type="submit" className="katha-cta katha-cta--soft" style={{ border: 'none' }}>
               <Save size={16} aria-hidden /> {saved ? t('profile.saved') : t('profile.save')}
             </button>
-            <Link to="/stories/new" className="btn btn-secondary"><PenLine size={16} /> Write something new</Link>
+            <Link to="/stories/new" className="btn btn-secondary"><PenLine size={16} /> {t('profile.writeNew')}</Link>
           </div>
         </form>
       </div>

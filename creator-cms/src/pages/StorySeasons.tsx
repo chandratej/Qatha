@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit3, BookOpen, BookMarked, GripVertical, Loader2, Copy, Trash2, Pencil, Link2, Image } from 'lucide-react';
+import { Plus, Edit3, BookOpen, BookMarked, GripVertical, Loader2, Copy, Trash2, Pencil, Link2, Image, BarChart3 } from 'lucide-react';
 import { ShareLinkField } from '../components/ShareLinkField';
 import { BookSpine } from '../components/studio/BookSpine';
 import { buildChapterShareUrl, isChapterShareable, resolveStorySlug } from '../lib/shareLinks';
@@ -147,18 +147,19 @@ export function StorySeasons() {
 
   if (loading) {
     return (
-      <div className="cms-page">
+      <div className="cms-page studio-page manuscript-studio manuscript-studio--premium wc-page-enter">
         <div className="cms-loading">
           <Loader2 size={20} className="cms-loading__spin" />
-          Loading story…
+          {t('manuscript.loading')}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="cms-page studio-page manuscript-studio manuscript-studio--premium">
+    <div className="cms-page studio-page manuscript-studio manuscript-studio--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('manuscript.eyebrow')}
         eyebrowIcon={BookOpen}
         title={storyTitle}
@@ -198,14 +199,32 @@ export function StorySeasons() {
         <div className="cms-panel cms-error-text cms-panel--flat" style={{ marginBottom: 20 }}>{error}</div>
       )}
 
+      {!isDemo && (
+        <nav className="manuscript-hub-ribbon" aria-label={t('manuscript.eyebrow')}>
+          <Link to={`/stories/${storyId}/bible`} className="manuscript-hub-ribbon__link">
+            <BookMarked size={15} aria-hidden />
+            {t('manuscript.storyBible')}
+          </Link>
+          <Link to={`/stories/${storyId}/media`} className="manuscript-hub-ribbon__link">
+            <Image size={15} aria-hidden />
+            {t('manuscript.media')}
+          </Link>
+          <Link to={`/analytics/${storyId}`} className="manuscript-hub-ribbon__link">
+            <BarChart3 size={15} aria-hidden />
+            {t('manuscript.hubAnalytics')}
+          </Link>
+        </nav>
+      )}
+
+      <div className="wc-stagger-children">
       {!isDemo && storyMeta && (
         <div className="cms-panel cms-panel--flat cms-share-panel">
           <div className="cms-share-panel__head">
             <Link2 size={18} aria-hidden />
             <div>
-              <h2 className="cms-panel__title" style={{ margin: 0 }}>Share on social</h2>
+              <h2 className="cms-panel__title" style={{ margin: 0 }}>{t('manuscript.shareSocial')}</h2>
               <p className="cms-panel__subtitle" style={{ margin: '4px 0 0' }}>
-                Copy a chapter link for WhatsApp, Instagram, or X — readers land on a rich preview with a teaser.
+                {t('manuscript.shareSocialHint')}
               </p>
             </div>
           </div>
@@ -216,7 +235,7 @@ export function StorySeasons() {
             return (
               <ShareLinkField
                 url={buildChapterShareUrl(slug, latest.chapter_number)}
-                label="Latest shareable chapter"
+                label={t('manuscript.latestShareable')}
                 preview={{
                   storyTitle: storyMeta.title,
                   chapterTitle: latest.title,
@@ -228,7 +247,7 @@ export function StorySeasons() {
               />
             );
           })() : (
-            <p className="cms-share-panel__hint">Publish a chapter to get your first shareable reader link.</p>
+            <p className="cms-share-panel__hint">{t('manuscript.publishForShare')}</p>
           )}
         </div>
       )}
@@ -303,8 +322,8 @@ export function StorySeasons() {
           {currentChapters.length === 0 ? (
             <div className="studio-empty" style={{ padding: '32px 24px' }}>
               <div className="studio-empty__glyph" aria-hidden><BookOpen size={28} /></div>
-              <h3 className="studio-empty__title">Empty bookshelf</h3>
-              <p className="studio-empty__text">Add your first chapter to begin this manuscript.</p>
+              <h3 className="studio-empty__title">{t('manuscript.emptyBookshelf')}</h3>
+              <p className="studio-empty__text">{t('manuscript.emptyBookshelfHint')}</p>
             </div>
           ) : isDemo ? (
             <Reorder.Group
@@ -369,7 +388,7 @@ export function StorySeasons() {
             Jump to first chapter
           </Link>
         ) : null}
-        <Link to="/stories" className="btn btn-ghost">Back to all stories</Link>
+        <Link to="/stories" className="btn btn-ghost">{t('manuscript.backToLibrary')}</Link>
         {isDemo && (
           <>
             <span className="cms-footer-actions__note">
@@ -389,6 +408,7 @@ export function StorySeasons() {
             </button>
           </>
         )}
+      </div>
       </div>
     </div>
   );
@@ -419,6 +439,7 @@ function ChapterRow({
   statusBadge?: ReactNode;
   onRefresh?: () => void;
 }) {
+  const { t } = useLocale();
   const shareUrl = storySlug && isChapterShareable(status)
     ? buildChapterShareUrl(storySlug, chNum)
     : null;
@@ -517,7 +538,7 @@ function ChapterRow({
           </>
         )}
         <Link to={editorLink} className="btn btn-secondary">
-          <Edit3 size={14} /> Open Editor
+          <Edit3 size={14} /> {t('manuscript.openEditor')}
         </Link>
       </div>
     </div>

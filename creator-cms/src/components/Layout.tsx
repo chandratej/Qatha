@@ -8,7 +8,7 @@ export function Layout() {
     <CommandPaletteProvider>
       <div className="app-shell" data-katha-mode="management">
         <AppTopNav />
-        <main className="premium-main overlay-scroll">
+        <main className="premium-main premium-main--rhythm overlay-scroll">
           <DeviceConflictNotice />
           <BackendStatusBanner />
           <Outlet />

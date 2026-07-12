@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertCircle, Award, Check, Sparkles } from 'lucide-react';
+import { AlertCircle, Award, Calendar, Check, Send, Sparkles, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { platformApi } from '../lib/platformApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
@@ -95,16 +95,17 @@ export function EventCreate() {
   }
 
   return (
-    <div className="cms-page studio-page event-create-page event-create-page--premium">
+    <div className="cms-page studio-page event-create-page event-create-page--premium wc-page-enter">
       <BackLink to="/events" label={t('events.title')} />
       <StudioPageHeader
+        variant="hero"
         title={t('events.createTitle')}
         subtitle={t('events.createSubtitle')}
         eyebrow={t('events.wizardEyebrow')}
         eyebrowIcon={Award}
       />
 
-      <div className="event-wizard">
+      <div className="event-wizard event-wizard--streamlined">
         <div className="event-wizard__meta">
           <span className="event-wizard__step-count">
             {step + 1} / {totalSteps}
@@ -118,7 +119,7 @@ export function EventCreate() {
           aria-valuemax={totalSteps}
           aria-label={t('events.wizardStepsLabel')}
         >
-          <div className="event-wizard__progress-bar" style={{ width: `${progressPct}%` }} />
+          <div className="event-wizard__progress-bar wc-progress-delight" style={{ width: `${progressPct}%` }} />
         </div>
 
         {error && (
@@ -158,7 +159,7 @@ export function EventCreate() {
               {stepLabel(wizardStep?.id ?? 'basic')}
             </h3>
 
-            <div className="event-wizard__body">
+            <div className={`event-wizard__body${step === 1 || step === 5 || step === 6 ? ' event-wizard__body--dense' : ''}`}>
               {step === 0 && (
                 <div className="cms-form-stack">
                   <div className="input-group">
@@ -195,7 +196,10 @@ export function EventCreate() {
               )}
 
               {step === 1 && (
-                <p className="studio-page-header__subtitle">{t('events.eligibilityDesc')}</p>
+                <div className="event-wizard__info-card">
+                  <span className="event-wizard__info-card__icon" aria-hidden><Users size={20} /></span>
+                  <p className="studio-page-header__subtitle">{t('events.eligibilityDesc')}</p>
+                </div>
               )}
 
               {step === 2 && (
@@ -233,11 +237,17 @@ export function EventCreate() {
               )}
 
               {step === 5 && (
-                <p className="studio-page-header__subtitle">{t('events.timelineDesc')}</p>
+                <div className="event-wizard__info-card">
+                  <span className="event-wizard__info-card__icon" aria-hidden><Calendar size={20} /></span>
+                  <p className="studio-page-header__subtitle">{t('events.timelineDesc')}</p>
+                </div>
               )}
 
               {step === 6 && (
-                <p className="studio-page-header__subtitle">{t('events.publishingDesc')}</p>
+                <div className="event-wizard__info-card">
+                  <span className="event-wizard__info-card__icon" aria-hidden><Send size={20} /></span>
+                  <p className="studio-page-header__subtitle">{t('events.publishingDesc')}</p>
+                </div>
               )}
             </div>
 

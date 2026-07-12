@@ -66,8 +66,9 @@ export function MediaLibrary() {
   };
 
   return (
-    <div className="cms-page studio-page media-library-page">
+    <div className="cms-page studio-page media-library-page media-library-page--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('media.eyebrow')}
         eyebrowIcon={Image}
         title={storyTitle}
@@ -111,8 +112,9 @@ export function MediaLibrary() {
         {error && <p className="cms-error-text" role="alert">{error}</p>}
       </section>
 
-      {loading && <p className="cms-loading cms-loading--inline">Loading assets…</p>}
+      {loading && <p className="cms-loading cms-loading--inline">{t('media.loading')}</p>}
 
+      <div className="wc-stagger-children">
       {!loading && (
         <section className="cms-panel story-bible-section">
           <h2 className="dashboard-panel__title">{t('media.assets')} ({assets.length})</h2>
@@ -131,7 +133,7 @@ export function MediaLibrary() {
                   <button
                     type="button"
                     className="btn btn-ghost"
-                    aria-label="Delete asset"
+                    aria-label={t('media.deleteAsset')}
                     onClick={() => { void api.deleteStoryMedia(storyId, a.id).then(reload); }}
                   >
                     <Trash2 size={14} />
@@ -142,6 +144,7 @@ export function MediaLibrary() {
           )}
         </section>
       )}
+      </div>
     </div>
   );
 }

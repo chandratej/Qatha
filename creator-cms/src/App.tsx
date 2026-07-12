@@ -47,6 +47,13 @@ import './styles/dashboard-premium.css';
 import './styles/events-premium.css';
 import './styles/auth-premium.css';
 import './styles/world-class-v2.css';
+import './styles/editor-premium-v2.css';
+import './styles/review-workspace-premium-v2.css';
+import './styles/motion-system.css';
+import './styles/secondary-pages-premium.css';
+import './styles/alternate-editors-premium.css';
+import './styles/hub-pages-premium.css';
+import './styles/layout-rhythm-v2.css';
 
 function App() {
   return (

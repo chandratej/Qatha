@@ -318,6 +318,42 @@ export type StudioStringKey =
   | 'publishing.tabsLabel'
   | 'analytics.backToChapters'
   | 'analytics.backToPublishing'
+  | 'analytics.eyebrow'
+  | 'analytics.subtitle'
+  | 'analytics.titleFallback'
+  | 'analytics.unavailable'
+  | 'analytics.unavailableHint'
+  | 'analytics.tryAgain'
+  | 'analytics.backToLibrary'
+  | 'analytics.chapterRange'
+  | 'analytics.range7d'
+  | 'analytics.range30d'
+  | 'analytics.rangeAll'
+  | 'analytics.exportCsv'
+  | 'analytics.totalReads'
+  | 'analytics.avgRetention'
+  | 'analytics.subscribersGained'
+  | 'analytics.estRevenue'
+  | 'analytics.readerFunnel'
+  | 'analytics.funnelHint'
+  | 'analytics.chaptersPublished'
+  | 'analytics.chaptersWithReads'
+  | 'analytics.totalReadsFunnel'
+  | 'analytics.avgCompletion'
+  | 'analytics.readToSubscribe'
+  | 'analytics.storyTrust'
+  | 'analytics.refreshSpi'
+  | 'analytics.refreshing'
+  | 'analytics.trustLivePrefix'
+  | 'analytics.trustEarnsIntro'
+  | 'analytics.trustEarnsOutro'
+  | 'analytics.trustLeadGate'
+  | 'analytics.multiMetric'
+  | 'analytics.demographics'
+  | 'analytics.demographicsHint'
+  | 'analytics.popularChapters'
+  | 'analytics.dropOffInsights'
+  | 'analytics.readersDrop'
   | 'media.eyebrow'
   | 'media.subtitle'
   | 'media.uploadAsset'
@@ -338,6 +374,70 @@ export type StudioStringKey =
   | 'storyBible.assignee'
   | 'storyBible.unassigned'
   | 'storyBible.backToChapters'
+  | 'storyBible.loading'
+  | 'storyBible.charNamePlaceholder'
+  | 'storyBible.charBioPlaceholder'
+  | 'storyBible.noCharacters'
+  | 'storyBible.exportGlossary'
+  | 'storyBible.entryTitlePlaceholder'
+  | 'storyBible.loreDetailsPlaceholder'
+  | 'storyBible.noLore'
+  | 'storyBible.inviteEmailPlaceholder'
+  | 'storyBible.chapterOptional'
+  | 'storyBible.invite'
+  | 'storyBible.chapterAssignmentPrefix'
+  | 'storyBible.chapterAssignmentSuffix'
+  | 'storyBible.contributorAttribution'
+  | 'storyBible.revenueSharePrefix'
+  | 'storyBible.revenueShareSuffix'
+  | 'storyBible.noTasks'
+  | 'storyBible.markOpen'
+  | 'storyBible.markDone'
+  | 'storyBible.arc'
+  | 'media.loading'
+  | 'media.deleteAsset'
+  | 'tags.eyebrow'
+  | 'tags.title'
+  | 'tags.subtitle'
+  | 'tags.searchPlaceholder'
+  | 'tags.requestPlaceholder'
+  | 'tags.request'
+  | 'tags.workflow'
+  | 'tags.officialTags'
+  | 'tags.pendingRequests'
+  | 'tags.noPending'
+  | 'tags.approve'
+  | 'tags.merge'
+  | 'tags.reject'
+  | 'tags.previewSlug'
+  | 'platformMap.eyebrow'
+  | 'platformMap.title'
+  | 'platformMap.subtitle'
+  | 'platformMap.eventTypes'
+  | 'platformMap.contestPrograms'
+  | 'platformMap.reviewerRoles'
+  | 'platformMap.reportCategories'
+  | 'platformMap.openLink'
+  | 'englishEditor.badge'
+  | 'englishEditor.back'
+  | 'englishEditor.saveDraft'
+  | 'englishEditor.saving'
+  | 'englishEditor.hint'
+  | 'englishEditor.placeholder'
+  | 'englishEditor.chapterTitle'
+  | 'englishEditor.wordsLabel'
+  | 'englishEditor.minReadLabel'
+  | 'epistolaryEditor.badge'
+  | 'epistolaryEditor.back'
+  | 'epistolaryEditor.addMessage'
+  | 'epistolaryEditor.scaffoldHint'
+  | 'epistolaryEditor.messagePlaceholder'
+  | 'epistolaryEditor.speakerName'
+  | 'epistolaryEditor.speakerRole'
+  | 'epistolaryEditor.chapterTitle'
+  | 'epistolaryEditor.roleProtagonist'
+  | 'epistolaryEditor.roleAntagonist'
+  | 'epistolaryEditor.roleNarrator'
   | 'manuscript.eyebrow'
   | 'manuscript.subtitle'
   | 'manuscript.bookshelf'
@@ -345,6 +445,24 @@ export type StudioStringKey =
   | 'manuscript.backToLibrary'
   | 'manuscript.storyBible'
   | 'manuscript.media'
+  | 'manuscript.loading'
+  | 'manuscript.shareSocial'
+  | 'manuscript.shareSocialHint'
+  | 'manuscript.latestShareable'
+  | 'manuscript.publishForShare'
+  | 'manuscript.emptyBookshelf'
+  | 'manuscript.emptyBookshelfHint'
+  | 'manuscript.hubAnalytics'
+  | 'manuscript.openEditor'
+  | 'profile.publicDetails'
+  | 'profile.bio'
+  | 'profile.website'
+  | 'profile.socialHandle'
+  | 'profile.writeNew'
+  | 'profile.defaultTagline'
+  | 'profile.viewTrustLadder'
+  | 'profile.trustReadOnly'
+  | 'profile.spiHint'
   | 'schedule.title'
   | 'schedule.subtitle'
   | 'schedule.eyebrow'
@@ -501,6 +619,32 @@ export type StudioStringKey =
   | 'championship.magazine'
   | 'championship.requiresDebut'
   | 'championship.comingPhase'
+  | 'editor.saving'
+  | 'editor.unsaved'
+  | 'editor.saved'
+  | 'editor.notSaved'
+  | 'editor.backChapters'
+  | 'editor.chapters'
+  | 'editor.history'
+  | 'editor.saveDraft'
+  | 'editor.submitting'
+  | 'editor.words'
+  | 'editor.minRead'
+  | 'editor.drafting'
+  | 'editor.scenes'
+  | 'reviewWorkspace.eyebrow'
+  | 'reviewWorkspace.back'
+  | 'reviewWorkspace.chapterNav'
+  | 'reviewWorkspace.prevChapter'
+  | 'reviewWorkspace.nextChapter'
+  | 'reviewWorkspace.chapters'
+  | 'reviewWorkspace.toggleChapters'
+  | 'reviewWorkspace.observations'
+  | 'reviewWorkspace.toggleObservations'
+  | 'reviewWorkspace.finish'
+  | 'reviewWorkspace.toggleSummary'
+  | 'reviewWorkspace.loading'
+  | 'reviewWorkspace.opening'
   | 'dashboard.debutEyebrow'
   | 'dashboard.debutTitle'
   | 'dashboard.debutHint'
@@ -830,6 +974,42 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'publishing.tabsLabel': 'ప్రచురణ విభాగాలు',
     'analytics.backToChapters': 'అధ్యాయాలకు వెనక్కి',
     'analytics.backToPublishing': 'ప్రచురణకు వెనక్కి',
+    'analytics.eyebrow': 'పాఠకుల అంతర్దృష్టి · Reader Insights',
+    'analytics.subtitle': 'కథా నమ్మకం సంకేతాలు — నిలుపుదల, పూర్తి చేత, పాఠకుల వృద్ధి మీ సాహిత్య ఆదాయాన్ని నడుపుతాయి.',
+    'analytics.titleFallback': 'కథ యానలిటిక్స్',
+    'analytics.unavailable': 'యానలిటిక్స్ అందుబాటులో లేదు',
+    'analytics.unavailableHint': 'ఈ కథకు యానలిటిక్స్ లోడ్ చేయలేకపోయాం.',
+    'analytics.tryAgain': 'మళ్లీ ప్రయత్నించండి',
+    'analytics.backToLibrary': 'లైబ్రరీకి వెనక్కి',
+    'analytics.chapterRange': 'అధ్యాయ పరిధి',
+    'analytics.range7d': 'చివరి 7 అధ్యాయాలు',
+    'analytics.range30d': 'చివరి 30 అధ్యాయాలు',
+    'analytics.rangeAll': 'అన్ని అధ్యాయాలు',
+    'analytics.exportCsv': 'CSV ఎగుమతి',
+    'analytics.totalReads': 'మొత్తం చదివినవి',
+    'analytics.avgRetention': 'సగటు నిలుపుదల',
+    'analytics.subscribersGained': 'కొత్త చందాదారులు',
+    'analytics.estRevenue': 'అంచనా ఆదాయం (₹)',
+    'analytics.readerFunnel': 'పాఠకుల ఫన్నెల్',
+    'analytics.funnelHint': 'ప్రచురణ → చదవడం → చందా — ప్రత్యక్ష అధ్యాయ యానలిటిక్స్ నుండి.',
+    'analytics.chaptersPublished': 'ప్రచురించిన అధ్యాయాలు',
+    'analytics.chaptersWithReads': 'చదివిన అధ్యాయాలు',
+    'analytics.totalReadsFunnel': 'మొత్తం చదివినవి',
+    'analytics.avgCompletion': 'సగటు పూర్తి',
+    'analytics.readToSubscribe': 'చదవడం → చందా',
+    'analytics.storyTrust': 'కథా నమ్మకం & SPI',
+    'analytics.refreshSpi': 'SPI రిఫ్రెష్',
+    'analytics.refreshing': 'రిఫ్రెష్ అవుతోంది…',
+    'analytics.trustLivePrefix': 'ప్రత్యక్ష నమ్మకం:',
+    'analytics.trustEarnsIntro': 'ఈ కథ త్రైమాసిక ఆదాయంలో',
+    'analytics.trustEarnsOutro': 'రచయిత వాటాను సంపాదిస్తుంది (40% బేస్ × కథా నమ్మకం గుణకం, Apex వద్ద 60% వరకు).',
+    'analytics.trustLeadGate': 'మానిటైజేషన్ గేట్ చేరడానికి Performing నమ్మకం వరకు పాఠకుల విలువ నిర్మించండి. 40% బేస్ · Apex వద్ద 60% వరకు.',
+    'analytics.multiMetric': 'బహుళ-మెట్రిక్ అవలోకనం',
+    'analytics.demographics': 'పాఠకుల జనాభా',
+    'analytics.demographicsHint': 'Supabase లో మీ కథకు తగినంత పాఠకుల డేటా వచ్చిన తర్వాత జనాభా కనిపిస్తుంది.',
+    'analytics.popularChapters': 'జనాదరణ పొందిన అధ్యాయాలు',
+    'analytics.dropOffInsights': 'డ్రాప్-ఆఫ్ అంతర్దృష్టి',
+    'analytics.readersDrop': 'పాఠకులు',
     'media.eyebrow': 'మీడియా లైబ్రరీ · Media Library',
     'media.subtitle': 'కవర్ చిత్రాలు, చిత్రీకరణలు, రిఫరెన్స్ ఆసెట్లు — ప్రచురణకు సిద్ధంగా ఉంచండి. ప్రతి చిత్రానికి క్రెడిట్ మరియు లైసెన్స్ జోడించండి.',
     'media.uploadAsset': 'ఆసెట్ అప్‌లోడ్',
@@ -850,6 +1030,70 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'storyBible.assignee': 'బాధ్యత',
     'storyBible.unassigned': 'కేటాయించలేదు',
     'storyBible.backToChapters': 'అధ్యాయాలకు వెనక్కి',
+    'storyBible.loading': 'కథా బైబిల్ లోడ్ అవుతోంది…',
+    'storyBible.charNamePlaceholder': 'పాత్ర పేరు',
+    'storyBible.charBioPlaceholder': 'బయో & వాయిస్ నోట్స్',
+    'storyBible.noCharacters': 'ఇంకా పాత్రలు లేవు — మీ ప్రధాన పాత్ర మరియు ప్రధాన నటులను జోడించండి.',
+    'storyBible.exportGlossary': 'గ్లాసరీ ఎగుమతి',
+    'storyBible.entryTitlePlaceholder': 'ఎంట్రీ శీర్షిక',
+    'storyBible.loreDetailsPlaceholder': 'లోర్ వివరాలు',
+    'storyBible.noLore': 'మీ ప్రపంచ బైబిల్ నిర్మించండి — ప్రదేశాలు, సంస్కృతులు, గ్లాసరీ పదాలు.',
+    'storyBible.inviteEmailPlaceholder': 'సహ-రచయిత ఇమెయిల్',
+    'storyBible.chapterOptional': 'అధ్యాయం # (ఐచ్ఛికం)',
+    'storyBible.invite': 'ఆహ్వానించండి',
+    'storyBible.chapterAssignmentPrefix': 'అధ్యాయం',
+    'storyBible.chapterAssignmentSuffix': 'కేటాయింపు',
+    'storyBible.contributorAttribution': 'సహకారి క్రెడిట్',
+    'storyBible.revenueSharePrefix': 'ఆదాయ వాటా',
+    'storyBible.revenueShareSuffix': '(బేసిస్ పాయింట్లు స్కాఫోల్డ్)',
+    'storyBible.noTasks': 'సహ-రచయితలు మరియు ఎడిటర్ల కోసం అసింక్ టాస్క్‌లు.',
+    'storyBible.markOpen': 'తెరిచినదిగా గుర్తించండి',
+    'storyBible.markDone': 'పూర్తయినదిగా గుర్తించండి',
+    'storyBible.arc': 'ఆర్క్',
+    'media.loading': 'ఆసెట్లు లోడ్ అవుతున్నాయి…',
+    'media.deleteAsset': 'ఆసెట్ తొలగించండి',
+    'tags.eyebrow': 'ట్యాగ్లు · Community Tags',
+    'tags.title': 'ట్యాగ్ వ్యవస్థ',
+    'tags.subtitle': 'ఉన్నవి వెతకండి → ఉపయోగించండి. లేనివి అభ్యర్థించండి → మోడరేటర్ సమీక్ష → ఆమోదం / విలీనం / తిరస్కరణ.',
+    'tags.searchPlaceholder': 'ట్యాగ్లు వెతకండి…',
+    'tags.requestPlaceholder': 'కొత్త ట్యాగ్ అభ్యర్థించండి…',
+    'tags.request': 'అభ్యర్థన',
+    'tags.workflow': 'వర్క్‌ఫ్లో',
+    'tags.officialTags': 'అధికారిక & కమ్యూనిటీ ట్యాగ్లు',
+    'tags.pendingRequests': 'పెండింగ్ అభ్యర్థనలు',
+    'tags.noPending': 'పెండింగ్ ట్యాగ్ అభ్యర్థనలు లేవు.',
+    'tags.approve': 'ఆమోదించండి',
+    'tags.merge': 'విలీనం',
+    'tags.reject': 'తిరస్కరించండి',
+    'tags.previewSlug': 'స్లగ్ ప్రివ్యూ',
+    'platformMap.eyebrow': 'వ్యూహం · Platform Map',
+    'platformMap.title': 'మాస్టర్ PRD ఫీచర్ కేటలాగ్',
+    'platformMap.subtitle': 'ప్రోడక్ట్ స్ట్రాటజీ, మాస్టర్ PRD v0.1, క్రియేటర్ ఈవెంట్స్ ప్లాట్‌ఫారమ్ నుండి ప్రతి సామర్థ్యం — స్థితి ఒక్క చూపులో.',
+    'platformMap.eventTypes': 'ఈవెంట్ రకాలు',
+    'platformMap.contestPrograms': 'పోటీ ప్రోగ్రామ్‌లు',
+    'platformMap.reviewerRoles': 'రివ్యూయర్ పాత్రలు',
+    'platformMap.reportCategories': 'రిపోర్ట్ వర్గాలు',
+    'platformMap.openLink': 'తెరవండి →',
+    'englishEditor.badge': 'ఇంగ్లీష్ ప్రాస్',
+    'englishEditor.back': 'గ్రంధానికి వెనక్కి',
+    'englishEditor.saveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'englishEditor.saving': 'సేవ్ అవుతోంది…',
+    'englishEditor.hint': 'ఇంగ్లీష్ ప్రాస్ షెల్ — తెలుగు సన్నివేశ టూల్స్ ఉద్దేశపూర్వకంగా లేవు. లక్ష్యం: అధ్యాయానికి 2,000 పదాలు.',
+    'englishEditor.placeholder': 'మీ అధ్యాయాన్ని ఇంగ్లీష్‌లో ప్రారంభించండి…',
+    'englishEditor.chapterTitle': 'అధ్యాయ శీర్షిక',
+    'englishEditor.wordsLabel': 'పదాలు',
+    'englishEditor.minReadLabel': 'నిమిషాల చదవడం',
+    'epistolaryEditor.badge': 'ఎపిస్టలరీ · దశ 1',
+    'epistolaryEditor.back': 'గ్రంధానికి వెనక్కి',
+    'epistolaryEditor.addMessage': 'సందేశం జోడించండి',
+    'epistolaryEditor.scaffoldHint': 'చాట్-బబుల్ ఎడిటర్ స్కాఫోల్డ్ — దశ 2 లో పర్సిస్టెన్స్ వస్తుంది',
+    'epistolaryEditor.messagePlaceholder': 'సందేశం టైప్ చేయండి…',
+    'epistolaryEditor.speakerName': 'మాట్లాడేవారి పేరు',
+    'epistolaryEditor.speakerRole': 'పాత్ర పాత్ర',
+    'epistolaryEditor.chapterTitle': 'అధ్యాయ శీర్షిక',
+    'epistolaryEditor.roleProtagonist': 'నాయకుడు',
+    'epistolaryEditor.roleAntagonist': 'విరోధి',
+    'epistolaryEditor.roleNarrator': 'వర్ణనకర్త',
     'manuscript.eyebrow': 'గ్రంధం · Manuscript',
     'manuscript.subtitle': 'మీ అధ్యాయాల బుక్‌షెల్ఫ్ — రాయండి, సవరించండి, ప్రచురించండి.',
     'manuscript.bookshelf': 'అధ్యాయ బుక్‌షెల్ఫ్',
@@ -857,6 +1101,24 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'manuscript.backToLibrary': 'లైబ్రరీకి వెనక్కి',
     'manuscript.storyBible': 'కథా బైబిల్',
     'manuscript.media': 'మీడియా',
+    'manuscript.loading': 'గ్రంధం లోడ్ అవుతోంది…',
+    'manuscript.shareSocial': 'సోషల్‌లో షేర్ చేయండి',
+    'manuscript.shareSocialHint': 'WhatsApp, Instagram, లేదా X కోసం అధ్యాయ లింక్ కాపీ చేయండి — పాఠకులు టీజర్‌తో రిచ్ ప్రివ్యూకి చేరుకుంటారు.',
+    'manuscript.latestShareable': 'చివరి షేర్ చేయదగిన అధ్యాయం',
+    'manuscript.publishForShare': 'మొదటి షేర్ చేయదగిన పాఠకుల లింక్ పొందడానికి అధ్యాయాన్ని ప్రచురించండి.',
+    'manuscript.emptyBookshelf': 'ఖాళీ బుక్‌షెల్ఫ్',
+    'manuscript.emptyBookshelfHint': 'ఈ గ్రంధాన్ని ప్రారంభించడానికి మొదటి అధ్యాయం జోడించండి.',
+    'manuscript.hubAnalytics': 'యానలిటిక్స్',
+    'manuscript.openEditor': 'ఎడిటర్ తెరవండి',
+    'profile.publicDetails': 'పబ్లిక్ వివరాలు',
+    'profile.bio': 'బయో',
+    'profile.website': 'వెబ్‌సైట్',
+    'profile.socialHandle': 'సోషల్ హ్యాండిల్',
+    'profile.writeNew': 'కొత్తది రాయండి',
+    'profile.defaultTagline': 'కథలో తెలుగు కథకుడు',
+    'profile.viewTrustLadder': 'Story Trust లాడర్ చూడండి',
+    'profile.trustReadOnly': 'Story Trust (చదవడానికి మాత్రమే)',
+    'profile.spiHint': 'వివరించదగిన క్రాఫ్ట్ సంకేతం',
     'schedule.title': 'ప్రచురణ క్యాలెండర్',
     'schedule.subtitle': 'అధ్యాయం ఎప్పుడు లైవ్ అవుతుందో ఎంచుకోండి — మీరు ఆన్‌లైన్‌లో లేకపోయినా స్వయంచాలకంగా ప్రచురిస్తుంది.',
     'schedule.eyebrow': 'ప్రచురణ క్యాలెండర్ · Publishing Calendar',
@@ -1013,6 +1275,32 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'championship.magazine': 'ప్రీమియం మ్యాగజైన్',
     'championship.requiresDebut': 'డెబ్యూ ఆథర్ బ్యాడ్జ్ అవసరం',
     'championship.comingPhase': 'ప్రీమియర్ లీగ్ లైవ్ అయిన తర్వాత ప్రారంభం',
+    'editor.saving': 'సేవ్ అవుతోంది…',
+    'editor.unsaved': 'సేవ్ కాలేదు',
+    'editor.saved': 'సేవ్ అయింది',
+    'editor.notSaved': 'ఇంకా సేవ్ కాలేదు',
+    'editor.backChapters': 'అధ్యాయాలకు వెనక్కి',
+    'editor.chapters': 'అధ్యాయాలు',
+    'editor.history': 'చరిత్ర',
+    'editor.saveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'editor.submitting': 'సమర్పిస్తోంది…',
+    'editor.words': 'పదాలు',
+    'editor.minRead': 'నిమి చదవడం',
+    'editor.drafting': 'రాయడం',
+    'editor.scenes': 'సీన్లు',
+    'reviewWorkspace.eyebrow': 'సాహిత్య మండలి · సమీక్ష',
+    'reviewWorkspace.back': 'సమీక్షకులకు వెనక్కి',
+    'reviewWorkspace.chapterNav': 'అధ్యాయ నావిగేషన్',
+    'reviewWorkspace.prevChapter': 'మునుపటి అధ్యాయం',
+    'reviewWorkspace.nextChapter': 'తదుపరి అధ్యాయం',
+    'reviewWorkspace.chapters': 'అధ్యాయాలు',
+    'reviewWorkspace.toggleChapters': 'అధ్యాయ జాబితా',
+    'reviewWorkspace.observations': 'గమనికలు',
+    'reviewWorkspace.toggleObservations': 'గమనికల ప్యానెల్',
+    'reviewWorkspace.finish': 'సమీక్ష పూర్తి',
+    'reviewWorkspace.toggleSummary': 'సారాంశం',
+    'reviewWorkspace.loading': 'గ్రంథం లోడ్ అవుతోంది…',
+    'reviewWorkspace.opening': 'గ్రంథం తెరుస్తోంది…',
     'dashboard.debutEyebrow': 'అవతరణ కాలం',
     'dashboard.debutTitle': 'మీ మొదటి నవల — గౌరవ మార్గం',
     'dashboard.debutHint': '50 అధ్యాయాలు పూర్తి చేసి Debut Author బ్యాడ్జ్ పొందండి — తర్వాత మోనెటైజేషన్ & పోటీలు.',
@@ -1339,6 +1627,42 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'publishing.tabsLabel': 'Publishing sections',
     'analytics.backToChapters': 'Back to chapters',
     'analytics.backToPublishing': 'Back to publishing',
+    'analytics.eyebrow': 'పాఠకుల అంతర్దృష్టి · Reader Insights',
+    'analytics.subtitle': 'Story Trust signals — retention, completion, and reader growth drive your literary earnings.',
+    'analytics.titleFallback': 'Story Analytics',
+    'analytics.unavailable': 'Analytics unavailable',
+    'analytics.unavailableHint': 'We could not load analytics for this story.',
+    'analytics.tryAgain': 'Try again',
+    'analytics.backToLibrary': 'Back to library',
+    'analytics.chapterRange': 'Chapter range',
+    'analytics.range7d': 'Last 7 chapters',
+    'analytics.range30d': 'Last 30 chapters',
+    'analytics.rangeAll': 'All chapters',
+    'analytics.exportCsv': 'Export CSV',
+    'analytics.totalReads': 'Total reads',
+    'analytics.avgRetention': 'Avg retention',
+    'analytics.subscribersGained': 'Subscribers gained',
+    'analytics.estRevenue': 'Est. revenue (₹)',
+    'analytics.readerFunnel': 'Reader funnel',
+    'analytics.funnelHint': 'Publish → read → subscribe — from live chapter analytics.',
+    'analytics.chaptersPublished': 'Chapters published',
+    'analytics.chaptersWithReads': 'Chapters with reads',
+    'analytics.totalReadsFunnel': 'Total reads',
+    'analytics.avgCompletion': 'Avg completion',
+    'analytics.readToSubscribe': 'Read → subscribe',
+    'analytics.storyTrust': 'Story Trust & SPI',
+    'analytics.refreshSpi': 'Refresh SPI',
+    'analytics.refreshing': 'Refreshing…',
+    'analytics.trustLivePrefix': 'Live trust:',
+    'analytics.trustEarnsIntro': 'This story earns a',
+    'analytics.trustEarnsOutro': 'author share on quarterly revenue (40% base × Story Trust multiplier, up to 60% at Apex).',
+    'analytics.trustLeadGate': 'Build reader value to reach Performing trust — the monetization gate. 40% base · up to 60% at Apex.',
+    'analytics.multiMetric': 'Multi-metric overview',
+    'analytics.demographics': 'Reader demographics',
+    'analytics.demographicsHint': 'Demographics appear once your story has enough reader data on Supabase.',
+    'analytics.popularChapters': 'Popular chapters',
+    'analytics.dropOffInsights': 'Drop-off insights',
+    'analytics.readersDrop': 'readers',
     'media.eyebrow': 'మీడియా లైబ్రరీ · Media Library',
     'media.subtitle': 'Cover images, illustrations, and reference assets — keep your publishing pipeline visually ready. Add credit and license for every image.',
     'media.uploadAsset': 'Upload asset',
@@ -1359,6 +1683,70 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'storyBible.assignee': 'Assignee',
     'storyBible.unassigned': 'Unassigned',
     'storyBible.backToChapters': 'Back to chapters',
+    'storyBible.loading': 'Loading story bible…',
+    'storyBible.charNamePlaceholder': 'Character name',
+    'storyBible.charBioPlaceholder': 'Bio & voice notes',
+    'storyBible.noCharacters': 'No characters yet — add your protagonist and key cast.',
+    'storyBible.exportGlossary': 'Export glossary',
+    'storyBible.entryTitlePlaceholder': 'Entry title',
+    'storyBible.loreDetailsPlaceholder': 'Lore details',
+    'storyBible.noLore': 'Build your world bible — locations, cultures, glossary terms.',
+    'storyBible.inviteEmailPlaceholder': 'Co-author email',
+    'storyBible.chapterOptional': 'Chapter # (optional)',
+    'storyBible.invite': 'Invite',
+    'storyBible.chapterAssignmentPrefix': 'Chapter',
+    'storyBible.chapterAssignmentSuffix': 'assignment',
+    'storyBible.contributorAttribution': 'Contributor attribution',
+    'storyBible.revenueSharePrefix': 'revenue share',
+    'storyBible.revenueShareSuffix': '(basis points scaffold)',
+    'storyBible.noTasks': 'Async tasks for co-authors and editors.',
+    'storyBible.markOpen': 'Mark open',
+    'storyBible.markDone': 'Mark done',
+    'storyBible.arc': 'Arc',
+    'media.loading': 'Loading assets…',
+    'media.deleteAsset': 'Delete asset',
+    'tags.eyebrow': 'ట్యాగ్లు · Community Tags',
+    'tags.title': 'Tag system',
+    'tags.subtitle': 'Search existing → use existing. Or request new → moderator review → approve / merge / reject.',
+    'tags.searchPlaceholder': 'Search tags…',
+    'tags.requestPlaceholder': 'Request new tag…',
+    'tags.request': 'Request',
+    'tags.workflow': 'Workflow',
+    'tags.officialTags': 'Official & community tags',
+    'tags.pendingRequests': 'Pending requests',
+    'tags.noPending': 'No pending tag requests.',
+    'tags.approve': 'Approve',
+    'tags.merge': 'Merge',
+    'tags.reject': 'Reject',
+    'tags.previewSlug': 'Preview slug',
+    'platformMap.eyebrow': 'వ్యూహం · Platform Map',
+    'platformMap.title': 'Master PRD feature catalog',
+    'platformMap.subtitle': 'Every capability from the Product Strategy, Master PRD v0.1, and Creator Events Platform — status at a glance.',
+    'platformMap.eventTypes': 'event types',
+    'platformMap.contestPrograms': 'contest programs',
+    'platformMap.reviewerRoles': 'reviewer roles',
+    'platformMap.reportCategories': 'report categories',
+    'platformMap.openLink': 'Open →',
+    'englishEditor.badge': 'English Prose',
+    'englishEditor.back': 'Back to manuscript',
+    'englishEditor.saveDraft': 'Save draft',
+    'englishEditor.saving': 'Saving…',
+    'englishEditor.hint': 'English prose shell — Telugu scene tools are intentionally omitted. Goal: 2,000 words per chapter.',
+    'englishEditor.placeholder': 'Begin your chapter in English…',
+    'englishEditor.chapterTitle': 'Chapter title',
+    'englishEditor.wordsLabel': 'words',
+    'englishEditor.minReadLabel': 'min read',
+    'epistolaryEditor.badge': 'Epistolary · Phase 1',
+    'epistolaryEditor.back': 'Back to manuscript',
+    'epistolaryEditor.addMessage': 'Add message',
+    'epistolaryEditor.scaffoldHint': 'Chat-bubble editor scaffold — persistence coming in phase 2',
+    'epistolaryEditor.messagePlaceholder': 'Type the message…',
+    'epistolaryEditor.speakerName': 'Speaker name',
+    'epistolaryEditor.speakerRole': 'Speaker role',
+    'epistolaryEditor.chapterTitle': 'Chapter title',
+    'epistolaryEditor.roleProtagonist': 'Protagonist',
+    'epistolaryEditor.roleAntagonist': 'Antagonist',
+    'epistolaryEditor.roleNarrator': 'Narrator',
     'manuscript.eyebrow': 'గ్రంధం · Manuscript',
     'manuscript.subtitle': 'Your chapter bookshelf — write, refine, and publish with confidence.',
     'manuscript.bookshelf': 'Chapter bookshelf',
@@ -1366,6 +1754,24 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'manuscript.backToLibrary': 'Back to library',
     'manuscript.storyBible': 'Story Bible',
     'manuscript.media': 'Media',
+    'manuscript.loading': 'Loading manuscript…',
+    'manuscript.shareSocial': 'Share on social',
+    'manuscript.shareSocialHint': 'Copy a chapter link for WhatsApp, Instagram, or X — readers land on a rich preview with a teaser.',
+    'manuscript.latestShareable': 'Latest shareable chapter',
+    'manuscript.publishForShare': 'Publish a chapter to get your first shareable reader link.',
+    'manuscript.emptyBookshelf': 'Empty bookshelf',
+    'manuscript.emptyBookshelfHint': 'Add your first chapter to begin this manuscript.',
+    'manuscript.hubAnalytics': 'Analytics',
+    'manuscript.openEditor': 'Open editor',
+    'profile.publicDetails': 'Public details',
+    'profile.bio': 'Bio',
+    'profile.website': 'Website',
+    'profile.socialHandle': 'Social handle',
+    'profile.writeNew': 'Write something new',
+    'profile.defaultTagline': 'Telugu storyteller on Katha',
+    'profile.viewTrustLadder': 'View Story Trust ladder',
+    'profile.trustReadOnly': 'Story Trust (read-only)',
+    'profile.spiHint': 'explainable craft signal',
     'schedule.title': 'Publishing calendar',
     'schedule.subtitle': 'Choose when a chapter goes live — it publishes automatically even when you are offline.',
     'schedule.eyebrow': 'ప్రచురణ క్యాలెండర్ · Publishing Calendar',
@@ -1522,6 +1928,32 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'championship.magazine': 'Premium Magazine',
     'championship.requiresDebut': 'Requires Debut Author badge',
     'championship.comingPhase': 'Opens when Premier Leagues go live',
+    'editor.saving': 'Saving…',
+    'editor.unsaved': 'Unsaved changes',
+    'editor.saved': 'Saved',
+    'editor.notSaved': 'Not saved yet',
+    'editor.backChapters': 'Back to chapters',
+    'editor.chapters': 'Chapters',
+    'editor.history': 'History',
+    'editor.saveDraft': 'Save draft',
+    'editor.submitting': 'Submitting…',
+    'editor.words': 'words',
+    'editor.minRead': 'min read',
+    'editor.drafting': 'Drafting',
+    'editor.scenes': 'Scenes',
+    'reviewWorkspace.eyebrow': 'Literary Council · Review',
+    'reviewWorkspace.back': 'Back to Reviewer Pool',
+    'reviewWorkspace.chapterNav': 'Chapter navigation',
+    'reviewWorkspace.prevChapter': 'Previous chapter',
+    'reviewWorkspace.nextChapter': 'Next chapter',
+    'reviewWorkspace.chapters': 'Chapters',
+    'reviewWorkspace.toggleChapters': 'Toggle chapter list',
+    'reviewWorkspace.observations': 'Observations',
+    'reviewWorkspace.toggleObservations': 'Toggle observations',
+    'reviewWorkspace.finish': 'Finish review',
+    'reviewWorkspace.toggleSummary': 'Toggle review summary',
+    'reviewWorkspace.loading': 'Loading manuscript…',
+    'reviewWorkspace.opening': 'Opening manuscript…',
     'dashboard.debutEyebrow': 'Debut Season',
     'dashboard.debutTitle': 'Your first novel — the prestige path',
     'dashboard.debutHint': 'Complete 50 chapters to earn the Debut Author badge — then monetization and contests unlock.',

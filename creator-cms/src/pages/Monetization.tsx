@@ -56,14 +56,16 @@ export function Monetization() {
   }, [dash]);
 
   return (
-    <div className="cms-page studio-page monetization-studio monetization-studio--premium">
+    <div className="cms-page studio-page monetization-studio monetization-studio--premium monetization-studio--streamlined wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('monetization.eyebrow')}
         eyebrowIcon={IndianRupee}
         title={t('monetization.title')}
         subtitle={t('monetization.subtitle')}
       />
 
+      <div className="wc-stagger-children">
       <section className="cms-panel monetization-charter" aria-labelledby="brand-charter-title">
         <div className="monetization-charter__header">
           <Sparkles size={20} aria-hidden />
@@ -229,6 +231,7 @@ export function Monetization() {
           <MonetizationSection title="Platform" items={platform} />
         </div>
       </section>
+      </div>
     </div>
   );
 }

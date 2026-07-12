@@ -137,15 +137,16 @@ export function Settings() {
   };
 
   return (
-    <div className="cms-page studio-page">
+    <div className="cms-page studio-page settings-studio--premium wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('settings.eyebrow')}
         eyebrowIcon={Settings2}
         title={t('settings.title')}
         subtitle={t('settings.subtitle')}
       />
 
-      <div className="studio-settings-grid">
+      <div className="studio-settings-grid wc-stagger-children">
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <User size={18} aria-hidden />

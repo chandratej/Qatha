@@ -1,0 +1,60 @@
+/**
+ * Katha Motion System — Wave 9
+ * Staggered page enter, progress delight, reduced-motion safe
+ */
+
+@keyframes wc-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wc-enter-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wc-progress-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+
+.wc-page-enter {
+  animation: wc-enter-fade 0.35s ease both;
+}
+
+.wc-stagger-children > * {
+  animation: wc-enter-up 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.wc-stagger-children > *:nth-child(1) { animation-delay: 0.03s; }
+.wc-stagger-children > *:nth-child(2) { animation-delay: 0.07s; }
+.wc-stagger-children > *:nth-child(3) { animation-delay: 0.11s; }
+.wc-stagger-children > *:nth-child(4) { animation-delay: 0.15s; }
+.wc-stagger-children > *:nth-child(5) { animation-delay: 0.19s; }
+.wc-stagger-children > *:nth-child(6) { animation-delay: 0.23s; }
+.wc-stagger-children > *:nth-child(7) { animation-delay: 0.27s; }
+.wc-stagger-children > *:nth-child(8) { animation-delay: 0.31s; }
+.wc-stagger-children > *:nth-child(n + 9) { animation-delay: 0.35s; }
+
+.wc-progress-delight {
+  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wc-progress-delight--active {
+  animation: wc-progress-pulse 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wc-page-enter,
+  .wc-stagger-children > *,
+  .wc-progress-delight--active {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Save } from 'lucide-react';
+import { useLocale } from '../../context/LocaleContext';
 import '../../styles/editor-prototype.css';
 
 const WORD_GOAL = 2000;
@@ -16,6 +17,7 @@ function countWords(text: string): number {
 export function EnglishEditor() {
   const { storyId, chapterNum } = useParams<{ storyId: string; chapterNum: string }>();
   const navigate = useNavigate();
+  const { t } = useLocale();
   const chapter = Number(chapterNum) || 1;
 
   const [chapterTitle, setChapterTitle] = useState(`Chapter ${chapter}`);
@@ -35,7 +37,7 @@ export function EnglishEditor() {
   }, []);
 
   return (
-    <div className="katha-proto-layout english-editor" data-katha-mode="creation" lang="en" dir="ltr">
+    <div className="katha-proto-layout katha-proto-layout--premium english-editor wc-page-enter" data-katha-mode="creation" lang="en" dir="ltr">
       <header className="katha-editor-chrome english-editor__chrome">
         <div className="katha-editor-chrome__row katha-editor-chrome__row--primary">
           <div className="katha-editor-chrome__leading">
@@ -43,13 +45,13 @@ export function EnglishEditor() {
               type="button"
               className="katha-icon-btn"
               onClick={() => navigate(`/stories/${storyId}`)}
-              aria-label="Back to manuscript"
+              aria-label={t('englishEditor.back')}
             >
               <ArrowLeft size={18} aria-hidden />
             </button>
             <span className="english-editor__badge">
               <BookOpen size={14} aria-hidden />
-              English Prose
+              {t('englishEditor.badge')}
             </span>
           </div>
           <div className="katha-editor-doc-actions">
@@ -60,7 +62,7 @@ export function EnglishEditor() {
               onClick={handleSaveDraft}
             >
               <Save size={16} aria-hidden />
-              {saving ? 'Saving…' : 'Save draft'}
+              {saving ? t('englishEditor.saving') : t('englishEditor.saveDraft')}
             </button>
           </div>
         </div>
@@ -69,11 +71,11 @@ export function EnglishEditor() {
             className="katha-inline-title-input english-editor__title"
             value={chapterTitle}
             onChange={(e) => setChapterTitle(e.target.value)}
-            aria-label="Chapter title"
+            aria-label={t('englishEditor.chapterTitle')}
           />
           <span className="katha-editor-doc-meta__sep" aria-hidden>·</span>
           <span className="katha-editor-doc-stats">
-            {wordCount.toLocaleString()} words · ~{readMins} min read
+            {wordCount.toLocaleString()} {t('englishEditor.wordsLabel')} · ~{readMins} {t('englishEditor.minReadLabel')}
           </span>
           {lastSaved && (
             <>
@@ -89,16 +91,15 @@ export function EnglishEditor() {
       <main className="english-editor__workspace">
         <div className="english-editor__canvas">
           <p className="english-editor__hint input-hint">
-            English prose shell — scene sidebar and Telugu craft tools are intentionally omitted.
-            Goal: {WORD_GOAL.toLocaleString()} words per chapter.
+            {t('englishEditor.hint')}
           </p>
           <textarea
             className="english-editor__prose"
             value={prose}
             onChange={(e) => setProse(e.target.value)}
-            placeholder="Begin your chapter in English…"
+            placeholder={t('englishEditor.placeholder')}
             spellCheck
-            aria-label="Chapter prose"
+            aria-label={t('englishEditor.chapterTitle')}
           />
         </div>
       </main>

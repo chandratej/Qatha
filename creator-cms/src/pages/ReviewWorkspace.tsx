@@ -15,11 +15,13 @@ import { ReviewCommandPalette } from '../components/reviewers/workspace/ReviewCo
 import type { PeerReviewRequest, ReviewerAssignment } from '../types/platform';
 import type { CommentKind, CommentPriority, ReviewCategoryId, TextSelectionAnchor } from '../types/reviewWorkspace';
 import { usesTeluguTypography } from '../lib/reviewLanguagePrefs';
+import { useLocale } from '../context/LocaleContext';
 import { clearReviewDraft } from '../lib/reviewWorkspaceStore';
 import { useReviewLanguage } from '../components/reviewers/workspace/ReviewLanguageBar';
 import '../styles/review-workspace.css';
 
 export function ReviewWorkspace() {
+  const { t } = useLocale();
   const { assignmentId = '' } = useParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -55,15 +57,15 @@ export function ReviewWorkspace() {
 
   if (loading) {
     return (
-      <div className="rw-shell rw-shell--loading" data-katha-mode="creation">
-        <p className="rw-loading-text" role="status" aria-live="polite">Opening manuscript…</p>
+      <div className="rw-shell rw-shell--premium rw-shell--loading" data-katha-mode="creation">
+        <p className="rw-loading-text" role="status" aria-live="polite">{t('reviewWorkspace.opening')}</p>
       </div>
     );
   }
 
   if (loadError || !assignment || !request) {
     return (
-      <div className="rw-shell rw-shell--error" data-katha-mode="creation">
+      <div className="rw-shell rw-shell--premium rw-shell--error" data-katha-mode="creation">
         <p className="cms-error-text">{loadError ?? 'Assignment not found'}</p>
         <Link to="/reviewers" className="katha-cta katha-cta--soft">Back to inbox</Link>
       </div>
@@ -88,6 +90,7 @@ function ReviewWorkspaceLoaded({
   request: PeerReviewRequest;
   assignmentId: string;
 }) {
+  const { t } = useLocale();
   const reviewerSlot = assignment.reviewer_slot;
   const isSubmitted = assignment.status === 'submitted';
   const navigate = useNavigate();
@@ -235,15 +238,15 @@ function ReviewWorkspaceLoaded({
 
   if (ws.manuscriptLoading) {
     return (
-      <div className="rw-shell rw-shell--loading" data-katha-mode="creation">
-        <p className="rw-loading-text" role="status" aria-live="polite">Loading manuscript…</p>
+      <div className="rw-shell rw-shell--premium rw-shell--loading" data-katha-mode="creation">
+        <p className="rw-loading-text" role="status" aria-live="polite">{t('reviewWorkspace.loading')}</p>
       </div>
     );
   }
 
   return (
     <div
-      className={`rw-shell rw-shell--immersive rw-shell--stage${teluguShell ? ' rw-shell--telugu' : ''}`}
+      className={`rw-shell rw-shell--premium rw-shell--immersive rw-shell--stage${teluguShell ? ' rw-shell--telugu' : ''}`}
       data-katha-mode="creation"
       data-rw-review-lang={reviewLang}
     >

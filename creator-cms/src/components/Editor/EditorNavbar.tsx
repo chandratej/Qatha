@@ -10,6 +10,7 @@ import { useSavePulse } from '../../hooks/useSavePulse';
 import { formatRelativeTime } from '../../lib/relativeTime';
 import type { FontScale } from '../../lib/comfortPrefs';
 import type { AuthoringWorkspace } from '../../lib/authoringWorkspace';
+import { useLocale } from '../../context/LocaleContext';
 
 interface EditorNavbarProps {
   chapterNum: number;
@@ -41,11 +42,13 @@ function SaveStatus({
   lastSaved,
   dirty,
   savePulse,
+  t,
 }: {
   saving: boolean;
   lastSaved: Date | null;
   dirty: boolean;
   savePulse: boolean;
+  t: (key: import('../../lib/studioLocale').StudioStringKey) => string;
 }) {
   const [, setTick] = useState(0);
 
@@ -59,7 +62,7 @@ function SaveStatus({
     return (
       <span className="katha-editor-save-status katha-editor-save-status--busy" aria-live="polite">
         <Loader2 size={13} className="katha-editor-save-status__spin" aria-hidden />
-        Saving…
+        {t('editor.saving')}
       </span>
     );
   }
@@ -68,7 +71,7 @@ function SaveStatus({
     return (
       <span className="katha-editor-save-status katha-editor-save-status--dirty" aria-live="polite">
         <CloudOff size={13} aria-hidden />
-        Unsaved changes
+        {t('editor.unsaved')}
       </span>
     );
   }
@@ -82,14 +85,14 @@ function SaveStatus({
         title={lastSaved.toLocaleString()}
       >
         <Check size={13} aria-hidden />
-        Saved {relative}
+        {t('editor.saved')} {relative}
       </span>
     );
   }
 
   return (
     <span className="katha-editor-save-status katha-editor-save-status--idle" aria-live="polite">
-      Not saved yet
+      {t('editor.notSaved')}
     </span>
   );
 }
@@ -118,6 +121,7 @@ export function EditorNavbar({
   workspace,
   onWorkspaceChange,
 }: EditorNavbarProps) {
+  const { t } = useLocale();
   const navigate = useNavigate();
   const savePulse = useSavePulse(saving, lastSaved);
   const nearLimit = charCount > charLimit * 0.85;
@@ -132,11 +136,11 @@ export function EditorNavbar({
             type="button"
             className="katha-proto-nav-btn katha-proto-nav-btn--back"
             onClick={() => (backTo ? navigate(backTo) : navigate('/stories'))}
-            aria-label="Back to chapters"
-            title="Back to chapters"
+            aria-label={t('editor.backChapters')}
+            title={t('editor.backChapters')}
           >
             <ArrowLeft size={16} />
-            <span className="katha-proto-nav-btn__label">Chapters</span>
+            <span className="katha-proto-nav-btn__label">{t('editor.chapters')}</span>
           </button>
 
           <div className="katha-editor-chrome__divider" aria-hidden />
@@ -161,11 +165,11 @@ export function EditorNavbar({
             type="button"
             className="katha-proto-nav-btn katha-proto-nav-btn--icon"
             onClick={onHistory}
-            title="Version history"
-            aria-label="Version history"
+            title={t('editor.history')}
+            aria-label={t('editor.history')}
           >
             <Clock size={15} />
-            <span className="katha-proto-nav-btn__label">History</span>
+            <span className="katha-proto-nav-btn__label">{t('editor.history')}</span>
           </button>
 
           <EditorComfortControls
@@ -183,8 +187,8 @@ export function EditorNavbar({
             title="Save draft (Ctrl+S)"
             disabled={saving}
           >
-            <span className="katha-proto-nav-btn__draft-full">Save draft</span>
-            <span className="katha-proto-nav-btn__draft-short">Save</span>
+            <span className="katha-proto-nav-btn__draft-full">{t('editor.saveDraft')}</span>
+            <span className="katha-proto-nav-btn__draft-short">{t('common.save')}</span>
           </button>
 
           <button
@@ -199,7 +203,7 @@ export function EditorNavbar({
             ) : (
               <Rocket size={15} aria-hidden />
             )}
-            <span>{publishing ? 'Submitting…' : publishLabel}</span>
+            <span>{publishing ? t('editor.submitting') : publishLabel}</span>
           </button>
         </div>
       </div>
@@ -211,16 +215,17 @@ export function EditorNavbar({
             lastSaved={lastSaved}
             dirty={dirty && !saving}
             savePulse={savePulse}
+            t={t}
           />
           <span className="katha-editor-doc-meta__sep" aria-hidden>
             ·
           </span>
-          <span title="Word count across all scenes">{wordCount.toLocaleString()} words</span>
+          <span title="Word count across all scenes">{wordCount.toLocaleString()} {t('editor.words')}</span>
           <span className="katha-editor-doc-meta__sep" aria-hidden>
             ·
           </span>
           <span title="Estimated reading time">
-            {readMins > 0 ? `~${readMins} min read` : 'Drafting'}
+            {readMins > 0 ? `~${readMins} ${t('editor.minRead')}` : t('editor.drafting')}
           </span>
           {(nearLimit || overLimit) && (
             <>

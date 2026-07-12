@@ -11,6 +11,7 @@ import {
 } from '../../lib/sceneSearch';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 import { saveEditorPrefs, type SceneSearchInputMode } from '../../lib/editorPrefs';
+import { useLocale } from '../../context/LocaleContext';
 
 export interface SceneBlock {
   id: string;
@@ -65,6 +66,7 @@ export function SceneSidebar({
   sceneSearchInputMode,
   footerSlot,
 }: SceneSidebarProps) {
+  const { t } = useLocale();
   const [searchTerm, setSearchTerm] = useState('');
   const [showHelper, setShowHelper] = useState(shouldShowSceneSearchHelper);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -100,7 +102,7 @@ export function SceneSidebar({
         >
           <PanelLeftOpen size={18} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
-        <span className="katha-proto-sidebar-rail-label" aria-hidden>Scenes</span>
+        <span className="katha-proto-sidebar-rail-label" aria-hidden>{t('editor.scenes')}</span>
       </aside>
     );
   }
@@ -117,7 +119,7 @@ export function SceneSidebar({
       <div className="katha-proto-sidebar-header">
         <div className="katha-proto-sidebar-title-row">
           <div className="katha-proto-sidebar-title">
-            Scenes
+            {t('editor.scenes')}
             <span className="katha-proto-sidebar-count" aria-label={`${scenes.length} scenes`}>
               {scenes.length}
             </span>

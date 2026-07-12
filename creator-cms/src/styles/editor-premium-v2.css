@@ -1,0 +1,359 @@
+/**
+ * Chapter Editor — World-Class Visual Layer (Wave 8)
+ * Targets: Apple clarity, Figma precision, literary parchment warmth
+ */
+
+.katha-proto-layout--premium {
+  background:
+    radial-gradient(ellipse 100% 80% at 0% 0%, rgba(196, 160, 82, 0.07), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 100% 20%, rgba(107, 35, 56, 0.05), transparent 50%),
+    var(--paper);
+}
+
+.katha-proto-layout--premium .katha-editor-chrome {
+  background: rgba(255, 252, 247, 0.88);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid rgba(107, 35, 56, 0.08);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 4px 24px rgba(26, 24, 20, 0.04);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .katha-editor-chrome {
+  background: rgba(22, 20, 18, 0.92);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
+}
+
+.katha-proto-layout--premium .katha-editor-chrome__row--primary {
+  min-height: 56px;
+  padding-top: 10px;
+}
+
+.katha-proto-layout--premium .katha-workspace-switcher {
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(26, 24, 20, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(26, 24, 20, 0.06);
+}
+
+.katha-proto-layout--premium .katha-workspace-switcher__btn--active {
+  background: var(--surface);
+  color: var(--katha-maroon);
+  box-shadow: 0 2px 12px rgba(107, 35, 56, 0.12);
+}
+
+.katha-proto-layout--premium .katha-editor-save-status--saved {
+  color: var(--accent-sage);
+  font-weight: 600;
+}
+
+/* Scene sidebar — Spotify-clean list */
+.katha-proto-layout--premium .katha-proto-sidebar {
+  background: rgba(255, 252, 247, 0.95);
+  border-right: 1px solid rgba(107, 35, 56, 0.08);
+  box-shadow: 4px 0 24px rgba(26, 24, 20, 0.03);
+}
+
+.katha-proto-layout--premium .katha-proto-sidebar-header {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
+}
+
+.katha-proto-layout--premium .katha-proto-sidebar-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--katha-maroon);
+}
+
+.katha-proto-layout--premium .katha-proto-search {
+  border-radius: 10px;
+  border: 1.5px solid rgba(26, 24, 20, 0.08);
+  background: var(--surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.katha-proto-layout--premium .katha-proto-search:focus-within {
+  border-color: color-mix(in srgb, var(--katha-gold) 50%, transparent);
+  box-shadow: 0 0 0 3px rgba(196, 160, 82, 0.14);
+}
+
+.katha-proto-layout--premium .katha-proto-new-scene-btn {
+  border-radius: 10px;
+  font-weight: 600;
+  background: linear-gradient(135deg, rgba(107, 35, 56, 0.08) 0%, rgba(196, 160, 82, 0.1) 100%);
+  border: 1px solid rgba(107, 35, 56, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.katha-proto-layout--premium .katha-proto-new-scene-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(107, 35, 56, 0.1);
+}
+
+.katha-proto-layout--premium .sc-card {
+  border-radius: 12px !important;
+  margin: 4px 8px !important;
+  border: 1px solid transparent !important;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+.katha-proto-layout--premium .sc-card:hover {
+  background: rgba(196, 160, 82, 0.06) !important;
+}
+
+.katha-proto-layout--premium .sc-card--active {
+  background: var(--surface) !important;
+  border-color: color-mix(in srgb, var(--katha-gold) 35%, transparent) !important;
+  box-shadow:
+    0 2px 12px rgba(26, 24, 20, 0.06),
+    inset 3px 0 0 var(--katha-maroon) !important;
+  transform: translateX(2px);
+}
+
+.katha-proto-layout--premium .sc-u-scene-title {
+  font-family: var(--font-telugu), var(--font-reading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Writing canvas — literary page */
+.katha-proto-layout--premium .katha-proto-editor-body {
+  padding: 28px 20px 56px;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(196, 160, 82, 0.05), transparent 60%),
+    var(--paper);
+}
+
+.katha-proto-layout--premium .katha-proto-editor-canvas {
+  border-radius: 4px 16px 16px 4px;
+  box-shadow:
+    -6px 0 0 color-mix(in srgb, var(--katha-maroon) 12%, transparent),
+    0 8px 40px rgba(26, 24, 20, 0.1),
+    0 2px 8px rgba(26, 24, 20, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(196, 160, 82, 0.18) !important;
+  padding: clamp(36px, 5vw, 56px) clamp(32px, 6vw, 64px) clamp(48px, 6vw, 72px);
+  animation: katha-page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes katha-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.katha-proto-layout--premium .katha-proto-scene-title-input {
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  border-bottom-color: rgba(196, 160, 82, 0.25);
+  padding-bottom: 12px;
+  margin-bottom: 28px;
+}
+
+.katha-proto-layout--premium .katha-proto-scene-title-input:focus {
+  border-bottom-color: var(--katha-gold);
+}
+
+/* Format toolbar */
+.katha-proto-layout--premium .katha-proto-format-toolbar {
+  border-radius: 14px;
+  margin: 0 16px 8px;
+  padding: 6px 10px;
+  background: rgba(255, 252, 247, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(26, 24, 20, 0.06);
+  box-shadow: 0 4px 20px rgba(26, 24, 20, 0.05);
+}
+
+.katha-proto-layout--premium .katha-proto-fmt-btn {
+  border-radius: 9px;
+  height: 34px;
+}
+
+.katha-proto-layout--premium .katha-proto-fmt-btn.active {
+  background: color-mix(in srgb, var(--katha-maroon) 10%, var(--surface));
+  color: var(--katha-maroon);
+}
+
+/* Quill editor typography */
+.katha-proto-layout--premium .ql-editor {
+  font-family: var(--font-telugu), var(--font-reading), 'Literata', Georgia, serif !important;
+  font-size: 1.125rem !important;
+  line-height: 1.85 !important;
+  color: var(--ink) !important;
+  min-height: 280px;
+  padding: 0 !important;
+}
+
+.katha-proto-layout--premium .ql-editor p {
+  margin-bottom: 1.1em;
+}
+
+.katha-proto-layout--premium .ql-container.ql-snow {
+  border: none !important;
+  font-family: inherit;
+}
+
+.katha-proto-layout--premium .ql-toolbar.ql-snow {
+  display: none;
+}
+
+/* Preview pane */
+.katha-proto-layout--premium .katha-proto-preview {
+  background: rgba(255, 252, 247, 0.96);
+  border-left: 1px solid rgba(107, 35, 56, 0.08);
+  box-shadow: -4px 0 24px rgba(26, 24, 20, 0.03);
+}
+
+.katha-proto-layout--premium .katha-proto-preview-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
+  background: rgba(255, 252, 247, 0.9);
+  backdrop-filter: blur(12px);
+}
+
+.katha-proto-layout--premium .katha-proto-preview-toolbar {
+  padding: 10px 14px;
+  gap: 8px;
+  border-bottom: 1px solid rgba(26, 24, 20, 0.05);
+}
+
+.katha-proto-layout--premium .katha-proto-preview-icon-btn {
+  border-radius: 10px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.katha-proto-layout--premium .katha-proto-preview-icon-btn.active {
+  background: color-mix(in srgb, var(--katha-maroon) 10%, var(--surface));
+  color: var(--katha-maroon);
+}
+
+.katha-proto-layout--premium .katha-proto-preview-body {
+  padding: 20px 18px 28px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(196, 160, 82, 0.05), transparent 60%),
+    rgba(255, 252, 247, 0.98);
+}
+
+.katha-proto-layout--premium .katha-proto-reader-card {
+  border-radius: 16px;
+  border: 1px solid rgba(26, 24, 20, 0.08);
+  box-shadow:
+    0 12px 40px rgba(26, 24, 20, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.katha-proto-layout--premium .katha-proto-preview-scene-title {
+  font-family: var(--font-telugu), var(--font-reading), 'Literata', Georgia, serif;
+  color: var(--katha-maroon);
+  letter-spacing: -0.01em;
+}
+
+.katha-proto-layout--premium .katha-proto-preview-scene-body {
+  font-family: var(--font-telugu), var(--font-reading), 'Literata', Georgia, serif;
+  line-height: 1.85;
+}
+
+.katha-proto-layout--premium .katha-proto-preview-scene-block--active {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--katha-gold) 6%, transparent);
+  box-shadow: inset 0 0 0 1px rgba(196, 160, 82, 0.2);
+}
+
+.katha-proto-layout--premium .katha-proto-preview-reopen {
+  border-radius: 12px 0 0 12px;
+  background: rgba(255, 252, 247, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(107, 35, 56, 0.1);
+  box-shadow: -4px 0 20px rgba(26, 24, 20, 0.06);
+}
+
+/* AI companion dock */
+.katha-proto-layout--premium .katha-ai-companion__trigger {
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--katha-maroon), color-mix(in srgb, var(--katha-maroon) 80%, #000));
+  box-shadow: 0 6px 24px rgba(107, 35, 56, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.katha-proto-layout--premium .katha-ai-companion__trigger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 32px rgba(107, 35, 56, 0.34);
+}
+
+.katha-proto-layout--premium .katha-ai-companion__panel {
+  border-radius: 18px;
+  border: 1px solid rgba(107, 35, 56, 0.12);
+  background: rgba(255, 252, 247, 0.96);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow:
+    0 20px 60px rgba(26, 24, 20, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .katha-ai-companion__panel {
+  background: rgba(22, 20, 18, 0.94);
+}
+
+.katha-proto-layout--premium .katha-ai-companion__panel-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(26, 24, 20, 0.06);
+}
+
+.katha-proto-layout--premium .katha-ai-companion__action {
+  border-radius: 12px;
+  border: 1px solid rgba(26, 24, 20, 0.08);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.katha-proto-layout--premium .katha-ai-companion__action:hover {
+  border-color: color-mix(in srgb, var(--katha-gold) 40%, transparent);
+  background: color-mix(in srgb, var(--katha-gold) 6%, var(--surface));
+}
+
+/* Status strip */
+.katha-proto-layout--premium .katha-editor-status-strip {
+  border-radius: 0;
+  border-bottom: 1px solid rgba(107, 35, 56, 0.1);
+}
+
+/* Focus mode — cinematic */
+.katha-proto-layout--premium.focus-mode .katha-proto-editor-canvas {
+  max-width: min(42rem, 92vw);
+  box-shadow:
+    0 24px 80px rgba(26, 24, 20, 0.14),
+    0 8px 24px rgba(26, 24, 20, 0.06);
+}
+
+.katha-proto-layout--premium .katha-proto-focus-controls {
+  background: rgba(255, 252, 247, 0.9);
+  backdrop-filter: blur(16px);
+  border-radius: 999px;
+  border: 1px solid rgba(26, 24, 20, 0.08);
+  box-shadow: 0 8px 32px rgba(26, 24, 20, 0.1);
+}
+
+/* Publish CTA in navbar */
+.katha-proto-layout--premium .katha-editor-chrome .katha-cta--maroon {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 11px;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(107, 35, 56, 0.2);
+}
+
+/* Loading skeleton polish */
+.katha-proto-layout--premium .katha-editor-skeleton {
+  background: var(--wc-hero-gradient, var(--paper));
+}
