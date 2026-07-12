@@ -5,6 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { platformApi } from '../lib/platformApi';
 import { NotificationCard } from '../components/notifications/NotificationCard';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { useLocale } from '../context/LocaleContext';
 import {
   filterNotifications,
@@ -52,7 +53,7 @@ export function Notifications() {
   };
 
   return (
-    <div className="cms-page studio-page notifications-studio--premium">
+    <div className="cms-page studio-page notifications-studio--premium wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('notifications.eyebrow')}
@@ -72,6 +73,7 @@ export function Notifications() {
         ) : undefined}
       />
 
+      <div className="wc-stagger-children">
       <div className="notification-bell__filters notifications-filters--premium">
         {(Object.keys(FILTER_KEYS) as NotificationFilter[]).map((f) => (
           <button
@@ -89,11 +91,11 @@ export function Notifications() {
       {loading && <p className="input-hint">{t('common.loading')}</p>}
 
       {!loading && filtered.length === 0 ? (
-        <div className="studio-empty studio-empty--premium">
-          <div className="studio-empty__glyph" aria-hidden><Bell size={28} /></div>
-          <h3 className="studio-empty__title">{t('notifications.emptyTitle')}</h3>
-          <p className="studio-empty__text">{t('notifications.emptyText')}</p>
-        </div>
+        <StudioEmptyState
+          icon={Bell}
+          title={t('notifications.emptyTitle')}
+          text={t('notifications.emptyText')}
+        />
       ) : (
         <div className="notifications-page__feed notifications-feed">
           {filtered.map((n) => (
@@ -105,6 +107,7 @@ export function Notifications() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

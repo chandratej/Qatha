@@ -1,0 +1,151 @@
+/**
+ * Championship & Magazine spotlight — Wave 13 premium pass
+ */
+
+.championship-spotlight--premium {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: var(--premium-section-gap, 32px);
+  padding: clamp(28px, 4.5vw, 40px);
+  border-radius: var(--wc-radius-xl, 24px);
+  background:
+    var(--wc-hero-gradient),
+    radial-gradient(ellipse 70% 55% at 100% 0%, var(--wc-glow-gold), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 0% 100%, var(--wc-glow-maroon), transparent 50%);
+  border: 1px solid var(--premium-border-hover);
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.championship-spotlight--premium::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--wc-paper-texture);
+  opacity: 0.65;
+}
+
+.championship-spotlight--premium > * {
+  position: relative;
+  z-index: 1;
+}
+
+.championship-spotlight--premium .championship-spotlight__hero {
+  margin-bottom: 22px;
+}
+
+.championship-spotlight--premium .championship-spotlight__eyebrow {
+  margin-bottom: 10px;
+}
+
+.championship-spotlight--premium .championship-spotlight__title {
+  font-size: clamp(1.625rem, 3.2vw, 2.125rem);
+  letter-spacing: -0.03em;
+}
+
+.championship-spotlight--premium .championship-spotlight__subtitle {
+  margin-bottom: 0;
+  max-width: 52ch;
+}
+
+.championship-spotlight--premium .championship-spotlight__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.championship-spotlight--premium .championship-spotlight__card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--wc-radius-lg, 18px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  box-shadow: var(--premium-shadow-rest);
+  transition:
+    transform var(--katha-duration-fast) var(--katha-ease),
+    box-shadow var(--katha-duration-fast) var(--katha-ease);
+}
+
+.championship-spotlight--premium .championship-spotlight__card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--premium-shadow-hover);
+}
+
+.championship-spotlight--premium .championship-spotlight__card-visual {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  min-height: 108px;
+  padding: 18px 18px 14px;
+  color: var(--katha-maroon);
+}
+
+.championship-spotlight--premium .championship-spotlight__card--league .championship-spotlight__card-visual {
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--katha-gold) 22%, transparent) 0%,
+    color-mix(in srgb, var(--katha-maroon) 10%, transparent) 100%);
+}
+
+.championship-spotlight--premium .championship-spotlight__card--magazine .championship-spotlight__card-visual {
+  background: linear-gradient(155deg,
+    color-mix(in srgb, var(--katha-maroon) 14%, transparent) 0%,
+    color-mix(in srgb, var(--katha-gold) 18%, transparent) 100%);
+}
+
+.championship-spotlight--premium .championship-spotlight__card-glyph {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border-hover);
+  box-shadow: 0 6px 20px rgba(107, 35, 56, 0.08);
+}
+
+.championship-spotlight--premium .championship-spotlight__card-cover {
+  width: 56px;
+  height: 72px;
+  border-radius: 6px 10px 10px 6px;
+  background: linear-gradient(180deg, var(--katha-maroon) 0%, #4a1828 100%);
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 40%, transparent);
+  box-shadow:
+    4px 6px 16px rgba(26, 24, 20, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  position: relative;
+}
+
+.championship-spotlight--premium .championship-spotlight__card-cover::after {
+  content: '';
+  position: absolute;
+  inset: 8px 10px auto;
+  height: 3px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--katha-gold) 70%, white);
+}
+
+.championship-spotlight--premium .championship-spotlight__card-body {
+  padding: 0 18px 18px;
+}
+
+.championship-spotlight--premium .championship-spotlight__card-body h3 {
+  margin: 8px 0 6px;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.championship-spotlight--premium .championship-spotlight__card-body p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--premium-muted);
+}
+
+.championship-spotlight--premium .championship-spotlight__badge {
+  margin-top: 20px;
+}

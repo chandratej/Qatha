@@ -21,7 +21,7 @@ import { ActivityFeedPanel } from '../components/dashboard/ActivityFeedPanel';
 import { TopPerformingStories } from '../components/dashboard/TopPerformingStories';
 import { CreatorBadgeBar } from '../components/dashboard/CreatorBadgeBar';
 import { StudioHero } from '../components/studio/StudioHero';
-import { BrandMark } from '../components/studio/BrandMark';
+
 import { ReviewerPersonaDashboard } from '../components/dashboard/ReviewerPersonaDashboard';
 import { DashboardNotificationsWidget } from '../components/dashboard/DashboardNotificationsWidget';
 import { PendingInvitesWidget } from '../components/dashboard/PendingInvitesWidget';
@@ -32,6 +32,8 @@ import { TasksPanel } from '../components/dashboard/TasksPanel';
 import { useCreatorPersona } from '../hooks/useCreatorPersona';
 import { DebutSeasonDashboardCard } from '../components/dashboard/DebutSeasonDashboardCard';
 import { DebutGraduationModal } from '../components/dashboard/DebutGraduationModal';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
+import { StudioGlyph } from '../components/studio/StudioGlyph';
 import { useLocale } from '../context/LocaleContext';
 
 export function Dashboard() {
@@ -215,16 +217,17 @@ export function Dashboard() {
   if (error || !d) {
     return (
       <div className="cms-page dashboard-page dashboard-page--premium studio-page">
-        <div className="studio-empty">
-          <div className="studio-empty__glyph" aria-hidden>
-            <BrandMark size="md" />
-          </div>
-          <h2 className="studio-empty__title">Studio paused</h2>
-          <p className="studio-empty__text">{error || 'We could not load your studio.'}</p>
+        <StudioEmptyState
+          icon={BookOpen}
+          iconSize={32}
+          title={t('dashboard.studioPaused')}
+          text={error || t('dashboard.studioPausedHint')}
+          as="h2"
+        >
           <button type="button" className="katha-cta katha-cta--soft" onClick={() => (isSessionError(error) ? navigate('/login') : mutate())}>
-            {isSessionError(error) ? 'Sign in again' : 'Try again'}
+            {isSessionError(error) ? t('dashboard.signInAgain') : t('dashboard.tryAgain')}
           </button>
-        </div>
+        </StudioEmptyState>
       </div>
     );
   }
@@ -249,13 +252,13 @@ export function Dashboard() {
 
       {activeMilestone && (
         <div className="milestone-modal-backdrop" role="presentation">
-          <div className="milestone-modal" role="dialog" aria-labelledby="milestone-title" aria-modal="true">
-            <div className="studio-empty__glyph" aria-hidden><TrendingUp size={32} /></div>
-            <h2 id="milestone-title" className="studio-empty__title">Milestone unlocked</h2>
-            <p className="milestone-modal__te" lang="te">మీ ప్రయాణంలో మరో మైలురాయి</p>
-            <p className="studio-empty__text">Keep the lamp lit — your craft is building something readers will remember.</p>
+          <div className="milestone-modal milestone-modal--v2" role="dialog" aria-labelledby="milestone-title" aria-modal="true">
+            <StudioGlyph id="trending" variant="ring" size={32} />
+            <h2 id="milestone-title" className="studio-empty__title">{t('dashboard.milestoneTitle')}</h2>
+            <p className="milestone-modal__te katha-token-subtitle-te" lang="te">{t('dashboard.milestoneTe')}</p>
+            <p className="studio-empty__text">{t('dashboard.milestoneBody')}</p>
             <button ref={milestoneBtnRef} type="button" className="dashboard-cta cms-auth-cta" onClick={handleAcknowledge}>
-              Continue with pride
+              {t('dashboard.milestoneCta')}
             </button>
           </div>
         </div>

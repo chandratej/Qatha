@@ -1,0 +1,208 @@
+/**
+ * Wave 14 — Glyph library, Platform Map bento, Community/Dashboard polish, English editor progress
+ */
+
+/* Studio glyph library */
+.studio-glyph {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--katha-maroon);
+}
+
+.studio-glyph--ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--katha-maroon) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 25%, transparent);
+  box-shadow: 0 6px 20px rgba(107, 35, 56, 0.08);
+}
+
+.studio-glyph--tile {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--katha-gold) 12%, var(--premium-surface, var(--surface)));
+  border: 1px solid var(--premium-border);
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.studio-glyph--soft {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--katha-maroon) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--katha-maroon) 12%, transparent);
+}
+
+/* Platform map v2 — bento density */
+.platform-map-page--v2 {
+  max-width: 1080px;
+}
+
+.platform-stats-strip--v2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.platform-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 14px;
+  border-radius: var(--wc-radius-lg, 18px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  box-shadow: var(--premium-shadow-rest);
+  text-align: center;
+}
+
+.platform-stat-card__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--katha-maroon);
+  line-height: 1;
+}
+
+.platform-stat-card__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--premium-muted);
+  line-height: 1.35;
+}
+
+.platform-map-category {
+  margin-bottom: 28px;
+}
+
+.platform-map-category__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.platform-map-category__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.platform-map-bento {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.platform-feature-section--v2 {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 18px 20px;
+  margin-bottom: 0;
+}
+
+.platform-feature-section--v2 .dashboard-panel__head {
+  margin-bottom: 14px;
+}
+
+.platform-feature-section--v2 .dashboard-panel__title {
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+
+.platform-feature-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  align-content: flex-start;
+}
+
+.platform-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  background: color-mix(in srgb, var(--katha-gold) 6%, var(--premium-surface));
+  border: 1px solid var(--premium-border);
+  color: var(--ink-soft, var(--ink-muted));
+}
+
+.platform-feature-section--v2 .panel-view-all {
+  margin-top: 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.platform-status-pill--partial {
+  background: color-mix(in srgb, var(--katha-gold) 14%, transparent);
+  color: var(--katha-maroon);
+}
+
+.platform-status-pill--planned {
+  background: color-mix(in srgb, var(--ink-muted) 10%, transparent);
+  color: var(--ink-muted);
+}
+
+/* Community feed empty — glyph parity */
+.community-feed-empty--v2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.community-signal__icon .studio-glyph--soft {
+  width: 44px;
+  height: 44px;
+}
+
+/* Dashboard milestone modal v2 */
+.milestone-modal--v2 {
+  text-align: center;
+  padding: clamp(28px, 5vw, 40px);
+}
+
+.milestone-modal--v2 .studio-glyph {
+  display: grid;
+  margin: 0 auto 16px;
+}
+
+.milestone-modal--v2 .studio-glyph--ring {
+  width: 64px;
+  height: 64px;
+}
+
+/* English editor — word goal + autosave */
+.english-editor__progress {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: color-mix(in srgb, var(--katha-gold) 5%, var(--premium-surface, var(--surface)));
+  border: 1px solid var(--premium-border);
+}
+
+.english-editor__autosave {
+  font-size: 0.8125rem;
+  color: var(--premium-muted);
+}
+
+.english-editor__autosave--saved {
+  color: var(--katha-maroon);
+  font-weight: 500;
+}
+
+.english-editor__chrome .ink-progress__hint {
+  font-size: 0.75rem;
+}

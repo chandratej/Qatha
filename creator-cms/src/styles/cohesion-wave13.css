@@ -1,0 +1,152 @@
+/**
+ * Wave 13 cohesion — Schedule list density, Event submission flow
+ */
+
+/* Schedule list panel v2 */
+.schedule-list-panel--v2 .cms-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.schedule-list-panel--v2 .schedule-list-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--katha-maroon) 10%, transparent);
+  color: var(--katha-maroon);
+}
+
+.schedule-list-panel--v2 .schedule-list--dense {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-list-panel--v2 .schedule-item--dense {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: color-mix(in srgb, var(--katha-gold) 3%, var(--premium-surface));
+  border: 1px solid var(--premium-border);
+  transition: box-shadow var(--katha-duration-fast) var(--katha-ease);
+}
+
+.schedule-list-panel--v2 .schedule-item--dense:hover {
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.schedule-list-panel--v2 .schedule-item__story {
+  display: block;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+}
+
+.schedule-list-panel--v2 .schedule-item__chapter {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--premium-muted);
+  margin-top: 2px;
+}
+
+.schedule-list-panel--v2 .schedule-item__time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  color: var(--katha-maroon);
+}
+
+.schedule-list-panel--v2 .schedule-item__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.schedule-list-panel--v2 .studio-empty--inline {
+  margin: 8px 0 4px;
+}
+
+/* Event detail submission flow — compact */
+.event-submit-box--compact {
+  padding: 16px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: color-mix(in srgb, var(--katha-gold) 4%, var(--premium-surface));
+  border: 1px solid var(--premium-border);
+}
+
+.event-submit-box--compact .event-submit-box__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 0.9375rem;
+}
+
+.event-submit-box--compact .event-submit-flow {
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .event-submit-box--compact .event-submit-flow__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 12px;
+  }
+}
+
+.event-submit-box--compact .input-group {
+  margin: 0;
+}
+
+.event-submit-box--compact .input-group label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.event-submit-box--compact .cms-select {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.event-submit-box--compact .event-eligibility-block {
+  margin-top: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 0.8125rem;
+}
+
+.event-submit-box--compact .event-eligibility-warnings {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.8125rem;
+}
+
+.event-register-box--compact .event-rules-accept {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}

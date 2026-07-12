@@ -418,6 +418,13 @@ export type StudioStringKey =
   | 'platformMap.reviewerRoles'
   | 'platformMap.reportCategories'
   | 'platformMap.openLink'
+  | 'platformMap.catContent'
+  | 'platformMap.catJourney'
+  | 'platformMap.catEvents'
+  | 'platformMap.catCommunity'
+  | 'platformMap.catEconomy'
+  | 'platformMap.statusPartial'
+  | 'platformMap.statusPlanned'
   | 'englishEditor.badge'
   | 'englishEditor.back'
   | 'englishEditor.saveDraft'
@@ -427,6 +434,8 @@ export type StudioStringKey =
   | 'englishEditor.chapterTitle'
   | 'englishEditor.wordsLabel'
   | 'englishEditor.minReadLabel'
+  | 'englishEditor.savedPrefix'
+  | 'englishEditor.wordGoalLabel'
   | 'epistolaryEditor.badge'
   | 'epistolaryEditor.back'
   | 'epistolaryEditor.addMessage'
@@ -518,6 +527,7 @@ export type StudioStringKey =
   | 'community.createStoryFirst'
   | 'community.postToFeed'
   | 'community.feedEmptyTitle'
+  | 'community.feedEmptyTe'
   | 'community.chapter'
   | 'community.love'
   | 'community.signalLetters'
@@ -619,6 +629,8 @@ export type StudioStringKey =
   | 'championship.magazine'
   | 'championship.requiresDebut'
   | 'championship.comingPhase'
+  | 'championship.leagueHint'
+  | 'championship.magazineHint'
   | 'editor.saving'
   | 'editor.unsaved'
   | 'editor.saved'
@@ -686,6 +698,14 @@ export type StudioStringKey =
   | 'dashboard.metricsEarnings'
   | 'dashboard.metricsTrust'
   | 'dashboard.demoBanner'
+  | 'dashboard.milestoneTitle'
+  | 'dashboard.milestoneTe'
+  | 'dashboard.milestoneBody'
+  | 'dashboard.milestoneCta'
+  | 'dashboard.studioPaused'
+  | 'dashboard.studioPausedHint'
+  | 'dashboard.tryAgain'
+  | 'dashboard.signInAgain'
   | 'stats.writingStreak'
   | 'stats.badge'
   | 'stats.storyTrust'
@@ -1097,6 +1117,13 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'platformMap.reviewerRoles': 'రివ్యూయర్ పాత్రలు',
     'platformMap.reportCategories': 'రిపోర్ట్ వర్గాలు',
     'platformMap.openLink': 'తెరవండి →',
+    'platformMap.catContent': 'కంటెంట్ & మెటాడేటా',
+    'platformMap.catJourney': 'రచయిత్రి ప్రయాణం',
+    'platformMap.catEvents': 'ఈవెంట్స్ & పోటీలు',
+    'platformMap.catCommunity': 'రీడర్ & కమ్యూనిటీ',
+    'platformMap.catEconomy': 'క్రియేటర్ ఆర్థిక వ్యవస్థ',
+    'platformMap.statusPartial': 'పాక్షికం',
+    'platformMap.statusPlanned': 'ప్రణాళిక',
     'englishEditor.badge': 'ఇంగ్లీష్ ప్రాస్',
     'englishEditor.back': 'గ్రంధానికి వెనక్కి',
     'englishEditor.saveDraft': 'డ్రాఫ్ట్ సేవ్',
@@ -1106,6 +1133,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'englishEditor.chapterTitle': 'అధ్యాయ శీర్షిక',
     'englishEditor.wordsLabel': 'పదాలు',
     'englishEditor.minReadLabel': 'నిమిషాల చదవడం',
+    'englishEditor.savedPrefix': 'సేవ్ అయింది',
+    'englishEditor.wordGoalLabel': 'అధ్యాయ పదాల లక్ష్యం',
     'epistolaryEditor.badge': 'ఎపిస్టలరీ · దశ 1',
     'epistolaryEditor.back': 'గ్రంధానికి వెనక్కి',
     'epistolaryEditor.addMessage': 'సందేశం జోడించండి',
@@ -1197,6 +1226,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'community.createStoryFirst': 'మొదట కథ సృష్టించండి',
     'community.postToFeed': 'ఫీడ్‌లో పోస్ట్ చేయండి',
     'community.feedEmptyTitle': 'మీ కమ్యూనిటీ ఫీడ్ సిద్ధంగా ఉంది',
+    'community.feedEmptyTe': 'మొదటి పోస్ట్ పంచుకోండి',
     'community.chapter': 'అధ్యాయం',
     'community.love': 'ఇష్టం',
     'community.signalLetters': 'పాఠకుల సందేశాలు',
@@ -1298,6 +1328,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'championship.magazine': 'ప్రీమియం మ్యాగజైన్',
     'championship.requiresDebut': 'డెబ్యూ ఆథర్ బ్యాడ్జ్ అవసరం',
     'championship.comingPhase': 'ప్రీమియర్ లీగ్ లైవ్ అయిన తర్వాత ప్రారంభం',
+    'championship.leagueHint': 'లారియట్‌ల కోసం క్రాస్-లీగ్ బ్రాకెట్‌లు — ప్రీమియర్ లీగ్ విజేతలతో పోటీ.',
+    'championship.magazineHint': 'క్యూరేటెడ్ యాంథాలజీ, రచయిత్రి ప్రొఫైల్‌లు, ఎడిషన్ కవర్ ఫీచర్‌లు.',
     'editor.saving': 'సేవ్ అవుతోంది…',
     'editor.unsaved': 'సేవ్ కాలేదు',
     'editor.saved': 'సేవ్ అయింది',
@@ -1365,6 +1397,14 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.metricsEarnings': 'ఈ నెల సంపాదన',
     'dashboard.metricsTrust': 'స్టోరీ ట్రస్ట్ వాటా',
     'dashboard.demoBanner': 'డెమో మెట్రిక్స్ — ప్రచురించిన తర్వాత నిజమైన డేటా కనిపిస్తుంది.',
+    'dashboard.milestoneTitle': 'మైలురాయి అన్‌లాక్ అయింది',
+    'dashboard.milestoneTe': 'మీ ప్రయాణంలో మరో మైలురాయి',
+    'dashboard.milestoneBody': 'దీపం కొనసాగించండి — మీ కళ పాఠకులు గుర్తుంచుకునేదాన్ని నిర్మిస్తోంది.',
+    'dashboard.milestoneCta': 'గర్వంతో కొనసాగండి',
+    'dashboard.studioPaused': 'స్టూడియో పాజ్ అయింది',
+    'dashboard.studioPausedHint': 'మీ స్టూడియో లోడ్ కాలేదు.',
+    'dashboard.tryAgain': 'మళ్ళీ ప్రయత్నించండి',
+    'dashboard.signInAgain': 'మళ్ళీ సైన్ ఇన్',
     'stats.writingStreak': 'రోజులు దీపం వెలిగింది',
     'stats.badge': 'బ్యాజ్',
     'stats.storyTrust': 'స్టోరీ ట్రస్ట్',
@@ -1773,6 +1813,13 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'platformMap.reviewerRoles': 'reviewer roles',
     'platformMap.reportCategories': 'report categories',
     'platformMap.openLink': 'Open →',
+    'platformMap.catContent': 'Content & metadata',
+    'platformMap.catJourney': 'Author journey',
+    'platformMap.catEvents': 'Events & contests',
+    'platformMap.catCommunity': 'Reader & community',
+    'platformMap.catEconomy': 'Creator economy',
+    'platformMap.statusPartial': 'partial',
+    'platformMap.statusPlanned': 'planned',
     'englishEditor.badge': 'English Prose',
     'englishEditor.back': 'Back to manuscript',
     'englishEditor.saveDraft': 'Save draft',
@@ -1782,6 +1829,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'englishEditor.chapterTitle': 'Chapter title',
     'englishEditor.wordsLabel': 'words',
     'englishEditor.minReadLabel': 'min read',
+    'englishEditor.savedPrefix': 'Saved',
+    'englishEditor.wordGoalLabel': 'Chapter word goal',
     'epistolaryEditor.badge': 'Epistolary · Phase 1',
     'epistolaryEditor.back': 'Back to manuscript',
     'epistolaryEditor.addMessage': 'Add message',
@@ -1873,6 +1922,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'community.createStoryFirst': 'Create a story first',
     'community.postToFeed': 'Post to feed',
     'community.feedEmptyTitle': 'Your community feed is ready',
+    'community.feedEmptyTe': 'ప్రథమ పోస్ట్ పంచుకోండి',
     'community.chapter': 'Chapter',
     'community.love': 'Love',
     'community.signalLetters': 'Reader letters',
@@ -1974,6 +2024,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'championship.magazine': 'Premium Magazine',
     'championship.requiresDebut': 'Requires Debut Author badge',
     'championship.comingPhase': 'Opens when Premier Leagues go live',
+    'championship.leagueHint': 'Cross-league brackets for laureates — compete with Premier League winners.',
+    'championship.magazineHint': 'Curated anthology, author profiles, and edition cover features.',
     'editor.saving': 'Saving…',
     'editor.unsaved': 'Unsaved changes',
     'editor.saved': 'Saved',
@@ -2041,6 +2093,14 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.metricsEarnings': 'Earnings this month',
     'dashboard.metricsTrust': 'Story Trust share',
     'dashboard.demoBanner': 'Demo metrics — live data appears after you publish on Supabase.',
+    'dashboard.milestoneTitle': 'Milestone unlocked',
+    'dashboard.milestoneTe': 'మీ ప్రయాణంలో మరో మైలురాయి',
+    'dashboard.milestoneBody': 'Keep the lamp lit — your craft is building something readers will remember.',
+    'dashboard.milestoneCta': 'Continue with pride',
+    'dashboard.studioPaused': 'Studio paused',
+    'dashboard.studioPausedHint': 'We could not load your studio.',
+    'dashboard.tryAgain': 'Try again',
+    'dashboard.signInAgain': 'Sign in again',
     'stats.writingStreak': 'day lamp lit',
     'stats.badge': 'Badge',
     'stats.storyTrust': 'Story Trust',

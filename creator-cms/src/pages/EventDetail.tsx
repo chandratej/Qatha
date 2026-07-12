@@ -277,7 +277,7 @@ export function EventDetail() {
               )}
             </div>
           ) : canRegister ? (
-            <div className="event-register-box cms-mt-6">
+            <div className="event-register-box event-register-box--compact cms-mt-6">
               <CompetitionRulesPanel rules={rules} locale={locale} t={t} />
               <label className="event-rules-accept reviewer-onboarding__agreement cms-mt-6">
                 <input
@@ -314,7 +314,7 @@ export function EventDetail() {
           )}
 
           {canSubmit && !registration?.story_id && (
-            <div className="event-submit-box cms-mt-6">
+            <div className="event-submit-box event-submit-box--compact cms-mt-6">
               <h4 className="dashboard-panel__title event-submit-box__title">
                 <Upload size={16} aria-hidden /> {t('events.submit')}
               </h4>
@@ -324,19 +324,30 @@ export function EventDetail() {
                   <Link to="/stories/new">{t('events.createManuscript')}</Link>
                 </p>
               ) : (
-                <>
-                  <div className="input-group">
-                    <label htmlFor="event-story">{t('events.selectStory')}</label>
-                    <select
-                      id="event-story"
-                      className="cms-select"
-                      value={storyId}
-                      onChange={(e) => setStoryId(e.target.value)}
+                <div className="event-submit-flow">
+                  <div className="event-submit-flow__row">
+                    <div className="input-group">
+                      <label htmlFor="event-story">{t('events.selectStory')}</label>
+                      <select
+                        id="event-story"
+                        className="cms-select"
+                        value={storyId}
+                        onChange={(e) => setStoryId(e.target.value)}
+                      >
+                        {stories.map((s) => (
+                          <option key={s.id} value={s.id}>{s.title}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="katha-cta katha-cta--maroon"
+                      disabled={busy || !storyId || (eligibility != null && !eligibility.eligible)}
+                      onClick={() => { void handleSubmit(); }}
                     >
-                      {stories.map((s) => (
-                        <option key={s.id} value={s.id}>{s.title}</option>
-                      ))}
-                    </select>
+                      {busy ? t('events.submitting') : t('events.submit')}
+                    </button>
                   </div>
 
                   {eligibility && !eligibility.eligible && (
@@ -356,16 +367,7 @@ export function EventDetail() {
                       {eligibility.warnings.map((w) => <li key={w}>{w}</li>)}
                     </ul>
                   )}
-
-                  <button
-                    type="button"
-                    className="katha-cta katha-cta--maroon"
-                    disabled={busy || !storyId || (eligibility != null && !eligibility.eligible)}
-                    onClick={() => { void handleSubmit(); }}
-                  >
-                    {busy ? t('events.submitting') : t('events.submit')}
-                  </button>
-                </>
+                </div>
               )}
             </div>
           )}

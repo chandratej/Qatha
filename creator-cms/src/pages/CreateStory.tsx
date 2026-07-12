@@ -117,7 +117,7 @@ export function CreateStory() {
   };
 
   return (
-    <div className="cms-page studio-page create-story-studio create-story-studio--premium">
+    <div className="cms-page studio-page create-story-studio create-story-studio--premium wc-page-enter">
       <div className="create-story-steps" aria-label={t('createStory.wizardSteps')}>
         <span className="create-story-step create-story-step--active">
           <span className="create-story-step__num">1</span>
@@ -141,7 +141,7 @@ export function CreateStory() {
         subtitle={t('createStory.subtitle')}
       />
 
-      <form onSubmit={handleSubmit} className="create-story-bento">
+      <form onSubmit={handleSubmit} className="create-story-bento wc-stagger-children">
         <div className="create-story-bento__hero">
           <div className="create-story-bento__title-wrap">
             <label htmlFor="story-title" className="create-story-bento__title-label">

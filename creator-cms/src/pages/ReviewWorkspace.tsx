@@ -254,7 +254,7 @@ function ReviewWorkspaceLoaded({
 
   return (
     <div
-      className={`rw-shell rw-shell--premium rw-shell--immersive rw-shell--stage${teluguShell ? ' rw-shell--telugu' : ''}`}
+      className={`rw-shell rw-shell--premium rw-shell--immersive rw-shell--stage wc-page-enter${teluguShell ? ' rw-shell--telugu' : ''}`}
       data-katha-mode="creation"
       data-rw-review-lang={reviewLang}
     >

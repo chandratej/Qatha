@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Heart, MessageCircle, BookOpen } from 'lucide-react';
+import { Heart, MessageCircle, BookOpen, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { togglePostLove, type CommunityPost } from '../../lib/communityStore';
 import { useLocale } from '../../context/LocaleContext';
 import { formatRelativeTime } from '../../lib/relativeTime';
+import { StudioEmptyState } from '../studio/StudioEmptyState';
 
 interface Props {
   posts: CommunityPost[];
@@ -16,13 +17,14 @@ export function CommunityFeed({ posts, onUpdate }: Props) {
 
   if (posts.length === 0) {
     return (
-      <div className="community-feed-empty">
-        <div className="community-feed-empty__rings" aria-hidden>
-          <span /><span /><span />
-        </div>
-        <p className="community-feed-empty__title">{t('community.feedEmptyTitle')}</p>
-        <p className="community-feed-empty__text">{t('community.feedPlaceholder')}</p>
-      </div>
+      <StudioEmptyState
+        className="community-feed-empty--v2"
+        icon={Users}
+        iconSize={28}
+        title={t('community.feedEmptyTitle')}
+        titleTe={t('community.feedEmptyTe')}
+        text={t('community.feedPlaceholder')}
+      />
     );
   }
 

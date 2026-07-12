@@ -56,6 +56,10 @@ import './styles/hub-pages-premium.css';
 import './styles/layout-rhythm-v2.css';
 import './styles/empty-state-system.css';
 import './styles/cohesion-wave12.css';
+import './styles/design-tokens.css';
+import './styles/championship-premium.css';
+import './styles/cohesion-wave13.css';
+import './styles/cohesion-wave14.css';
 
 function App() {
   return (

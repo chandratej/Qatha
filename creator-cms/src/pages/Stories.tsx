@@ -12,6 +12,7 @@ import { StoryEditModal } from '../components/StoryEditModal';
 import { ManuscriptCard } from '../components/studio/ManuscriptCard';
 import { ShareModal } from '../components/studio/ShareModal';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 
 type StatusFilter = '' | 'draft' | 'published' | 'pending_review' | 'needs_revision';
 
@@ -129,9 +130,13 @@ export function Stories() {
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) > 0 && filteredStories.length === 0 && (
-        <div className="studio-empty studio-empty--compact">
-          <h3 className="studio-empty__title">{t('stories.noMatchTitle')}</h3>
-          <p className="studio-empty__text">{t('stories.noMatchText')}</p>
+        <StudioEmptyState
+          variant="compact"
+          icon={Search}
+          iconSize={24}
+          title={t('stories.noMatchTitle')}
+          text={t('stories.noMatchText')}
+        >
           <button
             type="button"
             className="btn btn-secondary"
@@ -139,7 +144,7 @@ export function Stories() {
           >
             {t('stories.clearFilters')}
           </button>
-        </div>
+        </StudioEmptyState>
       )}
 
       {!loading && (filteredStories.length > 0 || isMockMode) && (
@@ -174,16 +179,18 @@ export function Stories() {
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
-        <div className="studio-empty studio-empty--premium">
-          <div className="studio-empty__glyph" aria-hidden><PenLine size={32} /></div>
-          <h3 className="studio-empty__title">{t('stories.emptyShelfTitle')}</h3>
-          <p className="studio-empty__title-te" lang="te">{t('stories.emptyShelfTe')}</p>
-          <p className="studio-empty__text">{t('stories.emptyShelfText')}</p>
+        <StudioEmptyState
+          icon={PenLine}
+          iconSize={32}
+          title={t('stories.emptyShelfTitle')}
+          titleTe={t('stories.emptyShelfTe')}
+          text={t('stories.emptyShelfText')}
+        >
           <Link to="/stories/new" className="katha-cta katha-cta--maroon studio-empty__cta">
             <Plus size={18} aria-hidden />
             {t('stories.createFirst')}
           </Link>
-        </div>
+        </StudioEmptyState>
       )}
 
       {editing && (

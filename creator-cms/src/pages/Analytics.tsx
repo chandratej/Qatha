@@ -10,6 +10,7 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
 import { StoryTrustLadder } from '../components/studio/StoryTrustLadder';
 import { formatCompact } from '../lib/dashboardFormat';
@@ -110,15 +111,18 @@ export function Analytics() {
   if (error || !data) {
     return (
       <div className="cms-page studio-page analytics-studio analytics-studio--premium wc-page-enter">
-        <div className="studio-empty">
-          <div className="studio-empty__glyph" aria-hidden><BarChart3 size={32} /></div>
-          <h2 className="studio-empty__title">{t('analytics.unavailable')}</h2>
-          <p className="studio-empty__text">{error || t('analytics.unavailableHint')}</p>
+        <StudioEmptyState
+          icon={BarChart3}
+          iconSize={32}
+          title={t('analytics.unavailable')}
+          text={error || t('analytics.unavailableHint')}
+          as="h2"
+        >
           <div className="studio-empty__actions">
             <button type="button" className="katha-cta katha-cta--soft" onClick={() => mutate()}>{t('analytics.tryAgain')}</button>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/stories')}>{t('analytics.backToLibrary')}</button>
           </div>
-        </div>
+        </StudioEmptyState>
       </div>
     );
   }

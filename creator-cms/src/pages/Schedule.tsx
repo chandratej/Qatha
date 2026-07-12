@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, ChevronLeft, ChevronRight, Clock, Loader2, Pencil, Trash2, BookOpen } from 'lucide-react';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { api, type ScheduledPublishItem, type StoryData } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useLocale } from '../context/LocaleContext';
@@ -280,12 +281,14 @@ export function Schedule() {
           )}
 
           {!storiesLoading && stories.length === 0 && (
-            <div className="studio-empty studio-empty--v2 schedule-empty-state">
-              <div className="studio-empty__glyph" aria-hidden><BookOpen size={28} /></div>
-              <h3 className="studio-empty__title">{t('schedule.noScheduled')}</h3>
-              <p className="studio-empty__text">{t('schedule.emptyStories')}</p>
+            <StudioEmptyState
+              className="schedule-empty-state"
+              icon={BookOpen}
+              title={t('schedule.noScheduled')}
+              text={t('schedule.emptyStories')}
+            >
               <Link to="/stories/new" className="katha-cta katha-cta--maroon">{t('stories.newStory')}</Link>
-            </div>
+            </StudioEmptyState>
           )}
 
           {stories.length > 0 && (
@@ -379,9 +382,14 @@ export function Schedule() {
             />
           </section>
 
-          <section className="cms-panel schedule-list-panel">
+          <section className="cms-panel schedule-list-panel schedule-list-panel--v2">
             <div className="cms-panel__head">
               <h2 className="cms-panel__title">{t('schedule.upcoming')}</h2>
+              {!loading && scheduledItems.length > 0 && (
+                <span className="schedule-list-count" aria-label={t('schedule.upcoming')}>
+                  {scheduledItems.length}
+                </span>
+              )}
             </div>
 
             {loading && (
@@ -394,13 +402,19 @@ export function Schedule() {
             {error && <p className="cms-error-text">{error}</p>}
 
             {!loading && scheduledItems.length === 0 && (
-              <p className="schedule-list-empty">{t('schedule.noScheduled')}</p>
+              <StudioEmptyState
+                variant="inline"
+                icon={Clock}
+                iconSize={22}
+                title={t('schedule.noScheduled')}
+                text={t('schedule.emptyStories')}
+              />
             )}
 
             {!loading && scheduledItems.length > 0 && (
-              <ul className="schedule-list schedule-list--compact">
+              <ul className="schedule-list schedule-list--dense">
                 {scheduledItems.map((item) => (
-                  <li key={item.id} className="schedule-item schedule-item--compact">
+                  <li key={item.id} className="schedule-item schedule-item--dense">
                     <div className="schedule-item__main">
                       <span className="schedule-item__story">{item.story_title}</span>
                       <span className="schedule-item__chapter">
@@ -433,7 +447,7 @@ export function Schedule() {
                           </button>
                         </div>
                       ) : (
-                        <span className="schedule-item__time">
+                        <span className="schedule-item__time-pill">
                           <Clock size={14} aria-hidden />
                           {formatScheduleDate(item.scheduled_publish_at)}
                         </span>

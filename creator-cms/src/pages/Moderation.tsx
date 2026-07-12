@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import type { ModerationItem } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { useLocale } from '../context/LocaleContext';
 import { sanitizeHtml } from '../lib/sanitizeHtml';
 
@@ -36,7 +37,7 @@ export function Moderation() {
   const pagedQueue = queue.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   return (
-    <div className="cms-page studio-page moderation-studio moderation-studio--premium">
+    <div className="cms-page studio-page moderation-studio moderation-studio--premium wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('moderation.eyebrow')}
@@ -69,14 +70,16 @@ export function Moderation() {
         </div>
       )}
 
+      <div className="wc-stagger-children">
       {error && <div className="cms-panel cms-error-text">{error}</div>}
 
       {!loading && queue.length === 0 && (
-        <div className="studio-empty studio-empty--premium">
-          <div className="studio-empty__glyph" aria-hidden><Shield size={32} /></div>
-          <h3 className="studio-empty__title">{t('moderation.emptyTitle')}</h3>
-          <p className="studio-empty__text">{t('moderation.emptyText')}</p>
-        </div>
+        <StudioEmptyState
+          icon={Shield}
+          iconSize={32}
+          title={t('moderation.emptyTitle')}
+          text={t('moderation.emptyText')}
+        />
       )}
 
       <div style={{ display: 'grid', gap: 20 }}>
@@ -165,6 +168,7 @@ export function Moderation() {
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }

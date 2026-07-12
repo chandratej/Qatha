@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Heart, MessageCircle, Users, Sparkles } from 'lucide-react';
+import { Users, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { DiyaIcon } from '../components/studio/DiyaIcon';
@@ -9,12 +9,18 @@ import type { StoryData } from '../types/database';
 import { listCommunityPosts, type CommunityPost } from '../lib/communityStore';
 import { CommunityComposer } from '../components/community/CommunityComposer';
 import { CommunityFeed } from '../components/community/CommunityFeed';
+import { StudioGlyph } from '../components/studio/StudioGlyph';
+import type { StudioGlyphId } from '../components/studio/StudioGlyph';
 
-const COMMUNITY_SIGNALS = [
-  { icon: Users, titleKey: 'community.signalLetters' as const, te: 'పాఠకుల సందేశాలు' },
-  { icon: MessageCircle, titleKey: 'community.signalReactions' as const, te: 'అధ్యాయ ప్రతిస్పందనలు' },
-  { icon: Heart, titleKey: 'community.signalWarmth' as const, te: 'వారపు వెచ్చదనం' },
-] as const;
+const COMMUNITY_SIGNALS: Array<{
+  glyph: StudioGlyphId;
+  titleKey: 'community.signalLetters' | 'community.signalReactions' | 'community.signalWarmth';
+  te: string;
+}> = [
+  { glyph: 'users', titleKey: 'community.signalLetters', te: 'పాఠకుల సందేశాలు' },
+  { glyph: 'message', titleKey: 'community.signalReactions', te: 'అధ్యాయ ప్రతిస్పందనలు' },
+  { glyph: 'heart', titleKey: 'community.signalWarmth', te: 'వారపు వెచ్చదనం' },
+];
 
 export function Community() {
   const { t } = useLocale();
@@ -68,7 +74,7 @@ export function Community() {
         {COMMUNITY_SIGNALS.map((signal) => (
           <div key={signal.titleKey} className="community-signal" role="listitem">
             <div className="community-signal__icon">
-              <signal.icon size={20} aria-hidden />
+              <StudioGlyph id={signal.glyph} variant="soft" size={20} />
             </div>
             <div className="community-signal__copy">
               <h3 className="community-signal__title">{t(signal.titleKey)}</h3>

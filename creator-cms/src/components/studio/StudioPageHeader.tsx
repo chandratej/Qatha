@@ -24,18 +24,22 @@ export function StudioPageHeader({
   variant = 'default',
 }: StudioPageHeaderProps) {
   return (
-    <header className={`studio-page-header${variant === 'hero' ? ' studio-page-header--hero' : ''}`}>
+    <header
+      className={`studio-page-header${variant === 'hero' ? ' studio-page-header--hero' : ''}`}
+    >
       <div className={backTo ? 'cms-page-header__with-back' : undefined}>
         {backTo && backLabel && <BackLink to={backTo} label={backLabel} />}
         <div>
           {eyebrow && (
-            <p className="studio-page-header__eyebrow">
+            <p className="studio-page-header__eyebrow katha-token-eyebrow">
               {EyebrowIcon && <EyebrowIcon size={14} aria-hidden />}
               {eyebrow}
             </p>
           )}
-          <h1 className="studio-page-header__title">{title}</h1>
-          {subtitle && <p className="studio-page-header__subtitle">{subtitle}</p>}
+          <h1 className="studio-page-header__title katha-token-title">{title}</h1>
+          {subtitle && (
+            <p className="studio-page-header__subtitle katha-token-subtitle">{subtitle}</p>
+          )}
         </div>
       </div>
       {actions && <div className="cms-page-header__actions">{actions}</div>}

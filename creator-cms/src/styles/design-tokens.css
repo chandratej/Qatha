@@ -1,0 +1,103 @@
+/**
+ * Component design tokens — Wave 13
+ * Shared classes consumed by React components (not CSS-only overrides).
+ */
+
+:root {
+  --katha-token-eyebrow-size: 0.8125rem;
+  --katha-token-title-size: clamp(1.75rem, 3.5vw, 2.25rem);
+  --katha-token-subtitle-size: 1rem;
+  --katha-token-body-size: 0.9375rem;
+  --katha-token-glyph-size: 64px;
+  --katha-token-badge-radius: 999px;
+  --katha-token-panel-radius: var(--wc-radius-xl, 24px);
+}
+
+.katha-token-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: var(--katha-token-eyebrow-size);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--katha-maroon);
+}
+
+.katha-token-title {
+  margin: 0 0 8px;
+  font-size: var(--katha-token-title-size);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.katha-token-subtitle {
+  margin: 0;
+  max-width: 56ch;
+  font-size: var(--katha-token-subtitle-size);
+  line-height: 1.55;
+  color: var(--premium-muted, var(--ink-muted));
+}
+
+.katha-token-subtitle-te {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--katha-maroon);
+}
+
+.katha-token-body {
+  margin: 0;
+  font-size: var(--katha-token-body-size);
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.katha-token-panel {
+  border-radius: var(--katha-token-panel-radius);
+  background: var(--premium-surface, var(--surface));
+  border: 1px solid var(--premium-border, var(--dash-border));
+  box-shadow: var(--premium-shadow-rest, var(--shadow-sm));
+}
+
+.katha-token-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--katha-token-badge-radius);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--katha-gold) 15%, transparent);
+  color: var(--ink);
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 28%, transparent);
+}
+
+.katha-token-glyph-ring {
+  width: var(--katha-token-glyph-size);
+  height: var(--katha-token-glyph-size);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--katha-maroon) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 25%, transparent);
+  color: var(--katha-maroon);
+  box-shadow: 0 8px 28px rgba(107, 35, 56, 0.1);
+}
+
+.katha-token-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: color-mix(in srgb, var(--katha-gold) 12%, var(--surface));
+  color: var(--katha-maroon);
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 30%, transparent);
+}

@@ -22,6 +22,7 @@ import { canHostEvent } from '../lib/hostEventEligibility';
 import { debutSeasonProgressPct } from '../lib/eventEligibility';
 import { api } from '../lib/api';
 import { ChampionshipSpotlight } from '../components/events/ChampionshipSpotlight';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 
 function eventTypeLabel(id: string, locale: 'te' | 'en') {
   const match = EVENT_TYPES.find((t) => t.id === id);
@@ -99,8 +100,9 @@ export function Events() {
   ];
 
   return (
-    <div className="cms-page studio-page">
+    <div className="cms-page studio-page events-studio-page wc-page-enter">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('events.eyebrow')}
         eyebrowIcon={Trophy}
         title={t('events.title')}
@@ -113,6 +115,7 @@ export function Events() {
         ) : undefined}
       />
 
+      <div className="wc-stagger-children">
       <section className="debut-season-hero cms-panel" aria-labelledby="debut-season-title">
         <div className="debut-season-hero__head">
           <div>
@@ -256,11 +259,14 @@ export function Events() {
       )}
 
       {!loading && openEvents.length === 0 && otherEvents.length === 0 && (
-        <div className="studio-empty events-empty cms-mt-6">
-          <div className="studio-empty__glyph" aria-hidden><Trophy size={32} /></div>
-          <h2 className="studio-empty__title">{t('events.emptyTitle')}</h2>
-          <p className="studio-empty__text">{t('events.emptyText')}</p>
-        </div>
+        <StudioEmptyState
+          className="events-empty cms-mt-6"
+          icon={Trophy}
+          iconSize={32}
+          title={t('events.emptyTitle')}
+          text={t('events.emptyText')}
+          as="h2"
+        />
       )}
 
       {!loading && openEvents.length > 0 && (
@@ -296,6 +302,7 @@ export function Events() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
