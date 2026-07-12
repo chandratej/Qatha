@@ -4,15 +4,24 @@ import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { platformApi } from '../lib/platformApi';
 import { NotificationCard } from '../components/notifications/NotificationCard';
+import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { useLocale } from '../context/LocaleContext';
 import {
   filterNotifications,
-  NOTIFICATION_FILTER_LABELS,
   normalizePlatformNotification,
   unreadCount,
   type NotificationFilter,
 } from '../lib/notificationFeed';
 
+const FILTER_KEYS: Record<NotificationFilter, 'notifications.filterAll' | 'notifications.filterReview' | 'notifications.filterPublish' | 'notifications.filterModeration'> = {
+  all: 'notifications.filterAll',
+  review: 'notifications.filterReview',
+  publish: 'notifications.filterPublish',
+  moderation: 'notifications.filterModeration',
+};
+
 export function Notifications() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const userId = user?.id || 'anonymous-creator';
   const [filter, setFilter] = useState<NotificationFilter>('all');
@@ -43,18 +52,14 @@ export function Notifications() {
   };
 
   return (
-    <div className="notifications-page">
-      <header className="cms-page-header">
-        <div className="notifications-page__head">
-          <Bell size={22} aria-hidden />
-          <div>
-            <h1 className="cms-page-header__title">Notifications</h1>
-            <p className="cms-page-header__subtitle">
-              Review, publishing, and moderation alerts — triage in one place.
-            </p>
-          </div>
-        </div>
-        {unread > 0 && (
+    <div className="cms-page studio-page notifications-studio--premium">
+      <StudioPageHeader
+        variant="hero"
+        eyebrow={t('notifications.eyebrow')}
+        eyebrowIcon={Bell}
+        title={t('notifications.title')}
+        subtitle={t('notifications.subtitle')}
+        actions={unread > 0 ? (
           <button
             type="button"
             className="katha-cta katha-cta--soft katha-cta--compact"
@@ -62,33 +67,35 @@ export function Notifications() {
             onClick={() => { void handleMarkAll(); }}
           >
             <CheckCheck size={14} aria-hidden />
-            {busy ? 'Marking…' : 'Mark all read'}
+            {busy ? t('notifications.marking') : t('notifications.markAll')}
           </button>
-        )}
-      </header>
+        ) : undefined}
+      />
 
-      <div className="notification-bell__filters notifications-page__filters">
-        {(Object.keys(NOTIFICATION_FILTER_LABELS) as NotificationFilter[]).map((f) => (
+      <div className="notification-bell__filters notifications-filters--premium">
+        {(Object.keys(FILTER_KEYS) as NotificationFilter[]).map((f) => (
           <button
             key={f}
             type="button"
             className={`notification-bell__filter${filter === f ? ' notification-bell__filter--active' : ''}`}
             onClick={() => setFilter(f)}
           >
-            {NOTIFICATION_FILTER_LABELS[f]}
+            {t(FILTER_KEYS[f])}
           </button>
         ))}
       </div>
 
       {error && <p className="cms-error-text" role="alert">{error}</p>}
-      {loading && <p className="input-hint">Loading notifications…</p>}
+      {loading && <p className="input-hint">{t('common.loading')}</p>}
 
       {!loading && filtered.length === 0 ? (
-        <div className="notifications-page__empty cms-panel">
-          <p>No alerts in this filter. Review invitations and moderation updates appear here.</p>
+        <div className="studio-empty studio-empty--premium">
+          <div className="studio-empty__glyph" aria-hidden><Bell size={28} /></div>
+          <h3 className="studio-empty__title">{t('notifications.emptyTitle')}</h3>
+          <p className="studio-empty__text">{t('notifications.emptyText')}</p>
         </div>
       ) : (
-        <div className="notifications-page__feed">
+        <div className="notifications-page__feed notifications-feed">
           {filtered.map((n) => (
             <NotificationCard
               key={n.id}

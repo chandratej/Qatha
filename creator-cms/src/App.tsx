@@ -46,6 +46,7 @@ import './styles/premium-shell.css';
 import './styles/dashboard-premium.css';
 import './styles/events-premium.css';
 import './styles/auth-premium.css';
+import './styles/world-class-v2.css';
 
 function App() {
   return (

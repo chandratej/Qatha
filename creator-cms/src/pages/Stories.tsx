@@ -65,8 +65,9 @@ export function Stories() {
   }, []);
 
   return (
-    <div className="cms-page studio-page">
+    <div className="cms-page studio-page stories-studio--premium">
       <StudioPageHeader
+        variant="hero"
         eyebrow={t('stories.eyebrow')}
         eyebrowIcon={Library}
         title={t('stories.title')}
@@ -89,7 +90,17 @@ export function Stories() {
       {error && <div className="cms-panel cms-error-text">{error}</div>}
 
       {!loading && (data?.stories?.length ?? 0) > 0 && (
-        <div className="cms-toolbar">
+        <div className="stories-pride-banner" role="note">
+          <span className="stories-pride-banner__glyph" aria-hidden>క</span>
+          <div>
+            <p className="stories-pride-banner__title">{t('stories.prideTitle')}</p>
+            <p className="stories-pride-banner__text">{t('stories.prideText')}</p>
+          </div>
+        </div>
+      )}
+
+      {!loading && (data?.stories?.length ?? 0) > 0 && (
+        <div className="cms-toolbar cms-toolbar--premium">
           <label className="cms-search-field">
             <Search size={16} aria-hidden />
             <input
@@ -131,7 +142,7 @@ export function Stories() {
       )}
 
       {!loading && (filteredStories.length > 0 || isMockMode) && (
-        <div className="manuscript-grid" role="list" aria-label={t('stories.title')}>
+        <div className="manuscript-grid manuscript-grid--premium" role="list" aria-label={t('stories.title')}>
           {isMockMode && (
             <ManuscriptCard
               story={{
@@ -162,7 +173,7 @@ export function Stories() {
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
-        <div className="studio-empty">
+        <div className="studio-empty studio-empty--premium">
           <div className="studio-empty__glyph" aria-hidden><PenLine size={32} /></div>
           <h3 className="studio-empty__title">{t('stories.emptyShelfTitle')}</h3>
           <p className="studio-empty__title-te" lang="te">{t('stories.emptyShelfTe')}</p>

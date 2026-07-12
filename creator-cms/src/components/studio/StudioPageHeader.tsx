@@ -10,6 +10,7 @@ interface StudioPageHeaderProps {
   backTo?: string;
   backLabel?: string;
   actions?: ReactNode;
+  variant?: 'default' | 'hero';
 }
 
 export function StudioPageHeader({
@@ -20,9 +21,10 @@ export function StudioPageHeader({
   backTo,
   backLabel,
   actions,
+  variant = 'default',
 }: StudioPageHeaderProps) {
   return (
-    <header className="studio-page-header">
+    <header className={`studio-page-header${variant === 'hero' ? ' studio-page-header--hero' : ''}`}>
       <div className={backTo ? 'cms-page-header__with-back' : undefined}>
         {backTo && backLabel && <BackLink to={backTo} label={backLabel} />}
         <div>

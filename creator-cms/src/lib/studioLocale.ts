@@ -87,6 +87,51 @@ export type StudioStringKey =
   | 'createStory.coverRequired'
   | 'createStory.moodTagsHint'
   | 'createStory.requestTag'
+  | 'createStory.wizardSteps'
+  | 'createStory.stepIdentity'
+  | 'createStory.stepFormat'
+  | 'createStory.stepPublish'
+  | 'createStory.essentials'
+  | 'createStory.advancedDetails'
+  | 'createStory.sidecardTitle'
+  | 'createStory.sidecardText'
+  | 'createStory.submitHint'
+  | 'stories.prideTitle'
+  | 'stories.prideText'
+  | 'notifications.eyebrow'
+  | 'notifications.title'
+  | 'notifications.subtitle'
+  | 'notifications.marking'
+  | 'notifications.markAll'
+  | 'notifications.filterAll'
+  | 'notifications.filterReview'
+  | 'notifications.filterPublish'
+  | 'notifications.filterModeration'
+  | 'notifications.emptyTitle'
+  | 'notifications.emptyText'
+  | 'notifications.open'
+  | 'moderation.eyebrow'
+  | 'moderation.title'
+  | 'moderation.subtitle'
+  | 'moderation.filterLabel'
+  | 'moderation.filterPending'
+  | 'moderation.filterAll'
+  | 'moderation.refresh'
+  | 'moderation.loading'
+  | 'moderation.emptyTitle'
+  | 'moderation.emptyText'
+  | 'moderation.pending'
+  | 'moderation.toxicity'
+  | 'moderation.chapter'
+  | 'moderation.untitled'
+  | 'moderation.notesLabel'
+  | 'moderation.notesPlaceholder'
+  | 'moderation.approve'
+  | 'moderation.requestEdits'
+  | 'moderation.reject'
+  | 'moderation.prevPage'
+  | 'moderation.nextPage'
+  | 'moderation.page'
   | 'stories.title'
   | 'stories.subtitle'
   | 'stories.eyebrow'
@@ -554,6 +599,51 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.coverRequired': 'ప్రచురించే ముందు కవర్ చిత్రం తప్పనిసరి.',
     'createStory.moodTagsHint': 'మూడ్ ట్యాగ్లు',
     'createStory.requestTag': 'కొత్త ట్యాగ్ అభ్యర్థన',
+    'createStory.wizardSteps': 'కథ సృష్టి దశలు',
+    'createStory.stepIdentity': 'గుర్తింపు',
+    'createStory.stepFormat': 'ఫార్మాట్',
+    'createStory.stepPublish': 'ప్రచురణ',
+    'createStory.essentials': 'అవసరమైన వివరాలు',
+    'createStory.advancedDetails': 'అదనపు వివరాలు (ఐచ్ఛికం)',
+    'createStory.sidecardTitle': 'మీ కథ — మీ గౌరవం',
+    'createStory.sidecardText': 'తెలుగు పాఠకులకు నిజమైన కథలు. మొదటి అధ్యాయం రాసిన తర్వాత డెబ్యూ సీజన్ ప్రయాణం ప్రారంభమవుతుంది.',
+    'createStory.submitHint': 'కవర్ + శీర్షిక తప్పనిసరి — తర్వాత సీన్ ఎడిటర్ తెరుచుకుంటుంది.',
+    'stories.prideTitle': 'మీ కథలు — మీ గుర్తింపు',
+    'stories.prideText': 'ప్రతి గ్రంథం మీ చేతి వ్రాత. మరో అధ్యాయం రాయండి, పాఠకులతో పంచుకోండి.',
+    'notifications.eyebrow': 'అలర్ట్‌లు',
+    'notifications.title': 'నోటిఫికేషన్‌లు',
+    'notifications.subtitle': 'సమీక్ష, ప్రచురణ, మోడరేషన్ — ఒకే చోట.',
+    'notifications.marking': 'మార్క్ చేస్తోంది…',
+    'notifications.markAll': 'అన్నీ చదివినట్లు',
+    'notifications.filterAll': 'అన్నీ',
+    'notifications.filterReview': 'సమీక్ష',
+    'notifications.filterPublish': 'ప్రచురణ',
+    'notifications.filterModeration': 'మోడరేషన్',
+    'notifications.emptyTitle': 'ఈ ఫిల్టర్‌లో అలర్ట్‌లు లేవు',
+    'notifications.emptyText': 'సమీక్ష ఆహ్వానాలు, ప్రచురణ నవీకరణలు ఇక్కడ కనిపిస్తాయి.',
+    'notifications.open': 'తెరవండి',
+    'moderation.eyebrow': 'నమ్మకం & భద్రత',
+    'moderation.title': 'మోడరేషన్ క్యూ',
+    'moderation.subtitle': 'ఫ్లాగ్ అయిన అధ్యాయాలు — స్పష్టమైన నిర్ణయం, గౌరవప్రదమైన సందేశం.',
+    'moderation.filterLabel': 'క్యూ ఫిల్టర్',
+    'moderation.filterPending': 'పెండింగ్ మాత్రమే',
+    'moderation.filterAll': 'అన్నీ',
+    'moderation.refresh': 'రిఫ్రెష్',
+    'moderation.loading': 'క్యూ లోడ్ అవుతోంది…',
+    'moderation.emptyTitle': 'క్యూ ఖాళీ',
+    'moderation.emptyText': 'పెండింగ్ అధ్యాయాలు లేవు — మంచి పని!',
+    'moderation.pending': 'పెండింగ్',
+    'moderation.toxicity': 'టాక్సిసిటీ',
+    'moderation.chapter': 'అధ్యాయం',
+    'moderation.untitled': 'శీర్షిక లేదు',
+    'moderation.notesLabel': 'సమీక్షక గమనికలు (ఐచ్ఛికం)',
+    'moderation.notesPlaceholder': 'నిర్ణయానికి కారణం — అపీల్‌లో కనిపిస్తుంది',
+    'moderation.approve': 'ఆమోదం',
+    'moderation.requestEdits': 'సవరణలు అడగండి',
+    'moderation.reject': 'తిరస్కరించు',
+    'moderation.prevPage': 'మునుపటి',
+    'moderation.nextPage': 'తదుపరి',
+    'moderation.page': 'పేజీ',
     'stories.title': 'నా కథలు',
     'stories.subtitle': 'డ్రాఫ్ట్లు, ధారావాహిక అధ్యాయాలు, పాఠకుల స్థితి — అన్నీ ఒకే చోట.',
     'stories.eyebrow': 'గ్రంథాలయం',
@@ -1018,6 +1108,51 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.coverRequired': 'Cover image is required before publishing your story.',
     'createStory.moodTagsHint': 'Mood tags',
     'createStory.requestTag': 'Request new tag',
+    'createStory.wizardSteps': 'Story creation steps',
+    'createStory.stepIdentity': 'Identity',
+    'createStory.stepFormat': 'Format',
+    'createStory.stepPublish': 'Publish',
+    'createStory.essentials': 'Essentials',
+    'createStory.advancedDetails': 'More details (optional)',
+    'createStory.sidecardTitle': 'Your story — your pride',
+    'createStory.sidecardText': 'Real stories for Telugu readers. Your Debut Season journey begins after chapter 1.',
+    'createStory.submitHint': 'Cover + title required — then the scene editor opens.',
+    'stories.prideTitle': 'Your stories — your identity',
+    'stories.prideText': 'Every manuscript is your craft. Write another chapter, share with pride.',
+    'notifications.eyebrow': 'Alerts',
+    'notifications.title': 'Notifications',
+    'notifications.subtitle': 'Review, publishing, and moderation — triage in one place.',
+    'notifications.marking': 'Marking…',
+    'notifications.markAll': 'Mark all read',
+    'notifications.filterAll': 'All',
+    'notifications.filterReview': 'Review',
+    'notifications.filterPublish': 'Publish',
+    'notifications.filterModeration': 'Moderation',
+    'notifications.emptyTitle': 'No alerts in this filter',
+    'notifications.emptyText': 'Review invitations and moderation updates appear here.',
+    'notifications.open': 'Open',
+    'moderation.eyebrow': 'Trust & safety',
+    'moderation.title': 'Moderation queue',
+    'moderation.subtitle': 'Review flagged chapters — clear decisions, respectful messaging.',
+    'moderation.filterLabel': 'Filter queue',
+    'moderation.filterPending': 'Pending only',
+    'moderation.filterAll': 'All items',
+    'moderation.refresh': 'Refresh',
+    'moderation.loading': 'Loading queue…',
+    'moderation.emptyTitle': 'Queue is clear',
+    'moderation.emptyText': 'No chapters pending review. Great job!',
+    'moderation.pending': 'Pending',
+    'moderation.toxicity': 'Toxicity',
+    'moderation.chapter': 'Ch',
+    'moderation.untitled': 'Untitled',
+    'moderation.notesLabel': 'Reviewer notes (optional)',
+    'moderation.notesPlaceholder': 'Reason for decision — visible to creator on appeal',
+    'moderation.approve': 'Approve',
+    'moderation.requestEdits': 'Request edits',
+    'moderation.reject': 'Reject',
+    'moderation.prevPage': 'Previous',
+    'moderation.nextPage': 'Next',
+    'moderation.page': 'Page',
     'stories.title': 'My Stories',
     'stories.subtitle': 'Drafts, serialized chapters, and reader stats — all in one place.',
     'stories.eyebrow': 'Manuscript library',

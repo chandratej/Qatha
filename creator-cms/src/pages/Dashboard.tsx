@@ -238,7 +238,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="cms-page dashboard-page dashboard-page--premium studio-page">
+    <div className="cms-page dashboard-page dashboard-page--premium studio-page studio-page--elevated">
       {showDebutGraduation && (
         <DebutGraduationModal
           storyTitle={debutDisplayTitle}

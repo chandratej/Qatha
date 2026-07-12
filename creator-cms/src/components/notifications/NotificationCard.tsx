@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { domainLabel, relativeTime } from '../../lib/notificationFeed';
 import type { PlatformNotification } from '../../lib/notificationsLocal';
+import { useLocale } from '../../context/LocaleContext';
 
 interface Props {
   notification: PlatformNotification;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function NotificationCard({ notification, onOpen }: Props) {
+  const { t } = useLocale();
   const unread = !notification.read_at;
   const href = notification.action_url || '/notifications';
 
@@ -29,7 +31,7 @@ export function NotificationCard({ notification, onOpen }: Props) {
         className="notification-card__cta"
         onClick={() => onOpen?.(notification.id)}
       >
-        Open
+        {t('notifications.open')}
       </Link>
     </article>
   );
