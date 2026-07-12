@@ -61,22 +61,23 @@ function seedEvents(): KathaEvent[] {
   const month = now.getMonth();
   return [
     {
-      id: 'evt-first-chapter',
+      id: 'evt-debut-season-q1',
       organizer_id: 'platform',
-      title: 'First Chapter Challenge — Telugu New Voices',
-      description: 'Submit your opening chapter. Blind judging on originality, language, and hook.',
-      event_type: 'first_chapter_challenge',
+      title: 'Katha Debut Season — Vasanta Q1',
+      description: 'Your first serialized Telugu arc. Write 50 chapters, earn recognition badges, certificates, and platform features — free entry, no cash prizes.',
+      event_type: 'debut_season',
       status: 'registration_open',
-      judging_model: 'double_blind',
+      judging_model: 'weighted_rubric',
       entry_fee_inr: 0,
-      prize_pool_inr: 25000,
-      platform_commission_pct: 15,
+      prize_pool_inr: 0,
+      platform_commission_pct: 0,
       organizer_commission_pct: 0,
       registration_count: 142,
       submission_count: 89,
       registration_opens_at: new Date(now.getFullYear(), month, 1).toISOString(),
       registration_closes_at: new Date(now.getFullYear(), month + 1, 0).toISOString(),
       submissions_close_at: new Date(now.getFullYear(), month + 1, 5).toISOString(),
+      results_announced_at: new Date(now.getFullYear(), month + 1, 20).toISOString(),
     },
     {
       id: 'evt-genre-romance',
@@ -229,6 +230,7 @@ export function registerForEvent(opts: {
   participantId: string;
   participantName?: string;
   markPaid?: boolean;
+  rulesVersion?: string;
 }): { registration: EventRegistration; event: KathaEvent; alreadyRegistered?: boolean } {
   const event = getPlatformEvent(opts.eventId);
   if (!event) throw new Error('Event not found');
@@ -257,6 +259,8 @@ export function registerForEvent(opts: {
     registered_at: new Date().toISOString(),
     platform_fee_inr: paid && !isFree ? split.platformInr : 0,
     prize_pool_contribution_inr: paid && !isFree ? split.prizePoolInr : 0,
+    rules_version: opts.rulesVersion ?? null,
+    rules_accepted_at: opts.rulesVersion ? new Date().toISOString() : null,
   };
 
   const regs = loadRegistrations();
@@ -1056,6 +1060,7 @@ export function getReviewerDashboardStats(reviewerSlot: string): ReviewerDashboa
     badges: badgesForReviewer(reviewCount, rqi),
     draftCount,
     overdueCount: overdue.length,
+    isAvailable: member?.is_available !== false,
   };
 }
 

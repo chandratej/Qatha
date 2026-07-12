@@ -19,6 +19,8 @@ export interface KathaEvent {
   registration_opens_at?: string;
   registration_closes_at?: string;
   submissions_close_at?: string;
+  /** Tentative results announcement — recognition ceremony date */
+  results_announced_at?: string;
 }
 
 export interface EventRegistration {
@@ -34,6 +36,9 @@ export interface EventRegistration {
   prize_pool_contribution_inr?: number;
   story_id?: string | null;
   story_title?: string | null;
+  /** Versioned competition rules accepted at registration — PRD §7 */
+  rules_version?: string | null;
+  rules_accepted_at?: string | null;
 }
 
 export interface EventSubmission {
@@ -67,6 +72,8 @@ export type PeerReviewStatus =
   | 'awaiting_reviewers'
   | 'in_review'
   | 'decision_ready'
+  | 'revision_requested'
+  | 'resubmitted'
   | 'completed'
   | 'cancelled';
 
@@ -90,6 +97,15 @@ export interface ReviewerPoolMember {
 
 export type AuthorCommentResolution = 'pending' | 'accepted' | 'rejected' | 'deferred';
 
+export interface AnnotationThreadReply {
+  id: string;
+  annotation_id?: string;
+  author_id: string;
+  role: 'author' | 'reviewer' | 'moderator';
+  body: string;
+  created_at: string;
+}
+
 export interface StructuredReviewComment {
   id?: string;
   chapter_ref?: string;
@@ -107,6 +123,7 @@ export interface StructuredReviewComment {
   reviewer_confidence: number;
   author_resolution?: AuthorCommentResolution;
   resolved_at?: string;
+  threads?: AnnotationThreadReply[];
 }
 
 export interface ReviewSubmissionSummary {
@@ -144,6 +161,9 @@ export interface PeerReviewRequest {
   structured_comments?: StructuredReviewComment[];
   audit_status?: CouncilAuditStatus;
   fraud_risk_score?: number;
+  revision_round?: number;
+  revision_notes?: string | null;
+  last_resubmitted_at?: string | null;
 }
 
 export type ReviewerAssignmentStatus =
@@ -190,9 +210,33 @@ export interface ReviewerDashboardStats {
   badges: string[];
   draftCount: number;
   overdueCount: number;
+  isAvailable?: boolean;
+}
+
+export interface ReviewerFeedbackBundle {
+  assignment: ReviewerAssignment;
+  comments: StructuredReviewComment[];
+  request_id: string;
+  manuscript_label: string;
 }
 
 export type CouncilAuditStatus = 'pending' | 'cleared' | 'flagged' | 'appealed';
+
+export type ModerationCaseStatus = 'open' | 'investigating' | 'resolved' | 'dismissed';
+export type ModerationCaseType = 'review_dispute' | 'reviewer_conduct' | 'appeal' | 'fraud_flag';
+
+export interface ModerationCase {
+  id: string;
+  case_type: ModerationCaseType;
+  status: ModerationCaseStatus;
+  reporter_id: string | null;
+  subject_id: string | null;
+  request_id: string | null;
+  reason: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  resolved_at: string | null;
+}
 
 export interface CouncilAuditEntry {
   request_id: string;

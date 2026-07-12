@@ -2,15 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, ArrowRight, Loader2, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BrandMark } from '../components/studio/BrandMark';
 import { api } from '../lib/api';
-import { ONBOARDING_KEY, BRAND, BRAND_COPY } from '../lib/constants';
+import { ONBOARDING_KEY, BRAND } from '../lib/constants';
 
 const RESEND_COOLDOWN_SEC = 60;
 
 export function Login() {
   const { user, loading: authLoading, signInWithGoogle, sendEmailOtp, verifyEmailOtp, isMockMode } = useAuth();
+  const { t, locale, setLocale } = useLocale();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,8 +28,8 @@ export function Login() {
 
   useEffect(() => {
     if (resendSecs <= 0) return;
-    const t = setInterval(() => setResendSecs((s) => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setResendSecs((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(timer);
   }, [resendSecs]);
 
   const startResendCooldown = useCallback(() => setResendSecs(RESEND_COOLDOWN_SEC), []);
@@ -109,6 +111,14 @@ export function Login() {
   return (
     <div className="cms-auth-page">
       <div className="cms-auth-page__theme">
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => setLocale(locale === 'te' ? 'en' : 'te')}
+          aria-label={t('nav.languageToggleAria')}
+        >
+          {t('nav.languageToggle')}
+        </button>
         <ThemeToggle compact />
       </div>
       <div className="cms-auth-card animate-in">
@@ -118,12 +128,11 @@ export function Login() {
           </div>
           <h1 className="cms-auth-card__logo">{BRAND.nameTelugu}</h1>
           <p className="cms-auth-card__product">{BRAND.productName}</p>
-          <p className="cms-auth-card__tagline">{BRAND.tagline}</p>
           <p className="cms-auth-card__tagline-telugu">{BRAND.taglineTelugu}</p>
           <p className="cms-auth-card__promise">{BRAND.creatorPromise}</p>
           <p className="cms-auth-card__pride">{BRAND.prideLineTelugu}</p>
           {isMockMode && (
-            <p className="cms-auth-card__mock">MOCK MODE · Email OTP = 123456</p>
+            <p className="cms-auth-card__mock">{t('login.mockMode')}</p>
           )}
         </div>
 
@@ -136,7 +145,7 @@ export function Login() {
               disabled={loading}
             >
               {loading ? <Loader2 size={18} className="cms-loading__spin" /> : null}
-              Continue with Google
+              {t('login.continueGoogle')}
             </button>
             <button
               type="button"
@@ -145,7 +154,7 @@ export function Login() {
               disabled={loading}
             >
               <Mail size={18} aria-hidden />
-              Continue with email
+              {t('login.continueEmail')}
             </button>
           </div>
         )}
@@ -153,13 +162,13 @@ export function Login() {
         {mode === 'email' && (
           <form onSubmit={handleSendEmail} className="cms-auth-form">
             <div className="input-group">
-              <label htmlFor="login-email">Email address</label>
+              <label htmlFor="login-email">{t('login.emailLabel')}</label>
               <input
                 id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={t('login.emailPlaceholder')}
                 required
                 autoComplete="email"
                 autoFocus
@@ -167,10 +176,10 @@ export function Login() {
             </div>
             <button type="submit" className="dashboard-cta cms-auth-cta" disabled={loading}>
               {loading ? <Loader2 size={18} className="cms-loading__spin" /> : <ArrowRight size={18} aria-hidden />}
-              {loading ? 'Sending…' : 'Send verification code'}
+              {loading ? t('login.sending') : t('login.sendCode')}
             </button>
             <button type="button" className="btn btn-ghost cms-auth-cta" onClick={() => { setMode('choose'); setError(null); }}>
-              Back
+              {t('login.back')}
             </button>
           </form>
         )}
@@ -178,22 +187,22 @@ export function Login() {
         {mode === 'otp' && (
           <form onSubmit={handleVerify} className="cms-auth-form">
             <div className="input-group">
-              <label htmlFor="login-pen-name">Pen name (optional)</label>
+              <label htmlFor="login-pen-name">{t('login.penName')}</label>
               <input
                 id="login-pen-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="How readers see you"
+                placeholder={t('login.penNamePlaceholder')}
                 autoComplete="nickname"
               />
             </div>
             <div className="input-group">
-              <label htmlFor="login-otp">6-digit code</label>
+              <label htmlFor="login-otp">{t('login.otpLabel')}</label>
               <input
                 id="login-otp"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="• • • • • •"
+                placeholder={t('login.otpPlaceholder')}
                 className="cms-auth-otp"
                 required
                 maxLength={6}
@@ -201,27 +210,22 @@ export function Login() {
                 autoComplete="one-time-code"
                 autoFocus
               />
-              <span className="input-hint">Sent to {email}</span>
+              <span className="input-hint">{t('login.sentTo')} {email}</span>
             </div>
             <button type="submit" className="dashboard-cta cms-auth-cta" disabled={loading || otp.length < 6}>
-              {loading ? 'Verifying…' : 'Enter your studio'}
+              {loading ? t('login.verifying') : t('login.enterStudio')}
             </button>
             <button type="button" className="btn btn-secondary cms-auth-cta" onClick={handleResend} disabled={loading || resendSecs > 0}>
               <RotateCcw size={16} aria-hidden />
-              {resendSecs > 0 ? `Resend in ${resendSecs}s` : 'Resend code'}
+              {resendSecs > 0 ? `${t('login.resendIn')} ${resendSecs}s` : t('login.resend')}
             </button>
             <button type="button" className="btn btn-ghost cms-auth-cta" onClick={() => { setMode('email'); setOtp(''); setError(null); }}>
-              Change email
+              {t('login.changeEmail')}
             </button>
           </form>
         )}
 
         {error && <p className="cms-error-text cms-auth-error" role="alert">{error}</p>}
-
-        <div className="cms-auth-card__footer">
-          <p className="cms-auth-card__footer-promise">{BRAND.promise}</p>
-          <p className="cms-auth-card__footer-legal">{BRAND_COPY.authFooter}</p>
-        </div>
       </div>
     </div>
   );

@@ -10,10 +10,15 @@ import { effectiveCreatorSharePct, trustLevelForReaders } from '../lib/platformC
 import { loadCreatorProfile, saveCreatorProfile } from '../lib/profilePrefs';
 import { formatCompact } from '../lib/dashboardFormat';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
+import type { StoryTrustLevelId } from '../lib/platformConstants';
+import { useLocale } from '../context/LocaleContext';
 
 export function Profile() {
+  const { t } = useLocale();
   const { user } = useAuth();
   const { data: dash } = useApi(() => api.getDashboard().catch(() => null));
+  const { data: repData } = useApi(() => api.getCreatorReputation().catch(() => null));
   const [profile, setProfile] = useState(() => loadCreatorProfile(user?.display_name || 'Creator'));
   const [saved, setSaved] = useState(false);
 
@@ -46,10 +51,10 @@ export function Profile() {
   return (
     <div className="cms-page studio-page">
       <StudioPageHeader
-        eyebrow="Author identity"
+        eyebrow={t('profile.eyebrow')}
         eyebrowIcon={User}
-        title="Your profile"
-        subtitle="Your public identity — keep it proud, polished, and up to date."
+        title={t('profile.title')}
+        subtitle={t('profile.subtitle')}
       />
 
       <div className="profile-layout">
@@ -62,12 +67,22 @@ export function Profile() {
             {badge.label}
           </div>
           <div className="profile-card__stats">
-            <div><strong>{formatCompact(totalReads)}</strong><span>Total reads</span></div>
-            <div><strong>{sharePct}%+</strong><span>Story Trust share</span></div>
-            <div><strong>{dash?.stories?.length ?? 0}</strong><span>Stories</span></div>
+            <div><strong>{formatCompact(totalReads)}</strong><span>{t('profile.totalReads')}</span></div>
+            <div><strong>{sharePct}%+</strong><span>{t('profile.storyTrust')}</span></div>
+            <div><strong>{dash?.stories?.length ?? 0}</strong><span>{t('profile.stories')}</span></div>
           </div>
           {next && (
-            <p className="profile-card__next">Next level: <strong>{next.label}</strong>{nextTarget > 1 ? ` at ${formatCompact(nextTarget)} readers` : ''}</p>
+            <p className="profile-card__next">{t('profile.nextLevel')}: <strong>{next.label}</strong>{nextTarget > 1 ? ` at ${formatCompact(nextTarget)} readers` : ''}</p>
+          )}
+          {repData?.reputation && (
+            <div className="profile-reputation-summary">
+              <p className="profile-reputation-summary__label">Story Trust (read-only)</p>
+              <StoryTrustBadge level={repData.reputation.top_trust_level as StoryTrustLevelId} showShare />
+              {repData.reputation.top_story_spi != null && (
+                <p className="input-hint">SPI {Number(repData.reputation.top_story_spi).toFixed(1)} · explainable craft signal</p>
+              )}
+              <Link to="/monetization" className="katha-cta katha-cta--soft">View Story Trust ladder</Link>
+            </div>
           )}
         </aside>
 
@@ -75,11 +90,11 @@ export function Profile() {
           <h3 className="cms-panel__title"><User size={18} aria-hidden /> Public details</h3>
           <div className="profile-form__grid">
             <label className="input-group">
-              <span>Pen name</span>
+              <span>{t('profile.penName')}</span>
               <input className="cms-input" value={profile.penName} onChange={(e) => setProfile({ ...profile, penName: e.target.value })} required />
             </label>
             <label className="input-group">
-              <span>Tagline</span>
+              <span>{t('profile.tagline')}</span>
               <input className="cms-input" value={profile.tagline} onChange={(e) => setProfile({ ...profile, tagline: e.target.value })} placeholder="e.g. Fantasy & romance serialist" />
             </label>
             <label className="input-group profile-form__full">
@@ -107,7 +122,7 @@ export function Profile() {
 
           <div className="profile-form__actions">
             <button type="submit" className="katha-cta katha-cta--soft" style={{ border: 'none' }}>
-              <Save size={16} aria-hidden /> {saved ? 'Saved!' : 'Save profile'}
+              <Save size={16} aria-hidden /> {saved ? t('profile.saved') : t('profile.save')}
             </button>
             <Link to="/stories/new" className="btn btn-secondary"><PenLine size={16} /> Write something new</Link>
           </div>

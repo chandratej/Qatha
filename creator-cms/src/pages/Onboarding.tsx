@@ -6,6 +6,7 @@ import { api } from '../lib/api';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { BrandMark } from '../components/studio/BrandMark';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { ONBOARDING_KEY, BRAND } from '../lib/constants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { syncCreatorProfileFromOnboarding } from '../lib/creatorLifecycle';
@@ -13,6 +14,7 @@ import { WhatsAppCTA } from '../components/WhatsAppCTA';
 
 export function Onboarding() {
   const { user } = useAuth();
+  const { t, toggleLocale } = useLocale();
   const { data } = useApi(() => api.getCreatorStories());
   const [hasPublished, setHasPublished] = useState(false);
 
@@ -40,36 +42,32 @@ export function Onboarding() {
     {
       num: 1,
       icon: UserCircle,
-      title: 'Create your account',
-      titleTe: 'మీ ఖాతా సృష్టించండి',
-      desc: 'Sign in with Google or email — free to start, always.',
+      title: t('onboarding.step1Title'),
+      desc: t('onboarding.step1Desc'),
       done: accountReady,
       current: !accountReady,
     },
     {
       num: 2,
       icon: BookOpen,
-      title: 'Start your first manuscript',
-      titleTe: 'మీ మొదటి కథ ప్రారంభించండి',
-      desc: 'Title, genre, cover, and release rhythm — the bones of a great story.',
+      title: t('onboarding.step2Title'),
+      desc: t('onboarding.step2Desc'),
       done: hasStories,
       current: accountReady && !hasStories,
     },
     {
       num: 3,
       icon: PenLine,
-      title: 'Write chapter 1',
-      titleTe: 'మొదటి అధ్యాయం రాయండి',
-      desc: 'Scene-based editor with live preview. Up to 50,000 characters of pure craft.',
+      title: t('onboarding.step3Title'),
+      desc: t('onboarding.step3Desc'),
       done: hasChapters,
       current: hasStories && !hasChapters,
     },
     {
       num: 4,
       icon: Rocket,
-      title: 'Publish & share with pride',
-      titleTe: 'ప్రచురించి పంచుకోండి',
-      desc: 'Chapters go live after a careful review (usually 1–2 hours).',
+      title: t('onboarding.step4Title'),
+      desc: t('onboarding.step4Desc'),
       done: hasPublished,
       current: hasChapters && !hasPublished,
     },
@@ -98,6 +96,9 @@ export function Onboarding() {
   return (
     <div className="cms-auth-page">
       <div className="cms-auth-page__theme">
+        <button type="button" className="btn btn-ghost" onClick={toggleLocale} aria-label={t('nav.languageToggleAria')}>
+          {t('nav.languageToggle')}
+        </button>
         <ThemeToggle compact />
       </div>
       <div className="cms-auth-card cms-auth-card--wide animate-in">
@@ -106,20 +107,18 @@ export function Onboarding() {
             <BrandMark size="lg" ornate label="Katha" />
           </div>
           <h1 className="cms-auth-card__logo">{BRAND.nameTelugu}</h1>
-          <p className="cms-auth-card__product">Welcome to {BRAND.productName}</p>
+          <p className="cms-auth-card__product">{t('onboarding.welcome')}</p>
           <p className="cms-auth-card__tagline-telugu">{BRAND.taglineTelugu}</p>
-          <p className="cms-auth-card__promise">
-            Your stories. Your readers.{' '}
-            <strong className="cms-auth-card__share">{BRAND.creatorSharePct}%+ Story Trust share.</strong>
-          </p>
-          <div className="cms-onboarding-progress" aria-label={`Onboarding progress: ${completedCount} of ${steps.length} complete`}>
+          <div className="cms-onboarding-progress" aria-label={`${completedCount} / ${steps.length}`}>
             <div className="cms-onboarding-progress__track">
               <span
                 className="cms-onboarding-progress__fill"
                 style={{ width: `${(completedCount / steps.length) * 100}%` }}
               />
             </div>
-            <span className="cms-onboarding-progress__label">{completedCount} of {steps.length} complete</span>
+            <span className="cms-onboarding-progress__label">
+              {completedCount} / {steps.length} {t('onboarding.progress')}
+            </span>
           </div>
         </div>
 
@@ -140,7 +139,6 @@ export function Onboarding() {
                   <step.icon size={18} className="cms-onboarding-step__icon" aria-hidden />
                   <span>{step.title}</span>
                 </div>
-                <p className="cms-onboarding-step__title-te">{step.titleTe}</p>
                 <p className="cms-onboarding-step__desc">{step.desc}</p>
               </div>
             </li>
@@ -152,7 +150,7 @@ export function Onboarding() {
             <WhatsAppCTA
               type="creator"
               contextId={user.id}
-              subtitle="Get creator resources and open a free WhatsApp support window"
+              subtitle={t('onboarding.whatsappSubtitle')}
             />
           </div>
         )}
@@ -163,10 +161,10 @@ export function Onboarding() {
             className="dashboard-cta cms-auth-cta"
             onClick={markComplete}
           >
-            Begin your first manuscript
+            {t('onboarding.beginManuscript')}
           </Link>
           <Link to="/" className="btn btn-ghost cms-auth-cta" onClick={markComplete}>
-            Skip to dashboard
+            {t('onboarding.skipDashboard')}
           </Link>
         </div>
       </div>

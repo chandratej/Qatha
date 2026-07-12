@@ -7,6 +7,7 @@ import type {
   TagRequest,
 } from '../types/platform';
 import type { StoryTrustLevelId } from '../../../packages/shared/story-trust';
+import { loadBlindManuscript } from './reviewManuscript';
 import {
   createPlatformEvent,
   acceptReviewerAssignment,
@@ -47,11 +48,16 @@ import {
   READER_SYSTEMS, RECOMMENDATION_SIGNALS, REPORT_CATEGORIES,
   EVENT_WIZARD_STEPS, REVIEWER_ROLES, REVIEW_PACKAGE,
 } from '../../../packages/shared/constants';
+import {
+  DEFAULT_COMPETITION_RULES_V1,
+  CURRENT_COMPETITION_RULES_VERSION,
+} from '../../../packages/shared/competitionRules';
 import { eventAcceptsRegistration, platformRevenueFromEntry } from '../business/eventRegistration';
 import { resetReviewDevData, seedReviewDevScenario } from './seedReviewDevData';
 import {
   applyToReviewerPool as applyToReviewerPoolLocal,
   completeReviewerTraining as completeReviewerTrainingLocal,
+  submitTrialReviewLocal,
   listPendingReviewerApplicationsLocal,
   loadReviewerOnboarding,
   moderateReviewerApplicationLocal,
@@ -145,15 +151,25 @@ export const platformApi = {
         return { event };
       },
     ),
+  getCompetitionRules: () =>
+    withPlatformFallback(
+      () => platformBackend.getCompetitionRules(),
+      () => ({ rules: DEFAULT_COMPETITION_RULES_V1, version: CURRENT_COMPETITION_RULES_VERSION }),
+    ),
   /** Author registration — free or paid entry with escrow split attribution */
   registerForEvent: (opts: {
     eventId: string;
     participantId: string;
     participantName?: string;
     markPaid?: boolean;
+    rulesVersion?: string;
+    rulesAccepted?: boolean;
   }) =>
     withPlatformFallback(
-      () => platformBackend.registerForEvent(opts.eventId),
+      () => platformBackend.registerForEvent(opts.eventId, {
+        rules_version: opts.rulesVersion ?? 'v1.0.0',
+        rules_accepted: opts.rulesAccepted ?? false,
+      }),
       () => {
         try {
           return registerForEvent(opts);
@@ -272,7 +288,13 @@ export const platformApi = {
     ),
   applyReviewerOnboarding: (
     userId: string,
-    opts: { genres: string[]; languages: string[]; motivation: string },
+    opts: {
+      genres: string[];
+      languages: string[];
+      motivation: string;
+      agreement_accepted?: boolean;
+      agreement_version?: string;
+    },
   ) =>
     withPlatformFallback(
       async () => {
@@ -283,10 +305,28 @@ export const platformApi = {
       },
       () => ({ record: applyToReviewerPoolLocal(userId, opts) }),
     ),
-  certifyReviewerOnboarding: (userId: string) =>
+  completeReviewerTrainingOnboarding: (userId: string) =>
     withPlatformFallback(
       async () => {
-        const result = await platformBackend.certifyReviewerOnboarding();
+        const result = await platformBackend.completeReviewerTraining();
+        return {
+          record: mapOnboardingRecord(userId, result.onboarding as Parameters<typeof mapOnboardingRecord>[1]),
+        };
+      },
+      () => ({ record: completeReviewerTrainingLocal(userId) }),
+    ),
+  submitTrialReviewOnboarding: (
+    userId: string,
+    payload: {
+      strengths: string;
+      weaknesses: string;
+      suggestion: string;
+      rubric_scores: Record<string, number>;
+    },
+  ) =>
+    withPlatformFallback(
+      async () => {
+        const result = await platformBackend.submitTrialReview(payload);
         await syncCreatorProfileFromOnboarding({
           accountReady: true,
           wantsToReview: true,
@@ -298,7 +338,7 @@ export const platformApi = {
         };
       },
       () => {
-        const record = completeReviewerTrainingLocal(userId);
+        const record = submitTrialReviewLocal(userId, payload);
         void syncCreatorProfileFromOnboarding({
           accountReady: true,
           wantsToReview: true,
@@ -307,6 +347,57 @@ export const platformApi = {
         return { record, pool_slot: getLinkedReviewerSlot(userId) };
       },
     ),
+  replyToReviewComment: (requestId: string, commentId: string, body: string) =>
+    withPlatformFallback(
+      () => platformBackend.replyToReviewComment(requestId, commentId, body),
+      () => ({ thread: { id: `local-${Date.now()}`, author_id: 'local', role: 'author' as const, body, created_at: new Date().toISOString() } }),
+    ),
+  replyToReviewCommentAsReviewer: (requestId: string, commentId: string, body: string) =>
+    withPlatformFallback(
+      () => platformBackend.replyToReviewCommentAsReviewer(requestId, commentId, body),
+      () => ({ thread: { id: `local-${Date.now()}`, author_id: 'local', role: 'reviewer' as const, body, created_at: new Date().toISOString() } }),
+    ),
+  getReviewerFeedback: (reviewerSlot: string) =>
+    withPlatformFallback(
+      () => platformBackend.getReviewerFeedback(reviewerSlot),
+      () => ({ bundles: [] as import('../types/platform').ReviewerFeedbackBundle[] }),
+    ),
+  setReviewerAvailability: (isAvailable: boolean) =>
+    withPlatformFallback(
+      () => platformBackend.setReviewerAvailability(isAvailable),
+      () => ({ is_available: isAvailable, pool_slot: getLinkedReviewerSlot() }),
+    ),
+  acknowledgePeerReview: (requestId: string, satisfactionRating?: number) =>
+    withPlatformFallback(
+      () => platformBackend.acknowledgePeerReview(requestId, satisfactionRating),
+      () => ({ request: getPeerReviewRequestById(requestId)! }),
+    ),
+  resubmitPeerReview: (requestId: string, revisionNotes?: string) =>
+    withPlatformFallback(
+      () => platformBackend.resubmitPeerReview(requestId, revisionNotes),
+      () => ({ request: getPeerReviewRequestById(requestId)! }),
+    ),
+  submitPeerReviewAppeal: (requestId: string, reason: string) =>
+    platformBackend.submitPeerReviewAppeal(requestId, reason),
+  listModerationCases: (opts?: { case_type?: string; open_only?: boolean; status?: string }) =>
+    platformBackend.listModerationCases(opts),
+  assignModerationCase: (caseId: string) =>
+    platformBackend.assignModerationCase(caseId),
+  resolveModerationCase: (caseId: string, status: 'resolved' | 'dismissed', notes?: string) =>
+    platformBackend.resolveModerationCase(caseId, status, notes),
+  getAdvisorySuggestions: (assignmentId: string, reviewerSlot: string) =>
+    platformBackend.getAdvisorySuggestions(assignmentId, reviewerSlot),
+  respondToAdvisorySuggestion: (suggestionId: string, action: 'accepted' | 'ignored') =>
+    platformBackend.respondToAdvisorySuggestion(suggestionId, action),
+  getSlaOpsDashboard: () => platformBackend.getSlaOpsDashboard(),
+
+  getAdvisoryGovernanceDashboard: () => platformBackend.getAdvisoryGovernanceDashboard(),
+
+  getAuditLog: (params?: { limit?: number; entity_type?: string }) =>
+    platformBackend.getAuditLog(params),
+
+  getAnalyticsWarehouseExport: (params?: { days?: number; limit?: number }) =>
+    platformBackend.getAnalyticsWarehouseExport(params),
   getPendingReviewerApplications: () =>
     withPlatformFallback(
       () => platformBackend.getPendingReviewerApplications(),
@@ -415,6 +506,32 @@ export const platformApi = {
         } catch (e) {
           throw e instanceof Error ? e : new Error(String(e));
         }
+      },
+    ),
+  getReviewDraft: (assignmentId: string, reviewerSlot: string) =>
+    withPlatformFallback(
+      () => platformBackend.getReviewDraft(assignmentId, reviewerSlot),
+      () => ({ draft: null, saved_at: null, assignment_status: 'in_review' }),
+    ),
+  saveReviewDraft: (
+    assignmentId: string,
+    reviewerSlot: string,
+    draft: import('../types/reviewWorkspace').ReviewWorkspaceDraft,
+  ) =>
+    withPlatformFallback(
+      () => platformBackend.saveReviewDraft(assignmentId, reviewerSlot, draft),
+      () => ({ saved_at: new Date().toISOString(), has_draft: true }),
+    ),
+  getReviewerManuscript: (assignmentId: string, reviewerSlot: string) =>
+    withPlatformFallback(
+      () => platformBackend.getReviewerManuscript(assignmentId, reviewerSlot),
+      () => {
+        const assignments = getReviewerAssignmentsForSlot(reviewerSlot);
+        const assignment = assignments.find((a) => a.id === assignmentId);
+        if (!assignment) throw new Error('Assignment not found');
+        const request = getPeerReviewRequestById(assignment.request_id);
+        if (!request) throw new Error('Review request not found');
+        return { manuscript: loadBlindManuscript(request, assignment) };
       },
     ),
   getNotifications: (userId?: string) =>

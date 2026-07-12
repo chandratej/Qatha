@@ -17,7 +17,7 @@ const seedEvent = {
   organizer_id: 'platform',
   title: 'E2E Free Contest',
   description: 'Test event',
-  event_type: 'first_chapter_challenge',
+  event_type: 'debut_season',
   status: 'registration_open',
   judging_model: 'double_blind',
   entry_fee_inr: 0,

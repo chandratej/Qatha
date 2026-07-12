@@ -5,9 +5,16 @@ import { AuthorFeedbackInbox } from '../components/reviewers/AuthorFeedbackInbox
 import { ReviewRequestPanel } from '../components/reviewers/ReviewRequestPanel';
 import type { AuthorReviewFeedbackBundle } from '../lib/platformStore';
 import { ReviewerDashboard } from '../components/reviewers/ReviewerDashboard';
+import { ReviewerFeedbackInbox } from '../components/reviewers/ReviewerFeedbackInbox';
 import { ReviewerAssignmentsInbox } from '../components/reviewers/ReviewerAssignmentsInbox';
+import type { ReviewerFeedbackBundle } from '../types/platform';
 import { ReviewerPoolBrowse } from '../components/reviewers/ReviewerPoolBrowse';
 import { ReviewerOnboardingPanel } from '../components/reviewers/ReviewerOnboardingPanel';
+import { AppealsModerationQueue } from '../components/reviewers/AppealsModerationQueue';
+import { OpsEscalationDashboard } from '../components/reviewers/OpsEscalationDashboard';
+import { AdvisoryGovernancePanel } from '../components/reviewers/AdvisoryGovernancePanel';
+import { AuditLogPanel } from '../components/reviewers/AuditLogPanel';
+import { GrievanceOfficerPanel } from '../components/reviewers/GrievanceOfficerPanel';
 import { CouncilAdminQueue } from '../components/reviewers/CouncilAdminQueue';
 import { ReviewerModerationQueue } from '../components/reviewers/ReviewerModerationQueue';
 import { ReviewDevSandboxPanel } from '../components/reviewers/ReviewDevSandboxPanel';
@@ -28,17 +35,19 @@ export function ReviewerMarketplace() {
   const [requests, setRequests] = useState<PeerReviewRequest[]>([]);
   const [feedbackBundles, setFeedbackBundles] = useState<AuthorReviewFeedbackBundle[]>([]);
   const [inboxCount, setInboxCount] = useState(0);
+  const [reviewerFeedbackBundles, setReviewerFeedbackBundles] = useState<ReviewerFeedbackBundle[]>([]);
   const [showDetails, setShowDetails] = useState(false);
 
   const reload = useCallback(() => {
     platformApi.getPeerReviews(authorId).then((r) => setRequests(r.requests));
     platformApi.getAuthorReviewFeedback(authorId).then((r) => setFeedbackBundles(r.bundles));
-    platformApi.getLinkedReviewerSlot(user?.id).then((r) =>
+    platformApi.getLinkedReviewerSlot(user?.id).then((r) => {
       platformApi.getReviewerAssignments(r.slot).then((a) => {
         const invited = a.assignments.filter((x) => x.status === 'invited').length;
         setInboxCount(invited);
-      }),
-    );
+      });
+      platformApi.getReviewerFeedback(r.slot).then((fb) => setReviewerFeedbackBundles(fb.bundles));
+    });
   }, [authorId, user?.id]);
 
   useEffect(() => {
@@ -95,6 +104,7 @@ export function ReviewerMarketplace() {
         {view === 'reviewer' && (
           <div className="reviewer-pool-workspace">
             <ReviewerDashboard onAction={reload} />
+            <ReviewerFeedbackInbox bundles={reviewerFeedbackBundles} onReply={reload} />
             <ReviewerAssignmentsInbox onAction={reload} />
           </div>
         )}
@@ -108,7 +118,12 @@ export function ReviewerMarketplace() {
 
         {view === 'admin' && isAdmin && (
           <div className="council-admin-stack">
+            <OpsEscalationDashboard onAction={reload} />
+            <AdvisoryGovernancePanel />
+            <AuditLogPanel />
+            <GrievanceOfficerPanel />
             <ReviewerModerationQueue onAction={reload} />
+            <AppealsModerationQueue onAction={reload} />
             <CouncilAdminQueue onAction={reload} />
           </div>
         )}

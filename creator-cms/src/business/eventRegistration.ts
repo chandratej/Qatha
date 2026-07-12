@@ -48,13 +48,13 @@ export function platformRevenueFromEntry(entryFeeInr: number): EscrowSplitResult
 /** Acquisition events should be free; monetize via paid genre + sponsor tiers. */
 export function isAcquisitionEvent(event: KathaEvent): boolean {
   return event.entry_fee_inr === 0
-    || event.event_type === 'first_chapter_challenge'
+    || event.event_type === 'debut_season'
     || event.event_type === 'writing_sprint';
 }
 
-export function registrationCtaLabel(event: KathaEvent): string {
-  if (event.entry_fee_inr > 0) {
-    return `Register · ₹${event.entry_fee_inr}`;
+export function registrationCtaLabel(event: KathaEvent, locale: 'en' | 'te' = 'en'): string {
+  if (locale === 'te') {
+    return event.entry_fee_inr > 0 ? `పాల్గొనండి · ₹${event.entry_fee_inr}` : 'పాల్గొనండి';
   }
-  return 'Register free';
+  return event.entry_fee_inr > 0 ? `Join · ₹${event.entry_fee_inr}` : 'Join';
 }

@@ -69,6 +69,25 @@ export function completeReviewerTraining(userId: string): ReviewerOnboardingReco
   const current = loadReviewerOnboarding(userId);
   const record: ReviewerOnboardingRecord = {
     ...current,
+    status: 'training',
+    trainingCompleted: true,
+  };
+  return saveReviewerOnboarding(record);
+}
+
+export function submitTrialReviewLocal(
+  userId: string,
+  _payload: {
+    strengths: string;
+    weaknesses: string;
+    suggestion: string;
+    rubric_scores: Record<string, number>;
+  },
+): ReviewerOnboardingRecord {
+  const current = loadReviewerOnboarding(userId);
+  if (!current.trainingCompleted) throw new Error('Complete training before the trial review');
+  const record: ReviewerOnboardingRecord = {
+    ...current,
     status: 'pending_moderation',
     trainingCompleted: true,
   };

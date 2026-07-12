@@ -1,37 +1,41 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Library, Loader2, PenLine, Plus, Search } from 'lucide-react';
-import { buildChapterShareUrl, resolveStorySlug } from '../lib/shareLinks';
 import { api } from '../lib/api';
 import type { StoryData } from '../lib/api';
+import type { ChapterListItem } from '../types/database';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
+import { filterStoriesByQuery } from '../lib/storySearch';
 import { StoryEditModal } from '../components/StoryEditModal';
 import { ManuscriptCard } from '../components/studio/ManuscriptCard';
+import { ShareModal } from '../components/studio/ShareModal';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
-import { GENRES } from '../lib/constants';
+
+type StatusFilter = '' | 'draft' | 'published' | 'pending_review' | 'needs_revision';
 
 export function Stories() {
   const { isMockMode } = useAuth();
+  const { t } = useLocale();
   const { data, loading, error, reload } = useApi(() => api.getCreatorStories());
   const [editing, setEditing] = useState<StoryData | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [genreFilter, setGenreFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
+  const [sharingStory, setSharingStory] = useState<StoryData | null>(null);
+  const [shareChapters, setShareChapters] = useState<ChapterListItem[]>([]);
+  const [shareLoading, setShareLoading] = useState(false);
 
   const filteredStories = useMemo(() => {
     const list = data?.stories ?? [];
-    return list.filter((s) => {
-      const matchesSearch = !search.trim()
-        || s.title.toLowerCase().includes(search.toLowerCase())
-        || (s.description || '').toLowerCase().includes(search.toLowerCase());
-      const matchesGenre = !genreFilter || s.genre === genreFilter;
-      return matchesSearch && matchesGenre;
-    });
-  }, [data?.stories, search, genreFilter]);
+    const searched = filterStoriesByQuery(list, search);
+    if (!statusFilter) return searched;
+    return searched.filter((s) => (s.moderation_status || 'draft') === statusFilter);
+  }, [data?.stories, search, statusFilter]);
 
   const handleDelete = async (story: StoryData) => {
-    if (!confirm(`Archive "${story.title}"? Chapters will be hidden from readers.`)) return;
+    if (!confirm(`${t('stories.archiveConfirm')}\n\n"${story.title}"`)) return;
     setDeleting(story.id);
     try {
       await api.deleteStory(story.id);
@@ -41,17 +45,36 @@ export function Stories() {
     }
   };
 
+  const handleShare = useCallback(async (story: StoryData) => {
+    setSharingStory(story);
+    setShareLoading(true);
+    setShareChapters([]);
+    try {
+      const { chapters } = await api.getStoryChapters(story.id);
+      setShareChapters(chapters);
+    } catch {
+      setShareChapters([{ chapter_number: 1 }]);
+    } finally {
+      setShareLoading(false);
+    }
+  }, []);
+
+  const closeShare = useCallback(() => {
+    setSharingStory(null);
+    setShareChapters([]);
+  }, []);
+
   return (
     <div className="cms-page studio-page">
       <StudioPageHeader
-        eyebrow="గ్రంథాలయం · Manuscript library"
+        eyebrow={t('stories.eyebrow')}
         eyebrowIcon={Library}
-        title="Your stories"
-        subtitle="Each story is a manuscript on your shelf — open one to write, publish, and share with pride."
+        title={t('stories.title')}
+        subtitle={t('stories.subtitle')}
         actions={(
           <Link to="/stories/new" className="katha-cta katha-cta--maroon">
             <Plus size={18} aria-hidden />
-            New manuscript
+            {t('stories.newStory')}
           </Link>
         )}
       />
@@ -59,7 +82,7 @@ export function Stories() {
       {loading && (
         <div className="cms-loading" role="status" aria-live="polite">
           <Loader2 size={20} className="cms-loading__spin" aria-hidden />
-          Opening your library…
+          {t('stories.loading')}
         </div>
       )}
 
@@ -72,94 +95,104 @@ export function Stories() {
             <input
               type="search"
               className="cms-input cms-search-field__input"
-              placeholder="Search by title or description…"
+              placeholder={t('stories.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search stories"
+              aria-label={t('common.search')}
             />
           </label>
           <select
             className="cms-select cms-toolbar__select"
-            value={genreFilter}
-            onChange={(e) => setGenreFilter(e.target.value)}
-            aria-label="Filter by genre"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            aria-label={t('stories.filterStatus')}
           >
-            <option value="">All genres</option>
-            {GENRES.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
-            ))}
+            <option value="">{t('stories.allStatuses')}</option>
+            <option value="draft">{t('stories.draft')}</option>
+            <option value="published">{t('stories.statusPublished')}</option>
+            <option value="pending_review">{t('stories.statusPendingReview')}</option>
+            <option value="needs_revision">{t('stories.statusNeedsRevision')}</option>
           </select>
         </div>
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) > 0 && filteredStories.length === 0 && (
         <div className="studio-empty studio-empty--compact">
-          <h3 className="studio-empty__title">No manuscripts match</h3>
-          <p className="studio-empty__text">Try a different search term or clear the genre filter.</p>
+          <h3 className="studio-empty__title">{t('stories.noMatchTitle')}</h3>
+          <p className="studio-empty__text">{t('stories.noMatchText')}</p>
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => { setSearch(''); setGenreFilter(''); }}
+            onClick={() => { setSearch(''); setStatusFilter(''); }}
           >
-            Clear filters
+            {t('stories.clearFilters')}
           </button>
         </div>
       )}
 
       {!loading && (filteredStories.length > 0 || isMockMode) && (
-      <div className="manuscript-grid" role="list" aria-label="Manuscript library">
-        {isMockMode && (
-          <ManuscriptCard
-            story={{
-              id: 'demo-rrr',
-              title: 'RRR - రాజమౌళి (Demo)',
-              description: 'Story → Seasons → Chapters → Editor with scenes. Per-chapter previews inside the editor.',
-              genre: 'family_drama',
-              chapter_count: 24,
-              total_readers: 0,
-              moderation_status: 'draft',
-            }}
-            variant="grid"
-          />
-        )}
+        <div className="manuscript-grid" role="list" aria-label={t('stories.title')}>
+          {isMockMode && (
+            <ManuscriptCard
+              story={{
+                id: 'demo-rrr',
+                title: 'RRR - రాజమౌళి (Demo)',
+                description: 'Story → Seasons → Chapters → Editor with scenes. Per-chapter previews inside the editor.',
+                genre: 'family_drama',
+                chapter_count: 24,
+                total_readers: 0,
+                moderation_status: 'draft',
+              }}
+              variant="grid"
+            />
+          )}
 
-        {filteredStories.map((story) => {
-          const storySlug = resolveStorySlug(story);
-          const readerLink = story.moderation_status === 'published'
-            ? buildChapterShareUrl(storySlug, 1)
-            : null;
-          return (
+          {filteredStories.map((story) => (
             <ManuscriptCard
               key={story.id}
               story={story}
               variant="grid"
-              readerLink={readerLink}
+              onShare={story.moderation_status === 'published' ? () => { void handleShare(story); } : undefined}
               onEdit={() => setEditing(story)}
-              onDelete={() => handleDelete(story)}
+              onDelete={() => { void handleDelete(story); }}
               deleting={deleting === story.id}
             />
-          );
-        })}
-      </div>
+          ))}
+        </div>
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
         <div className="studio-empty">
           <div className="studio-empty__glyph" aria-hidden><PenLine size={32} /></div>
-          <h3 className="studio-empty__title">Your shelf is waiting</h3>
-          <p className="studio-empty__title-te" lang="te">మీ గ్రంథాలయం మొదటి కథ కోసం సిద్ధంగా ఉంది</p>
-          <p className="studio-empty__text">
-            Every great Telugu story starts with a single chapter. Create yours today — readers are waiting to walk through the door you open.
-          </p>
+          <h3 className="studio-empty__title">{t('stories.emptyShelfTitle')}</h3>
+          <p className="studio-empty__title-te" lang="te">{t('stories.emptyShelfTe')}</p>
+          <p className="studio-empty__text">{t('stories.emptyShelfText')}</p>
           <Link to="/stories/new" className="katha-cta katha-cta--maroon studio-empty__cta">
             <Plus size={18} aria-hidden />
-            Create your first story
+            {t('stories.createFirst')}
           </Link>
         </div>
       )}
 
       {editing && (
         <StoryEditModal story={editing} onClose={() => setEditing(null)} onSaved={reload} />
+      )}
+
+      {sharingStory && !shareLoading && (
+        <ShareModal
+          story={sharingStory}
+          chapters={shareChapters}
+          onClose={closeShare}
+        />
+      )}
+
+      {sharingStory && shareLoading && (
+        <div className="share-modal-backdrop" role="presentation">
+          <div className="share-modal share-modal--loading" role="status" aria-live="polite">
+            <Loader2 size={24} className="cms-loading__spin" aria-hidden />
+            {t('common.loading')}
+          </div>
+        </div>
       )}
     </div>
   );

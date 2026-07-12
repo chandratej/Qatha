@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BookOpen, ChevronDown, MessageSquareQuote, ScrollText, Sparkles,
+  BookOpen, ChevronDown, Gavel, MessageSquareQuote, ScrollText, Sparkles,
 } from 'lucide-react';
 import { platformApi } from '../../lib/platformApi';
 import type { AuthorReviewFeedbackBundle } from '../../lib/platformStore';
 import type { AuthorCommentResolution, ReviewSubmissionSummary, StructuredReviewComment } from '../../types/platform';
 import { GENRE_SPECIALIZATIONS, REVIEW_DECISIONS } from '../../lib/platformConstants';
+import { THREAD_MENTION_REVIEWER } from '../../../../packages/shared/reviewThreads';
+import { isAcceptDecision, isRevisionDecision, MAX_REVISION_ROUNDS } from '../../../../packages/shared/peerReviewRevision';
 
 function statusLabel(s: string) {
   return s.replace(/_/g, ' ');
@@ -147,6 +149,11 @@ function FeedbackCard({
 }) {
   const { request, submissions } = bundle;
   const [busyComment, setBusyComment] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [revisionNotes, setRevisionNotes] = useState('');
+  const [appealReason, setAppealReason] = useState('');
+  const [lifecycleBusy, setLifecycleBusy] = useState(false);
+  const [satisfactionRating, setSatisfactionRating] = useState<number | null>(null);
 
   const resolveComment = async (commentId: string, resolution: AuthorCommentResolution) => {
     setBusyComment(commentId);
@@ -157,10 +164,66 @@ function FeedbackCard({
       setBusyComment(null);
     }
   };
+
+  const sendReply = async (commentId: string) => {
+    const body = (replyDrafts[commentId] || '').trim();
+    if (!body) return;
+    setBusyComment(commentId);
+    try {
+      await platformApi.replyToReviewComment(request.id, commentId, body);
+      setReplyDrafts((prev) => ({ ...prev, [commentId]: '' }));
+      onResolve?.();
+    } finally {
+      setBusyComment(null);
+    }
+  };
+
   const comments = request.structured_comments ?? [];
   const pct = Math.round((request.reviews_received / Math.max(1, request.reviewers_matched)) * 100);
   const genre = GENRE_SPECIALIZATIONS.find((g) => g.id === request.story_genre)?.label ?? request.story_genre;
   const decision = decisionLabel(request.majority_decision);
+  const showLifecycle = request.status === 'decision_ready';
+  const canAcknowledge = showLifecycle && isAcceptDecision(request.majority_decision);
+  const canResubmit = showLifecycle
+    && isRevisionDecision(request.majority_decision)
+    && (request.revision_round ?? 0) < MAX_REVISION_ROUNDS;
+  const canAppeal = showLifecycle && request.audit_status !== 'appealed';
+  const appealPending = request.audit_status === 'appealed';
+
+  const acknowledgeDecision = async () => {
+    setLifecycleBusy(true);
+    try {
+      await platformApi.acknowledgePeerReview(request.id, satisfactionRating ?? undefined);
+      setSatisfactionRating(null);
+      onResolve?.();
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
+  const resubmitForRevision = async () => {
+    setLifecycleBusy(true);
+    try {
+      await platformApi.resubmitPeerReview(request.id, revisionNotes.trim() || undefined);
+      setRevisionNotes('');
+      onResolve?.();
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
+
+  const submitAppeal = async () => {
+    const reason = appealReason.trim();
+    if (reason.length < 10) return;
+    setLifecycleBusy(true);
+    try {
+      await platformApi.submitPeerReviewAppeal(request.id, reason);
+      setAppealReason('');
+      onResolve?.();
+    } finally {
+      setLifecycleBusy(false);
+    }
+  };
 
   return (
     <li className={`author-feedback__card${expanded ? ' author-feedback__card--open' : ''}`}>
@@ -233,6 +296,16 @@ function FeedbackCard({
                         <strong>Impact:</strong> {c.expected_impact}
                       </p>
                     )}
+                    {c.threads && c.threads.length > 0 && (
+                      <ul className="author-feedback__threads">
+                        {c.threads.map((t) => (
+                          <li key={t.id} className={`author-feedback__thread author-feedback__thread--${t.role}`}>
+                            <span className="author-feedback__thread-role">{t.role}</span>
+                            <p>{t.body}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                     {c.id && (
                       <div className="author-feedback__note-actions">
                         {c.author_resolution && c.author_resolution !== 'pending' ? (
@@ -267,11 +340,116 @@ function FeedbackCard({
                             </button>
                           </>
                         )}
+                        <label className="author-feedback__reply">
+                          <span className="input-hint">
+                            Reply to reviewer · use {THREAD_MENTION_REVIEWER} to notify
+                          </span>
+                          <textarea
+                            className="rw-textarea"
+                            rows={2}
+                            value={replyDrafts[c.id] || ''}
+                            onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [c.id!]: e.target.value }))}
+                            placeholder={`Clarify your revision plan or ask a question… (${THREAD_MENTION_REVIEWER})`}
+                          />
+                          <button
+                            type="button"
+                            className="katha-cta katha-cta--soft katha-cta--compact"
+                            disabled={busyComment === c.id || !(replyDrafts[c.id] || '').trim()}
+                            onClick={() => { void sendReply(c.id!); }}
+                          >
+                            Send reply
+                          </button>
+                        </label>
                       </div>
                     )}
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {appealPending && (
+            <p className="author-feedback__appeal-pending input-hint">
+              <Gavel size={14} aria-hidden /> Your appeal is under independent review. You will be notified when a decision is posted.
+            </p>
+          )}
+
+          {canAppeal && (
+            <div className="author-feedback__appeal">
+              <label className="input-hint">
+                File an appeal if you believe the council decision had a procedural issue
+                <textarea
+                  className="rw-textarea"
+                  rows={2}
+                  value={appealReason}
+                  onChange={(e) => setAppealReason(e.target.value)}
+                  placeholder="Describe the procedural concern (10+ characters)…"
+                />
+              </label>
+              <button
+                type="button"
+                className="katha-cta katha-cta--soft katha-cta--compact"
+                disabled={lifecycleBusy || appealReason.trim().length < 10}
+                onClick={() => { void submitAppeal(); }}
+              >
+                <Gavel size={14} aria-hidden /> Submit appeal
+              </button>
+            </div>
+          )}
+
+          {showLifecycle && (canAcknowledge || canResubmit) && (
+            <div className="author-feedback__lifecycle">
+              {canAcknowledge && (
+                <div className="author-feedback__satisfaction">
+                  <p className="input-hint" id={`satisfaction-label-${request.id}`}>
+                    How helpful was this council review? (optional)
+                  </p>
+                  <div className="author-feedback__stars" role="group" aria-labelledby={`satisfaction-label-${request.id}`}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        className={`author-feedback__star${satisfactionRating === n ? ' author-feedback__star--on' : ''}`}
+                        aria-pressed={satisfactionRating === n}
+                        aria-label={`${n} out of 5`}
+                        onClick={() => setSatisfactionRating(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="katha-cta katha-cta--maroon katha-cta--compact"
+                    disabled={lifecycleBusy}
+                    onClick={() => { void acknowledgeDecision(); }}
+                  >
+                    Mark review complete
+                  </button>
+                </div>
+              )}
+              {canResubmit && (
+                <div className="author-feedback__resubmit">
+                  <label className="input-hint">
+                    Resubmit for council re-review (round {(request.revision_round ?? 0) + 1}/{MAX_REVISION_ROUNDS})
+                  </label>
+                  <textarea
+                    className="rw-textarea"
+                    rows={2}
+                    value={revisionNotes}
+                    onChange={(e) => setRevisionNotes(e.target.value)}
+                    placeholder="Summarize what you changed since the last round…"
+                  />
+                  <button
+                    type="button"
+                    className="katha-cta katha-cta--soft katha-cta--compact"
+                    disabled={lifecycleBusy}
+                    onClick={() => { void resubmitForRevision(); }}
+                  >
+                    Resubmit for re-review
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

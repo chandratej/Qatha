@@ -19,9 +19,83 @@ import { getAuthenticatedUserId } from '../middleware/authenticate.js';
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
 import { moderateChapterForSchedule } from '../services/moderation/index.js';
 import { generateUniqueStorySlug } from '../lib/slugify.js';
-import { notifyChapterScheduled } from '../services/notificationsStore.js';
+import { notifyChapterScheduled, notifyCollaborationTask } from '../services/notificationsStore.js';
+import {
+  listCharacters,
+  createCharacter,
+  updateCharacter,
+  deleteCharacter,
+  listLoreEntries,
+  createLoreEntry,
+  updateLoreEntry,
+  deleteLoreEntry,
+  exportGlossary,
+} from '../services/storyBibleStore.js';
+import {
+  listStoryMembers,
+  listCollaborationTasks,
+  createCollaborationTask,
+  updateCollaborationTask,
+  resolveTaskAssigneeUserId,
+} from '../services/collaborationStore.js';
+import {
+  listSceneCharacterLinks,
+  setSceneCharacters,
+} from '../services/sceneCharacterStore.js';
+import {
+  listStoryInvites,
+  listPendingInvitesForUser,
+  createStoryInvite,
+  acceptStoryInvite,
+  declineStoryInvite,
+} from '../services/memberInviteStore.js';
+import { listMediaAssets, createMediaAsset, deleteMediaAsset } from '../services/mediaAssetStore.js';
+import {
+  listContributorAttributions,
+  updateContributorAttribution,
+} from '../services/attributionStore.js';
+import {
+  listAuthorComments,
+  createAuthorComment,
+  updateAuthorComment,
+  deleteAuthorComment,
+} from '../services/authorCommentStore.js';
+import {
+  listReaderFeedback,
+  updateReaderFeedback,
+  seedMockReaderFeedback,
+  listPendingFeedbackForCreator,
+} from '../services/readerFeedbackStore.js';
+import { getCreatorReputationSummary } from '../services/creatorReputationStore.js';
+import {
+  getDebutProgress,
+  graduateDebutStory,
+} from '../services/debutSeasonStore.js';
+import {
+  listCommunityPosts,
+  createCommunityPost,
+  togglePostLove,
+} from '../services/communityStore.js';
 
 export const creatorsRouter = Router();
+
+function buildCreatorFunnel(chapters, subscribersGained, story) {
+  const totalReads = (chapters || []).reduce((s, c) => s + (c.total_views ?? 0), 0);
+  const chaptersWithReads = (chapters || []).filter((c) => (c.total_views ?? 0) > 0).length;
+  const avgCompletion = (chapters || []).length
+    ? Math.round((chapters || []).reduce((s, c) => s + (c.completion_rate ?? 0), 0) / chapters.length)
+    : 0;
+  return {
+    chapters_published: story?.chapter_count ?? (chapters || []).length,
+    chapters_with_reads: chaptersWithReads,
+    total_reads: totalReads,
+    avg_completion_pct: avgCompletion,
+    subscribers_gained: subscribersGained || 0,
+    read_to_subscribe_pct: totalReads > 0
+      ? Math.min(100, Math.round(((subscribersGained || 0) / totalReads) * 100))
+      : 0,
+  };
+}
 
 creatorsRouter.get('/dashboard', async (req, res, next) => {
   try {
@@ -829,7 +903,12 @@ creatorsRouter.get('/analytics/:storyId', requireStoryRole('story.read'), async 
     const { storyId } = req.params;
 
     if (isMockMode()) {
-      return res.json({ ...getSeedAnalytics(storyId), mock: true });
+      const seed = getSeedAnalytics(storyId);
+      return res.json({
+        ...seed,
+        funnel: buildCreatorFunnel(seed.chapters, seed.subscribers_gained, seed.story),
+        mock: true,
+      });
     }
 
     const { data: story } = await supabase.from('stories')
@@ -857,6 +936,7 @@ creatorsRouter.get('/analytics/:storyId', requireStoryRole('story.read'), async 
       chapters,
       subscribers_gained: subscribersGained || 0,
       drop_off_insights,
+      funnel: buildCreatorFunnel(chapters, subscribersGained, story),
       story_trust: {
         trust_level: story.trust_level,
         spi_score: story.spi_score,
@@ -1108,6 +1188,466 @@ function buildDropOffInsights(chapterStats) {
   }
   return insights;
 }
+
+/** Story bible — Vol_03-05/06 */
+creatorsRouter.get('/stories/:storyId/characters', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const characters = await listCharacters(req.params.storyId);
+    res.json({ characters });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/characters', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const character = await createCharacter(req.params.storyId, req.body || {});
+    res.status(201).json({ character });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.patch('/stories/:storyId/characters/:characterId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const character = await updateCharacter(req.params.storyId, req.params.characterId, req.body || {});
+    res.json({ character });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.delete('/stories/:storyId/characters/:characterId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const result = await deleteCharacter(req.params.storyId, req.params.characterId);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.get(
+  '/stories/:storyId/chapters/:chapterNum/scene-characters',
+  requireStoryRole('story.read'),
+  async (req, res, next) => {
+    try {
+      const links = await listSceneCharacterLinks(req.params.storyId, req.params.chapterNum);
+      res.json({ links });
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+creatorsRouter.put(
+  '/stories/:storyId/chapters/:chapterNum/scenes/:sceneId/characters',
+  requireStoryRole('story.edit'),
+  async (req, res, next) => {
+    try {
+      const result = await setSceneCharacters(
+        req.params.storyId,
+        req.params.chapterNum,
+        req.params.sceneId,
+        req.body?.character_ids,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+creatorsRouter.get('/stories/:storyId/lore', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const entries = await listLoreEntries(req.params.storyId);
+    res.json({ entries });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.get('/stories/:storyId/lore/glossary', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const glossary = await exportGlossary(req.params.storyId);
+    res.json({ glossary });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/lore', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const entry = await createLoreEntry(req.params.storyId, req.body || {});
+    res.status(201).json({ entry });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.patch('/stories/:storyId/lore/:entryId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const entry = await updateLoreEntry(req.params.storyId, req.params.entryId, req.body || {});
+    res.json({ entry });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.delete('/stories/:storyId/lore/:entryId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const result = await deleteLoreEntry(req.params.storyId, req.params.entryId);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Collaboration scaffold — Vol_04-CW-D2 */
+creatorsRouter.get('/stories/:storyId/members', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const members = await listStoryMembers(req.params.storyId);
+    res.json({ members });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.get('/stories/:storyId/tasks', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const tasks = await listCollaborationTasks(req.params.storyId);
+    res.json({ tasks });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/tasks', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const storyId = req.params.storyId;
+    const userId = getAuthenticatedUserId(req);
+    const body = req.body || {};
+    const task = await createCollaborationTask(storyId, userId, body);
+
+    const assigneeUserId = await resolveTaskAssigneeUserId(storyId, body);
+    if (assigneeUserId && assigneeUserId !== userId) {
+      const members = await listStoryMembers(storyId);
+      const member = members.find((m) => m.user_id === assigneeUserId);
+      const { data: story } = await supabase.from('stories').select('title').eq('id', storyId).maybeSingle();
+      await notifyCollaborationTask(assigneeUserId, {
+        storyTitle: story?.title,
+        storyId,
+        taskTitle: task.title,
+        role: member?.role || body.assignee_label || null,
+      });
+    }
+
+    res.status(201).json({ task });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.patch('/stories/:storyId/tasks/:taskId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const task = await updateCollaborationTask(req.params.storyId, req.params.taskId, req.body || {});
+    res.json({ task });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Co-author invites — Vol_04-CA */
+creatorsRouter.get('/stories/:storyId/invites', requireStoryRole('story.invite'), async (req, res, next) => {
+  try {
+    const invites = await listStoryInvites(req.params.storyId);
+    res.json({ invites });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/invites', requireStoryRole('story.invite'), async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const invite = await createStoryInvite(req.params.storyId, userId, req.body || {});
+    res.status(201).json({ invite });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/invites/:inviteId/accept', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const userEmail = req.body?.email || null;
+    const result = await acceptStoryInvite(req.params.inviteId, userId, userEmail);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/invites/:inviteId/decline', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const userEmail = req.body?.email || null;
+    const invite = await declineStoryInvite(req.params.inviteId, userId, userEmail);
+    res.json({ invite });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.get('/invites/pending', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const userEmail = req.query?.email || req.body?.email || null;
+    const invites = await listPendingInvitesForUser(userId, userEmail);
+    res.json({ invites });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Media library — Vol_03-08 */
+creatorsRouter.get('/stories/:storyId/media', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const assets = await listMediaAssets(req.params.storyId);
+    res.json({ assets });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/media', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const asset = await createMediaAsset(req.params.storyId, userId, req.body || {});
+    res.status(201).json({ asset });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.delete('/stories/:storyId/media/:assetId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const result = await deleteMediaAsset(req.params.storyId, req.params.assetId);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Contributor attribution — Vol_04-CA-D1 */
+creatorsRouter.get('/stories/:storyId/attributions', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const attributions = await listContributorAttributions(req.params.storyId);
+    res.json({ attributions });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.patch('/stories/:storyId/attributions/:attributionId', requireStoryRole('story.invite'), async (req, res, next) => {
+  try {
+    const attribution = await updateContributorAttribution(
+      req.params.storyId,
+      req.params.attributionId,
+      req.body || {},
+    );
+    res.json({ attribution });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Author comments — Vol_04-CS */
+creatorsRouter.get(
+  '/stories/:storyId/chapters/:chapterNum/author-comments',
+  requireStoryRole('story.read'),
+  async (req, res, next) => {
+    try {
+      const comments = await listAuthorComments(req.params.storyId, req.params.chapterNum);
+      res.json({ comments });
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+creatorsRouter.post(
+  '/stories/:storyId/chapters/:chapterNum/author-comments',
+  requireStoryRole('story.comment'),
+  async (req, res, next) => {
+    try {
+      const userId = getAuthenticatedUserId(req);
+      const comment = await createAuthorComment(
+        req.params.storyId,
+        req.params.chapterNum,
+        userId,
+        req.body || {},
+      );
+      res.status(201).json({ comment });
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+creatorsRouter.patch(
+  '/stories/:storyId/chapters/:chapterNum/author-comments/:commentId',
+  requireStoryRole('story.comment'),
+  async (req, res, next) => {
+    try {
+      const comment = await updateAuthorComment(
+        req.params.storyId,
+        req.params.chapterNum,
+        req.params.commentId,
+        req.body || {},
+      );
+      res.json({ comment });
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+creatorsRouter.delete(
+  '/stories/:storyId/chapters/:chapterNum/author-comments/:commentId',
+  requireStoryRole('story.comment'),
+  async (req, res, next) => {
+    try {
+      const result = await deleteAuthorComment(
+        req.params.storyId,
+        req.params.chapterNum,
+        req.params.commentId,
+      );
+      res.json(result);
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+/** Pending reader feedback queue — Vol_07-01 moderation triage */
+creatorsRouter.get('/reader-feedback/pending', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const feedback = await listPendingFeedbackForCreator(creatorId);
+    res.json({ feedback, count: feedback.length });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Creator community feed — Wave 10 */
+creatorsRouter.get('/community/posts', async (req, res, next) => {
+  try {
+    const viewerId = getAuthenticatedUserId(req);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+    const posts = await listCommunityPosts(viewerId, { limit });
+    res.json({ posts });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/community/posts', async (req, res, next) => {
+  try {
+    const authorId = getAuthenticatedUserId(req);
+    const post = await createCommunityPost(authorId, req.body || {});
+    res.status(201).json({ post });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/community/posts/:postId/love', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const post = await togglePostLove(req.params.postId, userId);
+    if (!post) throw createAppError('NOT_FOUND', 'Post not found', 404);
+    res.json({ post });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Debut Season progress — Wave 9 */
+creatorsRouter.get('/debut-season/progress', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const progress = await getDebutProgress(creatorId);
+    res.json({ progress });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/debut-season/graduate', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const storyId = req.body?.story_id;
+    let targetStoryId = storyId;
+
+    if (!targetStoryId) {
+      const progress = await getDebutProgress(creatorId);
+      if (!progress.enrolled || !progress.story_id) {
+        throw createAppError('BAD_REQUEST', 'No enrolled debut story found', 400);
+      }
+      targetStoryId = progress.story_id;
+    }
+
+    const result = await graduateDebutStory(creatorId, targetStoryId);
+    res.json({ graduation: result });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Interim reputation read model — Vol_01-05-D2 */
+creatorsRouter.get('/reputation', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const reputation = await getCreatorReputationSummary(creatorId);
+    res.json({ reputation });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Reader feedback — Vol_07-01-D1 */
+creatorsRouter.get(
+  '/stories/:storyId/reader-feedback',
+  requireStoryRole('story.read'),
+  async (req, res, next) => {
+    try {
+      const { storyId } = req.params;
+      if (isMockMode()) seedMockReaderFeedback(storyId);
+      const feedback = await listReaderFeedback(storyId);
+      res.json({ feedback });
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
+
+creatorsRouter.patch(
+  '/stories/:storyId/reader-feedback/:feedbackId',
+  requireStoryRole('story.edit'),
+  async (req, res, next) => {
+    try {
+      const item = await updateReaderFeedback(
+        req.params.storyId,
+        req.params.feedbackId,
+        req.body || {},
+      );
+      res.json({ feedback: item });
+    } catch (err) {
+      next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    }
+  },
+);
 
 /** Creator lifecycle — Vol_01-03 (migration 017) */
 creatorsRouter.get('/lifecycle', async (req, res, next) => {

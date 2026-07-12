@@ -65,6 +65,23 @@ describe('notificationsStore', () => {
     assert.equal(feed.length, 2);
   });
 
+  it('creates reader_feedback_received notification', async () => {
+    const { notifyReaderFeedbackReceived, listNotificationsForUser } = await import(
+      `./notificationsStore.js?test=${Date.now()}-rf`
+    );
+    const userId = `user-rf-${Date.now()}`;
+    const n = await notifyReaderFeedbackReceived(userId, {
+      storyTitle: 'RRR',
+      storyId: 'demo-rrr',
+      chapterNumber: 2,
+      preview: 'Loved the pacing in this chapter.',
+    });
+    assert.equal(n.notification_type, 'reader_feedback_received');
+    assert.equal(n.domain, 'reader_engagement');
+    const feed = await listNotificationsForUser(userId);
+    assert.equal(feed.length, 1);
+  });
+
   it('skips notification when domain is opted out', async () => {
     const suffix = Date.now();
     const { updateCreatorNotificationPrefs } = await import('./creatorNotificationPrefsStore.js');

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "updated_at": "2026-07-12",
+  "features": {
+    "championship_ecosystem": {
+      "enabled": true,
+      "label": "Katha Global Championship",
+      "description": "Elite cross-league tournament — enable when Premier Leagues are live.",
+      "requires": ["debut_season", "premier_league"]
+    },
+    "premium_magazine": {
+      "enabled": true,
+      "label": "Katha Premium Magazine",
+      "description": "Curated magazine issues with editorial workflow and subscriber gating."
+    },
+    "debut_season": {
+      "enabled": true,
+      "label": "Katha Debut Season",
+      "chapter_threshold": 50,
+      "min_words_per_chapter": 2000,
+      "season_frequency": "quarterly"
+    },
+    "interactive_branching_editor": {
+      "enabled": true,
+      "phase": 2
+    },
+    "epistolary_chat_editor": {
+      "enabled": true,
+      "phase": 1
+    }
+  }
+}

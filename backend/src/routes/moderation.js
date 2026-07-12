@@ -59,7 +59,8 @@ moderationRouter.post('/:id/review', async (req, res, next) => {
       reviewed_at: new Date().toISOString(),
     }).eq('id', req.params.id);
 
-    if (item) {
+      if (item) {
+      const ch = item.chapters;
       await supabase.from('chapters').update({
         status: decision === 'approved' ? 'published' : 'draft',
         moderation_status: decision,
@@ -67,9 +68,17 @@ moderationRouter.post('/:id/review', async (req, res, next) => {
         published_at: decision === 'approved' ? new Date().toISOString() : null,
       }).eq('id', item.chapter_id);
 
+      if (decision === 'approved' && item.creator_id && ch?.story_id) {
+        try {
+          const { onChapterPublished } = await import('../services/debutSeasonStore.js');
+          await onChapterPublished(item.creator_id, ch.story_id);
+        } catch (debutErr) {
+          console.warn('[Moderation] debut season hook failed:', debutErr?.message);
+        }
+      }
+
       // Cycle 7 — notify creator (milestone + console/push hook)
       try {
-        const ch = item.chapters;
         const chTitle = ch?.title || `Chapter ${ch?.chapter_number || ''}`;
         const label =
           decision === 'approved'

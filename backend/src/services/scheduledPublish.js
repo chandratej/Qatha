@@ -26,6 +26,12 @@ export async function publishDueScheduledChapters() {
           chapterNumber: Number(chapterNum),
           chapterTitle: entry.title,
         });
+        try {
+          const { onChapterPublished } = await import('./debutSeasonStore.js');
+          await onChapterPublished(entry.creator_id, storyId);
+        } catch (debutErr) {
+          console.warn('[ScheduledPublish mock] debut season hook failed:', debutErr?.message);
+        }
       }
     }
     return;
@@ -63,6 +69,12 @@ export async function publishDueScheduledChapters() {
           chapterNumber: chapter.chapter_number,
           chapterTitle: chapter.title,
         });
+        try {
+          const { onChapterPublished } = await import('./debutSeasonStore.js');
+          await onChapterPublished(story.author_id, chapter.story_id);
+        } catch (debutErr) {
+          console.warn('[ScheduledPublish] debut season hook failed:', debutErr?.message);
+        }
       }
     } catch (err) {
       console.error(`[ScheduledPublish] failed for chapter ${chapter.id}:`, err.message);

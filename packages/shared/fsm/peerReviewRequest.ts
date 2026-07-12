@@ -7,6 +7,8 @@ export const PEER_REVIEW_REQUEST_STATES = [
   'awaiting_reviewers',
   'in_review',
   'decision_ready',
+  'revision_requested',
+  'resubmitted',
   'completed',
   'cancelled',
 ] as const;
@@ -19,6 +21,8 @@ export const PEER_REVIEW_REQUEST_EVENTS = [
   'reviewer_accepted',
   'quorum_submitted',
   'author_acknowledged',
+  'request_revision',
+  'resubmit',
   'cancel',
 ] as const;
 
@@ -31,7 +35,14 @@ export const peerReviewRequestFsm = createFsm<PeerReviewRequestState, PeerReview
     matching: { match_complete: 'awaiting_reviewers', cancel: 'cancelled' },
     awaiting_reviewers: { reviewer_accepted: 'in_review', cancel: 'cancelled' },
     in_review: { quorum_submitted: 'decision_ready', cancel: 'cancelled' },
-    decision_ready: { author_acknowledged: 'completed' },
+    decision_ready: {
+      author_acknowledged: 'completed',
+      request_revision: 'revision_requested',
+      resubmit: 'in_review',
+      cancel: 'cancelled',
+    },
+    revision_requested: { resubmit: 'resubmitted', cancel: 'cancelled' },
+    resubmitted: { match_complete: 'in_review', cancel: 'cancelled' },
     completed: {},
     cancelled: {},
   },

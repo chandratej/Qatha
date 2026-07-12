@@ -1,14 +1,15 @@
 import { Link } from 'react-router-dom';
-import { BarChart3, BookOpen, Link2, Pencil, PenLine, Trash2 } from 'lucide-react';
+import { BarChart3, BookOpen, Pencil, PenLine, Share2, Trash2 } from 'lucide-react';
 import type { StoryData } from '../../types/database';
-import { storyStatusBadge } from '../../lib/storyStatus';
 import { StoryTrustBadge } from './StoryTrustBadge';
 import { trustLevelForReaders } from '../../../../packages/shared/story-trust';
-import { GENRES } from '../../lib/constants';
-import { ShareLinkField } from '../ShareLinkField';
+import { PRD_GENRES } from '../../lib/platformConstants';
+import { useLocale } from '../../context/LocaleContext';
 
-function genreLabel(id: string) {
-  return GENRES.find((g) => g.id === id)?.label ?? id;
+function genreLabel(id: string, locale: 'te' | 'en') {
+  const g = PRD_GENRES.find((item) => item.id === id);
+  if (!g) return id;
+  return locale === 'te' ? g.labelTelugu : g.label;
 }
 
 function statusStampClass(status?: StoryData['moderation_status']) {
@@ -29,9 +30,9 @@ function statusCardClass(status?: StoryData['moderation_status']) {
 
 export interface ManuscriptCardProps {
   story: StoryData;
-  readerLink?: string | null;
   onEdit?: () => void;
   onDelete?: () => void;
+  onShare?: () => void;
   deleting?: boolean;
   variant?: 'shelf' | 'grid';
   earnings?: number;
@@ -39,17 +40,23 @@ export interface ManuscriptCardProps {
 
 export function ManuscriptCard({
   story,
-  readerLink,
   onEdit,
   onDelete,
+  onShare,
   deleting,
   variant = 'grid',
   earnings,
 }: ManuscriptCardProps) {
-  const badge = storyStatusBadge(story.moderation_status);
+  const { locale, t } = useLocale();
   const trustLevel = trustLevelForReaders(story.total_readers);
 
-  const showSharePreview = variant !== 'grid';
+  const statusLabel = (() => {
+    const s = story.moderation_status || 'draft';
+    if (s === 'published') return t('stories.statusPublished');
+    if (s === 'pending_review') return t('stories.statusPendingReview');
+    if (s === 'needs_revision') return t('stories.statusNeedsRevision');
+    return t('stories.draft');
+  })();
 
   return (
     <article
@@ -57,16 +64,21 @@ export function ManuscriptCard({
       role="listitem"
     >
       <div className="manuscript-card__spine" aria-hidden />
+      <div className="manuscript-card__page-edge" aria-hidden />
       <Link to={`/stories/${story.id}`} className="manuscript-card__cover-link" aria-label={`Open ${story.title}`}>
         {story.cover_url ? (
-          <img src={story.cover_url} alt="" className={`manuscript-card__cover-img${variant === 'grid' ? ' manuscript-card__cover-img--featured' : ''}`} />
+          <img
+            src={story.cover_url}
+            alt=""
+            className={`manuscript-card__cover-img${variant === 'grid' ? ' manuscript-card__cover-img--featured' : ''}`}
+          />
         ) : (
           <div className="manuscript-card__cover-placeholder">
             <span className="manuscript-card__mark">క</span>
-            <span className="manuscript-card__genre">{genreLabel(story.genre)}</span>
+            <span className="manuscript-card__genre">{genreLabel(story.genre, locale)}</span>
           </div>
         )}
-        <span className={`manuscript-stamp ${statusStampClass(story.moderation_status)}`}>{badge.label}</span>
+        <span className={`manuscript-stamp ${statusStampClass(story.moderation_status)}`}>{statusLabel}</span>
       </Link>
 
       <div className="manuscript-card__body">
@@ -76,36 +88,32 @@ export function ManuscriptCard({
         )}
         <div className="manuscript-card__meta">
           <StoryTrustBadge level={trustLevel} compact />
-          <span><BookOpen size={13} aria-hidden /> {story.chapter_count} chapters</span>
-          <span>{story.total_readers.toLocaleString('en-IN')} readers</span>
+          <span><BookOpen size={13} aria-hidden /> {story.chapter_count} {t('stories.chapters')}</span>
+          <span>{story.total_readers.toLocaleString('en-IN')} {t('stories.readers')}</span>
           {earnings != null && earnings > 0 && <span>₹{earnings.toLocaleString('en-IN')} this month</span>}
         </div>
-        {readerLink && showSharePreview && (
-          <div className="manuscript-card__share">
-            <Link2 size={13} aria-hidden />
-            <ShareLinkField
-              url={readerLink}
-              label="Reader link"
-              preview={{
-                storyTitle: story.title,
-                coverUrl: story.cover_url,
-                excerpt: story.description ?? undefined,
-                chapterNumber: 1,
-              }}
-            />
-          </div>
-        )}
         <div className="manuscript-card__actions">
           <Link to={`/stories/${story.id}`} className="manuscript-card__action manuscript-card__action--primary">
             <PenLine size={15} aria-hidden />
-            {variant === 'shelf' ? 'Continue' : 'Open manuscript'}
+            {variant === 'shelf' ? t('stories.continueWriting') : t('stories.openManuscript')}
           </Link>
+          {onShare && (
+            <button
+              type="button"
+              className="manuscript-card__action manuscript-card__action--share"
+              onClick={onShare}
+              aria-label={t('common.share')}
+            >
+              <Share2 size={15} aria-hidden />
+              {t('common.share')}
+            </button>
+          )}
           <Link to={`/analytics/${story.id}`} className="manuscript-card__action">
             <BarChart3 size={15} aria-hidden />
-            Analytics
+            {t('stories.analytics')}
           </Link>
           {onEdit && (
-            <button type="button" className="manuscript-card__action" onClick={onEdit} aria-label="Edit story details">
+            <button type="button" className="manuscript-card__action" onClick={onEdit} aria-label={t('common.edit')}>
               <Pencil size={15} aria-hidden />
             </button>
           )}
@@ -115,7 +123,7 @@ export function ManuscriptCard({
               className="manuscript-card__action manuscript-card__action--danger"
               onClick={onDelete}
               disabled={deleting}
-              aria-label="Archive story"
+              aria-label={t('common.delete')}
             >
               <Trash2 size={15} aria-hidden />
             </button>

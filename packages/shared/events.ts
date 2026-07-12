@@ -2,7 +2,7 @@
 
 export const EVENT_TYPES = [
   { id: 'writing_contest', label: 'Writing Contest' },
-  { id: 'first_chapter_challenge', label: 'First Chapter Challenge' },
+  { id: 'debut_season', label: 'Katha Debut Season', labelTelugu: 'కథా అవతరణ కాలం' },
   { id: 'short_story_challenge', label: 'Short Story Challenge' },
   { id: 'novel_challenge', label: 'Novel Challenge' },
   { id: 'flash_fiction_challenge', label: 'Flash Fiction Challenge' },
@@ -19,6 +19,44 @@ export const EVENT_TYPES = [
 ] as const;
 
 export type EventTypeId = (typeof EVENT_TYPES)[number]['id'];
+
+/** Recognition-focused prize tiers — badges, certificates, features (not cash) */
+export const EVENT_PRIZE_TIERS = [
+  {
+    id: 'first',
+    rank: 1,
+    label: '1st Place',
+    labelTelugu: 'మొదటి స్థానం',
+    recognition: ['Grand Debut Badge', 'Certificate of Excellence', 'Homepage feature'],
+    recognitionTelugu: ['మహా అవతరణ బ్యాజ్', 'అత్యుత్తమ ప్రమాణపత్రం', 'హోమ్‌పేజ్ ఫీచర్'],
+  },
+  {
+    id: 'second',
+    rank: 2,
+    label: '2nd Place',
+    labelTelugu: 'రెండవ స్థానం',
+    recognition: ['Gold Debut Badge', 'Certificate of Merit', 'Discover spotlight'],
+    recognitionTelugu: ['స్వర్ణ అవతరణ బ్యాజ్', 'గౌరవ ప్రమాణపత్రం', 'డిస్కవర్ స్పాట్‌లైట్'],
+  },
+  {
+    id: 'third',
+    rank: 3,
+    label: '3rd Place',
+    labelTelugu: 'మూడవ స్థానం',
+    recognition: ['Silver Debut Badge', 'Certificate of Recognition', 'Genre shelf feature'],
+    recognitionTelugu: ['వెండి అవతరణ బ్యాజ్', 'గుర్తింపు ప్రమాణపత్రం', 'జానర్ షెల్ఫ్ ఫీచర్'],
+  },
+  {
+    id: 'consolation',
+    rank: 4,
+    label: 'Consolation',
+    labelTelugu: 'ఉత్తేజకరమైన గుర్తింపు',
+    recognition: ['Rising Voice Badge', 'Participation certificate', 'Mentorship eligibility'],
+    recognitionTelugu: ['ఉదయిస్తున్న స్వరం బ్యాజ్', 'పాల్గొనిన ప్రమాణపత్రం', 'మార్గదర్శకత్వ అర్హత'],
+  },
+] as const;
+
+export type EventPrizeTierId = (typeof EVENT_PRIZE_TIERS)[number]['id'];
 
 export const ORGANIZER_LEVELS = [
   { id: 'new_organizer', label: 'New Organizer', canHostPaid: false },

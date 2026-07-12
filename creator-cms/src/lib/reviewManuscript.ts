@@ -172,7 +172,8 @@ export function loadBlindManuscript(
     GENRE_SPECIALIZATIONS.find((g) => g.id === assignment.story_genre)?.label
     ?? assignment.story_genre;
 
-  const deadline = new Date(request.created_at);
+  const base = request.created_at ? new Date(request.created_at) : new Date();
+  const deadline = Number.isNaN(base.getTime()) ? new Date() : base;
   deadline.setDate(deadline.getDate() + 14);
 
   return {

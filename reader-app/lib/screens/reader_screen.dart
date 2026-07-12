@@ -342,6 +342,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 ),
                 actions: [
                   IconButton(
+                    icon: const Icon(Icons.rate_review_outlined),
+                    onPressed: _showFeedbackSheet,
+                    tooltip: 'Send feedback to the author',
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.text_fields),
                     onPressed: _showReadingOptions,
                     tooltip: 'Reading options (size, spacing, alignment)',
@@ -584,6 +589,95 @@ class _ReaderScreenState extends State<ReaderScreen> {
           Navigator.pop(sheetCtx);
           await _handleSubscribe();
         },
+      ),
+    );
+  }
+
+  void _showFeedbackSheet() {
+    final controller = TextEditingController();
+    var submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: StatefulBuilder(
+          builder: (ctx, setSheetState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Feedback for the author', style: Theme.of(ctx).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Chapter ${widget.chapterNumber} · ${widget.storyTitle}',
+                style: Theme.of(ctx).textTheme.labelMedium,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 4,
+                maxLength: 500,
+                decoration: const InputDecoration(
+                  hintText: 'What did you think of this chapter?',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: submitting
+                      ? null
+                      : () async {
+                          final text = controller.text.trim();
+                          if (text.length < 3) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(content: Text('Please write at least a few words.')),
+                            );
+                            return;
+                          }
+                          setSheetState(() => submitting = true);
+                          try {
+                            await _api(context).submitReaderFeedback(
+                              storyId: widget.storyId,
+                              chapterNumber: widget.chapterNumber,
+                              body: text,
+                            );
+                            if (!ctx.mounted) return;
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Thank you — your feedback was sent to the author.')),
+                            );
+                          } on ApiException catch (e) {
+                            setSheetState(() => submitting = false);
+                            if (!ctx.mounted) return;
+                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.userMessage)));
+                          } catch (_) {
+                            setSheetState(() => submitting = false);
+                            if (!ctx.mounted) return;
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              const SnackBar(content: Text('Could not send feedback. Try again.')),
+                            );
+                          }
+                        },
+                  child: submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Send feedback'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

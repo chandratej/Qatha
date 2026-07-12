@@ -10,6 +10,7 @@ interface PendingApplication {
   applied_at?: string;
   languages?: string[];
   rqi?: number;
+  trial_review_score?: number | null;
 }
 
 interface Props {
@@ -70,6 +71,7 @@ export function ReviewerModerationQueue({ onAction }: Props) {
               <p className="input-hint">
                 Genres: {app.genres.join(', ') || '—'}
                 {app.applied_at ? ` · applied ${new Date(app.applied_at).toLocaleDateString()}` : ''}
+                {app.trial_review_score != null ? ` · trial score ${app.trial_review_score}%` : ''}
               </p>
               <blockquote className="reviewer-moderation-queue__motivation">{app.motivation}</blockquote>
               <div className="reviewer-moderation-queue__actions">

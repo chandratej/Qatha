@@ -27,6 +27,54 @@ jobs:
           VITE_MOCK_MODE: 'true'
           VITE_API_URL: http://localhost:3001/api
 
+  creator-cms-perf:
+    name: Creator Studio — performance gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: creator-cms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: creator-cms/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:perf
+        env:
+          CI: true
+          E2E_STRICT_PLATFORM: 'true'
+          VITE_MOCK_MODE: 'true'
+          VITE_USE_PLATFORM_API: 'true'
+          VITE_API_URL: http://127.0.0.1:3001/api
+          VITE_STUDIO_LABS: 'false'
+
+  creator-cms-a11y:
+    name: Creator Studio — axe WCAG gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: creator-cms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: creator-cms/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:a11y
+        env:
+          CI: true
+          E2E_STRICT_PLATFORM: 'true'
+          VITE_MOCK_MODE: 'true'
+          VITE_USE_PLATFORM_API: 'true'
+          VITE_API_URL: http://127.0.0.1:3001/api
+          VITE_STUDIO_LABS: 'false'
+
   creator-cms-e2e:
     name: Creator Studio — Playwright smoke
     runs-on: ubuntu-latest

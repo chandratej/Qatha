@@ -19,10 +19,35 @@ const TYPE_META = {
     priority: 'critical',
     title: 'Review due soon',
   },
+  review_accept_due: {
+    domain: 'reviews',
+    priority: 'critical',
+    title: 'Review invitation expiring',
+  },
   review_consensus_ready: {
     domain: 'reviews',
     priority: 'actionable',
     title: 'Council decision ready',
+  },
+  review_thread_reply: {
+    domain: 'reviews',
+    priority: 'actionable',
+    title: 'Review thread reply',
+  },
+  review_resubmitted: {
+    domain: 'reviews',
+    priority: 'actionable',
+    title: 'Author resubmitted manuscript',
+  },
+  collaboration_invite: {
+    domain: 'collaboration',
+    priority: 'actionable',
+    title: 'Story collaboration invite',
+  },
+  collaboration_task: {
+    domain: 'collaboration',
+    priority: 'actionable',
+    title: 'Collaboration task assigned',
   },
   moderation_outcome: {
     domain: 'moderation',
@@ -38,6 +63,21 @@ const TYPE_META = {
     domain: 'publishing',
     priority: 'informational',
     title: 'Chapter published',
+  },
+  reader_feedback_received: {
+    domain: 'reader_engagement',
+    priority: 'actionable',
+    title: 'New reader feedback',
+  },
+  appeal_submitted: {
+    domain: 'moderation',
+    priority: 'actionable',
+    title: 'Appeal submitted',
+  },
+  appeal_resolved: {
+    domain: 'moderation',
+    priority: 'actionable',
+    title: 'Appeal decision',
   },
 };
 
@@ -208,4 +248,103 @@ export async function processReviewSlaEscalations(assignments, resolveUserIdForS
   }
 
   return escalated;
+}
+
+const ACCEPT_WARN_MS = 6 * 60 * 60 * 1000;
+const acceptSlaNotifiedKeys = new Set();
+
+/**
+ * Operations Council — 24h accept SLA (LRC-11-D3).
+ * @param {object[]} assignments
+ * @param {(slot: string) => Promise<string|null>} resolveUserIdForSlot
+ */
+export async function processAcceptSlaEscalations(assignments, resolveUserIdForSlot) {
+  const now = Date.now();
+  const escalated = [];
+
+  for (const a of assignments) {
+    if (a.status !== 'invited' || !a.accept_due_at) continue;
+    const dueMs = Date.parse(a.accept_due_at);
+    if (Number.isNaN(dueMs)) continue;
+
+    const overdue = now > dueMs;
+    const dueSoon = !overdue && dueMs - now <= ACCEPT_WARN_MS;
+    if (!overdue && !dueSoon) continue;
+
+    const dedupeKey = `${a.id}:accept:${overdue ? 'overdue' : 'soon'}`;
+    if (acceptSlaNotifiedKeys.has(dedupeKey)) continue;
+
+    const userId = a.reviewer_id || await resolveUserIdForSlot(a.reviewer_slot);
+    if (!userId) continue;
+
+    const body = overdue
+      ? `Invitation for ${a.manuscript_label || 'a manuscript'} expired — accept or decline to protect your standing.`
+      : `Invitation for ${a.manuscript_label || 'a manuscript'} must be accepted within 6 hours.`;
+
+    await createInAppNotification(userId, 'review_accept_due', {
+      body,
+      action_url: '/reviewers',
+    });
+    acceptSlaNotifiedKeys.add(dedupeKey);
+    escalated.push(a.id);
+  }
+
+  return escalated;
+}
+
+/** Vol_04-CA — in-app invite notification (email channel deferred Lean Playbook). */
+export async function notifyCollaborationInvite(inviteeUserId, { storyTitle, storyId, inviteId, role }) {
+  if (!inviteeUserId) return null;
+  return createInAppNotification(inviteeUserId, 'collaboration_invite', {
+    body: `You were invited as ${role} on "${storyTitle || 'a story'}".`,
+    action_url: `/stories/${storyId}/bible`,
+  });
+}
+
+/** Vol_04-CW — in-app task assignment notification (email channel deferred Lean Playbook). */
+export async function notifyCollaborationTask(assigneeUserId, { storyTitle, storyId, taskTitle, role }) {
+  if (!assigneeUserId) return null;
+  const roleLabel = role ? ` as ${role.replace(/_/g, ' ')}` : '';
+  return createInAppNotification(assigneeUserId, 'collaboration_task', {
+    body: `You were assigned "${taskTitle || 'a task'}"${roleLabel} on "${storyTitle || 'a story'}".`,
+    action_url: `/stories/${storyId}/bible`,
+  });
+}
+
+/** LRC-12-D4 — author confirmation when appeal is filed. */
+export async function notifyAppealSubmitted(authorId, { requestId, storyTitle, caseId }) {
+  if (!authorId) return null;
+  return createInAppNotification(authorId, 'appeal_submitted', {
+    body: `Your appeal for "${storyTitle || 'your manuscript'}" is under independent review.`,
+    action_url: `/reviewers/feedback`,
+  });
+}
+
+/** LRC-12-D4 — notify author when moderator closes appeal. */
+export async function notifyAppealResolved(authorId, { requestId, storyTitle, caseId, outcome }) {
+  if (!authorId) return null;
+  const upheld = outcome === 'upheld';
+  return createInAppNotification(authorId, 'appeal_resolved', {
+    title: upheld ? 'Appeal upheld' : 'Appeal dismissed',
+    body: upheld
+      ? `Council will re-examine "${storyTitle || 'your manuscript'}".`
+      : `Your appeal for "${storyTitle || 'your manuscript'}" was dismissed. The original decision stands.`,
+    action_url: `/reviewers/feedback`,
+  });
+}
+
+/** Vol_07-01 — creator in-app alert when reader submits feedback (email deferred Lean). */
+export async function notifyReaderFeedbackReceived(creatorId, {
+  storyTitle,
+  storyId,
+  chapterNumber,
+  preview,
+}) {
+  if (!creatorId) return null;
+  const ch = chapterNumber ? ` Ch. ${chapterNumber}` : '';
+  const snippet = preview ? `: “${preview.length > 80 ? `${preview.slice(0, 80)}…` : preview}”` : '.';
+  return createInAppNotification(creatorId, 'reader_feedback_received', {
+    body: `A reader left feedback on "${storyTitle || 'your story'}"${ch}${snippet}`,
+    action_url: '/publishing',
+  });
 }

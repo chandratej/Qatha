@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit3, BookOpen, GripVertical, Loader2, Copy, Trash2, Pencil, Link2 } from 'lucide-react';
+import { Plus, Edit3, BookOpen, BookMarked, GripVertical, Loader2, Copy, Trash2, Pencil, Link2, Image } from 'lucide-react';
 import { ShareLinkField } from '../components/ShareLinkField';
 import { BookSpine } from '../components/studio/BookSpine';
 import { buildChapterShareUrl, isChapterShareable, resolveStorySlug } from '../lib/shareLinks';
@@ -17,8 +17,10 @@ import {
   type DemoSeason,
 } from '../lib/demoStorage';
 import { api, type ChapterListItem } from '../lib/api';
+import { useLocale } from '../context/LocaleContext';
 
 export function StorySeasons() {
+  const { t } = useLocale();
   const { storyId = 'demo-rrr' } = useParams();
   const navigate = useNavigate();
   const isDemo = storyId === 'demo-rrr';
@@ -155,25 +157,41 @@ export function StorySeasons() {
   }
 
   return (
-    <div className="cms-page studio-page">
+    <div className="cms-page studio-page manuscript-studio manuscript-studio--premium">
       <StudioPageHeader
-        eyebrow="Manuscript"
+        eyebrow={t('manuscript.eyebrow')}
         eyebrowIcon={BookOpen}
         title={storyTitle}
         subtitle={isDemo
           ? 'Seasons • Chapters • Scenes (for sequels, prequels & serialized novels)'
-          : 'Chapters — MVP uses flat chapter organization (seasons are demo-only)'}
+          : t('manuscript.subtitle')}
         backTo="/stories"
-        backLabel="Back to stories"
-        actions={isDemo ? (
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => setShowAddSeason(!showAddSeason)}
-          >
-            <Plus size={16} /> Add Season (Sequel / Prequel)
-          </button>
-        ) : undefined}
+        backLabel={t('manuscript.backToLibrary')}
+        actions={(
+          <>
+            {!isDemo && (
+              <>
+                <Link to={`/stories/${storyId}/bible`} className="katha-cta katha-cta--soft">
+                  <BookMarked size={16} aria-hidden />
+                  {t('manuscript.storyBible')}
+                </Link>
+                <Link to={`/stories/${storyId}/media`} className="katha-cta katha-cta--soft">
+                  <Image size={16} aria-hidden />
+                  {t('manuscript.media')}
+                </Link>
+              </>
+            )}
+            {isDemo && (
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowAddSeason(!showAddSeason)}
+              >
+                <Plus size={16} /> Add Season (Sequel / Prequel)
+              </button>
+            )}
+          </>
+        )}
       />
 
       {error && (
@@ -270,7 +288,7 @@ export function StorySeasons() {
           <div className="studio-manuscript-panel__head">
             <div>
               <h2 className="studio-manuscript-panel__title">
-                {isDemo ? selectedSeason?.title : 'Chapter bookshelf'}
+                {isDemo ? selectedSeason?.title : t('manuscript.bookshelf')}
               </h2>
               <span className="studio-manuscript-panel__subtitle">
                 {currentChapters.length} chapter{currentChapters.length === 1 ? '' : 's'}
@@ -278,7 +296,7 @@ export function StorySeasons() {
               </span>
             </div>
             <button type="button" onClick={handleAddChapter} className="katha-cta katha-cta--maroon">
-              <Plus size={16} /> Add Chapter
+              <Plus size={16} /> {t('manuscript.addChapter')}
             </button>
           </div>
 

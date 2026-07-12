@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Search, Trash2, PanelLeftClose, PanelLeftOpen, MoreVertical, X } from 'lucide-react';
 import { Reorder, useDragControls } from 'framer-motion';
 import { PhoneticTextInput } from './PhoneticTextInput';
@@ -36,6 +36,7 @@ interface SceneSidebarProps {
   storyId?: string;
   chapterNum?: number;
   sceneSearchInputMode?: SceneSearchInputMode;
+  footerSlot?: React.ReactNode;
 }
 
 function getWordCount(html: string) {
@@ -62,6 +63,7 @@ export function SceneSidebar({
   storyId,
   chapterNum,
   sceneSearchInputMode,
+  footerSlot,
 }: SceneSidebarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showHelper, setShowHelper] = useState(shouldShowSceneSearchHelper);
@@ -237,6 +239,8 @@ export function SceneSidebar({
           </Reorder.Group>
         )}
       </div>
+
+      {footerSlot && <div className="katha-proto-sidebar-slot">{footerSlot}</div>}
 
       <div className="katha-proto-sidebar-footer">
         <button

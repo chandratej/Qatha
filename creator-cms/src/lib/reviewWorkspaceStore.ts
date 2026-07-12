@@ -102,6 +102,26 @@ export function clearReviewDraft(assignmentId: string): void {
   } catch { /* ignore */ }
 }
 
+/** Prefer server draft when newer than local cache (LRC-ARC-01). */
+export function mergeReviewDraft(
+  assignmentId: string,
+  requestId: string,
+  serverDraft: ReviewWorkspaceDraft | null,
+  serverSavedAt?: string | null,
+): ReviewWorkspaceDraft {
+  const local = loadReviewDraft(assignmentId, requestId);
+  if (!serverDraft) return local;
+  if (!serverSavedAt) {
+    return { ...createEmptyDraft(assignmentId, requestId), ...serverDraft, assignmentId, requestId };
+  }
+  const localAt = Date.parse(local.lastSavedAt || '0');
+  const remoteAt = Date.parse(serverSavedAt);
+  if (remoteAt >= localAt) {
+    return { ...createEmptyDraft(assignmentId, requestId), ...serverDraft, assignmentId, requestId };
+  }
+  return local;
+}
+
 export function saveReviewDraft(draft: ReviewWorkspaceDraft): ReviewWorkspaceDraft {
   const updated = {
     ...draft,

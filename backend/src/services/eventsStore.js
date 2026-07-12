@@ -16,7 +16,7 @@ const registrationsDb = new Map();
 const submissionsDb = new Map();
 
 export const EVENT_TYPES = [
-  'writing_contest', 'first_chapter_challenge', 'short_story_challenge', 'novel_challenge',
+  'writing_contest', 'debut_season', 'first_chapter_challenge', 'short_story_challenge', 'novel_challenge',
   'flash_fiction_challenge', 'festival_challenge', 'genre_challenge', 'district_challenge',
   'prompt_challenge', 'writing_sprint', 'collaboration_challenge', 'beta_reader_event',
   'editing_challenge', 'translation_challenge', 'publishing_pitch_event',
@@ -221,7 +221,7 @@ export async function createEvent(userId, body) {
   return rowToEvent(data);
 }
 
-export async function registerForEvent(userId, eventId) {
+export async function registerForEvent(userId, eventId, opts = {}) {
   const event = await getEventById(eventId);
   if (!event) throw new Error('Event not found');
   if (!acceptsRegistration(event)) throw new Error('Registration is closed for this event');
@@ -243,6 +243,7 @@ export async function registerForEvent(userId, eventId) {
       registered_at: new Date().toISOString(),
       platform_fee_inr: split.platformInr,
       prize_pool_contribution_inr: split.prizePoolInr,
+      rules_version: opts.rules_version ?? null,
     };
     registrationsDb.set(regKey, registration);
     event.registration_count = (event.registration_count || 0) + 1;

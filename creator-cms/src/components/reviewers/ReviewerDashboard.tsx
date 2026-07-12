@@ -28,12 +28,13 @@ export function ReviewerDashboard({ onAction }: Props) {
   const [slot, setSlot] = useState('slot-1');
   const [stats, setStats] = useState<ReviewerDashboardStats | null>(null);
   const [priority, setPriority] = useState<ReviewerAssignment[]>([]);
+  const [availBusy, setAvailBusy] = useState(false);
 
   useEffect(() => {
     platformApi.getLinkedReviewerSlot(user?.id).then((r) => setSlot(r.slot));
   }, [user?.id]);
 
-  useEffect(() => {
+  const loadDashboard = () => {
     platformApi.getReviewerDashboardStats(slot).then((r) => setStats(r.stats));
     platformApi.getReviewerAssignments(slot).then((r) => {
       const active = r.assignments
@@ -46,9 +47,28 @@ export function ReviewerDashboard({ onAction }: Props) {
         });
       setPriority(active.slice(0, 4));
     });
+  };
+
+  useEffect(() => {
+    loadDashboard();
   }, [slot, onAction]);
 
+  const toggleAvailability = async () => {
+    if (!stats) return;
+    setAvailBusy(true);
+    try {
+      const next = !(stats.isAvailable !== false);
+      await platformApi.setReviewerAvailability(next);
+      setStats((prev) => (prev ? { ...prev, isAvailable: next } : prev));
+      onAction();
+    } finally {
+      setAvailBusy(false);
+    }
+  };
+
   if (!stats) return null;
+
+  const isAvailable = stats.isAvailable !== false;
 
   return (
     <section className="reviewer-dashboard" aria-labelledby="reviewer-dashboard-title">
@@ -61,10 +81,17 @@ export function ReviewerDashboard({ onAction }: Props) {
             {' · '}{stats.reputationTier} tier
           </p>
         </div>
-        <div className="reviewer-dashboard__availability">
+        <button
+          type="button"
+          className={`reviewer-dashboard__availability${isAvailable ? '' : ' reviewer-dashboard__availability--off'}`}
+          onClick={() => { void toggleAvailability(); }}
+          disabled={availBusy}
+          aria-pressed={isAvailable}
+          title={isAvailable ? 'You will receive new invitations' : 'Paused — no new invitations'}
+        >
           <span className="reviewer-dashboard__avail-dot" aria-hidden />
-          Available
-        </div>
+          {availBusy ? 'Updating…' : isAvailable ? 'Available' : 'Unavailable'}
+        </button>
       </header>
 
       <div className="reviewer-dashboard__kpis">

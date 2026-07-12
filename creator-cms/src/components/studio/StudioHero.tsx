@@ -5,6 +5,7 @@ import { getTimeGreeting } from '../../lib/dashboardGreeting';
 import type { ProductivitySnapshot, WritingStreakData } from '../../lib/writingStreak';
 import { DiyaIcon } from './DiyaIcon';
 import { InkProgress } from './InkProgress';
+import { useLocale } from '../../context/LocaleContext';
 
 const INSPIRATIONS = [
   { en: 'Every chapter you write is a door someone will walk through.', te: 'మీరు రాసే ప్రతి అధ్యాయం ఒక తలుపు — ఎవరో తెరుస్తారు.' },
@@ -30,10 +31,12 @@ export function StudioHero({
   continueStoryTitle,
   continueStoryCover,
 }: StudioHeroProps) {
+  const { locale } = useLocale();
   const inspiration = INSPIRATIONS[new Date().getDate() % INSPIRATIONS.length];
+  const inspirationText = locale === 'te' ? inspiration.te : inspiration.en;
 
   return (
-    <section className="studio-hero studio-hero--v2" aria-label="Your writing studio">
+    <section className="studio-hero studio-hero--v2 studio-hero--v3" aria-label="Your writing studio">
       {continueStoryCover && continueStoryHref && (
         <Link to={continueStoryHref} className="studio-hero__cover" aria-label={`Continue ${continueStoryTitle}`}>
           <img src={continueStoryCover} alt="" className="studio-hero__cover-img" />
@@ -49,8 +52,10 @@ export function StudioHero({
         <h1 className="studio-hero__title">
           {getTimeGreeting()}, {displayName}
         </h1>
-        <p className="studio-hero__inspiration">{inspiration.en}</p>
-        <p className="studio-hero__inspiration-te" lang="te">{inspiration.te}</p>
+        <p className="studio-hero__inspiration" lang={locale === 'te' ? 'te' : 'en'}>{inspirationText}</p>
+        {locale === 'en' && (
+          <p className="studio-hero__inspiration-te" lang="te">{inspiration.te}</p>
+        )}
         <div className="studio-hero__chips">
           <span className="studio-chip studio-chip--diya">
             <DiyaIcon size={15} />

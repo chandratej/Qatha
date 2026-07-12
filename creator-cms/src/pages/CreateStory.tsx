@@ -1,17 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Image as ImageIcon, PenLine } from 'lucide-react';
 import { api } from '../lib/api';
 import { PAYWALL } from '../lib/constants';
 import {
-  GENRES, CONTENT_TYPES, AGE_RATINGS, LANGUAGES, STORY_STATUSES, MOOD_TAGS,
+  PRD_GENRES,
+  CREATABLE_CONTENT_TYPES,
+  AGE_RATINGS,
+  LANGUAGES,
+  STORY_STATUSES,
+  MOOD_TAGS,
 } from '../lib/platformConstants';
 import { platformApi } from '../lib/platformApi';
 import { searchTags } from '../business/tagWorkflow';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { useLocale } from '../context/LocaleContext';
 
 export function CreateStory() {
   const navigate = useNavigate();
+  const { locale, t } = useLocale();
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [contentType, setContentType] = useState('serialized_story');
@@ -32,10 +40,25 @@ export function CreateStory() {
   const [allTags, setAllTags] = useState<{ slug: string; label: string }[]>([]);
 
   useEffect(() => {
-    platformApi.getTags().then((r) => setAllTags(r.tags.map((t) => ({ slug: t.slug, label: t.label }))));
+    platformApi.getTags().then((r) => setAllTags(r.tags.map((tag) => ({ slug: tag.slug, label: tag.label }))));
   }, []);
 
   const tagResults = searchTags(allTags, tagSearch).slice(0, 12);
+
+  const selectedContentType = useMemo(
+    () => CREATABLE_CONTENT_TYPES.find((ct) => ct.id === contentType),
+    [contentType],
+  );
+
+  const contentTypeGuide = selectedContentType
+    ? (locale === 'te' ? selectedContentType.guideTelugu : selectedContentType.guideEnglish)
+    : null;
+
+  const genreLabel = (id: string) => {
+    const g = PRD_GENRES.find((item) => item.id === id);
+    if (!g) return id;
+    return locale === 'te' ? g.labelTelugu : g.label;
+  };
 
   const toggleSecondaryGenre = (id: string) => {
     setSecondaryGenres((prev) =>
@@ -45,7 +68,7 @@ export function CreateStory() {
 
   const toggleTag = (slug: string) => {
     setSelectedTags((prev) =>
-      prev.includes(slug) ? prev.filter((t) => t !== slug) : prev.length < 8 ? [...prev, slug] : prev,
+      prev.includes(slug) ? prev.filter((tag) => tag !== slug) : prev.length < 8 ? [...prev, slug] : prev,
     );
   };
 
@@ -60,7 +83,7 @@ export function CreateStory() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!coverFile) {
-      setError('Cover image is required before publishing your story.');
+      setError(t('createStory.coverRequired'));
       return;
     }
     setSubmitting(true);
@@ -79,12 +102,15 @@ export function CreateStory() {
         story_status: storyStatus,
         secondary_genres: secondaryGenres,
         setting: setting || undefined,
-        themes: themes.split(',').map((t) => t.trim()).filter(Boolean),
+        themes: themes.split(',').map((item) => item.trim()).filter(Boolean),
         tags: selectedTags,
       });
-      navigate(`/stories/${story.id}/chapters/1`);
+      const editorPath = language === 'en'
+        ? `/stories/${story.id}/en/chapters/1`
+        : `/stories/${story.id}/chapters/1`;
+      navigate(editorPath);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create story');
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setSubmitting(false);
     }
@@ -93,149 +119,201 @@ export function CreateStory() {
   return (
     <div className="cms-page studio-page create-story-studio">
       <StudioPageHeader
-        eyebrow="కొత్త కథ · New manuscript"
+        eyebrow={t('createStory.eyebrow')}
         eyebrowIcon={PenLine}
-        title="Create your story"
-        subtitle="Full PRD metadata — content type, genres, age rating, language, tags, and cover."
+        title={t('createStory.title')}
+        subtitle={t('createStory.subtitle')}
       />
 
-      <form onSubmit={handleSubmit} className="cms-form-grid">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div className="input-group">
-            <label>Story title *</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value.slice(0, PAYWALL.maxStoryTitleChars))}
-              placeholder="Enter your story title in Telugu or English"
-              required
-              minLength={3}
-            />
-            <span className="input-counter">{title.length} / {PAYWALL.maxStoryTitleChars}</span>
-          </div>
+      <form onSubmit={handleSubmit} className="create-story-form">
+        <div className="create-story-form__main">
+          <section className="create-story-section">
+            <div className="input-group create-story-section__title">
+              <label htmlFor="story-title">{t('createStory.storyTitle')}</label>
+              <input
+                id="story-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value.slice(0, PAYWALL.maxStoryTitleChars))}
+                placeholder={t('createStory.storyTitlePlaceholder')}
+                required
+                minLength={3}
+                className="create-story-title-input"
+                lang={locale === 'te' ? 'te' : undefined}
+              />
+              <span className="input-counter">{title.length} / {PAYWALL.maxStoryTitleChars}</span>
+            </div>
+          </section>
 
-          <div className="input-group">
-            <label>Content type *</label>
-            <select value={contentType} onChange={(e) => setContentType(e.target.value)}>
-              {CONTENT_TYPES.map((t) => (
-                <option key={t.id} value={t.id}>{t.label} — {t.labelTelugu}</option>
-              ))}
-            </select>
-          </div>
+          <section className="create-story-section">
+            <h3 className="create-story-section__heading">{t('createStory.contentType')}</h3>
+            <div className="create-story-content-types" role="radiogroup" aria-label={t('createStory.contentType')}>
+              {CREATABLE_CONTENT_TYPES.map((ct) => {
+                const label = locale === 'te' ? ct.labelTelugu : ct.label;
+                const active = contentType === ct.id;
+                return (
+                  <button
+                    key={ct.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    className={`create-story-content-type${active ? ' create-story-content-type--active' : ''}`}
+                    onClick={() => setContentType(ct.id)}
+                  >
+                    <span className="create-story-content-type__label">{label}</span>
+                    <span className="create-story-content-type__meta">
+                      {ct.minChapters != null && `${ct.minChapters}+ ch`}
+                      {ct.minChapters != null && ct.minWordsPerChapter != null && ' · '}
+                      {ct.minWordsPerChapter != null && `${ct.minWordsPerChapter}+ w`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {contentTypeGuide && (
+              <p className="create-story-content-guide" role="status">{contentTypeGuide}</p>
+            )}
+          </section>
 
-          <div className="input-group">
-            <label>Primary genre *</label>
-            <select value={genre} onChange={(e) => setGenre(e.target.value)}>
-              {GENRES.slice(0, 14).map((g) => (
-                <option key={g.id} value={g.id}>{g.label} — {g.labelTelugu}</option>
-              ))}
-            </select>
-          </div>
+          <section className="create-story-section create-story-section--row">
+            <div className="input-group">
+              <label htmlFor="primary-genre">{t('createStory.primaryGenre')}</label>
+              <select id="primary-genre" value={genre} onChange={(e) => setGenre(e.target.value)}>
+                {PRD_GENRES.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {locale === 'te' ? g.labelTelugu : g.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group">
+              <label htmlFor="age-rating">{t('createStory.ageRating')}</label>
+              <select id="age-rating" value={ageRating} onChange={(e) => setAgeRating(e.target.value)}>
+                {AGE_RATINGS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+            </div>
+            <div className="input-group">
+              <label htmlFor="language">{t('createStory.language')}</label>
+              <select id="language" value={language} onChange={(e) => setLanguage(e.target.value)}>
+                {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.labelNative}</option>)}
+              </select>
+            </div>
+            <div className="input-group">
+              <label htmlFor="completion-status">{t('createStory.completionStatus')}</label>
+              <select id="completion-status" value={storyStatus} onChange={(e) => setStoryStatus(e.target.value)}>
+                {STORY_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </div>
+          </section>
 
-          <div className="input-group">
-            <label>Secondary genres (up to 3)</label>
-            <div className="profile-genres">
-              {GENRES.filter((g) => g.id !== genre).slice(0, 14).map((g) => (
+          <section className="create-story-section">
+            <h3 className="create-story-section__heading">{t('createStory.secondaryGenres')}</h3>
+            <div className="create-story-genres">
+              {PRD_GENRES.filter((g) => g.id !== genre).map((g) => (
                 <button
                   key={g.id}
                   type="button"
-                  className={`profile-genre-chip${secondaryGenres.includes(g.id) ? ' profile-genre-chip--active' : ''}`}
+                  className={`create-story-genre-chip${secondaryGenres.includes(g.id) ? ' create-story-genre-chip--active' : ''}`}
                   onClick={() => toggleSecondaryGenre(g.id)}
                 >
-                  {g.label}
+                  {genreLabel(g.id)}
                 </button>
               ))}
             </div>
-          </div>
+          </section>
 
-          <div className="input-group">
-            <label>Age rating *</label>
-            <select value={ageRating} onChange={(e) => setAgeRating(e.target.value)}>
-              {AGE_RATINGS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-            </select>
-          </div>
-
-          <div className="input-group">
-            <label>Language *</label>
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-              {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.labelNative}</option>)}
-            </select>
-          </div>
-
-          <div className="input-group">
-            <label>Completion status</label>
-            <select value={storyStatus} onChange={(e) => setStoryStatus(e.target.value)}>
-              {STORY_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
-
-          <div className="input-group">
-            <label>Setting</label>
-            <input value={setting} onChange={(e) => setSetting(e.target.value)} placeholder="e.g. Hyderabad, 1990s village" />
-          </div>
-
-          <div className="input-group">
-            <label>Themes (comma-separated)</label>
-            <input value={themes} onChange={(e) => setThemes(e.target.value)} placeholder="family, identity, revenge" />
-          </div>
-
-          <div className="input-group">
-            <label>Community tags</label>
-            <input value={tagSearch} onChange={(e) => setTagSearch(e.target.value)} placeholder="Search tags…" />
-            <div className="profile-genres cms-mt-2">
-              {tagResults.map((t) => (
-                <button
-                  key={t.slug}
-                  type="button"
-                  className={`profile-genre-chip${selectedTags.includes(t.slug) ? ' profile-genre-chip--active' : ''}`}
-                  onClick={() => toggleTag(t.slug)}
-                >
-                  #{t.slug}
-                </button>
-              ))}
+          <section className="create-story-section create-story-section--row">
+            <div className="input-group">
+              <label htmlFor="setting">{t('createStory.setting')}</label>
+              <input
+                id="setting"
+                value={setting}
+                onChange={(e) => setSetting(e.target.value)}
+                placeholder={t('createStory.settingPlaceholder')}
+              />
             </div>
-            <span className="input-hint">Mood tags: {MOOD_TAGS.slice(0, 5).join(', ')}… · <a href="/tags">Request new tag</a></span>
-          </div>
+            <div className="input-group">
+              <label htmlFor="themes">{t('createStory.themes')}</label>
+              <input
+                id="themes"
+                value={themes}
+                onChange={(e) => setThemes(e.target.value)}
+                placeholder={t('createStory.themesPlaceholder')}
+              />
+            </div>
+          </section>
 
-          <div className="input-group">
-            <label>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))}
-              placeholder="A brief hook for readers browsing stories..."
-              rows={4}
-            />
-            <span className="input-counter">{description.length} / {PAYWALL.maxStoryDescChars}</span>
-          </div>
+          <section className="create-story-section">
+            <div className="input-group">
+              <label htmlFor="tag-search">{t('createStory.communityTags')}</label>
+              <input
+                id="tag-search"
+                value={tagSearch}
+                onChange={(e) => setTagSearch(e.target.value)}
+                placeholder={t('createStory.tagSearchPlaceholder')}
+              />
+              <div className="create-story-genres cms-mt-2">
+                {tagResults.map((tag) => (
+                  <button
+                    key={tag.slug}
+                    type="button"
+                    className={`create-story-genre-chip${selectedTags.includes(tag.slug) ? ' create-story-genre-chip--active' : ''}`}
+                    onClick={() => toggleTag(tag.slug)}
+                  >
+                    #{tag.slug}
+                  </button>
+                ))}
+              </div>
+              <span className="input-hint">
+                {t('createStory.moodTagsHint')}: {MOOD_TAGS.slice(0, 5).join(', ')}… ·{' '}
+                <a href="/tags">{t('createStory.requestTag')}</a>
+              </span>
+            </div>
+          </section>
 
-          <div className="input-group">
-            <label>Release schedule</label>
-            <select value={schedule} onChange={(e) => setSchedule(e.target.value)}>
-              <option value="weekly">Every week</option>
-              <option value="biweekly">Every other week</option>
-              <option value="irregular">When ready</option>
-              <option value="complete">Story complete</option>
-            </select>
-          </div>
+          <section className="create-story-section">
+            <div className="input-group">
+              <label htmlFor="description">{t('createStory.description')}</label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))}
+                placeholder={t('createStory.descriptionPlaceholder')}
+                rows={3}
+              />
+              <span className="input-counter">{description.length} / {PAYWALL.maxStoryDescChars}</span>
+            </div>
+            <div className="input-group">
+              <label htmlFor="release-schedule">{t('createStory.releaseSchedule')}</label>
+              <select id="release-schedule" value={schedule} onChange={(e) => setSchedule(e.target.value)}>
+                <option value="weekly">{t('schedule.weekly')}</option>
+                <option value="biweekly">{t('schedule.biweekly')}</option>
+                <option value="irregular">{t('schedule.irregular')}</option>
+                <option value="complete">{t('schedule.complete')}</option>
+              </select>
+            </div>
+          </section>
 
           {error && <p className="cms-error-text">{error}</p>}
-          <button type="submit" className="katha-cta katha-cta--maroon" style={{ alignSelf: 'flex-start', border: 'none' }} disabled={submitting}>
-            {submitting ? 'Creating…' : 'Create Story & Write Chapter 1'}
+          <button
+            type="submit"
+            className="katha-cta katha-cta--maroon create-story-submit"
+            disabled={submitting}
+          >
+            {submitting ? t('createStory.submitting') : t('createStory.submit')}
           </button>
         </div>
 
-        <div>
-          <label className="input-group" style={{ cursor: 'pointer' }}>
-            <span>Cover image *</span>
-            <div className="cms-cover-hint">
-              Required before your story goes live. 600×900 (2:3) recommended, JPG/PNG under 1MB.
-            </div>
+        <aside className="create-story-form__side">
+          <label className="input-group create-story-cover" style={{ cursor: 'pointer' }}>
+            <span>{t('createStory.coverImage')}</span>
+            <div className="cms-cover-hint">{t('createStory.coverHint')}</div>
             <div className="cms-cover-zone">
               {coverPreview ? (
-                <img src={coverPreview} alt="Cover preview" />
+                <img src={coverPreview} alt="" />
               ) : (
                 <>
-                  <ImageIcon size={44} color="var(--ink-muted)" aria-hidden />
-                  <span className="cms-cover-zone__placeholder">600×900 (2:3) recommended</span>
+                  <ImageIcon size={40} color="var(--ink-muted)" aria-hidden />
+                  <span className="cms-cover-zone__placeholder">{t('createStory.coverPlaceholder')}</span>
                 </>
               )}
               <input
@@ -244,16 +322,16 @@ export function CreateStory() {
                 accept="image/png,image/jpeg,image/webp"
                 onChange={handleCoverUpload}
                 required
-                aria-label="Upload cover image"
+                aria-label={t('createStory.coverUpload')}
                 className="cms-cover-zone__input"
               />
             </div>
             <span className="input-hint">
-              <Upload size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-              Click to upload cover
+              <Upload size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} aria-hidden />
+              {t('createStory.coverUpload')}
             </span>
           </label>
-        </div>
+        </aside>
       </form>
     </div>
   );

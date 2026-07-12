@@ -281,6 +281,240 @@ export const api = {
       creator_persona: string;
       mock?: boolean;
     }>('/creators/lifecycle', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  getStoryCharacters: (storyId: string) =>
+    request<{ characters: import('../../../packages/shared/storyBible').StoryCharacter[] }>(
+      `/creators/stories/${storyId}/characters`,
+    ),
+  createStoryCharacter: (storyId: string, body: { name: string; bio?: string; arc_summary?: string; traits?: string[] }) =>
+    request<{ character: import('../../../packages/shared/storyBible').StoryCharacter }>(
+      `/creators/stories/${storyId}/characters`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  updateStoryCharacter: (storyId: string, characterId: string, body: Record<string, unknown>) =>
+    request<{ character: import('../../../packages/shared/storyBible').StoryCharacter }>(
+      `/creators/stories/${storyId}/characters/${characterId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+  deleteStoryCharacter: (storyId: string, characterId: string) =>
+    request<{ deleted: boolean }>(`/creators/stories/${storyId}/characters/${characterId}`, { method: 'DELETE' }),
+
+  getStoryLore: (storyId: string) =>
+    request<{ entries: import('../../../packages/shared/storyBible').StoryLoreEntry[] }>(
+      `/creators/stories/${storyId}/lore`,
+    ),
+  createStoryLore: (storyId: string, body: { title: string; category?: string; body?: string; glossary_term?: string }) =>
+    request<{ entry: import('../../../packages/shared/storyBible').StoryLoreEntry }>(
+      `/creators/stories/${storyId}/lore`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  deleteStoryLore: (storyId: string, entryId: string) =>
+    request<{ deleted: boolean }>(`/creators/stories/${storyId}/lore/${entryId}`, { method: 'DELETE' }),
+  getStoryGlossary: (storyId: string) =>
+    request<{ glossary: Array<{ term: string; definition: string; title: string }> }>(
+      `/creators/stories/${storyId}/lore/glossary`,
+    ),
+
+  getSceneCharacterLinks: (storyId: string, chapterNum: number) =>
+    request<{ links: import('../../../packages/shared/storyBible').SceneCharacterLink[] }>(
+      `/creators/stories/${storyId}/chapters/${chapterNum}/scene-characters`,
+    ),
+  setSceneCharacters: (
+    storyId: string,
+    chapterNum: number,
+    sceneId: string,
+    characterIds: string[],
+  ) =>
+    request<{ scene_id: string; character_ids: string[] }>(
+      `/creators/stories/${storyId}/chapters/${chapterNum}/scenes/${encodeURIComponent(sceneId)}/characters`,
+      { method: 'PUT', body: JSON.stringify({ character_ids: characterIds }) },
+    ),
+
+  getStoryMembers: (storyId: string) =>
+    request<{ members: import('../../../packages/shared/storyBible').StoryMemberSummary[] }>(
+      `/creators/stories/${storyId}/members`,
+    ),
+  getStoryTasks: (storyId: string) =>
+    request<{ tasks: import('../../../packages/shared/storyBible').StoryCollaborationTask[] }>(
+      `/creators/stories/${storyId}/tasks`,
+    ),
+  createStoryTask: (storyId: string, body: { title: string; assignee_label?: string }) =>
+    request<{ task: import('../../../packages/shared/storyBible').StoryCollaborationTask }>(
+      `/creators/stories/${storyId}/tasks`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  updateStoryTask: (storyId: string, taskId: string, body: { status?: 'open' | 'done' }) =>
+    request<{ task: import('../../../packages/shared/storyBible').StoryCollaborationTask }>(
+      `/creators/stories/${storyId}/tasks/${taskId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+
+  getStoryInvites: (storyId: string) =>
+    request<{ invites: import('../../../packages/shared/collaboration').StoryMemberInvite[] }>(
+      `/creators/stories/${storyId}/invites`,
+    ),
+  createStoryInvite: (
+    storyId: string,
+    body: { invitee_email: string; role?: string; chapter_number?: number; due_at?: string },
+  ) =>
+    request<{ invite: import('../../../packages/shared/collaboration').StoryMemberInvite }>(
+      `/creators/stories/${storyId}/invites`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  acceptStoryInvite: (inviteId: string, email?: string) =>
+    request<{ invite: import('../../../packages/shared/collaboration').StoryMemberInvite; member: unknown }>(
+      `/creators/invites/${inviteId}/accept`,
+      { method: 'POST', body: JSON.stringify({ email }) },
+    ),
+
+  getAuthorComments: (storyId: string, chapterNum: number) =>
+    request<{ comments: import('../../../packages/shared/collaboration').StoryAuthorComment[] }>(
+      `/creators/stories/${storyId}/chapters/${chapterNum}/author-comments`,
+    ),
+  createAuthorComment: (
+    storyId: string,
+    chapterNum: number,
+    body: { scene_id: string; body: string; selected_text?: string; start_offset?: number; end_offset?: number },
+  ) =>
+    request<{ comment: import('../../../packages/shared/collaboration').StoryAuthorComment }>(
+      `/creators/stories/${storyId}/chapters/${chapterNum}/author-comments`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  updateAuthorComment: (
+    storyId: string,
+    chapterNum: number,
+    commentId: string,
+    body: { status?: 'open' | 'resolved'; body?: string },
+  ) =>
+    request<{ comment: import('../../../packages/shared/collaboration').StoryAuthorComment }>(
+      `/creators/stories/${storyId}/chapters/${chapterNum}/author-comments/${commentId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+  deleteAuthorComment: (storyId: string, chapterNum: number, commentId: string) =>
+    request<{ deleted: boolean }>(
+      `/creators/stories/${storyId}/chapters/${chapterNum}/author-comments/${commentId}`,
+      { method: 'DELETE' },
+    ),
+
+  getPendingInvites: (email?: string) =>
+    request<{ invites: import('../../../packages/shared/collaboration').StoryMemberInvite[] }>(
+      `/creators/invites/pending${email ? `?email=${encodeURIComponent(email)}` : ''}`,
+    ),
+
+  getReaderFeedback: (storyId: string) =>
+    request<{ feedback: import('../../../packages/shared/readerFeedback').ReaderFeedback[] }>(
+      `/creators/stories/${storyId}/reader-feedback`,
+    ),
+  getPendingReaderFeedback: () =>
+    request<{ feedback: import('../../../packages/shared/readerFeedback').ReaderFeedback[]; count: number }>(
+      '/creators/reader-feedback/pending',
+    ),
+  getCreatorReputation: () =>
+    request<{
+      reputation: {
+        total_reads: number;
+        published_stories: number;
+        top_story_spi: number | null;
+        top_story_title?: string | null;
+        top_trust_level: string;
+        monetization_eligible: boolean;
+        mock?: boolean;
+      };
+    }>('/creators/reputation'),
+  getDebutSeasonProgress: () =>
+    request<{
+      progress: {
+        enrolled: boolean;
+        story_id: string | null;
+        story_title: string | null;
+        story_status: string | null;
+        chapter_count: number;
+        chapter_target: number;
+        progress_pct: number;
+        eligibility_status: string | null;
+        graduated: boolean;
+        graduation_date: string | null;
+        award_level: string | null;
+        total_score: number | null;
+        mock?: boolean;
+      };
+    }>('/creators/debut-season/progress'),
+  graduateDebutSeason: (body?: { story_id?: string }) =>
+    request<{
+      graduation: {
+        graduated: boolean;
+        alreadyGraduated?: boolean;
+        reason?: string;
+        award_level?: string | null;
+        entry?: { award_level?: string | null; graduation_date?: string | null };
+      };
+    }>('/creators/debut-season/graduate', {
+      method: 'POST',
+      body: JSON.stringify(body ?? {}),
+    }),
+
+  getCommunityPosts: () =>
+    request<{ posts: import('./communityStore').CommunityPost[] }>('/creators/community/posts'),
+  createCommunityPost: (body: {
+    author_name: string;
+    type?: string;
+    body: string;
+    story_id?: string;
+    story_title?: string;
+    chapter_number?: number;
+  }) =>
+    request<{ post: import('./communityStore').CommunityPost }>('/creators/community/posts', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  toggleCommunityPostLove: (postId: string) =>
+    request<{ post: import('./communityStore').CommunityPost }>(
+      `/creators/community/posts/${postId}/love`,
+      { method: 'POST' },
+    ),
+
+  getFounderOsConfig: () =>
+    request<{
+      config: {
+        version: number;
+        features: Record<string, { enabled?: boolean; label?: string; description?: string }>;
+      };
+      ideas: { id: string; status: string }[];
+    }>('/config/founder-os'),
+  updateReaderFeedback: (storyId: string, feedbackId: string, body: { status?: string }) =>
+    request<{ feedback: import('../../../packages/shared/readerFeedback').ReaderFeedback }>(
+      `/creators/stories/${storyId}/reader-feedback/${feedbackId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+
+  getStoryMedia: (storyId: string) =>
+    request<{ assets: import('../../../packages/shared/media').MediaAsset[] }>(
+      `/creators/stories/${storyId}/media`,
+    ),
+  createStoryMedia: (
+    storyId: string,
+    body: { url: string; filename?: string; mime_type?: string; asset_type?: string; attribution?: string; license?: string },
+  ) =>
+    request<{ asset: import('../../../packages/shared/media').MediaAsset }>(
+      `/creators/stories/${storyId}/media`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  deleteStoryMedia: (storyId: string, assetId: string) =>
+    request<{ deleted: boolean }>(`/creators/stories/${storyId}/media/${assetId}`, { method: 'DELETE' }),
+
+  getStoryAttributions: (storyId: string) =>
+    request<{ attributions: import('../../../packages/shared/media').StoryContributorAttribution[] }>(
+      `/creators/stories/${storyId}/attributions`,
+    ),
+  updateStoryAttribution: (
+    storyId: string,
+    attributionId: string,
+    body: { display_name?: string; revenue_share_bps?: number },
+  ) =>
+    request<{ attribution: import('../../../packages/shared/media').StoryContributorAttribution }>(
+      `/creators/stories/${storyId}/attributions/${attributionId}`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
 };
 
 async function uploadImageViaNode(file: File): Promise<{ url: string }> {

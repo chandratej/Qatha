@@ -56,6 +56,21 @@ export async function moderateChapter(chapterId, content, creatorId) {
     published_at: new Date().toISOString(),
   }).eq('id', chapterId);
 
+  try {
+    const { onChapterPublished } = await import('../debutSeasonStore.js');
+    const { data: ch } = await supabase
+      .from('chapters')
+      .select('story_id, stories(author_id)')
+      .eq('id', chapterId)
+      .single();
+    const authorId = ch?.stories?.author_id;
+    if (authorId && ch?.story_id) {
+      await onChapterPublished(authorId, ch.story_id);
+    }
+  } catch (e) {
+    console.warn('[moderateChapter] debut season hook skipped:', e?.message);
+  }
+
   return {
     status: 'approved',
     source: moderation.source,

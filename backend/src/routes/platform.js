@@ -21,7 +21,12 @@ import {
   getPeerReviewRequestById,
   createPeerReviewRequest,
   getAuthorReviewFeedback,
+  getReviewerFeedbackBundles,
   resolveAuthorComment,
+  replyToReviewComment,
+  acknowledgePeerReviewDecision,
+  resubmitPeerReviewForRevision,
+  cancelPeerReviewForStoryWithdrawal,
   transitionAssignment,
   seedPeerReviewMockIfEmpty,
   getCouncilAuditQueue,
@@ -31,11 +36,35 @@ import { loadReviewerPool, getReviewerPoolSummary } from '../services/reviewerPo
 import {
   getReviewerOnboarding,
   applyToReviewerPool,
-  certifyReviewer,
   listPendingReviewerApplications,
   moderateReviewerApplication,
+  completeReviewerTraining,
+  submitTrialReview,
+  setReviewerAvailability,
 } from '../services/reviewerProfileStore.js';
 import { getReviewerDashboardStats } from '../services/reviewerDashboardStore.js';
+import { listReputationEvents } from '../services/reputationEventStore.js';
+import {
+  createModerationCase,
+  listModerationCases,
+  submitAppeal,
+  assignModerationCase,
+  resolveModerationCase,
+} from '../services/moderationCaseStore.js';
+import { getReviewDraft, saveReviewDraft } from '../services/reviewDraftStore.js';
+import { loadBlindManuscriptForAssignment } from '../services/reviewManuscriptStore.js';
+import {
+  ensureAdvisorySuggestions,
+  respondToAdvisorySuggestion,
+} from '../services/aiReviewAdvisoryStore.js';
+import { isAdvisoryAiLive } from '../services/aiAdvisoryProvider.js';
+import { getReviewSlaOpsDashboard } from '../services/reviewSlaOpsStore.js';
+import {
+  getReviewAnalyticsSummary,
+  exportReviewAnalyticsWarehouse,
+} from '../services/reviewAnalyticsEventStore.js';
+import { getAdvisoryGovernanceDashboard } from '../services/aiGovernanceStore.js';
+import { listAuditLogEntries, getAuditLogSummary } from '../services/auditLogStore.js';
 import {
   listNotificationsForUser,
   markAllNotificationsRead,
@@ -46,6 +75,7 @@ import {
   updateCreatorNotificationPrefs,
 } from '../services/creatorNotificationPrefsStore.js';
 import { createAppError } from '../middleware/errorHandler.js';
+import { platformWriteRateLimit } from '../middleware/platformWriteRateLimit.js';
 import {
   listEvents,
   getEventById,
@@ -58,6 +88,14 @@ import {
   escrowSplit,
   getEventRevenueSummary,
 } from '../services/eventsStore.js';
+import {
+  getCurrentRules,
+  getRulesByVersion,
+  listRulesVersions,
+  recordRulesAcceptance,
+  isValidRulesVersion,
+  CURRENT_COMPETITION_RULES_VERSION,
+} from '../services/competitionRulesStore.js';
 
 function slugifyTag(label) {
   return String(label).trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -66,6 +104,7 @@ function slugifyTag(label) {
 export const platformRouter = Router();
 
 platformRouter.use(requireAuth());
+platformRouter.use(platformWriteRateLimit());
 
 platformRouter.get('/health', (_req, res) => {
   res.json({
@@ -171,6 +210,24 @@ platformRouter.get('/events/revenue/summary', async (req, res, next) => {
   }
 });
 
+platformRouter.get('/competition-rules/current', (_req, res) => {
+  res.json({ rules: getCurrentRules(), version: CURRENT_COMPETITION_RULES_VERSION });
+});
+
+platformRouter.get('/competition-rules/versions', (_req, res) => {
+  res.json({ versions: listRulesVersions(), current: CURRENT_COMPETITION_RULES_VERSION });
+});
+
+platformRouter.get('/competition-rules/:version', (req, res, next) => {
+  try {
+    const rules = getRulesByVersion(req.params.version);
+    if (!rules) throw createAppError('NOT_FOUND', 'Competition rules version not found', 404);
+    res.json({ rules });
+  } catch (err) {
+    next(err instanceof Error && !err.status ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
 platformRouter.get('/events/registrations/me', async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
@@ -209,7 +266,15 @@ platformRouter.post('/events', async (req, res, next) => {
 platformRouter.post('/events/:id/register', async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const result = await registerForEvent(userId, req.params.id);
+    const rulesVersion = req.body?.rules_version ?? CURRENT_COMPETITION_RULES_VERSION;
+    if (!isValidRulesVersion(rulesVersion)) {
+      throw createAppError('BAD_REQUEST', `Unsupported competition rules version: ${rulesVersion}`, 400);
+    }
+    if (!req.body?.rules_accepted) {
+      throw createAppError('BAD_REQUEST', 'Competition rules acceptance is required before registration', 400);
+    }
+    recordRulesAcceptance({ eventId: req.params.id, userId, rulesVersion });
+    const result = await registerForEvent(userId, req.params.id, { rules_version: rulesVersion });
     res.status(result.alreadyRegistered ? 200 : 201).json(result);
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
@@ -249,8 +314,14 @@ platformRouter.get('/reviewer-onboarding/me', async (req, res, next) => {
 platformRouter.post('/reviewer-onboarding/apply', async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const { genres, languages, motivation } = req.body || {};
-    const result = await applyToReviewerPool(userId, { genres, languages, motivation });
+    const { genres, languages, motivation, agreement_accepted, agreement_version } = req.body || {};
+    const result = await applyToReviewerPool(userId, {
+      genres,
+      languages,
+      motivation,
+      agreement_accepted,
+      agreement_version,
+    });
     res.status(201).json(result);
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
@@ -282,10 +353,30 @@ platformRouter.post('/reviewer-onboarding/:userId/moderate', requireRole('modera
   }
 });
 
+platformRouter.post('/reviewer-onboarding/complete-training', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const result = await completeReviewerTraining(userId);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/reviewer-onboarding/trial-review', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const result = await submitTrialReview(userId, req.body || {});
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
 platformRouter.post('/reviewer-onboarding/certify', async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const result = await certifyReviewer(userId);
+    const result = await submitTrialReview(userId, req.body || {});
     res.json(result);
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
@@ -299,6 +390,17 @@ platformRouter.get('/reviewer-dashboard/stats', async (req, res, next) => {
     res.json({ stats });
   } catch (err) {
     next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+  }
+});
+
+platformRouter.patch('/reviewer-onboarding/availability', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { is_available: isAvailable } = req.body || {};
+    const result = await setReviewerAvailability(userId, isAvailable !== false);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }
 });
 
@@ -445,6 +547,17 @@ platformRouter.get('/peer-reviews/author-feedback', async (req, res, next) => {
   }
 });
 
+platformRouter.get('/peer-reviews/reviewer-feedback', async (req, res, next) => {
+  try {
+    seedPeerReviewMockIfEmpty();
+    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const bundles = await getReviewerFeedbackBundles(slot);
+    res.json({ bundles });
+  } catch (err) {
+    next(err);
+  }
+});
+
 platformRouter.get('/peer-reviews/assignments', async (req, res, next) => {
   try {
     seedPeerReviewMockIfEmpty();
@@ -464,6 +577,47 @@ platformRouter.get('/peer-reviews/assignments/:assignmentId', async (req, res, n
     const request = requests.find((r) => r.id === assignment.request_id);
     if (!request) throw createAppError('NOT_FOUND', 'Review request not found', 404);
     res.json({ assignment, request });
+  } catch (err) {
+    next(err);
+  }
+});
+
+platformRouter.get('/peer-reviews/assignments/:assignmentId/draft', async (req, res, next) => {
+  try {
+    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const result = await getReviewDraft(req.params.assignmentId, slot);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.put('/peer-reviews/assignments/:assignmentId/draft', async (req, res, next) => {
+  try {
+    const slot = String(req.body.reviewer_slot || 'slot-1');
+    const { draft } = req.body || {};
+    if (!draft || typeof draft !== 'object') {
+      throw createAppError('BAD_REQUEST', 'draft payload required', 400);
+    }
+    const result = await saveReviewDraft(req.params.assignmentId, slot, draft);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/peer-reviews/assignments/:assignmentId/manuscript', async (req, res, next) => {
+  try {
+    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const assignment = await getAssignmentById(req.params.assignmentId);
+    if (!assignment) throw createAppError('NOT_FOUND', 'Assignment not found', 404);
+    if (assignment.reviewer_slot !== slot) {
+      throw createAppError('FORBIDDEN', 'This invitation is assigned to a different reviewer slot', 403);
+    }
+    const request = await getPeerReviewRequestById(assignment.request_id);
+    if (!request) throw createAppError('NOT_FOUND', 'Review request not found', 404);
+    const manuscript = await loadBlindManuscriptForAssignment(assignment, request);
+    res.json({ manuscript });
   } catch (err) {
     next(err);
   }
@@ -537,6 +691,221 @@ platformRouter.post('/peer-reviews/:requestId/comments/:commentId/resolve', asyn
       resolution,
     );
     res.json({ request });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/peer-reviews/:requestId/acknowledge', async (req, res, next) => {
+  try {
+    const authorId = getAuthenticatedUserId(req);
+    const { satisfaction_rating: satisfactionRating } = req.body || {};
+    const request = await acknowledgePeerReviewDecision(req.params.requestId, authorId, {
+      satisfaction_rating: satisfactionRating,
+    });
+    res.json({ request });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/peer-reviews/:requestId/resubmit', async (req, res, next) => {
+  try {
+    const authorId = getAuthenticatedUserId(req);
+    const { revision_notes: revisionNotes } = req.body || {};
+    const request = await resubmitPeerReviewForRevision(req.params.requestId, authorId, {
+      revision_notes: revisionNotes,
+    });
+    res.json({ request });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/reputation-events', async (req, res, next) => {
+  try {
+    const profileId = getAuthenticatedUserId(req);
+    const events = await listReputationEvents(profileId);
+    res.json({ events });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/moderation-cases', async (req, res, next) => {
+  try {
+    const reporterId = getAuthenticatedUserId(req);
+    const caseRow = await createModerationCase({
+      ...req.body,
+      reporter_id: reporterId,
+    });
+    res.status(201).json({ case: caseRow });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/moderation-cases', async (req, res, next) => {
+  try {
+    const status = req.query.status ? String(req.query.status) : undefined;
+    const caseType = req.query.case_type ? String(req.query.case_type) : undefined;
+    const openOnly = req.query.open_only === 'true';
+    const cases = await listModerationCases({ status, case_type: caseType, open_only: openOnly });
+    res.json({ cases });
+  } catch (err) {
+    next(err);
+  }
+});
+
+platformRouter.post('/peer-reviews/:requestId/appeal', async (req, res, next) => {
+  try {
+    const authorId = getAuthenticatedUserId(req);
+    const { reason } = req.body || {};
+    const caseRow = await submitAppeal({
+      reporter_id: authorId,
+      request_id: req.params.requestId,
+      reason,
+    });
+    res.status(201).json({ case: caseRow });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/moderation-cases/:caseId/assign', requireRole('moderator', 'admin'), async (req, res, next) => {
+  try {
+    const moderatorId = getAuthenticatedUserId(req);
+    const caseRow = await assignModerationCase(req.params.caseId, moderatorId);
+    res.json({ case: caseRow });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/moderation-cases/:caseId/resolve', requireRole('moderator', 'admin'), async (req, res, next) => {
+  try {
+    const moderatorId = getAuthenticatedUserId(req);
+    const { status, notes } = req.body || {};
+    const caseRow = await resolveModerationCase(req.params.caseId, status, notes, moderatorId);
+    res.json({ case: caseRow });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/ops/sla-dashboard', requireRole('moderator', 'admin'), async (_req, res, next) => {
+  try {
+    const dashboard = await getReviewSlaOpsDashboard();
+    res.json({ dashboard });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/ops/analytics-summary', requireRole('moderator', 'admin'), async (req, res, next) => {
+  try {
+    const days = Number(req.query.days) || 30;
+    const summary = await getReviewAnalyticsSummary({ days });
+    res.json({ summary });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/ops/analytics-export', requireRole('moderator', 'admin'), async (req, res, next) => {
+  try {
+    const days = Number(req.query.days) || 90;
+    const limit = Math.min(Number(req.query.limit) || 2000, 5000);
+    const warehouse = await exportReviewAnalyticsWarehouse({ days, limit });
+    if (req.query.format === 'ndjson') {
+      res.type('application/x-ndjson');
+      for (const row of warehouse.records) {
+        res.write(`${JSON.stringify(row)}\n`);
+      }
+      return res.end();
+    }
+    res.json({ warehouse });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/ops/audit-log', requireRole('moderator', 'admin'), async (req, res, next) => {
+  try {
+    const limit = Number(req.query.limit) || 50;
+    const entityType = req.query.entity_type ? String(req.query.entity_type) : undefined;
+    const entityId = req.query.entity_id ? String(req.query.entity_id) : undefined;
+    const [entries, summary] = await Promise.all([
+      listAuditLogEntries({ limit, entityType, entityId }),
+      getAuditLogSummary({ days: Number(req.query.days) || 30 }),
+    ]);
+    res.json({ entries, summary });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/ops/advisory-governance', requireRole('moderator', 'admin'), async (_req, res, next) => {
+  try {
+    const dashboard = await getAdvisoryGovernanceDashboard();
+    res.json({ dashboard });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/peer-reviews/:requestId/cancel', async (req, res, next) => {
+  try {
+    const authorId = getAuthenticatedUserId(req);
+    const { reason, withdrawal_reason } = req.body || {};
+    const result = await cancelPeerReviewForStoryWithdrawal(
+      req.params.requestId,
+      authorId,
+      { reason, withdrawal_reason },
+    );
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.get('/assignments/:assignmentId/advisory-suggestions', async (req, res, next) => {
+  try {
+    const reviewerSlot = String(req.query.reviewer_slot || '');
+    if (!reviewerSlot) throw createAppError('BAD_REQUEST', 'reviewer_slot required', 400);
+    const result = await ensureAdvisorySuggestions(req.params.assignmentId, reviewerSlot);
+    res.json({
+      suggestions: result.suggestions,
+      generated: result.generated,
+      advisory_ai_live: isAdvisoryAiLive(),
+    });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/advisory-suggestions/:suggestionId/respond', async (req, res, next) => {
+  try {
+    const { action } = req.body || {};
+    const suggestion = await respondToAdvisorySuggestion(req.params.suggestionId, action);
+    res.json({ suggestion });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+platformRouter.post('/peer-reviews/:requestId/comments/:commentId/reply', async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { body, role } = req.body || {};
+    const thread = await replyToReviewComment(
+      req.params.requestId,
+      userId,
+      req.params.commentId,
+      body,
+      role === 'reviewer' ? 'reviewer' : 'author',
+    );
+    res.status(201).json({ thread });
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }

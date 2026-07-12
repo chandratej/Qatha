@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PeerReviewRequest, ReviewerAssignment } from '../types/platform';
 import type {
+  BlindManuscript,
   ReviewComment,
   ReviewWorkspaceDraft,
   ReviewWorkspacePrefs,
@@ -11,11 +12,14 @@ import {
   computeMetrics,
   duplicateCommentWarning,
   loadReviewDraft,
+  mergeReviewDraft,
   predictRqiGain,
   saveReviewDraft,
   syncChecklistFromComments,
 } from '../lib/reviewWorkspaceStore';
 import { buildStoryIntelligence, loadBlindManuscript } from '../lib/reviewManuscript';
+import { platformApi } from '../lib/platformApi';
+import { usePlatformBackend } from '../lib/platformBackend';
 import { getReviewerPool } from '../lib/platformStore';
 import { DEV_SANDBOX_RQI, isReviewDevSandbox } from '../lib/reviewDevSandbox';
 
@@ -26,9 +30,14 @@ export interface UseReviewWorkspaceArgs {
 }
 
 export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseReviewWorkspaceArgs) {
+  const useServer = usePlatformBackend();
   const [draft, setDraft] = useState<ReviewWorkspaceDraft>(() =>
     loadReviewDraft(assignment.id, request.id),
   );
+  const [manuscript, setManuscript] = useState<BlindManuscript>(() =>
+    loadBlindManuscript(request, assignment),
+  );
+  const [manuscriptLoading, setManuscriptLoading] = useState(useServer);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [commentFilter, setCommentFilter] = useState<'all' | 'open' | 'resolved' | 'pinned' | 'critical'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,11 +47,30 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionStart = useRef(Date.now());
+  const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestDraftRef = useRef(draft);
+  latestDraftRef.current = draft;
 
-  const manuscript = useMemo(
-    () => loadBlindManuscript(request, assignment),
-    [request, assignment],
-  );
+  useEffect(() => {
+    let cancelled = false;
+    if (useServer) {
+      platformApi.getReviewerManuscript(assignment.id, reviewerSlot)
+        .then(({ manuscript: m }) => { if (!cancelled) setManuscript(m); })
+        .catch(() => { if (!cancelled) setManuscript(loadBlindManuscript(request, assignment)); })
+        .finally(() => { if (!cancelled) setManuscriptLoading(false); });
+
+      platformApi.getReviewDraft(assignment.id, reviewerSlot)
+        .then(({ draft: remote, saved_at }) => {
+          if (cancelled || !remote) return;
+          const merged = mergeReviewDraft(assignment.id, request.id, remote, saved_at);
+          setDraft(merged);
+          saveReviewDraft(merged);
+        })
+        .catch(() => { /* local fallback */ });
+    }
+    return () => { cancelled = true; };
+  }, [assignment.id, request.id, reviewerSlot, useServer, request, assignment]);
+
   const storyIntel = useMemo(() => buildStoryIntelligence(request), [request]);
 
   const reviewerProfile = useMemo(() => {
@@ -85,6 +113,16 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
     return list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [draft.comments, commentFilter, searchQuery]);
 
+  const queueServerSave = useCallback((payload: ReviewWorkspaceDraft) => {
+    if (!useServer) return;
+    if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+    serverSaveTimer.current = setTimeout(() => {
+      platformApi.saveReviewDraft(assignment.id, reviewerSlot, payload).catch(() => {
+        setError('Could not sync draft to server — saved locally.');
+      });
+    }, 1200);
+  }, [assignment.id, reviewerSlot, useServer]);
+
   const persist = useCallback((next: ReviewWorkspaceDraft) => {
     const withChecklist = {
       ...next,
@@ -96,8 +134,9 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
     };
     const saved = saveReviewDraft(withChecklist);
     setDraft(saved);
+    queueServerSave(saved);
     return saved;
-  }, []);
+  }, [queueServerSave]);
 
   const updatePrefs = useCallback((patch: Partial<ReviewWorkspacePrefs>) => {
     setDraft((prev) => persist({ ...prev, prefs: { ...prev.prefs, ...patch } }));
@@ -200,9 +239,15 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
 
   const saveDraftNow = useCallback(() => {
     setSaving(true);
-    persist(draft);
-    setTimeout(() => setSaving(false), 400);
-  }, [draft, persist]);
+    const saved = persist(latestDraftRef.current);
+    if (useServer) {
+      platformApi.saveReviewDraft(assignment.id, reviewerSlot, saved)
+        .catch(() => setError('Could not sync draft to server — saved locally.'))
+        .finally(() => setSaving(false));
+    } else {
+      setTimeout(() => setSaving(false), 400);
+    }
+  }, [assignment.id, reviewerSlot, persist, useServer]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -214,7 +259,10 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
         },
       }));
     }, 60000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearInterval(timer);
+      if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+    };
   }, [persist]);
 
   const toStructuredComments = useCallback(() =>
@@ -239,6 +287,7 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
   return {
     draft,
     manuscript,
+    manuscriptLoading,
     storyIntel,
     reviewerProfile,
     currentChapter,

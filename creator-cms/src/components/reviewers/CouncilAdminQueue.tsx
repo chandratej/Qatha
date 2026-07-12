@@ -36,6 +36,7 @@ export function CouncilAdminQueue({ onAction }: Props) {
 
   const flagged = entries.filter((e) => e.audit_status === 'flagged' || e.fraud_risk_score > 20);
   const pending = entries.filter((e) => e.audit_status === 'pending');
+  const appealed = entries.filter((e) => e.audit_status === 'appealed');
 
   return (
     <section className="cms-panel council-admin-queue" aria-labelledby="council-admin-title">
@@ -51,6 +52,7 @@ export function CouncilAdminQueue({ onAction }: Props) {
         <span><strong>{entries.length}</strong> total requests</span>
         <span><strong>{pending.length}</strong> pending audit</span>
         <span><strong>{flagged.length}</strong> elevated risk</span>
+        <span><strong>{appealed.length}</strong> under appeal</span>
       </div>
 
       {entries.length === 0 ? (
@@ -80,6 +82,11 @@ export function CouncilAdminQueue({ onAction }: Props) {
               {e.fraud_risk_score > 15 && (
                 <p className="council-admin-queue__warn">
                   <AlertTriangle size={14} aria-hidden /> Anti-fraud: duplicate/copy-paste checks recommended before escrow release.
+                </p>
+              )}
+              {e.audit_status === 'appealed' && (
+                <p className="council-admin-queue__warn">
+                  <AlertTriangle size={14} aria-hidden /> Appeal open — resolve in the appeals queue before escrow release.
                 </p>
               )}
               {e.audit_status === 'pending' && (

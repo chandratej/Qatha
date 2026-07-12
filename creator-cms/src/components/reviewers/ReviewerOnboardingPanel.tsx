@@ -4,6 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import type { ReviewerOnboardingRecord } from '../../lib/reviewerOnboarding';
 import { platformApi } from '../../lib/platformApi';
 import { GENRE_SPECIALIZATIONS } from '../../lib/platformConstants';
+import { TrialReviewPanel } from './TrialReviewPanel';
+import {
+  CURRENT_REVIEWER_AGREEMENT_VERSION,
+  REVIEWER_AGREEMENT_SUMMARY,
+} from '../../../../packages/shared/reviewerAgreement';
 
 export function ReviewerOnboardingPanel() {
   const { user } = useAuth();
@@ -13,6 +18,7 @@ export function ReviewerOnboardingPanel() {
   const [motivation, setMotivation] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -44,6 +50,8 @@ export function ReviewerOnboardingPanel() {
         genres,
         languages: ['telugu', 'english'],
         motivation: motivation.trim(),
+        agreement_accepted: agreementAccepted,
+        agreement_version: CURRENT_REVIEWER_AGREEMENT_VERSION,
       });
       setRecord(next);
     } catch (e) {
@@ -57,10 +65,28 @@ export function ReviewerOnboardingPanel() {
     setBusy(true);
     setError(null);
     try {
-      const { record: next } = await platformApi.certifyReviewerOnboarding(userId);
+      const { record: next } = await platformApi.completeReviewerTrainingOnboarding(userId);
       setRecord(next);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Certification failed');
+      setError(e instanceof Error ? e.message : 'Training step failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleTrialSubmit = async (payload: {
+    strengths: string;
+    weaknesses: string;
+    suggestion: string;
+    rubric_scores: Record<string, number>;
+  }) => {
+    setBusy(true);
+    setError(null);
+    try {
+      const { record: next } = await platformApi.submitTrialReviewOnboarding(userId, payload);
+      setRecord(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Trial review failed');
     } finally {
       setBusy(false);
     }
@@ -79,9 +105,9 @@ export function ReviewerOnboardingPanel() {
       <section className="reviewer-onboarding reviewer-onboarding--done" aria-labelledby="onboard-pending-title">
         <GraduationCap size={22} aria-hidden />
         <div>
-          <h3 id="onboard-pending-title">Training complete — awaiting council review</h3>
+          <h3 id="onboard-pending-title">Trial review submitted — awaiting council review</h3>
           <p className="input-hint">
-            A Literary Council moderator will review your motivation and genre expertise. You&apos;ll be notified when approved.
+            A Literary Council moderator will review your trial feedback and motivation. You&apos;ll be notified when approved.
           </p>
         </div>
       </section>
@@ -116,12 +142,12 @@ export function ReviewerOnboardingPanel() {
         <div>
           <h3 id="onboard-title">Join the Reviewer Pool</h3>
           <p className="reviewer-onboarding__intro">
-            Apply to review stories with structured, respectful craft feedback. PRD path: apply → training → certification.
+            Apply → training → trial review → council moderation. Evidence-based craft feedback only.
           </p>
         </div>
       </header>
 
-      {error && (
+      {error && record.status !== 'training' && (
         <p className="input-hint" role="alert" style={{ color: 'var(--katha-danger, #b42318)' }}>
           {error}
         </p>
@@ -154,10 +180,22 @@ export function ReviewerOnboardingPanel() {
               placeholder="Share your literary background and what you hope to contribute…"
             />
           </label>
+          <label className="reviewer-onboarding__agreement">
+            <input
+              type="checkbox"
+              checked={agreementAccepted}
+              onChange={(e) => setAgreementAccepted(e.target.checked)}
+            />
+            <span>
+              {REVIEWER_AGREEMENT_SUMMARY}
+              {' '}
+              <span className="input-hint">({CURRENT_REVIEWER_AGREEMENT_VERSION})</span>
+            </span>
+          </label>
           <button
             type="button"
             className="katha-cta katha-cta--maroon"
-            disabled={busy || genres.length === 0 || motivation.trim().length < 20}
+            disabled={busy || genres.length === 0 || motivation.trim().length < 20 || !agreementAccepted}
             onClick={() => void handleApply()}
           >
             {busy ? 'Submitting…' : 'Apply to Reviewer Pool'}
@@ -171,7 +209,7 @@ export function ReviewerOnboardingPanel() {
           <div>
             <h4>Complete reviewer training</h4>
             <p className="input-hint">
-              Learn double-blind etiquette, evidence-based notes, and Telugu craft sensitivity. (~5 min demo module)
+              Learn double-blind etiquette, evidence-based notes, and Telugu craft sensitivity. (~5 min)
             </p>
             <ul className="reviewer-onboarding__checklist">
               <li>Constructive tone — improve stories, never gatekeep</li>
@@ -185,10 +223,14 @@ export function ReviewerOnboardingPanel() {
               disabled={busy}
               onClick={() => void handleTraining()}
             >
-              {busy ? '…' : 'Complete training & get certified'}
+              {busy ? '…' : 'Complete training module'}
             </button>
           </div>
         </div>
+      )}
+
+      {record.trainingCompleted && (
+        <TrialReviewPanel busy={busy} error={error} onSubmit={(p) => void handleTrialSubmit(p)} />
       )}
     </section>
   );

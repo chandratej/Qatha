@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "updated_at": "2026-07-12",
+  "ideas": [
+    {
+      "id": "championship-ecosystem",
+      "title": "Championship ecosystem",
+      "status": "partial",
+      "source_prd": "Founder OS / Events PRD",
+      "description": "Configurable championship seasons, brackets, and prize pools managed from Founder OS — ties Creator Studio events to a full competitive literary ecosystem.",
+      "priority": "high"
+    },
+    {
+      "id": "premium-magazine-ecosystem",
+      "title": "Premium Magazine ecosystem",
+      "status": "not_implemented",
+      "source_prd": "Vol_06 Publishing / Magazine PRD",
+      "description": "Curated premium magazine issues with editorial workflow, subscriber gating, and magazine-specific analytics — distinct from serialized chapter publishing.",
+      "priority": "medium"
+    },
+    {
+      "id": "interactive-branching-editor",
+      "title": "Interactive branching editor",
+      "status": "not_implemented",
+      "source_prd": "Vol_04 Editor PRD — Phase 2",
+      "description": "Visual node-based editor for branching narratives with reader choice paths, merge points, and analytics per branch.",
+      "priority": "medium"
+    },
+    {
+      "id": "epistolary-chat-editor",
+      "title": "Epistolary chat editor",
+      "status": "partial",
+      "source_prd": "Vol_04 Editor PRD — Phase 1",
+      "description": "Chat-style scene editor for epistolary and messaging-format stories. UI scaffold planned; full backend persistence and reader rendering not complete.",
+      "priority": "medium"
+    },
+    {
+      "id": "full-debut-season-backend",
+      "title": "Full Debut Season backend",
+      "status": "partial",
+      "source_prd": "Vol_02 Story Structure PRD",
+      "description": "Database entities for seasons, arcs, and debut-season metadata. Demo-only local storage exists in Creator Studio; production stories use flat chapters.",
+      "priority": "high"
+    },
+    {
+      "id": "og-meta-ssr-share-links",
+      "title": "OG meta server-side rendering for share links",
+      "status": "not_implemented",
+      "source_prd": "Vol_05 Gateway / Share PRD",
+      "description": "Server-rendered Open Graph and Twitter Card meta for chapter share URLs so WhatsApp, Instagram, and X show rich previews without client-side JS.",
+      "priority": "high"
+    }
+  ]
+}

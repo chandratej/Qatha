@@ -38,6 +38,7 @@ interface PhoneticTextInputProps {
   onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   onFocus?: () => void;
   onBlurExtra?: () => void;
+  disabled?: boolean;
 }
 
 export const PhoneticTextInput = forwardRef<HTMLInputElement, PhoneticTextInputProps>(function PhoneticTextInput({
@@ -56,6 +57,7 @@ export const PhoneticTextInput = forwardRef<HTMLInputElement, PhoneticTextInputP
   onKeyDown,
   onFocus,
   onBlurExtra,
+  disabled = false,
 }, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cursorRef = useRef<number | null>(null);
@@ -182,6 +184,8 @@ export const PhoneticTextInput = forwardRef<HTMLInputElement, PhoneticTextInputP
         aria-autocomplete={ariaAutocomplete}
         aria-controls={ariaControls}
         lang="te"
+        disabled={disabled}
+        readOnly={disabled}
         onChange={(e) => handleChange(e.target.value)}
         onKeyDown={handleKeyDown}
         onFocus={() => {

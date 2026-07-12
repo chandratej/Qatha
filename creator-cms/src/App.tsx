@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LocaleProvider } from './context/LocaleContext';
 import { ApiAuthSync } from './components/ApiAuthSync';
 import { Layout } from './components/Layout';
 import { OverlayScrollManager } from './components/OverlayScrollManager';
@@ -11,7 +12,11 @@ import { Dashboard } from './pages/Dashboard';
 import { Stories } from './pages/Stories';
 import { CreateStory } from './pages/CreateStory';
 import { ChapterEditor } from './pages/ChapterEditor';
+import { EpistolaryEditor } from './pages/editors/EpistolaryEditor';
+import { EnglishEditor } from './pages/editors/EnglishEditor';
 import { StorySeasons } from './pages/StorySeasons';
+import { StoryBible } from './pages/StoryBible';
+import { MediaLibrary } from './pages/MediaLibrary';
 import { Analytics } from './pages/Analytics';
 import { Onboarding } from './pages/Onboarding';
 import { Profile } from './pages/Profile';
@@ -23,6 +28,7 @@ import { OnboardingGate } from './components/OnboardingGate';
 import { Settings } from './pages/Settings';
 import { Notifications } from './pages/Notifications';
 import { Schedule } from './pages/Schedule';
+import { PublishingCenter } from './pages/PublishingCenter';
 import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
 import { EventCreate } from './pages/EventCreate';
@@ -36,11 +42,16 @@ import './styles/scroll-overlay.css';
 import './styles/components.css';
 import './styles/dashboard.css';
 import './styles/studio.css';
+import './styles/premium-shell.css';
+import './styles/dashboard-premium.css';
+import './styles/events-premium.css';
+import './styles/auth-premium.css';
 
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
+        <LocaleProvider>
         <AuthProvider>
           <ApiAuthSync />
           <BrowserRouter>
@@ -54,6 +65,7 @@ function App() {
                 <Route element={<Layout />}>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/stories" element={<Stories />} />
+                  <Route path="/publishing" element={<PublishingCenter />} />
                   <Route path="/schedule" element={<Schedule />} />
                   <Route path="/stories/new" element={<CreateStory />} />
                   <Route path="/analytics/:storyId" element={<Analytics />} />
@@ -61,6 +73,8 @@ function App() {
                     <Route path="/moderation" element={<Moderation />} />
                   </Route>
                   <Route path="/stories/:storyId" element={<StorySeasons />} />
+                  <Route path="/stories/:storyId/bible" element={<StoryBible />} />
+                  <Route path="/stories/:storyId/media" element={<MediaLibrary />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/community" element={<Community />} />
                   {/* Events are core GTM + revenue (not Labs) — authors must register freely */}
@@ -79,6 +93,8 @@ function App() {
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />
                 <Route path="/stories/:storyId/chapters/:chapterNum" element={<ChapterEditor />} />
+                <Route path="/stories/:storyId/epistolary/:chapterNum" element={<EpistolaryEditor />} />
+                <Route path="/stories/:storyId/en/chapters/:chapterNum" element={<EnglishEditor />} />
                 <Route path="/reviewers/assignments/:assignmentId" element={<ReviewWorkspace />} />
                 </Route>
               </Route>
@@ -87,6 +103,7 @@ function App() {
             </div>
           </BrowserRouter>
         </AuthProvider>
+        </LocaleProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

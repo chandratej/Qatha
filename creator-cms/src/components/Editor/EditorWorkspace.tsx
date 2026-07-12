@@ -1,4 +1,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import type { EditorSelectionAnchor } from '../../lib/editorAnchor';
+import {
+  applyAuthorNoteHighlights,
+  scrollToAuthorNoteAnchor,
+} from '../../lib/authorNoteAnchors';
+import type { StoryAuthorComment } from '../../../../packages/shared/collaboration';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { ChevronDown, ChevronUp, PenLine } from 'lucide-react';
@@ -18,6 +24,7 @@ import {
   type ChapterFindMatch,
 } from '../../lib/chapterFind';
 import { FormatToolbar } from './FormatToolbar';
+import { MediaInsertModal } from './MediaInsertModal';
 import { ScenePacingHint } from './ScenePacingHint';
 import { getSceneWordCount } from '../../lib/scenePacing';
 import { PhoneticTextInput } from './PhoneticTextInput';
@@ -112,6 +119,9 @@ interface EditorWorkspaceProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
   flushRef?: React.MutableRefObject<(() => void) | null>;
+  selectionCaptureRef?: React.MutableRefObject<(() => EditorSelectionAnchor | null) | null>;
+  storyId?: string;
+  readOnly?: boolean;
   phoneticLive: boolean;
   onTogglePhonetic: () => void;
   editorComfortStyle?: React.CSSProperties;
@@ -124,6 +134,9 @@ interface EditorWorkspaceProps {
   findSceneMatches?: ChapterFindMatch[];
   aiCompanionOpen?: boolean;
   onAiCompanionOpenChange?: (open: boolean) => void;
+  authorComments?: StoryAuthorComment[];
+  activeAuthorCommentId?: string | null;
+  highlightNoteRef?: React.MutableRefObject<((comment: StoryAuthorComment) => void) | null>;
 }
 
 export function EditorWorkspace({
@@ -139,6 +152,9 @@ export function EditorWorkspace({
   containerRef,
   scrollRef: externalScrollRef,
   flushRef,
+  selectionCaptureRef,
+  storyId,
+  readOnly = false,
   phoneticLive,
   onTogglePhonetic,
   editorComfortStyle,
@@ -151,6 +167,9 @@ export function EditorWorkspace({
   findSceneMatches = [],
   aiCompanionOpen: controlledAiOpen,
   onAiCompanionOpenChange,
+  authorComments = [],
+  activeAuthorCommentId = null,
+  highlightNoteRef,
 }: EditorWorkspaceProps) {
   const [internalAiOpen, setInternalAiOpen] = useState(false);
   const aiCompanionOpen = controlledAiOpen ?? internalAiOpen;
@@ -164,6 +183,7 @@ export function EditorWorkspace({
   const [suggestionsPos, setSuggestionsPos] = useState({ top: 0, left: 0 });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [trailingWord, setTrailingWord] = useState('');
+  const [mediaInsertOpen, setMediaInsertOpen] = useState(false);
   const activeSceneIdRef = useRef(activeScene?.id);
   const phoneticLiveRef = useRef(phoneticLive);
 
@@ -285,8 +305,54 @@ export function EditorWorkspace({
     return () => { flushRef.current = null; };
   }, [flushRef, flushActiveScene]);
 
+  const refreshAuthorHighlights = useCallback(() => {
+    const editor = quillRef.current?.getEditor();
+    if (!editor || !activeScene || readOnly) return;
+    applyAuthorNoteHighlights(
+      editor as Parameters<typeof applyAuthorNoteHighlights>[0],
+      authorComments,
+      activeScene.id,
+      activeAuthorCommentId,
+    );
+  }, [authorComments, activeScene, activeAuthorCommentId, readOnly]);
+
+  useEffect(() => {
+    refreshAuthorHighlights();
+  }, [refreshAuthorHighlights, activeScene?.content]);
+
+  useEffect(() => {
+    if (!highlightNoteRef) return;
+    highlightNoteRef.current = (comment: StoryAuthorComment) => {
+      const editor = quillRef.current?.getEditor();
+      if (!editor) return;
+      const quillEditor = editor as Parameters<typeof applyAuthorNoteHighlights>[0]
+        & Parameters<typeof scrollToAuthorNoteAnchor>[0];
+      scrollToAuthorNoteAnchor(quillEditor, scrollRef.current, comment);
+      applyAuthorNoteHighlights(quillEditor, authorComments, activeScene?.id || '', comment.id);
+    };
+    return () => { highlightNoteRef.current = null; };
+  }, [highlightNoteRef, authorComments, activeScene?.id, scrollRef]);
+
+  useEffect(() => {
+    if (!selectionCaptureRef) return;
+    selectionCaptureRef.current = () => {
+      const editor = quillRef.current?.getEditor();
+      if (!editor) return null;
+      const range = editor.getSelection();
+      if (!range?.length) return null;
+      const text = editor.getText(range.index, range.length).trim();
+      if (!text) return null;
+      return {
+        text,
+        start_offset: range.index,
+        end_offset: range.index + range.length,
+      };
+    };
+    return () => { selectionCaptureRef.current = null; };
+  }, [selectionCaptureRef, activeScene?.id]);
+
   const handleChange = (content: string, _delta: unknown, source: string, editor: any) => {
-    if (source !== 'user' || !activeScene) return;
+    if (readOnly || source !== 'user' || !activeScene) return;
 
     let html = content;
     let trailing = '';
@@ -347,13 +413,25 @@ export function EditorWorkspace({
 
   const insertSceneBreak = () => {
     const editor = getEditor();
-    if (!editor || !activeScene) return;
+    if (!editor || !activeScene || readOnly) return;
     const breakHtml = '<hr class="scene-break" data-scene-break="true" />';
     const selection = editor.getSelection(true);
     const index = selection?.index ?? editor.getLength();
     editor.clipboard.dangerouslyPasteHTML(index, breakHtml);
     flushActiveScene();
     editor.setSelection(editor.getLength(), 0);
+  };
+
+  const insertImage = (url: string, alt?: string) => {
+    const editor = getEditor();
+    if (!editor || !activeScene || readOnly) return;
+    const safeAlt = (alt || 'Story illustration').replace(/"/g, '&quot;');
+    const imgHtml = `<p><img src="${url}" alt="${safeAlt}" class="chapter-inline-image" data-media-inline="true" /></p>`;
+    const selection = editor.getSelection(true);
+    const index = selection?.index ?? editor.getLength();
+    editor.clipboard.dangerouslyPasteHTML(index, imgHtml);
+    flushActiveScene();
+    editor.setSelection(Math.min(index + 1, editor.getLength()), 0);
   };
 
   useEffect(() => {
@@ -424,6 +502,8 @@ export function EditorWorkspace({
         onRedo={() => getEditor()?.history.redo()}
         onSceneBreak={insertSceneBreak}
         onLink={insertLink}
+        onInsertImage={storyId && !readOnly ? () => setMediaInsertOpen(true) : undefined}
+        readOnly={readOnly}
         minimal={toolbarMinimal}
         onOpenAi={CREATOR_AI.generativeEnabled ? () => setAiCompanionOpen(true) : undefined}
       />
@@ -465,10 +545,11 @@ export function EditorWorkspace({
             ref={titleInputRef}
             className="katha-proto-scene-title-input"
             value={activeScene.title}
-            onChange={(v) => updateSceneTitle(activeScene.id, v)}
-            phoneticLive={phoneticLive}
+            onChange={(v) => !readOnly && updateSceneTitle(activeScene.id, v)}
+            phoneticLive={phoneticLive && !readOnly}
             placeholder="Scene title"
             aria-label="Scene title"
+            disabled={readOnly}
           />
           <ReactQuill
             key={activeScene.id}
@@ -477,8 +558,9 @@ export function EditorWorkspace({
             value={activeScene.content || ''}
             onChange={handleChange}
             onBlur={flushActiveScene}
+            readOnly={readOnly}
             modules={{ toolbar: false, history: { delay: 1000, maxStack: 200, userOnly: true } }}
-            placeholder="Begin this scene… Write as your readers will experience it."
+            placeholder={readOnly ? 'Published chapter — read only' : 'Begin this scene… Write as your readers will experience it.'}
           />
           {isBlank && (
             <div className="katha-proto-editor-nudge" aria-hidden>
@@ -493,6 +575,15 @@ export function EditorWorkspace({
           open={aiCompanionOpen}
           onOpenChange={setAiCompanionOpen}
           integrated={false}
+        />
+      )}
+
+      {storyId && (
+        <MediaInsertModal
+          storyId={storyId}
+          open={mediaInsertOpen}
+          onClose={() => setMediaInsertOpen(false)}
+          onInsert={(asset) => insertImage(asset.url, asset.attribution || asset.filename || undefined)}
         />
       )}
 

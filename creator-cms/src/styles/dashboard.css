@@ -533,6 +533,38 @@
   background: var(--dash-paper);
 }
 
+.locale-toggle--compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  flex-shrink: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.locale-toggle--compact:hover {
+  color: var(--dash-gold);
+  border-color: var(--dash-gold-soft);
+  background: var(--dash-paper);
+}
+
+.locale-toggle__label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .cms-auth-page__theme {
   position: fixed;
   top: 20px;
@@ -1989,6 +2021,38 @@
 
 /* Dashboard adaptation */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+.ops-escalation-dashboard__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 12px 0;
+  font-size: 0.875rem;
+}
+
+.ops-escalation-dashboard__email {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted, #5c5348);
+}
+
+.ops-escalation-dashboard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.council-admin-queue__item--overdue {
+  border-left: 3px solid #b42318;
+}
+
+.council-admin-queue__item--due_soon {
+  border-left: 3px solid #c4a060;
+}
 .dashboard-header__main { flex: 1; min-width: 240px; }
 .dashboard-header__meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .dashboard-header__chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; background: var(--dash-paper); border: 1px solid var(--dash-border); font-size: 0.8125rem; color: var(--ink-soft); }
@@ -2226,8 +2290,23 @@
 }
 
 .dashboard-notifications-widget,
-.dashboard-reviewer-pool-widget {
+.dashboard-reviewer-pool-widget,
+.dashboard-invites-widget {
   margin-bottom: 16px;
+}
+
+.dashboard-invites-widget__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--dash-border);
+  font-size: 0.8125rem;
+}
+
+.dashboard-invites-widget__row strong {
+  text-transform: capitalize;
 }
 
 .dashboard-notifications-widget__head,

@@ -37,8 +37,33 @@ export {
   genreLabel,
   GENRE_DISCOVER_WEIGHTS,
 } from './genres';
-export { CONTENT_TYPES, STORY_STATUSES, AGE_RATINGS, LANGUAGES } from './content-types';
-export type { ContentTypeId, StoryStatusId, AgeRatingId, LanguageId } from './content-types';
+export {
+  CONTENT_TYPES,
+  CREATABLE_CONTENT_TYPES,
+  STORY_STATUSES,
+  AGE_RATINGS,
+  LANGUAGES,
+} from './content-types';
+export type {
+  ContentTypeId,
+  ContentTypeDef,
+  StoryStatusId,
+  AgeRatingId,
+  LanguageId,
+} from './content-types';
+
+export {
+  DEBUT_SEASON,
+  DEBUT_SEASON_REQUIREMENTS,
+  DEBUT_SEASON_EVALUATION_WEIGHTS,
+  DEBUT_SEASON_AWARD_LEVELS,
+  DEBUT_SEASON_NAMES,
+} from './debutSeason';
+export type {
+  DebutEvaluationDimensionId,
+  DebutAwardLevelId,
+  DebutSeasonNameId,
+} from './debutSeason';
 
 export { MOOD_TAGS, SEED_COMMUNITY_TAGS, TAG_REQUEST_STATUSES, TAG_WORKFLOW } from './tags';
 export type { TagRequestStatus } from './tags';
@@ -80,11 +105,11 @@ export {
 export type { SpiInput, SpiResult, SpiComponents, StabilityDecision } from './spi';
 
 export {
-  EVENT_TYPES, ORGANIZER_LEVELS, ENTRY_FEE_TIERS_INR, JUDGING_MODELS, RUBRIC_DIMENSIONS,
+  EVENT_TYPES, EVENT_PRIZE_TIERS, ORGANIZER_LEVELS, ENTRY_FEE_TIERS_INR, JUDGING_MODELS, RUBRIC_DIMENSIONS,
   EVENT_STATUSES, EVENT_WIZARD_STEPS, DEFAULT_COMMISSION_SPLITS, ESCROW_RELEASE_CONDITIONS,
   SUBMISSION_WORKFLOW_STEPS,
 } from './events';
-export type { EventTypeId, OrganizerLevelId, JudgingModelId, EventStatus } from './events';
+export type { EventTypeId, EventPrizeTierId, OrganizerLevelId, JudgingModelId, EventStatus } from './events';
 
 export { PLATFORM_ROLES, ROLE_PERMISSIONS, hasPermission, canHostPaidContest } from './rbac';
 export type { PlatformRole } from './rbac';

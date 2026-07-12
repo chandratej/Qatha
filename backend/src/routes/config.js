@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getRevenueConfig } from '../config/revenue.js';
 import { getLaunchOfferConfig } from '../services/launchOffer.js';
+import { getFounderOsConfig, getFounderOsIdeas } from '../services/founderOsStore.js';
 
 export const configRouter = Router();
 
@@ -12,4 +13,12 @@ configRouter.get('/launch-offer', (_req, res) => {
 /** Public revenue split — 60/40 per DEV-003 founder decision. */
 configRouter.get('/revenue', (_req, res) => {
   res.json(getRevenueConfig());
+});
+
+/** Founder OS — feature flags & idea backlog for founder review */
+configRouter.get('/founder-os', (_req, res) => {
+  res.json({
+    config: getFounderOsConfig(),
+    ideas: getFounderOsIdeas(),
+  });
 });

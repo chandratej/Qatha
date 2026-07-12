@@ -1,7 +1,7 @@
 /** PRD §7 — Contest framework roadmap */
 
 export const CONTEST_ROADMAP = [
-  { id: 'first_chapter_challenge', label: 'First Chapter Challenge', phase: 'launch', status: 'active' },
+  { id: 'debut_season', label: 'Katha Debut Season', phase: 'launch', status: 'active' },
   { id: 'monthly_genre_contest', label: 'Monthly Genre Contest', phase: 'recurring', status: 'active' },
   { id: 'festival_contest', label: 'Festival Contest', phase: 'recurring', status: 'active' },
   { id: 'weekly_short_story_collection', label: 'Weekly Short Story Collection', phase: 'recurring', status: 'planned' },

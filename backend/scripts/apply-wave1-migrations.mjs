@@ -27,6 +27,20 @@ const MIGRATIONS = [
   '../../supabase/migrations/021_wave1h_reviewer_moderation.sql',
   '../../supabase/migrations/022_wave2b_creator_notification_prefs.sql',
   '../../supabase/migrations/023_wave3a_event_submissions_rls.sql',
+  '../../supabase/migrations/024_wave3c_story_bible_collaboration.sql',
+  '../../supabase/migrations/025_wave3d_scene_character_links.sql',
+  '../../supabase/migrations/026_wave3e_invites_author_comments.sql',
+  '../../supabase/migrations/027_wave3f_media_attribution.sql',
+  '../../supabase/migrations/028_wave4b_reader_feedback.sql',
+  '../../supabase/migrations/029_wave4c_reader_feedback_insert.sql',
+  '../../supabase/migrations/030_wave2a_review_drafts.sql',
+  '../../supabase/migrations/031_wave2b_review_annotations.sql',
+  '../../supabase/migrations/032_wave3_peer_revision_reputation.sql',
+  '../../supabase/migrations/033_wave5_ai_advisory.sql',
+  '../../supabase/migrations/034_wave7_agreement_analytics.sql',
+  '../../supabase/migrations/035_wave8_satisfaction_audit.sql',
+  '../../supabase/migrations/036_wave9_debut_season.sql',
+  '../../supabase/migrations/037_wave10_community_posts.sql',
 ];
 
 async function execSql(sql) {

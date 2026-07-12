@@ -2,7 +2,7 @@ import { memo, useState, useRef, useEffect } from 'react';
 import {
   Keyboard, Wand2, Bold, Italic, Underline,
   AlignLeft, AlignCenter, AlignRight, Link,
-  Undo2, Redo2, MoreHorizontal, Sparkles, SeparatorHorizontal,
+  Undo2, Redo2, MoreHorizontal, Sparkles, SeparatorHorizontal, Image,
 } from 'lucide-react';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
 import { ToolbarTooltip } from './ToolbarTooltip';
@@ -19,8 +19,10 @@ interface FormatToolbarProps {
   onRedo: () => void;
   onSceneBreak: () => void;
   onLink: () => void;
+  onInsertImage?: () => void;
   minimal?: boolean;
   onOpenAi?: () => void;
+  readOnly?: boolean;
 }
 
 export const FormatToolbar = memo(function FormatToolbar({
@@ -35,8 +37,10 @@ export const FormatToolbar = memo(function FormatToolbar({
   onRedo,
   onSceneBreak,
   onLink,
+  onInsertImage,
   minimal = false,
   onOpenAi,
+  readOnly = false,
 }: FormatToolbarProps) {
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowRef = useRef<HTMLDivElement>(null);
@@ -55,7 +59,7 @@ export const FormatToolbar = memo(function FormatToolbar({
   if (minimal) {
     return (
       <div className="katha-proto-format-toolbar katha-proto-format-toolbar--focus" role="toolbar" aria-label="Focus formatting">
-        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onBold} title="Bold (Ctrl+B)" aria-label="Bold">
+        <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onBold} disabled={readOnly} title="Bold (Ctrl+B)" aria-label="Bold">
           <Bold size={15} strokeWidth={EDITOR_ICON_STROKE} />
         </button>
         <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onItalic} title="Italic (Ctrl+I)" aria-label="Italic">
@@ -109,6 +113,9 @@ export const FormatToolbar = memo(function FormatToolbar({
               <button type="button" role="menuitem" className="katha-proto-fmt-overflow-item" onClick={() => { onAlign('right'); setOverflowOpen(false); }}>Align right</button>
               <button type="button" role="menuitem" className="katha-proto-fmt-overflow-item" onClick={() => { onLink(); setOverflowOpen(false); }}>Insert link</button>
               <button type="button" role="menuitem" className="katha-proto-fmt-overflow-item" onClick={() => { onSceneBreak(); setOverflowOpen(false); }}>Scene break</button>
+              {onInsertImage && (
+                <button type="button" role="menuitem" className="katha-proto-fmt-overflow-item" onClick={() => { onInsertImage(); setOverflowOpen(false); }}>Insert image</button>
+              )}
             </div>
           )}
         </div>
@@ -191,10 +198,17 @@ export const FormatToolbar = memo(function FormatToolbar({
           </button>
         </ToolbarTooltip>
         <ToolbarTooltip label="Scene break — fiction divider">
-          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onSceneBreak} aria-label="Insert scene break">
+          <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onSceneBreak} disabled={readOnly} aria-label="Insert scene break">
             <SeparatorHorizontal size={15} strokeWidth={EDITOR_ICON_STROKE} />
           </button>
         </ToolbarTooltip>
+        {onInsertImage && (
+          <ToolbarTooltip label="Insert image from media library">
+            <button type="button" className="katha-proto-fmt-btn icon-only" onClick={onInsertImage} disabled={readOnly} aria-label="Insert image">
+              <Image size={15} strokeWidth={EDITOR_ICON_STROKE} />
+            </button>
+          </ToolbarTooltip>
+        )}
       </div>
 
       <div className="katha-proto-fmt-divider" aria-hidden />

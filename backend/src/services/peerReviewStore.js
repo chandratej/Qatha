@@ -18,13 +18,51 @@ import {
 } from './reviewerMatching.js';
 import { computeReviewConsensus } from './reviewConsensus.js';
 import { loadReviewerPool, findPoolMemberBySlot } from './reviewerPoolStore.js';
-import { createInAppNotification, processReviewSlaEscalations } from './notificationsStore.js';
+import { createInAppNotification, processReviewSlaEscalations, processAcceptSlaEscalations } from './notificationsStore.js';
+import { bindAssignmentResolver, clearReviewDraft, hasDraftPayload } from './reviewDraftStore.js';
+import {
+  persistAnnotationsFromSubmit,
+  resolveAnnotation,
+  hydrateStructuredComments,
+  addThreadReply,
+  getAnnotationById,
+  listAnnotationsForRequest,
+  markAnnotationsStaleOnRevision,
+} from './reviewAnnotationStore.js';
+import { getReviewerOnboarding } from './reviewerProfileStore.js';
+import { appendReputationEvent } from './reputationEventStore.js';
+import { appendReviewAnalyticsEvent } from './reviewAnalyticsEventStore.js';
+
+const MAX_REVISION_ROUNDS = 3;
+const REVISION_DECISIONS = new Set(['minor_revision', 'major_revision', 'revise']);
+const ACCEPT_DECISIONS = new Set(['accept', 'approve', 'approve_with_notes']);
+
+function isRevisionDecision(decision) {
+  return REVISION_DECISIONS.has(decision);
+}
+
+function isAcceptDecision(decision) {
+  return ACCEPT_DECISIONS.has(decision);
+}
 
 const REVIEWERS_REQUIRED = REVIEWERS_ASSIGNED_COUNT;
 const ACTIVE_ASSIGNMENT_STATUSES = new Set(['accepted', 'in_review', 'submitted', 'validated', 'paid_out']);
 
 const REVIEW_SLA_DAYS = 7;
+const ACCEPT_SLA_HOURS = 24;
 const SUBMITTED_STATUSES = new Set(['submitted', 'validated', 'paid_out']);
+
+const CANCELLABLE_REQUEST_STATUSES = new Set([
+  'pending_payment',
+  'matching',
+  'awaiting_reviewers',
+  'in_review',
+  'decision_ready',
+  'revision_requested',
+  'resubmitted',
+]);
+
+const CANCELLABLE_ASSIGNMENT_STATUSES = new Set(['invited', 'accepted', 'in_review']);
 
 function blindManuscriptLabel(requestId) {
   return `Manuscript #${String(requestId).slice(-6).toUpperCase()}`;
@@ -68,6 +106,12 @@ function slaDueAt(fromIso = new Date().toISOString()) {
   return d.toISOString();
 }
 
+function acceptDueAt(fromIso = new Date().toISOString()) {
+  const d = new Date(fromIso);
+  d.setHours(d.getHours() + ACCEPT_SLA_HOURS);
+  return d.toISOString();
+}
+
 function rowToRequest(row) {
   const meta = row.metadata || {};
   return {
@@ -89,6 +133,10 @@ function rowToRequest(row) {
     structured_comments: row.structured_comments || [],
     created_at: row.created_at,
     payment_status: meta.payment_status || 'waived',
+    revision_round: row.revision_round ?? meta.revision_round ?? 0,
+    revision_notes: row.revision_notes ?? meta.revision_notes ?? null,
+    last_resubmitted_at: row.last_resubmitted_at ?? meta.last_resubmitted_at ?? null,
+    author_satisfaction_rating: row.author_satisfaction_rating ?? meta.author_satisfaction_rating ?? null,
   };
 }
 
@@ -110,8 +158,11 @@ function rowToAssignment(row) {
     accepted_at: row.accepted_at,
     submitted_at: row.submitted_at,
     due_at: row.due_at,
+    accept_due_at: row.accept_due_at,
     priority: row.priority,
     review_summary: row.review_summary,
+    draft_saved_at: row.draft_saved_at ?? undefined,
+    has_draft: hasDraftPayload(row.draft_payload),
   };
 }
 
@@ -159,6 +210,7 @@ export async function listAssignmentsForSlot(reviewerSlot) {
   }
 
   await processReviewSlaEscalations(assignments, resolveUserIdForReviewerSlot);
+  await processAcceptSlaEscalations(assignments, resolveUserIdForReviewerSlot);
   return assignments;
 }
 
@@ -209,6 +261,10 @@ function normalizeMockRequest(row) {
     reviewers_matched: row.reviewers_matched ?? meta.reviewers_matched ?? 0,
     payment_status: row.payment_status || meta.payment_status || 'waived',
     consensus_pct: row.consensus_pct ?? meta.consensus_pct,
+    revision_round: row.revision_round ?? meta.revision_round ?? 0,
+    revision_notes: row.revision_notes ?? meta.revision_notes ?? null,
+    last_resubmitted_at: row.last_resubmitted_at ?? meta.last_resubmitted_at ?? null,
+    author_satisfaction_rating: row.author_satisfaction_rating ?? meta.author_satisfaction_rating ?? null,
   };
 }
 
@@ -235,6 +291,10 @@ async function persistRequestUpdate(requestId, updates) {
     ...(existing?.metadata || {}),
     reviews_received: merged.reviews_received,
     consensus_pct: merged.consensus_pct,
+    revision_round: merged.revision_round,
+    revision_notes: merged.revision_notes,
+    last_resubmitted_at: merged.last_resubmitted_at,
+    author_satisfaction_rating: merged.author_satisfaction_rating,
   };
   const { data, error } = await supabase
     .from('peer_review_requests')
@@ -242,6 +302,10 @@ async function persistRequestUpdate(requestId, updates) {
       status: merged.status,
       majority_decision: merged.majority_decision,
       structured_comments: merged.structured_comments,
+      revision_round: merged.revision_round,
+      revision_notes: merged.revision_notes,
+      last_resubmitted_at: merged.last_resubmitted_at,
+      author_satisfaction_rating: merged.author_satisfaction_rating ?? null,
       metadata: meta,
     })
     .eq('id', requestId)
@@ -302,6 +366,16 @@ async function syncRequestAfterTransition(assignment, event, patch = {}) {
     };
     await persistRequestUpdate(assignment.request_id, updates);
 
+    if (patch.structured_comments?.length) {
+      await persistAnnotationsFromSubmit({
+        requestId: assignment.request_id,
+        assignmentId: assignment.id,
+        storyId: normalized.story_id,
+        reviewerSlot: assignment.reviewer_slot,
+        comments: tagStructuredComments(patch.structured_comments || []),
+      });
+    }
+
     if (submitted >= REVIEWERS_REQUIRED && normalized.author_id) {
       await createInAppNotification(normalized.author_id, 'review_consensus_ready', {
         body: `Your manuscript "${normalized.story_title}" has a council decision ready.`,
@@ -319,6 +393,9 @@ export async function transitionAssignment(assignmentId, reviewerSlot, event, pa
   }
 
   const from = assignment.status;
+  if (event === 'submit' && from === 'submitted') {
+    return assignment;
+  }
   if (!canTransitionAssignment(from, event)) {
     throw new Error(`Cannot ${event} from status ${from}`);
   }
@@ -346,6 +423,13 @@ export async function transitionAssignment(assignmentId, reviewerSlot, event, pa
       actorId: reviewerSlot,
     });
     await syncRequestAfterTransition(updated, event, { ...patch, review_summary: reviewSummary });
+    if (event === 'submit') await clearReviewDraft(assignmentId);
+    await appendReviewAnalyticsEvent(`assignment_${event}`, {
+      assignment_id: assignmentId,
+      request_id: assignment.request_id,
+      actor_id: reviewerSlot,
+      metadata: { from, to },
+    });
     return updated;
   }
 
@@ -371,6 +455,13 @@ export async function transitionAssignment(assignmentId, reviewerSlot, event, pa
   });
   const result = rowToAssignment(data);
   await syncRequestAfterTransition(result, event, { ...patch, review_summary: reviewSummary });
+  if (event === 'submit') await clearReviewDraft(assignmentId);
+  await appendReviewAnalyticsEvent(`assignment_${event}`, {
+    assignment_id: assignmentId,
+    request_id: assignment.request_id,
+    actor_id: reviewerSlot,
+    metadata: { from, to },
+  });
   return result;
 }
 
@@ -384,12 +475,48 @@ export async function listAllAssignments() {
 export async function getAuthorReviewFeedback(authorId) {
   const requests = await listPeerReviewRequests(authorId);
   const assignments = await listAllAssignments();
-  return requests.map((request) => ({
+  const hydrated = await Promise.all(requests.map((r) => hydrateStructuredComments(r)));
+  return hydrated.map((request) => ({
     request,
     submissions: assignments
       .filter((a) => a.request_id === request.id && SUBMITTED_STATUSES.has(a.status))
       .sort((a, b) => (a.submitted_at ?? '').localeCompare(b.submitted_at ?? '')),
   }));
+}
+
+function parseThreadMentions(body) {
+  const targets = new Set();
+  const re = /@(Author|Reviewer)\b/gi;
+  let match;
+  const text = String(body || '');
+  while ((match = re.exec(text)) !== null) {
+    const token = match[1]?.toLowerCase();
+    if (token === 'author') targets.add('author');
+    if (token === 'reviewer') targets.add('reviewer');
+  }
+  return [...targets];
+}
+
+export async function getReviewerFeedbackBundles(reviewerSlot) {
+  const assignments = (await listAssignmentsForSlot(reviewerSlot))
+    .filter((a) => SUBMITTED_STATUSES.has(a.status))
+    .sort((a, b) => (b.submitted_at ?? '').localeCompare(a.submitted_at ?? ''));
+
+  const bundles = [];
+  for (const assignment of assignments) {
+    const comments = await listAnnotationsForRequest(assignment.request_id, {
+      includeThreads: true,
+      reviewerSlot,
+    });
+    if (!comments.length) continue;
+    bundles.push({
+      assignment,
+      comments,
+      request_id: assignment.request_id,
+      manuscript_label: assignment.manuscript_label,
+    });
+  }
+  return bundles;
 }
 
 export async function createPeerReviewRequest(authorId, opts) {
@@ -494,6 +621,7 @@ export async function createPeerReviewRequest(authorId, opts) {
         payout_inr: payoutEachInr,
         invited_at: now,
         due_at: slaDueAt(now),
+        accept_due_at: acceptDueAt(now),
         priority: mode === 'paid' ? 'premium' : 'standard',
       });
     }
@@ -537,6 +665,7 @@ export async function createPeerReviewRequest(authorId, opts) {
     payout_inr: payoutEachInr,
     invited_at: now,
     due_at: slaDueAt(now),
+    accept_due_at: acceptDueAt(now),
     priority: mode === 'paid' ? 'premium' : 'standard',
   }));
 
@@ -559,10 +688,216 @@ export async function createPeerReviewRequest(authorId, opts) {
   };
 }
 
+export async function replyToReviewComment(requestId, userId, commentId, body, role = 'author') {
+  const request = await getPeerReviewRequestById(requestId);
+  if (!request) throw new Error('Review request not found');
+
+  const annotation = await getAnnotationById(commentId);
+  if (!annotation) throw new Error('Comment not found');
+  if (annotation.request_id !== requestId) throw new Error('Comment not found on this request');
+
+  if (role === 'author') {
+    if (request.author_id !== userId) throw new Error('Not your review request');
+  } else if (role === 'reviewer') {
+    const onboarding = await getReviewerOnboarding(userId);
+    const slot = onboarding.pool_slot;
+    if (!slot || annotation.reviewer_slot !== slot) {
+      throw new Error('Not your review note');
+    }
+  }
+
+  const mentions = parseThreadMentions(body);
+  const targets = mentions.length
+    ? mentions
+    : [role === 'author' ? 'reviewer' : 'author'];
+
+  const notifyUserIds = [];
+  if (targets.includes('author') && request.author_id) {
+    notifyUserIds.push(request.author_id);
+  }
+  if (targets.includes('reviewer') && annotation.reviewer_slot) {
+    const reviewerUserId = await resolveUserIdForReviewerSlot(annotation.reviewer_slot);
+    if (reviewerUserId) notifyUserIds.push(reviewerUserId);
+  }
+
+  const recipients = [...new Set(notifyUserIds.filter((id) => id !== userId))];
+
+  return addThreadReply({
+    annotationId: commentId,
+    authorId: userId,
+    role,
+    body,
+    notifyUserIds: recipients,
+    actionUrl: role === 'author' ? '/reviewers' : '/reviewers',
+  });
+}
+
+async function resetAssignmentForRevisionRound(assignmentId) {
+  const assignment = await getAssignmentById(assignmentId);
+  if (!assignment) return null;
+
+  const patch = {
+    status: 'accepted',
+    review_summary: null,
+    submitted_at: null,
+  };
+
+  if (isMockMode()) {
+    const merged = { ...assignment, ...patch };
+    assignmentsDb.set(assignmentId, merged);
+    await clearReviewDraft(assignmentId);
+    return merged;
+  }
+
+  const { data, error } = await supabase
+    .from('peer_review_assignments')
+    .update(patch)
+    .eq('id', assignmentId)
+    .select('*')
+    .single();
+  if (error) throw new Error(error.message);
+  await clearReviewDraft(assignmentId);
+  return rowToAssignment(data);
+}
+
+/** Test + admin helper — patch request fields without FSM transition */
+export async function patchPeerReviewRequest(requestId, patch) {
+  return persistRequestUpdate(requestId, patch);
+}
+
+export async function acknowledgePeerReviewDecision(requestId, authorId, opts = {}) {
+  const request = await getPeerReviewRequestById(requestId);
+  if (!request) throw new Error('Review request not found');
+  if (request.author_id !== authorId) throw new Error('Not your review request');
+  if (request.status !== 'decision_ready') {
+    throw new Error('Council decision is not ready to acknowledge');
+  }
+  if (isRevisionDecision(request.majority_decision)) {
+    throw new Error('Council requested revision — resubmit after editing your manuscript');
+  }
+
+  const rawRating = opts.satisfaction_rating ?? opts.satisfactionRating;
+  let satisfactionRating = null;
+  if (rawRating != null) {
+    const n = Number(rawRating);
+    if (!Number.isInteger(n) || n < 1 || n > 5) {
+      throw new Error('satisfaction_rating must be an integer from 1 to 5');
+    }
+    satisfactionRating = n;
+  }
+
+  const updated = await persistRequestUpdate(requestId, {
+    status: 'completed',
+    author_satisfaction_rating: satisfactionRating,
+  });
+  await logStateTransition({
+    entityType: 'peer_review_request',
+    entityId: requestId,
+    fromState: 'decision_ready',
+    toState: 'completed',
+    eventName: 'author_acknowledged',
+    actorId: authorId,
+    metadata: satisfactionRating != null ? { satisfaction_rating: satisfactionRating } : {},
+  });
+  await appendReputationEvent(authorId, 'review_completed', {
+    reason: 'Author acknowledged council decision',
+    metadata: { request_id: requestId, decision: request.majority_decision },
+    delta_rqi: 1,
+  });
+  if (satisfactionRating != null) {
+    await appendReviewAnalyticsEvent('author_satisfaction_submitted', {
+      request_id: requestId,
+      actor_id: authorId,
+      metadata: {
+        satisfaction_rating: satisfactionRating,
+        decision: request.majority_decision,
+      },
+    });
+  }
+  return updated;
+}
+
+export async function resubmitPeerReviewForRevision(requestId, authorId, opts = {}) {
+  const request = await getPeerReviewRequestById(requestId);
+  if (!request) throw new Error('Review request not found');
+  if (request.author_id !== authorId) throw new Error('Not your review request');
+  if (request.status !== 'decision_ready') {
+    throw new Error('Resubmit only when council decision is ready');
+  }
+  if (!isRevisionDecision(request.majority_decision)) {
+    throw new Error('Resubmit applies when council requests minor or major revision');
+  }
+
+  const round = (request.revision_round ?? 0) + 1;
+  if (round > MAX_REVISION_ROUNDS) {
+    throw new Error(`Maximum ${MAX_REVISION_ROUNDS} revision rounds reached`);
+  }
+
+  const revisionNotes = String(opts.revision_notes || opts.revisionNotes || '').trim();
+  const now = new Date().toISOString();
+  await markAnnotationsStaleOnRevision(requestId, request.revision_round ?? 0);
+  const assignments = await listAssignmentsForRequest(requestId);
+  const submitted = assignments.filter((a) => SUBMITTED_STATUSES.has(a.status));
+
+  for (const assignment of submitted) {
+    await resetAssignmentForRevisionRound(assignment.id);
+    const reviewerUserId = await resolveUserIdForReviewerSlot(assignment.reviewer_slot);
+    if (reviewerUserId) {
+      await createInAppNotification(reviewerUserId, 'review_resubmitted', {
+        body: `The author resubmitted "${request.story_title}" for revision round ${round}.`,
+        action_url: '/reviewers',
+      });
+    }
+  }
+
+  const archivedComments = {
+    round: request.revision_round ?? 0,
+    comments: request.structured_comments || [],
+    archived_at: now,
+  };
+
+  const updated = await persistRequestUpdate(requestId, {
+    status: 'in_review',
+    revision_round: round,
+    revision_notes: revisionNotes || request.revision_notes || null,
+    last_resubmitted_at: now,
+    reviews_received: 0,
+    majority_decision: null,
+    consensus_pct: undefined,
+    structured_comments: [],
+    metadata_archive: archivedComments,
+  });
+
+  await logStateTransition({
+    entityType: 'peer_review_request',
+    entityId: requestId,
+    fromState: 'decision_ready',
+    toState: 'in_review',
+    eventName: 'resubmit',
+    actorId: authorId,
+    metadata: { revision_round: round },
+  });
+
+  await appendReputationEvent(authorId, 'revision_resubmitted', {
+    reason: `Revision round ${round} submitted`,
+    metadata: { request_id: requestId, round, decision: request.majority_decision },
+    delta_rqi: 0.5,
+  });
+
+  return updated;
+}
+
 export async function resolveAuthorComment(requestId, authorId, commentId, resolution) {
   const request = await getPeerReviewRequestById(requestId);
   if (!request) throw new Error('Review request not found');
   if (request.author_id !== authorId) throw new Error('Not your review request');
+
+  const dbAnnotation = await getAnnotationById(commentId);
+  if (dbAnnotation) {
+    await resolveAnnotation(commentId, resolution);
+    const fresh = await getPeerReviewRequestById(requestId);
+    return hydrateStructuredComments(fresh);
+  }
 
   const comments = [...(request.structured_comments || [])];
   const idx = comments.findIndex((c) => c.id === commentId);
@@ -626,6 +961,118 @@ export async function getCouncilAuditQueue() {
       flags: buildAuditFlags(normalized),
     };
   });
+}
+
+/** LRC-12-D4 — mark request under independent appeal review */
+export async function markPeerReviewAppealed(requestId) {
+  const request = await getPeerReviewRequestById(requestId);
+  if (!request) throw new Error('Request not found');
+  if (request.audit_status === 'appealed') {
+    throw new Error('An appeal is already open for this review');
+  }
+  return persistRequestUpdate(requestId, { audit_status: 'appealed' });
+}
+
+/**
+ * LRC-12-D4 — close appeal with upheld (flagged) or dismissed (cleared) outcome.
+ * @param {'upheld' | 'dismissed'} outcome
+ */
+export async function applyAppealOutcome(requestId, outcome) {
+  const request = await getPeerReviewRequestById(requestId);
+  if (!request) throw new Error('Request not found');
+  const audit_status = outcome === 'upheld' ? 'flagged' : 'cleared';
+  const patch = { audit_status };
+  if (outcome === 'upheld' && request.status === 'completed') {
+    patch.status = 'decision_ready';
+  }
+  return persistRequestUpdate(requestId, patch);
+}
+
+/**
+ * LRC-19-D5 — author withdraws story; cancel active review cycle.
+ * Operations: preserve audit history; notify assigned reviewers.
+ */
+export async function cancelPeerReviewForStoryWithdrawal(requestId, authorId, opts = {}) {
+  const request = await getPeerReviewRequestById(requestId);
+  if (!request) throw new Error('Review request not found');
+  if (request.author_id !== authorId) throw new Error('Not your review request');
+  if (request.status === 'cancelled') {
+    return { request, cancelled_assignments: [] };
+  }
+  if (request.status === 'completed') {
+    throw new Error('Cannot cancel a completed review');
+  }
+  if (!CANCELLABLE_REQUEST_STATUSES.has(request.status)) {
+    throw new Error(`Cannot cancel request in status ${request.status}`);
+  }
+
+  const reason = String(opts.reason || opts.withdrawal_reason || 'story_withdrawn').trim();
+  const fromStatus = request.status;
+  const assignments = await listAssignmentsForRequest(requestId);
+  const cancelledAssignments = [];
+
+  for (const assignment of assignments) {
+    if (!CANCELLABLE_ASSIGNMENT_STATUSES.has(assignment.status)) continue;
+
+    const updated = { ...assignment, status: 'cancelled' };
+    if (isMockMode()) {
+      assignmentsDb.set(assignment.id, updated);
+    } else {
+      const { error } = await supabase
+        .from('peer_review_assignments')
+        .update({ status: 'cancelled' })
+        .eq('id', assignment.id);
+      if (error) throw new Error(error.message);
+    }
+
+    cancelledAssignments.push(updated);
+    await clearReviewDraft(assignment.id);
+    await logStateTransition({
+      entityType: 'peer_review_assignment',
+      entityId: assignment.id,
+      fromState: assignment.status,
+      toState: 'cancelled',
+      eventName: 'cancel',
+      actorId: authorId,
+      metadata: { reason, request_id: requestId },
+    });
+
+    const reviewerUserId = await resolveUserIdForReviewerSlot(assignment.reviewer_slot);
+    if (reviewerUserId) {
+      await createInAppNotification(reviewerUserId, 'review_cancelled', {
+        body: `Review for "${request.story_title}" was cancelled — the author withdrew the story.`,
+        action_url: '/reviewers',
+      });
+    }
+  }
+
+  const updated = await persistRequestUpdate(requestId, {
+    status: 'cancelled',
+    cancellation_reason: reason,
+    cancelled_at: new Date().toISOString(),
+  });
+
+  await logStateTransition({
+    entityType: 'peer_review_request',
+    entityId: requestId,
+    fromState: fromStatus,
+    toState: 'cancelled',
+    eventName: 'cancel',
+    actorId: authorId,
+    metadata: { reason },
+  });
+
+  await appendReviewAnalyticsEvent('review_request_cancelled', {
+    request_id: requestId,
+    actor_id: authorId,
+    metadata: {
+      reason,
+      assignments_cancelled: cancelledAssignments.length,
+      from_status: fromStatus,
+    },
+  });
+
+  return { request: updated, cancelled_assignments: cancelledAssignments };
 }
 
 export async function clearCouncilAudit(requestId) {
@@ -709,6 +1156,9 @@ export function seedPeerReviewMockIfEmpty() {
     payout_inr: 0,
     invited_at: now,
     due_at: slaDueAt(now),
+    accept_due_at: acceptDueAt(now),
     priority: 'standard',
   });
 }
+
+bindAssignmentResolver(getAssignmentById);

@@ -8,8 +8,11 @@ import type {
 } from '../../../types/reviewWorkspace';
 import { categoryLabel } from '../../../lib/reviewCategories';
 import { useReviewLanguage } from './ReviewLanguageBar';
+import { AdvisorySuggestionsPanel } from './AdvisorySuggestionsPanel';
 
 interface Props {
+  assignmentId: string;
+  reviewerSlot: string;
   comments: ReviewComment[];
   checklist: ReviewChecklistItem[];
   metrics: ReviewWorkspaceMetrics;
@@ -30,6 +33,8 @@ interface Props {
 const FILTERS = ['all', 'open', 'critical', 'resolved'] as const;
 
 export function RightIntelligencePanel({
+  assignmentId,
+  reviewerSlot,
   comments,
   checklist,
   metrics,
@@ -90,10 +95,17 @@ export function RightIntelligencePanel({
           ) : (
             comments.map((c) => (
               <li key={c.id}>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   className={`rw-comment-card${activeCommentId === c.id ? ' rw-comment-card--active' : ''}`}
                   onClick={() => onCommentSelect(c.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onCommentSelect(c.id);
+                    }
+                  }}
                 >
                   <div className="rw-comment-card__head">
                     <MessageSquare size={12} aria-hidden />
@@ -112,23 +124,29 @@ export function RightIntelligencePanel({
                       {c.status === 'resolved' ? 'Reopen' : 'Done'}
                     </button>
                   </div>
-                </button>
+                </div>
               </li>
             ))
           )}
         </ul>
+
+        <AdvisorySuggestionsPanel
+          assignmentId={assignmentId}
+          reviewerSlot={reviewerSlot}
+        />
 
         <button
           type="button"
           className="rw-insights-toggle__btn"
           onClick={() => setInsightsOpen((v) => !v)}
           aria-expanded={insightsOpen}
+          aria-controls="rw-insights-body"
         >
           <span>Review progress</span>
           <span className="rw-insights-toggle__meta">RQI {reviewerRqi} · SQI {storyIntel.sqi}</span>
         </button>
         {insightsOpen && (
-          <div className="rw-insights-body">
+          <div className="rw-insights-body" id="rw-insights-body">
             <p className="rw-insights-line">Checklist {checklistDone}/{checklist.length}</p>
             <ul className="rw-checklist rw-checklist--compact">
               {checklist.slice(0, 4).map((item) => (

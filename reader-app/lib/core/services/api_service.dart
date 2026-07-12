@@ -120,6 +120,25 @@ class ApiService {
     );
   }
 
+  Future<void> submitReaderFeedback({
+    required String storyId,
+    required int chapterNumber,
+    required String body,
+    String feedbackType = 'written_review',
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/engagement/reader-feedback'),
+      headers: _headers,
+      body: jsonEncode({
+        'story_id': storyId,
+        'chapter_number': chapterNumber,
+        'body': body,
+        'feedback_type': feedbackType,
+      }),
+    );
+    if (res.statusCode != 201) throw _parseError(res);
+  }
+
   Future<Map<String, dynamic>?> pingStreak() async {
     if (userId == null) return null;
     try {

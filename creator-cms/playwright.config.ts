@@ -12,7 +12,12 @@ import { defineConfig, devices } from '@playwright/test';
 const isCI = !!process.env.CI;
 const strictPlatform =
   process.env.E2E_STRICT_PLATFORM === 'true'
-  || process.argv.some((arg) => arg.includes('reviewer-pool-strict') || arg.includes('events-strict'));
+  || process.argv.some((arg) =>
+    arg.includes('reviewer-pool-strict')
+    || arg.includes('events-strict')
+    || arg.includes('review-workspace-a11y')
+    || arg.includes('review-workspace-perf'),
+  );
 
 export default defineConfig({
   testDir: './e2e',

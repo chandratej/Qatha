@@ -1,5 +1,6 @@
 import { BookOpenCheck, PenLine, Send, Shield, Users } from 'lucide-react';
 import { REVIEWER_POOL_BRAND } from '../../lib/reviewerPoolConstants';
+import { useLocale } from '../../context/LocaleContext';
 
 type PoolView = 'author' | 'reviewer' | 'pool' | 'admin';
 
@@ -26,6 +27,7 @@ export function CouncilHero({
   onPoolView,
   onAdminView,
 }: Props) {
+  const { t } = useLocale();
   const brand = REVIEWER_POOL_BRAND;
 
   return (
@@ -43,9 +45,9 @@ export function CouncilHero({
           onClick={onReviewerView}
         >
           <PenLine size={18} aria-hidden />
-          <span className="council-sanctuary__nav-label">Review</span>
+          <span className="council-sanctuary__nav-label">{t('reviewers.navReview')}</span>
           <span className="council-sanctuary__nav-hint">
-            {inboxCount > 0 ? `${inboxCount} waiting` : 'Dashboard'}
+            {inboxCount > 0 ? `${inboxCount} ${t('reviewers.waiting')}` : t('reviewers.dashboard')}
           </span>
           {inboxCount > 0 && <span className="council-sanctuary__badge">{inboxCount}</span>}
         </button>
@@ -55,13 +57,13 @@ export function CouncilHero({
           onClick={onAuthorView}
         >
           <Send size={18} aria-hidden />
-          <span className="council-sanctuary__nav-label">Request</span>
+          <span className="council-sanctuary__nav-label">{t('reviewers.navRequest')}</span>
           <span className="council-sanctuary__nav-hint">
             {feedbackReadyCount > 0
-              ? `${feedbackReadyCount} to read`
+              ? `${feedbackReadyCount} ${t('reviewers.toRead')}`
               : activeRequests > 0
-                ? `${activeRequests} active`
-                : 'Get feedback'}
+                ? `${activeRequests} ${t('reviewers.active')}`
+                : t('reviewers.getFeedback')}
           </span>
           {feedbackReadyCount > 0 && <span className="council-sanctuary__badge">{feedbackReadyCount}</span>}
         </button>
@@ -71,8 +73,8 @@ export function CouncilHero({
           onClick={onPoolView}
         >
           <Users size={18} aria-hidden />
-          <span className="council-sanctuary__nav-label">Pool</span>
-          <span className="council-sanctuary__nav-hint">Browse & join</span>
+          <span className="council-sanctuary__nav-label">{t('reviewers.navPool')}</span>
+          <span className="council-sanctuary__nav-hint">{t('reviewers.browseJoin')}</span>
         </button>
         {isAdmin && (
           <button
@@ -81,7 +83,7 @@ export function CouncilHero({
             onClick={onAdminView}
           >
             <Shield size={18} aria-hidden />
-            <span className="council-sanctuary__nav-label">Admin</span>
+            <span className="council-sanctuary__nav-label">{t('reviewers.navAdmin')}</span>
           </button>
         )}
       </nav>

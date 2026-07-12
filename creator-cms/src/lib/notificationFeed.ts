@@ -1,19 +1,21 @@
 import type { PlatformNotification } from './notificationsLocal';
 import { NOTIFICATION_DOMAINS } from '../../../packages/shared/notifications';
 
-export type NotificationFilter = 'all' | 'reviews' | 'publishing' | 'revenue';
+export type NotificationFilter = 'all' | 'reviews' | 'publishing' | 'revenue' | 'readers';
 
 export const NOTIFICATION_FILTER_LABELS: Record<NotificationFilter, string> = {
   all: 'All',
   reviews: 'Reviews',
   publishing: 'Publishing',
   revenue: 'Revenue',
+  readers: 'Readers',
 };
 
 const FILTER_DOMAINS: Record<Exclude<NotificationFilter, 'all'>, readonly string[]> = {
   reviews: ['reviews', 'collaboration'],
   publishing: ['publishing', 'story_creation'],
   revenue: ['revenue_payments', 'moderation'],
+  readers: ['reader_engagement'],
 };
 
 export function normalizePlatformNotification(

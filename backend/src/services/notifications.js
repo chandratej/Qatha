@@ -9,6 +9,15 @@ export function scheduleNotifications(cron) {
   cron.schedule('0 * * * *', notifyScheduledReleases);
   cron.schedule('0 20 * * *', notifyStreakReminders); // 8 PM daily trigger
   cron.schedule('* * * * *', publishDueScheduledChapters);
+  // LRC-11-D7 — review SLA email queue scaffold (hourly; delivery deferred Lean Playbook)
+  cron.schedule('15 * * * *', async () => {
+    try {
+      const { runReviewSlaEmailWorker } = await import('../workers/reviewSlaEmailWorker.js');
+      await runReviewSlaEmailWorker();
+    } catch (e) {
+      console.warn('[reviewSlaEmailWorker] cron failed:', e.message);
+    }
+  });
   // DEC-021: Story Trust SPI batch — 02:15 UTC daily + every 6h catch-up for stale rows
   cron.schedule('15 2 * * *', () => recomputeAllStoryTrust({ onlyStale: false }));
   cron.schedule('20 */6 * * *', () => recomputeAllStoryTrust({ onlyStale: true }));

@@ -2533,6 +2533,19 @@
 }
 
 @media (max-width: 640px) {
+  .rw-sheet {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .rw-sheet--left,
+  .rw-sheet--right {
+    top: auto;
+    bottom: 0;
+    height: min(72vh, 520px);
+  }
+
   .rw-chrome--immersive {
     flex-wrap: wrap;
     gap: 8px;
@@ -2550,5 +2563,142 @@
 
   .rw-manuscript-canvas {
     padding: 32px 20px 48px;
+  }
+}
+
+/* WCAG 2.2 AA — Review Studio (LRC-18-D5) */
+.rw-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  z-index: 100;
+  padding: 8px 16px;
+  background: var(--maroon, #6b2d3c);
+  color: #fff;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.rw-skip-link:focus {
+  left: 12px;
+}
+
+.rw-chrome__tool:focus-visible,
+.rw-chrome__chapter-btn:focus-visible,
+.rw-filter-chip:focus-visible,
+.rw-comment-card:focus-visible,
+.rw-mini-btn:focus-visible,
+.rw-insights-toggle__btn:focus-visible {
+  outline: 2px solid #c4a060;
+  outline-offset: 2px;
+}
+
+.rw-advisory {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(107, 45, 60, 0.1);
+}
+
+.rw-advisory__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rw-advisory__head h4 {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.rw-advisory__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(196, 160, 96, 0.15);
+  color: #5c4a2a;
+}
+
+.rw-advisory__disclaimer {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+}
+
+.rw-advisory__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rw-advisory__item {
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 252, 246, 0.9);
+  border: 1px solid rgba(107, 45, 60, 0.08);
+}
+
+.rw-advisory__item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.rw-advisory__cat {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b2d3c;
+}
+
+.rw-advisory__conf {
+  font-size: 0.6875rem;
+  color: #5c5348;
+}
+
+.rw-advisory__body {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.rw-advisory__evidence {
+  margin: 6px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid rgba(196, 160, 96, 0.5);
+  font-size: 0.75rem;
+  color: #5c5348;
+}
+
+.rw-advisory__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rw-mini-btn--accept {
+  color: #2d5a3d;
+}
+
+.rw-announcer:empty {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rw-shell,
+  .rw-loading-text,
+  .rw-sheet,
+  .rw-backdrop {
+    animation: none !important;
+    transition: none !important;
   }
 }

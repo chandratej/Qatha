@@ -20,10 +20,12 @@ import {
 import { monetizationEligibilityChecklist } from '../business/monetizationEligibility';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
+import { useLocale } from '../context/LocaleContext';
 
 type MonetizationItem = { id: string; label: string; status: string };
 
 export function Monetization() {
+  const { t } = useLocale();
   const [reader, setReader] = useState<MonetizationItem[]>([]);
   const [creator, setCreator] = useState<MonetizationItem[]>([]);
   const [platform, setPlatform] = useState<MonetizationItem[]>([]);
@@ -54,18 +56,18 @@ export function Monetization() {
   }, [dash]);
 
   return (
-    <div className="cms-page studio-page monetization-studio">
+    <div className="cms-page studio-page monetization-studio monetization-studio--premium">
       <StudioPageHeader
-        eyebrow={BRAND_COPY.storyTrustEyebrow}
+        eyebrow={t('monetization.eyebrow')}
         eyebrowIcon={IndianRupee}
-        title="Literary patronage & Story Trust"
-        subtitle="Katha is a publishing ecosystem — not a social platform. We reward sustained reader value, enable literary patronage, and recognize achievement. No tips, no coins, no flashy gifting."
+        title={t('monetization.title')}
+        subtitle={t('monetization.subtitle')}
       />
 
       <section className="cms-panel monetization-charter" aria-labelledby="brand-charter-title">
         <div className="monetization-charter__header">
           <Sparkles size={20} aria-hidden />
-          <h2 id="brand-charter-title" className="dashboard-panel__title">Brand charter</h2>
+          <h2 id="brand-charter-title" className="dashboard-panel__title">{t('monetization.charter')}</h2>
         </div>
         <p className="monetization-charter__te" lang="te">కథ — గౌరవనీయ సాహిత్య సృష్టికర్తల యొక్క ఇల్లు</p>
         <ul className="monetization-charter__list">
@@ -77,9 +79,9 @@ export function Monetization() {
 
       <div className="monetization-hero-grid">
         <section className="cms-panel monetization-trust-panel" aria-labelledby="story-trust-title">
-          <h2 id="story-trust-title" className="dashboard-panel__title">Story Trust ladder</h2>
+          <h2 id="story-trust-title" className="dashboard-panel__title">{t('monetization.trustLadder')}</h2>
           <p className="monetization-panel__lead">
-            Only <strong>Performing</strong> and above are monetization eligible.
+            {t('monetization.trustLead')}
             Promotions require a {STABILITY_WINDOW_DAYS}-day stability window; demotions need sustained decline.
           </p>
           <StoryTrustLadder highlightMonetizationGate />
@@ -88,7 +90,7 @@ export function Monetization() {
             aria-labelledby="eligibility-title"
           >
             <h3 id="eligibility-title" className="monetization-eligibility__title">
-              {eligibility.eligible ? 'Monetization unlocked' : 'Path to monetization'}
+              {eligibility.eligible ? t('monetization.eligible') : t('monetization.path')}
             </h3>
             <p className="monetization-panel__lead">
               {BRAND_COPY.monetizationGate} Base share {BASE_CREATOR_SHARE_PCT}% · up to 60% at Apex.
@@ -110,8 +112,8 @@ export function Monetization() {
         </section>
 
         <section className="cms-panel monetization-spi-panel" aria-labelledby="spi-title">
-          <h2 id="spi-title" className="dashboard-panel__title">Story Performance Index</h2>
-          <p className="monetization-panel__lead">Never rely on a single metric — SPI blends reader signals holistically.</p>
+          <h2 id="spi-title" className="dashboard-panel__title">{t('monetization.spi')}</h2>
+          <p className="monetization-panel__lead">{t('monetization.spiLead')}</p>
           <ul className="monetization-spi-list">
             {SPI_WEIGHTS.map((w) => (
               <li key={w.id} className="monetization-spi-item">
@@ -127,7 +129,7 @@ export function Monetization() {
       </div>
 
       <section className="cms-panel monetization-revenue-panel" aria-labelledby="revenue-model-title">
-        <h2 id="revenue-model-title" className="dashboard-panel__title">Revenue model</h2>
+        <h2 id="revenue-model-title" className="dashboard-panel__title">{t('monetization.revenue')}</h2>
         <div className="monetization-revenue-flow">
           <span className="monetization-revenue-step">Quarterly Story Revenue</span>
           <span className="monetization-revenue-arrow" aria-hidden>→</span>
@@ -150,7 +152,7 @@ export function Monetization() {
         <section className="cms-panel" aria-labelledby="patronage-title">
           <div className="dashboard-panel__head">
             <h2 id="patronage-title" className="dashboard-panel__title">
-              <Crown size={18} aria-hidden /> Literary patronage
+              <Crown size={18} aria-hidden /> {t('monetization.patronage')}
             </h2>
           </div>
           <p className="monetization-panel__lead">{BRAND_COPY.patronageSubtitle}</p>
@@ -164,7 +166,7 @@ export function Monetization() {
         <section className="cms-panel" aria-labelledby="launch-flow-title">
           <div className="dashboard-panel__head">
             <h2 id="launch-flow-title" className="dashboard-panel__title">
-              <BookOpen size={18} aria-hidden /> First story launch
+              <BookOpen size={18} aria-hidden /> {t('monetization.launchFlow')}
             </h2>
           </div>
           <p className="monetization-panel__lead">No payouts simply for publishing.</p>
@@ -178,7 +180,7 @@ export function Monetization() {
         <section className="cms-panel" aria-labelledby="short-story-title">
           <div className="dashboard-panel__head">
             <h2 id="short-story-title" className="dashboard-panel__title">
-              <Award size={18} aria-hidden /> Short story economy
+              <Award size={18} aria-hidden /> {t('monetization.shortStory')}
             </h2>
           </div>
           <p className="monetization-panel__lead">Short stories monetize through curated collections — not standalone chapter unlocks.</p>
@@ -196,18 +198,18 @@ export function Monetization() {
       <section className="cms-panel monetization-vocabulary" aria-labelledby="vocabulary-title">
         <div className="dashboard-panel__head">
           <h2 id="vocabulary-title" className="dashboard-panel__title">
-            <Shield size={18} aria-hidden /> Katha vocabulary
+            <Shield size={18} aria-hidden /> {t('monetization.vocabulary')}
           </h2>
         </div>
         <div className="monetization-vocab-grid">
           <div>
-            <h3 className="monetization-vocab-heading">Avoid</h3>
+            <h3 className="monetization-vocab-heading">{t('monetization.avoid')}</h3>
             <ul className="monetization-vocab-list monetization-vocab-list--avoid">
               {BRAND_VOCABULARY.avoid.map((term) => <li key={term}>{term}</li>)}
             </ul>
           </div>
           <div>
-            <h3 className="monetization-vocab-heading">Preferred</h3>
+            <h3 className="monetization-vocab-heading">{t('monetization.preferred')}</h3>
             <ul className="monetization-vocab-list monetization-vocab-list--preferred">
               {BRAND_VOCABULARY.preferred.map((term) => <li key={term}>{term}</li>)}
             </ul>
@@ -216,7 +218,7 @@ export function Monetization() {
       </section>
 
       <section className="cms-panel" aria-labelledby="surfaces-title">
-        <h2 id="surfaces-title" className="dashboard-panel__title">Monetization surfaces</h2>
+        <h2 id="surfaces-title" className="dashboard-panel__title">{t('monetization.surfaces')}</h2>
         <p className="monetization-panel__lead">
           Today: {BRAND.creatorSharePct}% base author share on subscriptions, scaled by Story Trust.
           {' '}{QUARTERLY_PAYOUTS.cadence} payouts with fraud detection, refund handling, and appeals.

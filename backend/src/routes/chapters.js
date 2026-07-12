@@ -11,6 +11,7 @@ import { generateUniqueStorySlug } from '../lib/slugify.js';
 import { notifyNewChapter } from '../services/notifications.js';
 import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
+import { assertChapterEditable } from '../services/chapterImmutability.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
@@ -87,6 +88,10 @@ chaptersRouter.post('/:storyId/draft', requireAuth(), requireStoryRole('story.ed
 
     if (isMockMode()) {
       const key = `${storyId}:${chapter_number}`;
+      const existing = mockChapterStore.get(key);
+      if (existing?.status === 'published') {
+        throw createAppError('CHAPTER_IMMUTABLE', 'Published chapters are immutable. Resubmit for review to publish edits.', 409);
+      }
       const word_count = countDraftWords({ content, content_delta });
       const scene_count = content_delta?.scenes?.length || 1;
       const draft = {
@@ -104,6 +109,17 @@ chaptersRouter.post('/:storyId/draft', requireAuth(), requireStoryRole('story.ed
       };
       mockChapterStore.set(key, draft);
       return res.json({ saved: true, draft, mock: true });
+    }
+
+    const { data: existingChapter } = await supabase.from('chapters')
+      .select('status')
+      .eq('story_id', storyId)
+      .eq('chapter_number', chapter_number)
+      .maybeSingle();
+    try {
+      assertChapterEditable(existingChapter?.status);
+    } catch (e) {
+      throw createAppError('CHAPTER_IMMUTABLE', e.message, 409);
     }
 
     const word_count = countDraftWords({ content, content_delta });
@@ -173,6 +189,15 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
           ? `Auto-flagged: ${moderation.flaggedReason}`
           : 'Submitted for review';
       if (flagged) addToMockQueue(chapter, 'Creator', queueNote, riskScore);
+
+      if (!flagged) {
+        try {
+          const { onChapterPublished } = await import('../services/debutSeasonStore.js');
+          await onChapterPublished(creatorId, storyId);
+        } catch (debutErr) {
+          console.warn('[publish mock] debut season hook failed:', debutErr?.message);
+        }
+      }
 
       return res.json({
         chapter,

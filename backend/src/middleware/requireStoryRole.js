@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
+import { isStoryMembersTableMissing } from '../lib/schemaHealth.js';
 import { createAppError } from './errorHandler.js';
 import { getAuthenticatedUserId } from './authenticate.js';
 
@@ -36,7 +37,9 @@ async function resolveStoryRole(storyId, userId) {
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+  if (error && !isStoryMembersTableMissing(error)) {
+    throw createAppError('INTERNAL_ERROR', error.message, 500);
+  }
 
   if (data) {
     if (data.expires_at && Date.parse(data.expires_at) < Date.now()) return null;

@@ -8,6 +8,8 @@
 
 import { listAssignmentsForSlot } from './peerReviewStore.js';
 import { findPoolMemberBySlot } from './reviewerPoolStore.js';
+import { countDraftsInAssignments } from './reviewDraftStore.js';
+import { getReviewerAvailabilityBySlot } from './reviewerProfileStore.js';
 
 /** Mirrors creator-cms/lib/reviewerPoolConstants.ts REVIEWER_BADGES */
 const REVIEWER_BADGES = [
@@ -31,6 +33,7 @@ function badgesForReviewer(reviewCount, rqi) {
 
 export async function getReviewerDashboardStats(reviewerSlot) {
   const member = await findPoolMemberBySlot(reviewerSlot);
+  const availability = await getReviewerAvailabilityBySlot(reviewerSlot);
   const assignments = await listAssignmentsForSlot(reviewerSlot);
 
   const completed = assignments.filter((a) => COMPLETED_STATUSES.has(a.status));
@@ -63,7 +66,8 @@ export async function getReviewerDashboardStats(reviewerSlot) {
     avgTurnaroundHours,
     acceptanceRate,
     badges: badgesForReviewer(reviewCount, rqi),
-    draftCount: 0,
+    draftCount: countDraftsInAssignments(assignments),
     overdueCount: overdue.length,
+    isAvailable: availability.is_available,
   };
 }

@@ -26,8 +26,10 @@ import type { UserDevice } from '../types/database';
 import { isStudioLabsEnabled, setStudioLabsEnabled } from '../lib/featureFlags';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { NotificationPreferencesPanel } from '../components/settings/NotificationPreferencesPanel';
+import { useLocale } from '../context/LocaleContext';
 
 export function Settings() {
+  const { t } = useLocale();
   const { user, logout, isMockMode } = useAuth();
   const navigate = useNavigate();
   const supabaseDirect = useSupabaseDirect();
@@ -137,10 +139,10 @@ export function Settings() {
   return (
     <div className="cms-page studio-page">
       <StudioPageHeader
-        eyebrow="Studio preferences"
+        eyebrow={t('settings.eyebrow')}
         eyebrowIcon={Settings2}
-        title="Settings"
-        subtitle="Account, appearance, and local data — tuned for long writing sessions."
+        title={t('settings.title')}
+        subtitle={t('settings.subtitle')}
       />
 
       <div className="studio-settings-grid">

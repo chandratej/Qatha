@@ -123,6 +123,15 @@ export interface AnalyticsData {
     monetization_eligible?: boolean;
     trust_candidate_level?: string | null;
   };
+  mock?: boolean;
+  funnel?: {
+    chapters_published: number;
+    chapters_with_reads: number;
+    total_reads: number;
+    avg_completion_pct: number;
+    subscribers_gained: number;
+    read_to_subscribe_pct: number;
+  };
 }
 
 export interface CreatorMilestone {

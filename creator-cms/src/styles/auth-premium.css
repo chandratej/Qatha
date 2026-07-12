@@ -1,0 +1,206 @@
+/**
+ * Auth & onboarding premium layer — Wave 6
+ */
+
+.cms-auth-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 5vw, 48px);
+  background-color: #f7f5f2;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 0% 0%, rgba(196, 160, 82, 0.1), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 10%, rgba(107, 35, 56, 0.07), transparent 50%);
+}
+
+[data-theme='dark'] .cms-auth-page {
+  background-color: #0d0d0f;
+  background-image:
+    radial-gradient(ellipse 80% 55% at 5% -5%, rgba(196, 160, 82, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 95% 5%, rgba(107, 35, 56, 0.1), transparent 50%);
+}
+
+.cms-auth-page__theme {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 10;
+}
+
+.cms-auth-card {
+  width: min(440px, 100%);
+  padding: clamp(28px, 5vw, 40px);
+  border-radius: var(--premium-card-radius, 20px);
+  background: var(--premium-surface, #fff);
+  border: 1px solid var(--premium-border, rgba(26, 24, 20, 0.06));
+  box-shadow: var(--premium-shadow-modal);
+  animation: premium-page-enter 0.55s var(--katha-ease, ease) both;
+}
+
+.cms-auth-card--wide {
+  width: min(640px, 100%);
+}
+
+.cms-auth-card__brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.cms-auth-card__logo {
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  margin: 12px 0 4px;
+  letter-spacing: -0.02em;
+}
+
+.cms-auth-card__product {
+  font-size: 0.9375rem;
+  color: var(--premium-muted, #6b6560);
+  margin: 0 0 8px;
+}
+
+.cms-auth-card__tagline-telugu {
+  font-size: 1rem;
+  color: var(--ink-muted, #6b6560);
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+
+.cms-auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cms-auth-cta {
+  width: 100%;
+  min-height: var(--premium-input-height, 48px);
+  justify-content: center;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+.cms-auth-form .input-group {
+  margin-bottom: 16px;
+}
+
+.cms-auth-form .input-group input {
+  min-height: var(--premium-input-height, 48px);
+  border-radius: 12px;
+}
+
+.cms-onboarding-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.cms-onboarding-step {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--premium-border);
+  background: var(--premium-surface-soft);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cms-onboarding-step--current {
+  border-color: var(--premium-border-hover);
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.cms-onboarding-step--done {
+  opacity: 0.88;
+}
+
+.monetization-studio--premium .monetization-charter,
+.monetization-studio--premium .monetization-trust-panel,
+.monetization-studio--premium .monetization-spi-panel,
+.monetization-studio--premium .monetization-revenue-panel,
+.monetization-studio--premium .monetization-secondary-grid .cms-panel,
+.monetization-studio--premium .monetization-vocabulary {
+  border-radius: var(--premium-card-radius);
+  box-shadow: var(--premium-shadow-rest);
+  border: 1px solid var(--premium-border);
+}
+
+.championship-spotlight {
+  margin-bottom: var(--premium-section-gap, 32px);
+  padding: clamp(24px, 4vw, 36px);
+  border-radius: var(--premium-card-radius);
+  background: linear-gradient(135deg, rgba(107, 35, 56, 0.06) 0%, rgba(196, 160, 82, 0.08) 100%);
+  border: 1px solid var(--premium-border-hover);
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.championship-spotlight__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--maroon, #6b2338);
+  margin: 0 0 8px;
+}
+
+.championship-spotlight__title {
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  font-weight: 700;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
+}
+
+.championship-spotlight__subtitle {
+  margin: 0 0 20px;
+  color: var(--premium-muted);
+  line-height: 1.55;
+  max-width: 56ch;
+}
+
+.championship-spotlight__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.championship-spotlight__card {
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+}
+
+.championship-spotlight__card h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.championship-spotlight__card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--premium-muted);
+  line-height: 1.45;
+}
+
+.championship-spotlight__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: rgba(196, 160, 82, 0.15);
+  color: var(--ink);
+}

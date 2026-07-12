@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, BarChart3, Download, IndianRupee, Lightbulb, TrendingUp, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -7,11 +7,13 @@ import {
 } from 'recharts';
 import { api } from '../lib/api';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
 import { StoryTrustLadder } from '../components/studio/StoryTrustLadder';
 import { formatCompact } from '../lib/dashboardFormat';
+import { useLocale } from '../context/LocaleContext';
 import {
   SPI_WEIGHTS,
   trustLevelForReaders,
@@ -21,9 +23,28 @@ import {
 
 type DateRange = '7d' | '30d' | 'all';
 
+const DEMO_DEMOGRAPHICS = [
+  { label: '18–24', pct: 34 },
+  { label: '25–34', pct: 41 },
+  { label: '35–44', pct: 18 },
+  { label: '45+', pct: 7 },
+];
+
 export function Analytics() {
   const { storyId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { isMockMode } = useAuth();
+  const { t } = useLocale();
+
+  const fromPath = (location.state as { from?: string } | null)?.from
+    ?? searchParams.get('from')
+    ?? `/stories/${storyId}`;
+  const backTo = fromPath === '/publishing' ? '/publishing' : `/stories/${storyId}`;
+  const backLabel = fromPath === '/publishing'
+    ? t('analytics.backToPublishing')
+    : t('analytics.backToChapters');
   const { data, loading, error, mutate } = useApi(() => api.getAnalytics(storyId!), [storyId]);
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const [recomputing, setRecomputing] = useState(false);
@@ -58,12 +79,8 @@ export function Analytics() {
     revenue: Math.round(ch.total_views * 0.08),
   })), [filteredChapters]);
 
-  const demographics = data?.demographics ?? [
-    { label: '18–24', pct: 34 },
-    { label: '25–34', pct: 41 },
-    { label: '35–44', pct: 18 },
-    { label: '45+', pct: 7 },
-  ];
+  const showDemoDemographics = Boolean(data?.mock || isMockMode);
+  const demographics = data?.demographics ?? (showDemoDemographics ? DEMO_DEMOGRAPHICS : []);
 
   const popularChapters = useMemo(() =>
     [...filteredChapters].sort((a, b) => b.total_views - a.total_views).slice(0, 5),
@@ -128,8 +145,8 @@ export function Analytics() {
         eyebrowIcon={BarChart3}
         title={data.story?.title || 'Story Analytics'}
         subtitle="Story Trust signals — retention, completion, and reader growth drive your literary earnings."
-        backTo={`/stories/${storyId}`}
-        backLabel="Back to chapters"
+        backTo={backTo}
+        backLabel={backLabel}
         actions={(
           <>
             <select className="cms-select" value={dateRange} onChange={(e) => setDateRange(e.target.value as DateRange)} aria-label="Chapter range">
@@ -174,6 +191,39 @@ export function Analytics() {
           </span>
         </div>
       </div>
+
+      {data.funnel && (
+        <section className="cms-panel analytics-funnel-panel" aria-labelledby="analytics-funnel-title">
+          <h2 id="analytics-funnel-title" className="dashboard-panel__title">Reader funnel</h2>
+          <p className="input-hint">Publish → read → subscribe — from live chapter analytics (V08-01-D2).</p>
+          <ol className="analytics-funnel-steps">
+            <li>
+              <strong>{data.funnel.chapters_published}</strong>
+              <span>Chapters published</span>
+            </li>
+            <li>
+              <strong>{data.funnel.chapters_with_reads}</strong>
+              <span>Chapters with reads</span>
+            </li>
+            <li>
+              <strong>{data.funnel.total_reads.toLocaleString('en-IN')}</strong>
+              <span>Total reads</span>
+            </li>
+            <li>
+              <strong>{data.funnel.avg_completion_pct}%</strong>
+              <span>Avg completion</span>
+            </li>
+            <li>
+              <strong>{data.funnel.subscribers_gained}</strong>
+              <span>Subscribers gained</span>
+            </li>
+            <li>
+              <strong>{data.funnel.read_to_subscribe_pct}%</strong>
+              <span>Read → subscribe</span>
+            </li>
+          </ol>
+        </section>
+      )}
 
       <section className="cms-panel analytics-trust-panel" aria-labelledby="analytics-trust-title">
         <div className="analytics-trust-panel__head">
@@ -246,17 +296,21 @@ export function Analytics() {
 
         <div className="cms-panel">
           <h3 className="cms-panel__title"><Users size={18} aria-hidden /> Reader demographics</h3>
-          <ul className="demographics-list">
-            {demographics.map((d) => (
-              <li key={d.label} className="demographics-row">
-                <span>{d.label}</span>
-                <div className="demographics-row__bar" role="progressbar" aria-valuenow={d.pct} aria-valuemin={0} aria-valuemax={100}>
-                  <div style={{ width: `${d.pct}%` }} />
-                </div>
-                <span>{d.pct}%</span>
-              </li>
-            ))}
-          </ul>
+          {demographics.length === 0 ? (
+            <p className="input-hint">Demographics appear once your story has enough reader data on Supabase.</p>
+          ) : (
+            <ul className="demographics-list">
+              {demographics.map((d) => (
+                <li key={d.label} className="demographics-row">
+                  <span>{d.label}</span>
+                  <div className="demographics-row__bar" role="progressbar" aria-valuenow={d.pct} aria-valuemin={0} aria-valuemax={100}>
+                    <div style={{ width: `${d.pct}%` }} />
+                  </div>
+                  <span>{d.pct}%</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { ReviewComfortBar } from './ReviewComfortBar';
 import { ReviewLanguageBar } from './ReviewLanguageBar';
 
 interface Props {
+  id?: string;
   chapter: BlindManuscriptChapter | undefined;
   comments: ReviewComment[];
   activeCommentId: string | null;
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function CenterReadingPanel({
+  id,
   chapter,
   comments,
   activeCommentId,
@@ -89,7 +91,7 @@ export function CenterReadingPanel({
   }, [onCommentMarkerClick]);
 
   return (
-    <main className="rw-stage">
+    <main id={id} className="rw-stage" tabIndex={-1}>
       <div className="rw-stage__comfort rw-stage__comfort--full">
         <ReviewLanguageBar />
         <ReviewComfortBar />
@@ -207,7 +209,7 @@ function renderScenes(
                       ))}
                     </div>
 
-                    <div className="rw-annotated-row__margin" aria-label="Margin notes">
+                    <div className="rw-annotated-row__margin" role="group" aria-label="Margin notes">
                       {paraComments.map((c) => (
                         <button
                           key={c.id}

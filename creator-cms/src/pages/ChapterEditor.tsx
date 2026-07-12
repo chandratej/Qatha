@@ -69,6 +69,12 @@ import {
 } from '../lib/chapterFind';
 import { EditorComfortControls } from '../components/Editor/EditorComfortControls';
 import { WritingBreakNotice } from '../components/Editor/WritingBreakNotice';
+import { SceneCharacterPanel } from '../components/Editor/SceneCharacterPanel';
+import { suggestNewCharacters } from '../lib/characterDetection';
+import { AuthorNotesPanel } from '../components/Editor/AuthorNotesPanel';
+import type { StoryCharacter, SceneCharacterLink } from '../../../packages/shared/storyBible';
+import type { StoryAuthorComment } from '../../../packages/shared/collaboration';
+import type { EditorSelectionAnchor } from '../lib/editorAnchor';
 import '../styles/editor-prototype.css';
 
 const CHAR_LIMIT = 50_000;
@@ -141,6 +147,13 @@ export function ChapterEditor() {
 
   const [scenes, setScenes] = useState<SceneBlock[]>([]);
   const [activeSceneId, setActiveSceneId] = useState<string>('');
+  const [storyCharacters, setStoryCharacters] = useState<StoryCharacter[]>([]);
+  const [sceneCharacterLinks, setSceneCharacterLinks] = useState<SceneCharacterLink[]>([]);
+  const [sceneCharactersLoading, setSceneCharactersLoading] = useState(false);
+  const [sceneCharacterBusy, setSceneCharacterBusy] = useState(false);
+  const [addingCharacterName, setAddingCharacterName] = useState<string | null>(null);
+  const [authorComments, setAuthorComments] = useState<StoryAuthorComment[]>([]);
+  const [activeAuthorCommentId, setActiveAuthorCommentId] = useState<string | null>(null);
   const [previewDevice, setPreviewDevice] = useState<PreviewDevice>(prefs.previewDevice);
   const [previewTheme, setPreviewTheme] = useState<PreviewTheme>(prefs.previewTheme);
   const [authoringWorkspace, setAuthoringWorkspace] = useState<AuthoringWorkspace>(
@@ -158,6 +171,7 @@ export function ChapterEditor() {
   const [publishing, setPublishing] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [chapterStatus, setChapterStatus] = useState<string | null>(null);
   const [moderationStatus, setModerationStatus] = useState<string | null>(null);
   const [moderationNotes, setModerationNotes] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
@@ -191,6 +205,8 @@ export function ChapterEditor() {
   const editorScrollRef = useRef<HTMLDivElement>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorFlushRef = useRef<(() => void) | null>(null);
+  const editorSelectionCaptureRef = useRef<(() => EditorSelectionAnchor | null) | null>(null);
+  const highlightAuthorNoteRef = useRef<((comment: StoryAuthorComment) => void) | null>(null);
   const scenesRef = useRef(scenes);
   const chapterTitleRef = useRef(chapterTitle);
   const dirtyBaselineRef = useRef<string>('');
@@ -274,8 +290,10 @@ export function ChapterEditor() {
     }).catch(() => {});
   }, [storyId, chapterNumber, scenes, chapterTitle, isDemo]);
 
+  const isChapterImmutable = chapterStatus === 'published';
+
   const cloudSaveDraft = useCallback(async () => {
-    if (!storyId || isDemo) return;
+    if (!storyId || isDemo || isChapterImmutable) return;
     const currentScenes = scenesRef.current;
     const content = aggregateScenesToHtml(currentScenes);
     await api.saveDraft(storyId, {
@@ -284,7 +302,7 @@ export function ChapterEditor() {
       content,
       content_delta: scenesToContentDelta(currentScenes),
     });
-  }, [storyId, chapterNumber, isDemo]);
+  }, [storyId, chapterNumber, isDemo, isChapterImmutable]);
 
   const charCount = useMemo(() => getPlainCharCountFromScenes(scenes), [scenes]);
   const htmlCharCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
@@ -389,6 +407,7 @@ export function ChapterEditor() {
           applyDraft(cloudTitle, cloudScenes.length ? cloudScenes : [createDefaultScene()], false);
         }
 
+        setChapterStatus(chapter.status || null);
         setModerationStatus(chapter.moderation_status || chapter.status || null);
         setModerationNotes(chapter.moderation_reason || null);
       } catch (err) {
@@ -411,6 +430,34 @@ export function ChapterEditor() {
     return () => { cancelled = true; };
   }, [storyId, chapterNumber, isDemo]);
 
+  useEffect(() => {
+    if (!storyId || isDemo) return;
+    let cancelled = false;
+    setSceneCharactersLoading(true);
+    Promise.all([
+      api.getStoryCharacters(storyId),
+      api.getSceneCharacterLinks(storyId, chapterNumber),
+      api.getAuthorComments(storyId, chapterNumber),
+    ])
+      .then(([chars, links, comments]) => {
+        if (cancelled) return;
+        setStoryCharacters(chars.characters);
+        setSceneCharacterLinks(links.links);
+        setAuthorComments(comments.comments);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStoryCharacters([]);
+          setSceneCharacterLinks([]);
+          setAuthorComments([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSceneCharactersLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [storyId, chapterNumber, isDemo]);
+
   // Warn on unload with unsaved changes
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -424,6 +471,60 @@ export function ChapterEditor() {
 
   const activeScene = scenes.find(s => s.id === activeSceneId);
   const activeSceneIndex = scenes.findIndex(s => s.id === activeSceneId);
+
+  const activeSceneLinkedIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const link of sceneCharacterLinks) {
+      if (link.scene_id === activeSceneId) ids.add(link.character_id);
+    }
+    return ids;
+  }, [sceneCharacterLinks, activeSceneId]);
+
+  const toggleSceneCharacter = useCallback(async (characterId: string) => {
+    if (!storyId || isDemo || !activeSceneId || sceneCharacterBusy) return;
+    const next = new Set(activeSceneLinkedIds);
+    if (next.has(characterId)) next.delete(characterId);
+    else next.add(characterId);
+    const characterIds = [...next];
+    setSceneCharacterBusy(true);
+    try {
+      await api.setSceneCharacters(storyId, chapterNumber, activeSceneId, characterIds);
+      setSceneCharacterLinks((prev) => {
+        const filtered = prev.filter((l) => l.scene_id !== activeSceneId);
+        const added = characterIds.map((id) => ({
+          id: `local-${activeSceneId}-${id}`,
+          story_id: storyId,
+          chapter_number: chapterNumber,
+          scene_id: activeSceneId,
+          character_id: id,
+        }));
+        return [...filtered, ...added];
+      });
+    } catch (err) {
+      console.warn('Scene character link failed:', err);
+    } finally {
+      setSceneCharacterBusy(false);
+    }
+  }, [storyId, isDemo, activeSceneId, sceneCharacterBusy, activeSceneLinkedIds, chapterNumber]);
+
+  const characterSuggestions = useMemo(() => {
+    const draft = scenes.map((s) => `${s.title || ''} ${s.content || ''}`).join('\n');
+    return suggestNewCharacters(draft, storyCharacters.map((c) => c.name), 4);
+  }, [scenes, storyCharacters]);
+
+  const handleQuickAddCharacter = useCallback(async (name: string) => {
+    if (!storyId || isDemo || addingCharacterName) return;
+    setAddingCharacterName(name);
+    try {
+      const { character } = await api.createStoryCharacter(storyId, { name: name.trim() });
+      setStoryCharacters((prev) => [...prev, character]);
+    } catch (err) {
+      console.warn('Quick-add character failed:', err);
+    } finally {
+      setAddingCharacterName(null);
+    }
+  }, [storyId, isDemo, addingCharacterName]);
+
   const wordCount = getWordCountFromScenes(scenes);
   const readMins = wordCount === 0 ? 0 : Math.max(1, Math.round(wordCount / 200));
   const workspaceLayout = layoutForWorkspace(authoringWorkspace);
@@ -924,11 +1025,11 @@ export function ChapterEditor() {
         </EditorStatusStrip>
       )}
 
-      {!focusMode && moderationStatus === 'published' && !publishSuccess && (
+      {!focusMode && isChapterImmutable && !publishSuccess && (
         <EditorStatusStrip
           tone="success"
-          title="Published"
-          message="This chapter is live for readers."
+          title="Published — read only"
+          message="This chapter is live for readers. Edits require resubmit for review — the editor is locked to protect the published version."
         />
       )}
 
@@ -984,6 +1085,51 @@ export function ChapterEditor() {
             storyId={storyId}
             chapterNum={chapterNumber}
             sceneSearchInputMode={prefs.sceneSearchInputMode}
+            footerSlot={!isDemo && activeSceneId ? (
+              <div className="katha-proto-sidebar-stack">
+                <SceneCharacterPanel
+                  characters={storyCharacters}
+                  linkedIds={activeSceneLinkedIds}
+                  onToggle={(id) => { void toggleSceneCharacter(id); }}
+                  suggestedNames={characterSuggestions}
+                  onAddCharacter={(name) => { void handleQuickAddCharacter(name); }}
+                  addingName={addingCharacterName}
+                  loading={sceneCharactersLoading}
+                  disabled={sceneCharacterBusy}
+                />
+                <AuthorNotesPanel
+                  comments={authorComments}
+                  sceneId={activeSceneId}
+                  disabled={sceneCharacterBusy}
+                  onCaptureAnchor={() => editorSelectionCaptureRef.current?.() ?? null}
+                  activeCommentId={activeAuthorCommentId}
+                  onNoteClick={(comment) => {
+                    setActiveAuthorCommentId(comment.id);
+                    highlightAuthorNoteRef.current?.(comment);
+                  }}
+                  onAdd={async (body, anchor) => {
+                    const { comment } = await api.createAuthorComment(storyId, chapterNumber, {
+                      scene_id: activeSceneId,
+                      body,
+                      selected_text: anchor?.text,
+                      start_offset: anchor?.start_offset,
+                      end_offset: anchor?.end_offset,
+                    });
+                    setAuthorComments((prev) => [...prev, comment]);
+                  }}
+                  onResolve={async (commentId) => {
+                    const { comment } = await api.updateAuthorComment(storyId, chapterNumber, commentId, {
+                      status: 'resolved',
+                    });
+                    setAuthorComments((prev) => prev.map((c) => (c.id === commentId ? comment : c)));
+                  }}
+                  onDelete={async (commentId) => {
+                    await api.deleteAuthorComment(storyId, chapterNumber, commentId);
+                    setAuthorComments((prev) => prev.filter((c) => c.id !== commentId));
+                  }}
+                />
+              </div>
+            ) : undefined}
           />
         )}
 
@@ -1000,6 +1146,12 @@ export function ChapterEditor() {
           containerRef={editorContainerRef}
           scrollRef={editorScrollRef}
           flushRef={editorFlushRef}
+          selectionCaptureRef={editorSelectionCaptureRef}
+          highlightNoteRef={highlightAuthorNoteRef}
+          authorComments={authorComments}
+          activeAuthorCommentId={activeAuthorCommentId}
+          storyId={isDemo ? undefined : storyId}
+          readOnly={isChapterImmutable}
           phoneticLive={phoneticLive}
           onTogglePhonetic={() => setPhoneticLive(p => !p)}
           editorComfortStyle={editorComfortStyle}

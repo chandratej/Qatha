@@ -56,7 +56,7 @@ export function ReviewWorkspace() {
   if (loading) {
     return (
       <div className="rw-shell rw-shell--loading" data-katha-mode="creation">
-        <p className="rw-loading-text">Opening manuscript…</p>
+        <p className="rw-loading-text" role="status" aria-live="polite">Opening manuscript…</p>
       </div>
     );
   }
@@ -119,7 +119,10 @@ function ReviewWorkspaceLoaded({
     reviewerSlot,
   });
 
-  const chapters = ws.manuscript.chapters;
+  const { language: reviewLang } = useReviewLanguage();
+  const teluguShell = usesTeluguTypography(reviewLang);
+
+  const chapters = ws.manuscriptLoading ? [] : ws.manuscript.chapters;
   const chapterIndex = chapters.findIndex((c) => c.num === ws.draft.currentChapter);
 
   const navOpen = !ws.draft.prefs.leftPanelCollapsed;
@@ -230,8 +233,13 @@ function ReviewWorkspaceLoaded({
     } catch { /* ignore */ }
   };
 
-  const { language: reviewLang } = useReviewLanguage();
-  const teluguShell = usesTeluguTypography(reviewLang);
+  if (ws.manuscriptLoading) {
+    return (
+      <div className="rw-shell rw-shell--loading" data-katha-mode="creation">
+        <p className="rw-loading-text" role="status" aria-live="polite">Loading manuscript…</p>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -239,6 +247,7 @@ function ReviewWorkspaceLoaded({
       data-katha-mode="creation"
       data-rw-review-lang={reviewLang}
     >
+      <a href="#rw-main-reading" className="rw-skip-link">Skip to manuscript</a>
       <ReviewWorkspaceChrome
         manuscriptLabel={assignment.manuscript_label}
         chapterLabel={ws.currentChapter?.label ?? 'Chapter'}
@@ -270,7 +279,9 @@ function ReviewWorkspaceLoaded({
         onNextChapter={() => goChapter(1)}
       />
 
-      {ws.error && <p className="rw-banner-error" role="alert">{ws.error}</p>}
+      <div aria-live="assertive" aria-atomic="true" className="rw-announcer">
+        {ws.error && <p className="rw-banner-error" role="alert">{ws.error}</p>}
+      </div>
       {isSubmitted && (
         <p className="rw-banner-success" role="status">
           Review submitted — you can still read notes and manuscript.
@@ -278,6 +289,7 @@ function ReviewWorkspaceLoaded({
       )}
 
         <CenterReadingPanel
+          id="rw-main-reading"
           chapter={ws.currentChapter}
           comments={ws.draft.comments}
           activeCommentId={ws.activeCommentId}
@@ -314,6 +326,8 @@ function ReviewWorkspaceLoaded({
       {notesOpen && (
         <div className="rw-sheet rw-sheet--right">
           <RightIntelligencePanel
+            assignmentId={assignmentId}
+            reviewerSlot={reviewerSlot}
             comments={ws.filteredComments}
             checklist={ws.draft.checklist}
             metrics={ws.draft.metrics}

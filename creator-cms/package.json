@@ -12,6 +12,8 @@
     "test:e2e": "playwright test",
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:strict": "playwright test e2e/reviewer-pool-strict.spec.ts --project=chromium",
+    "test:a11y": "playwright test e2e/review-workspace-a11y.spec.ts --project=chromium",
+    "test:perf": "playwright test e2e/review-workspace-perf.spec.ts --project=chromium",
     "test:e2e:events-strict": "playwright test e2e/events-strict.spec.ts --project=chromium",
     "test:e2e:install": "playwright install chromium firefox webkit",
     "preview": "vite preview"
@@ -31,6 +33,7 @@
     "recharts": "^3.9.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.51.0",
     "@types/dompurify": "^3.0.5",
     "@types/node": "^24.13.2",

@@ -1,34 +1,62 @@
-import { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { AlertCircle, Award, Check, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { platformApi } from '../lib/platformApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { BackLink } from '../components/BackLink';
 import {
-  EVENT_TYPES, EVENT_WIZARD_STEPS, ENTRY_FEE_TIERS_INR, JUDGING_MODELS,
+  EVENT_TYPES, EVENT_WIZARD_STEPS, JUDGING_MODELS, EVENT_PRIZE_TIERS,
 } from '../lib/platformConstants';
+import { useLocale } from '../context/LocaleContext';
+import type { StudioStringKey } from '../lib/studioLocale';
+import { useAuth } from '../context/AuthContext';
+import { canHostEvent, hostEligibilityMessage } from '../lib/hostEventEligibility';
+
+const FREE_ENTRY_INR = 0;
+
+const WIZARD_STEP_KEYS: Record<string, StudioStringKey> = {
+  basic: 'events.wizardStepBasic',
+  eligibility: 'events.wizardStepEligibility',
+  registration: 'events.wizardStepRegistration',
+  prizes: 'events.wizardStepPrizes',
+  judging: 'events.wizardStepJudging',
+  timeline: 'events.wizardStepTimeline',
+  publishing: 'events.wizardStepPublishing',
+};
 
 export function EventCreate() {
   const navigate = useNavigate();
+  const { locale, t } = useLocale();
+  const { user } = useAuth();
+  const mayHost = canHostEvent(user);
+
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [eventType, setEventType] = useState('writing_contest');
-  const [entryFee, setEntryFee] = useState(0);
+  const [eventType, setEventType] = useState('debut_season');
   const [judgingModel, setJudgingModel] = useState('weighted_rubric');
-  const [prizePool, setPrizePool] = useState(10000);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const totalSteps = EVENT_WIZARD_STEPS.length;
   const wizardStep = EVENT_WIZARD_STEPS[step];
   const canAdvance = step !== 0 || title.trim().length > 0;
+  const progressPct = useMemo(
+    () => ((step + 1) / totalSteps) * 100,
+    [step, totalSteps],
+  );
 
-  const handleNext = () => setStep((s) => Math.min(s + 1, EVENT_WIZARD_STEPS.length - 1));
+  const stepLabel = (id: string) => {
+    const key = WIZARD_STEP_KEYS[id];
+    return key ? t(key) : id;
+  };
+
+  const handleNext = () => setStep((s) => Math.min(s + 1, totalSteps - 1));
   const handleBack = () => setStep((s) => Math.max(s - 1, 0));
 
   const handlePublish = async () => {
     if (!title.trim()) {
-      setError('Add an event title before publishing.');
+      setError(t('events.titleRequired'));
       setStep(0);
       return;
     }
@@ -39,9 +67,9 @@ export function EventCreate() {
         title: title.trim(),
         description: description.trim(),
         event_type: eventType,
-        entry_fee_inr: entryFee,
+        entry_fee_inr: FREE_ENTRY_INR,
         judging_model: judgingModel,
-        prize_pool_inr: prizePool,
+        prize_pool_inr: 0,
         open_registration: true,
         status: 'registration_open',
       });
@@ -53,117 +81,197 @@ export function EventCreate() {
     }
   };
 
+  if (!mayHost) {
+    return (
+      <div className="cms-page studio-page event-create-page event-create-page--premium">
+        <BackLink to="/events" label={t('events.title')} />
+        <div className="cms-panel events-host-blocked events-host-blocked--premium">
+          <Sparkles size={24} aria-hidden className="events-host-blocked__icon" />
+          <h2 className="dashboard-panel__title">{t('events.hostBlockedTitle')}</h2>
+          <p className="studio-page-header__subtitle">{hostEligibilityMessage(locale)}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="cms-page studio-page">
-      <BackLink to="/events" label="Events" />
+    <div className="cms-page studio-page event-create-page event-create-page--premium">
+      <BackLink to="/events" label={t('events.title')} />
       <StudioPageHeader
-        title="Create event"
-        subtitle="7-step wizard — basic info, eligibility, fees, prizes, judging, timeline, publishing."
+        title={t('events.createTitle')}
+        subtitle={t('events.createSubtitle')}
+        eyebrow={t('events.wizardEyebrow')}
+        eyebrowIcon={Award}
       />
 
-      <nav className="platform-wizard-nav" aria-label="Event creation steps">
-        {EVENT_WIZARD_STEPS.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            className={`platform-wizard-nav__step${i === step ? ' platform-wizard-nav__step--active' : ''}${i < step ? ' platform-wizard-nav__step--done' : ''}`}
-            onClick={() => setStep(i)}
-          >
-            {s.order}. {s.label}
-          </button>
-        ))}
-      </nav>
-
-      {error && (
-        <div className="cms-panel cms-panel--flat event-status-banner event-status-banner--error" role="alert">
-          <p className="event-status-banner__text">
-            <AlertCircle size={18} aria-hidden className="event-status-banner__icon" />
-            <span>{error}</span>
-          </p>
+      <div className="event-wizard">
+        <div className="event-wizard__meta">
+          <span className="event-wizard__step-count">
+            {step + 1} / {totalSteps}
+          </span>
         </div>
-      )}
+        <div
+          className="event-wizard__progress"
+          role="progressbar"
+          aria-valuenow={step + 1}
+          aria-valuemin={1}
+          aria-valuemax={totalSteps}
+          aria-label={t('events.wizardStepsLabel')}
+        >
+          <div className="event-wizard__progress-bar" style={{ width: `${progressPct}%` }} />
+        </div>
 
-      <div className="cms-panel platform-wizard-panel">
-        <h3 className="dashboard-panel__title">{wizardStep?.label}</h3>
-
-        {step === 0 && (
-          <div className="cms-form-stack">
-            <div className="input-group">
-              <label>Event title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-            </div>
-            <div className="input-group">
-              <label>Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
-            </div>
-            <div className="input-group">
-              <label>Event type</label>
-              <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-                {EVENT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-              </select>
-            </div>
-          </div>
-        )}
-
-        {step === 1 && (
-          <p className="studio-page-header__subtitle">Eligibility: Telugu language, Author level+, age rating per event rules. Configure in Phase 2 organizer dashboard.</p>
-        )}
-
-        {step === 2 && (
-          <div className="input-group">
-            <label>Entry fee (INR)</label>
-            <select value={entryFee} onChange={(e) => setEntryFee(Number(e.target.value))}>
-              {ENTRY_FEE_TIERS_INR.map((fee) => (
-                <option key={fee} value={fee}>{fee === 0 ? 'Free' : `₹${fee}`}</option>
-              ))}
-            </select>
-            <span className="input-hint">Paid contests require Verified Organizer level.</span>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="input-group">
-            <label>Prize pool (INR)</label>
-            <input type="number" min={0} value={prizePool} onChange={(e) => setPrizePool(Number(e.target.value))} />
-          </div>
-        )}
-
-        {step === 4 && (
-          <div className="input-group">
-            <label>Judging model</label>
-            <select value={judgingModel} onChange={(e) => setJudgingModel(e.target.value)}>
-              {JUDGING_MODELS.map((j) => <option key={j.id} value={j.id}>{j.label}</option>)}
-            </select>
-          </div>
-        )}
-
-        {step === 5 && (
-          <p className="studio-page-header__subtitle">Timeline: registration → submissions → judging → appeal window → winner confirmation. Set dates in organizer dashboard after publish.</p>
-        )}
-
-        {step === 6 && (
-          <div>
-            <p className="studio-page-header__subtitle">
-              Publish opens registration immediately so authors can enter. Paid fees use escrow splits
-              (15% platform · 10% organizer · tax · prize pool). Free challenges drive acquisition.
+        {error && (
+          <div className="cms-panel cms-panel--flat event-status-banner event-status-banner--error" role="alert">
+            <p className="event-status-banner__text">
+              <AlertCircle size={18} aria-hidden className="event-status-banner__icon" />
+              <span>{error}</span>
             </p>
-            {entryFee > 0 && (
-              <p className="input-hint">
-                At ₹{entryFee}/entry, platform commission ≈ ₹{Math.round(entryFee * 0.15)} per author.
-              </p>
-            )}
           </div>
         )}
 
-        <div className="platform-wizard-actions">
-          {step > 0 && <button type="button" className="btn btn-secondary" onClick={handleBack}>Back</button>}
-          {step < EVENT_WIZARD_STEPS.length - 1 ? (
-            <button type="button" className="katha-cta katha-cta--maroon" onClick={handleNext} disabled={!canAdvance}>Continue</button>
-          ) : (
-            <button type="button" className="katha-cta katha-cta--maroon" onClick={handlePublish} disabled={submitting || !title.trim()}>
-              {submitting ? 'Opening registration…' : 'Publish & open registration'}
-            </button>
-          )}
+        <div className="event-wizard__layout">
+          <aside className="event-wizard__sidebar">
+            <nav aria-label={t('events.wizardStepsLabel')}>
+              <ol className="event-wizard__steps">
+                {EVENT_WIZARD_STEPS.map((s, i) => (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      className={`event-wizard__step-btn${i === step ? ' event-wizard__step-btn--active' : ''}${i < step ? ' event-wizard__step-btn--done' : ''}`}
+                      onClick={() => setStep(i)}
+                      aria-current={i === step ? 'step' : undefined}
+                    >
+                      <span className="event-wizard__step-index" aria-hidden>
+                        {i < step ? <Check size={14} strokeWidth={3} /> : s.order}
+                      </span>
+                      <span className="event-wizard__step-label">{stepLabel(s.id)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          </aside>
+
+          <div className="event-wizard__panel">
+            <h3 className="event-wizard__panel-title">
+              {stepLabel(wizardStep?.id ?? 'basic')}
+            </h3>
+
+            <div className="event-wizard__body">
+              {step === 0 && (
+                <div className="cms-form-stack">
+                  <div className="input-group">
+                    <label>{t('events.eventTitle')}</label>
+                    <input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder={t('events.titlePlaceholder')}
+                      required
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>{t('events.description')}</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      rows={4}
+                      placeholder={t('events.descriptionPlaceholder')}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>{t('events.eventType')}</label>
+                    <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
+                      {EVENT_TYPES.map((et) => (
+                        <option key={et.id} value={et.id}>
+                          {locale === 'te' && 'labelTelugu' in et && et.labelTelugu
+                            ? et.labelTelugu
+                            : et.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {step === 1 && (
+                <p className="studio-page-header__subtitle">{t('events.eligibilityDesc')}</p>
+              )}
+
+              {step === 2 && (
+                <div className="event-create-free-entry event-create-free-entry--premium">
+                  <p className="event-create-free-entry__badge">{t('events.freeEntry')}</p>
+                  <p className="studio-page-header__subtitle">{t('events.registrationDesc')}</p>
+                </div>
+              )}
+
+              {step === 3 && (
+                <ul className="event-prize-tier-list event-prize-tier-list--premium event-prize-tier-list--compact">
+                  {EVENT_PRIZE_TIERS.map((tier) => (
+                    <li key={tier.id} className="event-prize-tier event-prize-tier--premium">
+                      <div className="event-prize-tier__head">
+                        <span className="event-prize-tier__rank">{tier.rank}</span>
+                        <strong>{locale === 'te' ? tier.labelTelugu : tier.label}</strong>
+                      </div>
+                      <ul className="event-prize-tier__recognition">
+                        {(locale === 'te' ? tier.recognitionTelugu : tier.recognition).map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {step === 4 && (
+                <div className="input-group">
+                  <label>{t('events.judgingModel')}</label>
+                  <select value={judgingModel} onChange={(e) => setJudgingModel(e.target.value)}>
+                    {JUDGING_MODELS.map((j) => <option key={j.id} value={j.id}>{j.label}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {step === 5 && (
+                <p className="studio-page-header__subtitle">{t('events.timelineDesc')}</p>
+              )}
+
+              {step === 6 && (
+                <p className="studio-page-header__subtitle">{t('events.publishingDesc')}</p>
+              )}
+            </div>
+
+            <div className="event-wizard__actions">
+              {step > 0 ? (
+                <button type="button" className="btn btn-secondary" onClick={handleBack}>
+                  {t('common.back')}
+                </button>
+              ) : (
+                <span aria-hidden />
+              )}
+              <div className="event-wizard__actions-end">
+                {step < totalSteps - 1 ? (
+                  <button
+                    type="button"
+                    className="katha-cta katha-cta--maroon"
+                    onClick={handleNext}
+                    disabled={!canAdvance}
+                  >
+                    {t('common.next')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="katha-cta katha-cta--maroon"
+                    onClick={() => { void handlePublish(); }}
+                    disabled={submitting || !title.trim()}
+                  >
+                    {submitting ? t('events.openingRegistration') : t('events.publishOpen')}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
