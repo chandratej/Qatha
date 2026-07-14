@@ -57,6 +57,7 @@ import {
   type FontScale,
   type LineHeightScale,
 } from '../lib/comfortPrefs';
+import { manuscriptScriptFromLocale } from '../lib/manuscriptTypography';
 import { AiNotesPanel } from '../components/Editor/AiNotesPanel';
 import { ChapterFindBar } from '../components/Editor/ChapterFindBar';
 import { EditorCommandPalette, buildEditorCommands } from '../components/Editor/EditorCommandPalette';
@@ -201,6 +202,7 @@ export function ChapterEditor() {
   const [aiCompanionOpen, setAiCompanionOpen] = useState(false);
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [slashCmdOpen, setSlashCmdOpen] = useState(false);
+  const [slashFilter, setSlashFilter] = useState('');
   const [cmdAnchor, setCmdAnchor] = useState<{ top: number; left: number } | null>(null);
   const [editorScrollTop, setEditorScrollTop] = useState(0);
   const formatActionRef = useRef<{
@@ -268,7 +270,9 @@ export function ChapterEditor() {
 
   const editorComfortStyle = {
     '--editor-font-size': `${editorFontSizePx(fontScale) / 16}rem`,
-    '--editor-line-height': String(editorLineHeight(lineHeightScale)),
+    '--editor-line-height': String(
+      editorLineHeight(lineHeightScale, manuscriptScriptFromLocale(locale)),
+    ),
   } as React.CSSProperties;
 
   const { resetTimer, snooze } = useWritingBreakReminder({
@@ -747,12 +751,13 @@ export function ChapterEditor() {
 
       if (meta && e.key.toLowerCase() === 'f' && !e.shiftKey) {
         e.preventDefault();
-        setCommandPaletteOpen(false);
+        if (!NARRATIVE_OS_ENABLED) setCommandPaletteOpen(false);
         setFindOpen(true);
         return;
       }
 
       if (meta && e.key.toLowerCase() === 'k') {
+        if (NARRATIVE_OS_ENABLED) return;
         e.preventDefault();
         setFindOpen(false);
         setCommandPaletteOpen((open) => !open);
@@ -1156,12 +1161,13 @@ export function ChapterEditor() {
           saving={saving || savingDraft}
           dirty={dirty}
           focusMode={focusMode}
-          onToggleFocus={() => setFocusMode((v) => !v)}
+          onToggleFocus={() => applyAuthoringWorkspace(focusMode ? 'writing' : 'focus')}
           phoneticLive={phoneticLive}
           onTogglePhonetic={() => setPhoneticLive((p) => !p)}
           fontScale={fontScale}
           onFontScaleChange={handleFontScaleChange}
           editorComfortStyle={editorComfortStyle}
+          canvasMaxWidth={canvasMaxWidth}
           isChapterImmutable={isChapterImmutable}
           isDemo={isDemo}
           arrivalMomentum={arrivalMomentum}
@@ -1169,9 +1175,18 @@ export function ChapterEditor() {
           selectionRect={selectionRect}
           onSelectionRectChange={setSelectionRect}
           slashCmdOpen={slashCmdOpen}
-          onSlashCmdOpenChange={setSlashCmdOpen}
+          slashFilter={slashFilter}
+          onSlashCmdOpenChange={(open) => {
+            setSlashCmdOpen(open);
+            if (!open) setSlashFilter('');
+          }}
           cmdAnchor={cmdAnchor}
-          onSlashCommandRequest={(anchor) => { setCmdAnchor(anchor); setSlashCmdOpen(true); }}
+          onSlashCommandRequest={({ anchor, filter }) => {
+            setCmdAnchor(anchor);
+            setSlashFilter(filter);
+            setSlashCmdOpen(true);
+          }}
+          onSlashCommandDismiss={() => setSlashCmdOpen(false)}
           stageScrollTop={editorScrollTop}
           onStageScroll={setEditorScrollTop}
           findOpen={findOpen}

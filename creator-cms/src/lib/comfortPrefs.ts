@@ -1,3 +1,5 @@
+import type { ManuscriptScript } from './manuscriptTypography';
+
 /** Global writing-comfort preferences — mirrors reader-app font/line-height scales. */
 
 export type FontScale = 1 | 2 | 3 | 4 | 5;
@@ -80,19 +82,32 @@ export function saveComfortPrefs(prefs: Partial<ComfortPrefs>): ComfortPrefs {
   return next;
 }
 
-/** Reader-app parity: 18px base at scale 2, ±3px per step. */
+/** Newsreader at scale 2 ≈ 19px — targets ~65–70 Latin chars in the manuscript column. */
 export function editorFontSizePx(fontScale: FontScale): number {
-  return 18 + (fontScale - 2) * 3;
+  return 19 + (fontScale - 2) * 3;
 }
 
-export function editorLineHeight(lineHeightScale: LineHeightScale): number {
+export function editorLineHeight(
+  lineHeightScale: LineHeightScale,
+  script: ManuscriptScript = 'latin',
+): number {
+  if (script === 'telugu') {
+    switch (lineHeightScale) {
+      case 1:
+        return 1.9;
+      case 3:
+        return 2.05;
+      default:
+        return 1.95;
+    }
+  }
   switch (lineHeightScale) {
     case 1:
       return 1.65;
     case 3:
-      return 1.95;
+      return 1.85;
     default:
-      return 1.88;
+      return 1.75;
   }
 }
 

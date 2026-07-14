@@ -16,6 +16,8 @@ interface NarrativeCommandPaletteProps {
   onClose: () => void;
   commands: NarrativeCommand[];
   anchor?: { top: number; left: number } | null;
+  /** Filter from editor slash line (e.g. "novel" from /novel) */
+  slashFilter?: string;
 }
 
 export function buildNarrativeCommands(opts: {
@@ -58,19 +60,21 @@ export function NarrativeCommandPalette({
   onClose,
   commands,
   anchor,
+  slashFilter = '',
 }: NarrativeCommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const slashMode = Boolean(anchor);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = (slashMode ? slashFilter : query).trim().toLowerCase();
     if (!q) return commands;
     return commands.filter((cmd) => {
-      const hay = [cmd.label, cmd.desc, cmd.group, ...(cmd.keywords ?? [])].join(' ').toLowerCase();
+      const hay = [cmd.label, cmd.desc, cmd.group, cmd.id, ...(cmd.keywords ?? [])].join(' ').toLowerCase();
       return hay.includes(q);
     });
-  }, [commands, query]);
+  }, [commands, query, slashFilter, slashMode]);
 
   const groups = useMemo(() => {
     const map = new Map<string, NarrativeCommand[]>();
@@ -86,8 +90,10 @@ export function NarrativeCommandPalette({
     if (!open) return;
     setQuery('');
     setIndex(0);
-    requestAnimationFrame(() => inputRef.current?.focus());
-  }, [open]);
+    if (!anchor) {
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [open, anchor]);
 
   useEffect(() => {
     if (!open) return;
@@ -97,8 +103,8 @@ export function NarrativeCommandPalette({
       if (e.key === 'ArrowUp') { e.preventDefault(); setIndex((i) => (i - 1 + filtered.length) % Math.max(1, filtered.length)); }
       if (e.key === 'Enter' && filtered[index]) { e.preventDefault(); filtered[index].run(); onClose(); }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [open, onClose, filtered, index]);
 
   if (!open) return null;
@@ -116,13 +122,15 @@ export function NarrativeCommandPalette({
           ? { position: 'fixed', top: anchor.top, left: anchor.left }
           : { position: 'fixed', top: '28%', left: '50%', transform: 'translateX(-50%)' }}
       >
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setIndex(0); }}
-          placeholder="Search commands…"
-          className="cmdk-search"
-        />
+        {!slashMode && (
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setIndex(0); }}
+            placeholder="Search commands…"
+            className="cmdk-search"
+          />
+        )}
         {[...groups.entries()].map(([group, items]) => (
           <div key={group}>
             <div className="cmdk-group">{group}</div>

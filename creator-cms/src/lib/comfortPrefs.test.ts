@@ -30,16 +30,18 @@ describe('comfortPrefs', () => {
     expect(loadComfortPrefs().fontScale).toBe(1);
   });
 
-  it('maps font scale to reader-app pixel sizes', () => {
-    expect(editorFontSizePx(1)).toBe(15);
-    expect(editorFontSizePx(2)).toBe(18);
-    expect(editorFontSizePx(5)).toBe(27);
+  it('maps font scale to manuscript pixel sizes', () => {
+    expect(editorFontSizePx(1)).toBe(16);
+    expect(editorFontSizePx(2)).toBe(19);
+    expect(editorFontSizePx(5)).toBe(28);
   });
 
   it('maps line height scale to comfort values', () => {
     expect(editorLineHeight(1)).toBe(1.65);
-    expect(editorLineHeight(2)).toBe(1.88);
-    expect(editorLineHeight(3)).toBe(1.95);
+    expect(editorLineHeight(2)).toBe(1.75);
+    expect(editorLineHeight(3)).toBe(1.85);
+    expect(editorLineHeight(2, 'telugu')).toBe(1.95);
+    expect(editorLineHeight(3, 'telugu')).toBe(2.05);
   });
 
   it('parses break reminder options', () => {

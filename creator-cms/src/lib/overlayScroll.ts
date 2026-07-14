@@ -10,6 +10,11 @@ const REGION_SELECTOR = [
   '.cms-auth-page',
   '.katha-proto-scene-list',
   '.katha-proto-preview-body',
+  '.narrative-os-app .stage',
+  '.narrative-os-app .panel',
+  '.narrative-os-app .cmdk',
+  '.narrative-os-app .nos-insp-body--scroll',
+  '.narrative-os-app .ql-editor',
 ].join(', ');
 
 const fadeTimers = new WeakMap<EventTarget, ReturnType<typeof setTimeout>>();

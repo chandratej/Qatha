@@ -336,10 +336,50 @@ a:focus:not(:focus-visible),
   box-shadow: none;
 }
 
+/* Theme scrollbars — brass thumb, transparent track (immersive paper feel) */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(169, 129, 47, 0.24) transparent;
+}
+
+html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: rgba(169, 129, 47, 0.24);
+  border-radius: 100px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: rgba(169, 129, 47, 0.4);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+[data-theme='dark'] html {
+  scrollbar-color: rgba(215, 189, 126, 0.26) transparent;
+}
+
+[data-theme='dark'] html::-webkit-scrollbar-thumb {
+  background: rgba(215, 189, 126, 0.26);
+}
+
+[data-theme='dark'] html::-webkit-scrollbar-thumb:hover {
+  background: rgba(215, 189, 126, 0.42);
+}
+
 /* Comfort scrollbar for auth surfaces (main scroll uses overlay-scroll.css) */
 .cms-auth-page {
   scrollbar-width: thin;
-  scrollbar-color: rgba(196, 160, 82, 0.35) transparent;
+  scrollbar-color: rgba(169, 129, 47, 0.28) transparent;
 }
 
 .cms-auth-page::-webkit-scrollbar {

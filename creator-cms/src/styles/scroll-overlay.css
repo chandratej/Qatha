@@ -4,16 +4,16 @@
  */
 
 :root {
-  --overlay-thumb: rgba(0, 0, 0, 0.2);
-  --overlay-thumb-hover: rgba(0, 0, 0, 0.35);
-  --overlay-scrollbar-size: 5px;
-  --overlay-scrollbar-size-hover: 8px;
+  --overlay-thumb: rgba(169, 129, 47, 0.22);
+  --overlay-thumb-hover: rgba(169, 129, 47, 0.42);
+  --overlay-scrollbar-size: 6px;
+  --overlay-scrollbar-size-hover: 9px;
   --overlay-scrollbar-fade: 0.5s ease;
 }
 
 [data-theme='dark'] {
-  --overlay-thumb: rgba(255, 255, 255, 0.2);
-  --overlay-thumb-hover: rgba(255, 255, 255, 0.38);
+  --overlay-thumb: rgba(215, 189, 126, 0.24);
+  --overlay-thumb-hover: rgba(215, 189, 126, 0.44);
 }
 
 /* Firefox — transparent track, thumb only when active or hovering */

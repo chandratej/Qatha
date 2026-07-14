@@ -7,6 +7,7 @@ import {
   reconcileSidePanels,
   toggleSceneSidebarPanels,
 } from './authoringWorkspace';
+import { MANUSCRIPT_COLUMN_WIDTH } from './manuscriptTypography';
 
 describe('authoringWorkspace', () => {
   it('defaults unknown workspace modes to writing', () => {
@@ -17,9 +18,9 @@ describe('authoringWorkspace', () => {
   it('always returns a layout object with comfort measure (BR-012)', () => {
     const layout = layoutForWorkspace(undefined);
     expect(layout.sceneSidebarCollapsed).toBe(false);
-    expect(layout.canvasMaxWidth).toBe(720);
-    expect(layoutForWorkspace('focus').canvasMaxWidth).toBe(680);
-    expect(layoutForWorkspace('writing').canvasMaxWidth).toBeLessThanOrEqual(720);
+    expect(layout.canvasMaxWidth).toBe(MANUSCRIPT_COLUMN_WIDTH);
+    expect(layoutForWorkspace('focus').canvasMaxWidth).toBe(MANUSCRIPT_COLUMN_WIDTH);
+    expect(layoutForWorkspace('writing').canvasMaxWidth).toBe(MANUSCRIPT_COLUMN_WIDTH);
   });
 
   it('enables sync scroll in review mode', () => {

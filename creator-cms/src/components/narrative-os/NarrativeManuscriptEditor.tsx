@@ -17,6 +17,8 @@ import {
   type ChapterFindMatch,
 } from '../../lib/chapterFind';
 import { PhoneticTextInput } from '../Editor/PhoneticTextInput';
+import { PhoneticSuggestionsMenu } from '../Editor/PhoneticSuggestionsMenu';
+import { mapCursorAfterLivePhonetic } from '../../business/phoneticText';
 import type { NarrativeFormat } from '../../lib/narrativeOsTypes';
 
 function applyLivePhoneticToHtml(html: string): { html: string; trailingWord: string } {
@@ -98,7 +100,9 @@ export interface NarrativeManuscriptEditorProps {
   } | null>;
   selectionCaptureRef?: React.MutableRefObject<(() => EditorSelectionAnchor | null) | null>;
   onSelectionRectChange?: (rect: DOMRect | null) => void;
-  onSlashCommandRequest?: (anchor: { top: number; left: number }) => void;
+  onSlashCommandRequest?: (payload: { anchor: { top: number; left: number }; filter: string }) => void;
+  onSlashCommandDismiss?: () => void;
+  slashCmdOpen?: boolean;
   onStageScroll?: (top: number) => void;
   stageRef?: React.RefObject<HTMLDivElement | null>;
   authorComments?: StoryAuthorComment[];
@@ -106,9 +110,7 @@ export interface NarrativeManuscriptEditorProps {
   findOpen?: boolean;
   findActiveMatch?: ChapterFindMatch | null;
   findSceneMatches?: ChapterFindMatch[];
-  onOpenAi?: () => void;
-  onInsertDialogue?: () => void;
-  onInsertNote?: () => void;
+  comfortStyle?: React.CSSProperties;
 }
 
 export function NarrativeManuscriptEditor({
@@ -123,6 +125,8 @@ export function NarrativeManuscriptEditor({
   selectionCaptureRef,
   onSelectionRectChange,
   onSlashCommandRequest,
+  onSlashCommandDismiss,
+  slashCmdOpen = false,
   onStageScroll,
   stageRef,
   authorComments = [],
@@ -130,15 +134,14 @@ export function NarrativeManuscriptEditor({
   findOpen = false,
   findActiveMatch = null,
   findSceneMatches = [],
-  onOpenAi,
-  onInsertDialogue: onCtxDialogue,
-  onInsertNote: onCtxNote,
+  comfortStyle,
 }: NarrativeManuscriptEditorProps) {
   const quillRef = useRef<ReactQuill>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionsPos, setSuggestionsPos] = useState({ top: 0, left: 0 });
+  const [trailingWord, setTrailingWord] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [ctxMenu, setCtxMenu] = useState<{ top: number; left: number } | null>(null);
   const activeSceneIdRef = useRef(activeScene.id);
   const phoneticLiveRef = useRef(phoneticLive);
   const slashTriggerIndexRef = useRef<number | null>(null);
@@ -148,18 +151,45 @@ export function NarrativeManuscriptEditor({
 
   const getEditor = () => quillRef.current?.getEditor();
 
+  const focusEditor = useCallback(() => {
+    getEditor()?.focus();
+  }, []);
+
+  const updateSuggestionPosition = useCallback(() => {
+    const editor = getEditor();
+    if (!editor) return;
+    const selection = editor.getSelection();
+    if (!selection) return;
+    const bounds = editor.getBounds(selection.index, 0);
+    if (!bounds) return;
+    const rootRect = editor.root.getBoundingClientRect();
+    setSuggestionsPos({
+      top: bounds.bottom + rootRect.top + 6,
+      left: bounds.left + rootRect.left,
+    });
+  }, []);
+
+  const showPhoneticSuggestions = useCallback((trailing: string) => {
+    if (!trailing) {
+      setTrailingWord('');
+      setShowSuggestions(false);
+      return;
+    }
+    updateSuggestionPosition();
+    const phonetic = getPhoneticSuggestions(trailing);
+    const semantic = getSemanticAlternatives(trailing);
+    const merged = [...phonetic, ...semantic.filter((s) => !phonetic.some((p) => p.value === s.value))];
+    setTrailingWord(trailing);
+    setSuggestions(merged);
+    setShowSuggestions(merged.length > 0);
+    setSelectedIndex(0);
+  }, [updateSuggestionPosition]);
+
   const saveSceneHtml = useCallback((sceneId: string, html: string, trailing = '') => {
     updateSceneContent(sceneId, isEmptyEditorHtml(html) ? '' : html);
-    if (phoneticLiveRef.current && trailing) {
-      const phonetic = getPhoneticSuggestions(trailing);
-      const semantic = getSemanticAlternatives(trailing);
-      const merged = [...phonetic, ...semantic.filter((s) => !phonetic.some((p) => p.value === s.value))];
-      setSuggestions(merged);
-      setShowSuggestions(merged.length > 0);
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [updateSceneContent]);
+    if (phoneticLiveRef.current && trailing) showPhoneticSuggestions(trailing);
+    else setShowSuggestions(false);
+  }, [updateSceneContent, showPhoneticSuggestions]);
 
   const flushActiveScene = useCallback(() => {
     const editor = getEditor();
@@ -184,6 +214,7 @@ export function NarrativeManuscriptEditor({
   const format = (name: string, value?: unknown) => {
     const editor = getEditor();
     if (!editor) return;
+    focusEditor();
     editor.format(name, value ?? !editor.getFormat()[name]);
     flushActiveScene();
   };
@@ -191,6 +222,7 @@ export function NarrativeManuscriptEditor({
   const insertDialogue = () => {
     const editor = getEditor();
     if (!editor || readOnly) return;
+    focusEditor();
     const selection = editor.getSelection(true);
     const index = selection?.index ?? editor.getLength();
     editor.insertText(index, '\u201C', 'user');
@@ -202,6 +234,7 @@ export function NarrativeManuscriptEditor({
   const insertNote = () => {
     const editor = getEditor();
     if (!editor || readOnly) return;
+    focusEditor();
     const noteHtml = '<div class="note-block" data-note="true"><p>Author note…</p><span class="tag">note</span></div>';
     const selection = editor.getSelection(true);
     const index = selection?.index ?? editor.getLength();
@@ -212,12 +245,29 @@ export function NarrativeManuscriptEditor({
   const insertSceneBreak = () => {
     const editor = getEditor();
     if (!editor || readOnly) return;
+    focusEditor();
     const breakHtml = '<hr class="scene-break" data-scene-break="true" />';
     const selection = editor.getSelection(true);
     const index = selection?.index ?? editor.getLength();
     editor.clipboard.dangerouslyPasteHTML(index, breakHtml);
     flushActiveScene();
   };
+
+  const clearSlashTrigger = useCallback(() => {
+    const editor = getEditor();
+    const slashIndex = slashTriggerIndexRef.current;
+    if (!editor || slashIndex == null) return;
+    if (editor.getText(slashIndex, 1) !== '/') {
+      slashTriggerIndexRef.current = null;
+      return;
+    }
+    const range = editor.getSelection(true);
+    const end = range?.index ?? slashIndex + 1;
+    const deleteLen = Math.max(1, end - slashIndex);
+    editor.deleteText(slashIndex, deleteLen, 'user');
+    flushActiveScene();
+    slashTriggerIndexRef.current = null;
+  }, [flushActiveScene]);
 
   useEffect(() => {
     if (!formatActionRef) return;
@@ -229,41 +279,36 @@ export function NarrativeManuscriptEditor({
       insertSceneBreak,
       clearSlashTrigger,
     };
-    return () => { formatActionRef.current = null; };
-  });
-
-  const clearSlashTrigger = useCallback(() => {
-    const editor = getEditor();
-    const slashIndex = slashTriggerIndexRef.current;
-    if (!editor || slashIndex == null) return;
-    const char = editor.getText(slashIndex, 1);
-    if (char === '/') {
-      editor.deleteText(slashIndex, 1, 'user');
-      flushActiveScene();
-    }
-    slashTriggerIndexRef.current = null;
-  }, [flushActiveScene]);
+  }, [formatActionRef, insertDialogue, insertNote, insertSceneBreak, clearSlashTrigger]);
 
   const detectSlashCommand = useCallback((editor: NonNullable<ReturnType<typeof getEditor>>) => {
     if (!onSlashCommandRequest) return;
-    const range = editor.getSelection();
-    if (!range) return;
+    const range = editor.getSelection() ?? {
+      index: Math.max(0, editor.getLength() - 1),
+      length: 0,
+    };
     const lineStart = editor.getText(0, range.index).lastIndexOf('\n') + 1;
     const lineText = editor.getText(lineStart, range.index - lineStart);
-    if (lineText === '/') {
-      slashTriggerIndexRef.current = range.index - 1;
+    const match = lineText.match(/^\s*\/(\w*)$/);
+    if (match) {
+      const slashIndex = lineStart + (lineText.search('/') >= 0 ? lineText.search('/') : 0);
+      slashTriggerIndexRef.current = slashIndex;
       const bounds = editor.getBounds(range.index, 0);
       if (bounds) {
         const rootRect = editor.root.getBoundingClientRect();
         onSlashCommandRequest({
-          top: rootRect.top + bounds.top - 8,
-          left: rootRect.left + bounds.left,
+          anchor: {
+            top: rootRect.top + bounds.top - 8,
+            left: rootRect.left + bounds.left,
+          },
+          filter: match[1] ?? '',
         });
       }
-    } else {
+    } else if (slashCmdOpen) {
       slashTriggerIndexRef.current = null;
+      onSlashCommandDismiss?.();
     }
-  }, [onSlashCommandRequest]);
+  }, [onSlashCommandRequest, onSlashCommandDismiss, slashCmdOpen]);
 
   const handleChange = (content: string, _delta: unknown, source: string) => {
     if (readOnly || source !== 'user') return;
@@ -277,15 +322,38 @@ export function NarrativeManuscriptEditor({
       trailing = result.trailingWord;
       if (html !== content) {
         const selection = editor.getSelection();
+        const oldPlain = editor.getText(0, Math.max(0, editor.getLength() - 1));
+        const newPlain = stripHtml(html);
         editor.root.innerHTML = html;
         if (selection) {
-          queueMicrotask(() => editor.setSelection(Math.min(selection.index, editor.getLength()), 0, 'silent'));
+          const mapped = mapCursorAfterLivePhonetic(oldPlain, newPlain, selection.index);
+          queueMicrotask(() => {
+            editor.setSelection(Math.min(mapped, Math.max(0, editor.getLength() - 1)), 0, 'silent');
+            updateSuggestionPosition();
+          });
         }
       }
     }
     saveSceneHtml(activeScene.id, html, trailing);
-    detectSlashCommand(editor);
+    queueMicrotask(() => {
+      const ed = getEditor();
+      if (ed) detectSlashCommand(ed);
+    });
   };
+
+  useEffect(() => {
+    const editor = getEditor();
+    if (!editor || readOnly || !onSlashCommandRequest) return;
+    const onTextChange = () => {
+      queueMicrotask(() => detectSlashCommand(editor));
+    };
+    editor.on('text-change', onTextChange);
+    editor.on('selection-change', onTextChange);
+    return () => {
+      editor.off('text-change', onTextChange);
+      editor.off('selection-change', onTextChange);
+    };
+  }, [activeScene.id, readOnly, onSlashCommandRequest, detectSlashCommand]);
 
   useEffect(() => {
     const editor = getEditor();
@@ -361,12 +429,13 @@ export function NarrativeManuscriptEditor({
   const insertSuggestion = useCallback((suggestion: Suggestion) => {
     const editor = getEditor();
     if (!editor) return;
+    focusEditor();
     const newHtml = replaceTrailingRomanInHtml(editor.root.innerHTML, suggestion.value);
     saveSceneHtml(activeScene.id, newHtml);
     editor.root.innerHTML = newHtml;
-    editor.setSelection(editor.getLength(), 0);
+    editor.setSelection(Math.max(0, editor.getLength() - 1), 0);
     setShowSuggestions(false);
-  }, [activeScene.id, saveSceneHtml]);
+  }, [activeScene.id, saveSceneHtml, focusEditor]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -383,35 +452,18 @@ export function NarrativeManuscriptEditor({
   useEffect(() => {
     const el = stageRef?.current ?? document.getElementById('narrative-stage');
     if (!el || !onStageScroll) return;
-    const handler = () => onStageScroll(el.scrollTop);
+    const handler = () => {
+      onStageScroll(el.scrollTop);
+      if (showSuggestions) updateSuggestionPosition();
+    };
     el.addEventListener('scroll', handler);
     return () => el.removeEventListener('scroll', handler);
-  }, [stageRef, onStageScroll]);
-
-  useEffect(() => {
-    const editor = getEditor();
-    if (!editor || readOnly) return;
-    const root = editor.root;
-    const onMove = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const block = target.closest('p, .ql-block');
-      if (!block || !root.contains(block)) { setCtxMenu(null); return; }
-      const blockRect = block.getBoundingClientRect();
-      setCtxMenu({ top: blockRect.top + window.scrollY, left: blockRect.left - 28 });
-    };
-    const onLeave = () => setCtxMenu(null);
-    root.addEventListener('mousemove', onMove);
-    root.addEventListener('mouseleave', onLeave);
-    return () => {
-      root.removeEventListener('mousemove', onMove);
-      root.removeEventListener('mouseleave', onLeave);
-    };
-  }, [activeScene.id, readOnly]);
+  }, [stageRef, onStageScroll, showSuggestions, updateSuggestionPosition]);
 
   const formatSkinClass = `manuscript-skin manuscript-skin--${narrativeFormat}${narrativeFormat === 'novel' ? ' first-cap' : ''}`;
 
   return (
-    <div className="canvas">
+    <div className="canvas" style={comfortStyle}>
       <PhoneticTextInput
         className="story-title"
         value={activeScene.title}
@@ -435,31 +487,15 @@ export function NarrativeManuscriptEditor({
         />
       </div>
 
-      {ctxMenu && !readOnly && (
-        <div className="nos-ctx-menu" style={{ top: ctxMenu.top, left: ctxMenu.left }}>
-          <button type="button" onClick={() => { onCtxDialogue?.(); setCtxMenu(null); }}>Dialogue</button>
-          <button type="button" onClick={() => { onCtxNote?.(); setCtxMenu(null); }}>Note</button>
-          <button type="button" onClick={() => { onOpenAi?.(); setCtxMenu(null); }}>Ask AI</button>
-        </div>
-      )}
-
       {showSuggestions && suggestions.length > 0 && (
-        <div
-          className="narrative-phonetic-menu"
-          style={{ top: 0, left: 0 }}
-          role="listbox"
-        >
-          {suggestions.map((sug, idx) => (
-            <button
-              key={`${sug.value}-${idx}`}
-              type="button"
-              className={idx === selectedIndex ? 'sel' : ''}
-              onClick={() => insertSuggestion(sug)}
-            >
-              {sug.value}
-            </button>
-          ))}
-        </div>
+        <PhoneticSuggestionsMenu
+          className="narrative-phonetic-menu katha-proto-phonetic-menu"
+          style={suggestionsPos}
+          suggestions={suggestions}
+          selectedIndex={selectedIndex}
+          trailingWord={trailingWord}
+          onSelect={insertSuggestion}
+        />
       )}
     </div>
   );

@@ -69,6 +69,7 @@ export interface NarrativeEditorAppProps {
   slashCmdOpen: boolean;
   onSlashCmdOpenChange: (open: boolean) => void;
   cmdAnchor: { top: number; left: number } | null;
+  slashFilter?: string;
   stageScrollTop: number;
   languageLabel?: string;
   onBack?: () => void;
@@ -120,14 +121,13 @@ export function NarrativeEditorApp({
   onInsertDialogue,
   onInsertNote,
   onInsertSceneBreak,
-  onOpenAi,
   onOpenTimeline,
   selectionRect,
   onClearSelection,
   slashCmdOpen,
   onSlashCmdOpenChange,
   cmdAnchor,
-  stageScrollTop,
+  slashFilter = '',
   languageLabel = 'English',
   onBack,
   onSaveDraft,
@@ -144,7 +144,7 @@ export function NarrativeEditorApp({
   onSlashPaletteClose,
   wordGoalSlot,
 }: NarrativeEditorAppProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { theme, toggleTheme } = useTheme();
 
   const [explorerOpen, setExplorerOpen] = useState(false);
@@ -219,7 +219,7 @@ export function NarrativeEditorApp({
 
   const cmdOpen = slashCmdOpen || globalCmdOpen;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
-  const showCrumb = stageScrollTop > 40 && isWritePhase;
+  const showCrumb = isWritePhase;
 
   useEffect(() => {
     document.body.classList.add('narrative-os-body');
@@ -270,7 +270,7 @@ export function NarrativeEditorApp({
   })();
 
   return (
-    <div className={`narrative-os-app app mode-${phase}${focusMode ? ' focus' : ''}${showCrumb ? ' show-crumb' : ''}`}>
+    <div className={`narrative-os-app app mode-${phase}${focusMode ? ' focus' : ''}${showCrumb ? ' show-crumb' : ''}${locale === 'te' ? ' narrative-os-app--telugu' : ''}`}>
       <NarrativeArrivalScreen
         visible={arrivalVisible}
         momentum={arrivalMomentum}
@@ -297,6 +297,8 @@ export function NarrativeEditorApp({
           )}
         </div>
         <div className="crumb">
+          <span className="nos-crumb-story" title={storyTitle}>{storyTitle}</span>
+          <span className="sep">›</span>
           <InlineChapterTitle
             value={chapterTitle}
             onChange={onChapterTitleChange}
@@ -304,12 +306,12 @@ export function NarrativeEditorApp({
             className="nos-chapter-title"
             placeholder={`Chapter ${chapterNum}`}
           />
-          <span className="sep">›</span>
-          <span className="nos-story-name">{storyTitle}</span>
           {activeScene && isWritePhase && (
             <>
               <span className="sep">›</span>
-              <span>{activeScene.title || `Scene ${activeSceneIndex + 1}`}</span>
+              <span className="nos-crumb-scene" title={activeScene.title || `Scene ${activeSceneIndex + 1}`}>
+                {activeScene.title || `Scene ${activeSceneIndex + 1}`}
+              </span>
             </>
           )}
         </div>
@@ -384,12 +386,14 @@ export function NarrativeEditorApp({
       </aside>
 
       <div className="stage" id="narrative-stage">
-        {isWritePhase && (
-          <div className={`format-badge${formatBadgeVisible ? ' show' : ''}`}>
-            <span className="dot" style={{ background: FORMAT_COLORS[narrativeFormat] }} />
-          </div>
-        )}
-        {stageContent}
+        <div className="narrative-stage-shell">
+          {isWritePhase && (
+            <div className={`format-badge${formatBadgeVisible ? ' show' : ''}`}>
+              <span className="dot" style={{ background: FORMAT_COLORS[narrativeFormat] }} />
+            </div>
+          )}
+          {stageContent}
+        </div>
       </div>
 
       {isWritePhase && selectionRect && selectionRect.width > 0 && (
@@ -426,7 +430,13 @@ export function NarrativeEditorApp({
         </div>
       )}
 
-      <NarrativeCommandPalette open={cmdOpen} onClose={closeCmdPalette} commands={commands} anchor={slashCmdOpen ? cmdAnchor : null} />
+      <NarrativeCommandPalette
+        open={cmdOpen}
+        onClose={closeCmdPalette}
+        commands={commands}
+        anchor={slashCmdOpen ? cmdAnchor : null}
+        slashFilter={slashCmdOpen ? slashFilter : ''}
+      />
 
       {phase !== 'refine' && (
         <div className="statusbar">

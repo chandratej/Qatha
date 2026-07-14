@@ -52,6 +52,7 @@ export interface NarrativeChapterWorkspaceProps {
   fontScale: FontScale;
   onFontScaleChange: (scale: FontScale) => void;
   editorComfortStyle: React.CSSProperties;
+  canvasMaxWidth: number;
   isChapterImmutable: boolean;
   isDemo: boolean;
   arrivalMomentum: ArrivalMomentum | null;
@@ -59,9 +60,11 @@ export interface NarrativeChapterWorkspaceProps {
   selectionRect: DOMRect | null;
   onSelectionRectChange: (rect: DOMRect | null) => void;
   slashCmdOpen: boolean;
+  slashFilter: string;
   onSlashCmdOpenChange: (open: boolean) => void;
   cmdAnchor: { top: number; left: number } | null;
-  onSlashCommandRequest: (anchor: { top: number; left: number }) => void;
+  onSlashCommandRequest: (payload: { anchor: { top: number; left: number }; filter: string }) => void;
+  onSlashCommandDismiss: () => void;
   stageScrollTop: number;
   onStageScroll: (top: number) => void;
   findOpen: boolean;
@@ -152,9 +155,11 @@ export function NarrativeChapterWorkspace({
   selectionRect,
   onSelectionRectChange,
   slashCmdOpen,
+  slashFilter,
   onSlashCmdOpenChange,
   cmdAnchor,
   onSlashCommandRequest,
+  onSlashCommandDismiss,
   stageScrollTop,
   onStageScroll,
   findOpen,
@@ -240,11 +245,11 @@ export function NarrativeChapterWorkspace({
       onInsertDialogue={() => formatActionRef.current?.insertDialogue()}
       onInsertNote={() => formatActionRef.current?.insertNote()}
       onInsertSceneBreak={() => formatActionRef.current?.insertSceneBreak()}
-      onOpenAi={() => handlePhaseChange('think')}
       onOpenTimeline={onOpenTimeline}
       selectionRect={selectionRect}
       onClearSelection={() => onSelectionRectChange(null)}
       slashCmdOpen={slashCmdOpen}
+      slashFilter={slashFilter}
       onSlashCmdOpenChange={onSlashCmdOpenChange}
       onSlashPaletteClose={() => formatActionRef.current?.clearSlashTrigger()}
       cmdAnchor={cmdAnchor}
@@ -349,9 +354,9 @@ export function NarrativeChapterWorkspace({
         />
       )}
     >
-      <div style={editorComfortStyle}>
-        {activeScene ? (
+      {activeScene ? (
           <NarrativeManuscriptEditor
+            comfortStyle={editorComfortStyle}
             activeScene={activeScene}
             narrativeFormat={narrativeFormat}
             updateSceneTitle={updateSceneTitle}
@@ -363,6 +368,8 @@ export function NarrativeChapterWorkspace({
             selectionCaptureRef={selectionCaptureRef}
             onSelectionRectChange={onSelectionRectChange}
             onSlashCommandRequest={onSlashCommandRequest}
+            onSlashCommandDismiss={onSlashCommandDismiss}
+            slashCmdOpen={slashCmdOpen}
             onStageScroll={onStageScroll}
             stageRef={stageRef}
             authorComments={authorComments}
@@ -370,19 +377,15 @@ export function NarrativeChapterWorkspace({
             findOpen={findOpen && phase === 'write'}
             findActiveMatch={findActiveMatch}
             findSceneMatches={findMatches}
-            onOpenAi={() => handlePhaseChange('think')}
-            onInsertDialogue={() => formatActionRef.current?.insertDialogue()}
-            onInsertNote={() => formatActionRef.current?.insertNote()}
           />
         ) : (
-          <div className="canvas narrative-empty-scene">
+          <div className="canvas narrative-empty-scene" style={editorComfortStyle}>
             <p className="narrative-empty-scene__title">{t('narrativeOs.emptyScene')}</p>
             <button type="button" className="narrative-empty-scene__btn" onClick={onAddScene}>
               {t('narrativeOs.addFirstScene')}
             </button>
           </div>
         )}
-      </div>
     </NarrativeEditorApp>
   );
 }

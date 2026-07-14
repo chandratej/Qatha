@@ -20,6 +20,17 @@
   --ink-faint: var(--nos-ink-faint);
   --brass: var(--nos-brass);
   --sage: var(--nos-sage);
+  /* Manuscript canvas — character-per-line measure, single tuning surface */
+  --manuscript-column-width: 680px;
+  --manuscript-column-breadth: 650px;
+  --manuscript-padding-top: 52px;
+  --manuscript-padding-top-focus: 56px;
+  --manuscript-padding-bottom: 150px;
+  --manuscript-padding-horizontal: 20px;
+  --manuscript-left-gutter: 30px;
+  --manuscript-para-ctx-offset: 30px;
+  --manuscript-line-height-latin: 1.75;
+  --manuscript-line-height-telugu: 1.95;
 }
 
 body.narrative-os-body {
@@ -97,18 +108,60 @@ body.narrative-os-body {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--nos-ink-soft);
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
+  max-width: min(48vw, 520px);
+  min-width: 0;
+  padding: 0 8px;
   opacity: 0;
   transition: opacity 0.35s ease;
   pointer-events: none;
+  line-height: 1.2;
 }
 
 .narrative-os-app.show-crumb .crumb {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.narrative-os-app .crumb .sep {
+  flex: none;
+  color: var(--nos-ink-faint);
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+}
+
+.narrative-os-app .nos-crumb-story,
+.narrative-os-app .nos-crumb-scene {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--nos-ink-soft);
+}
+
+.narrative-os-app .nos-crumb-scene {
+  font-weight: 400;
+}
+
+.narrative-os-app .crumb .nos-chapter-title,
+.narrative-os-app .crumb .nos-chapter-title .katha-inline-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--nos-ink);
 }
 
 .narrative-os-app .crumb b {
@@ -432,8 +485,8 @@ body.narrative-os-body {
 .narrative-os-app .beat-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 8px;
+  gap: 12px;
+  padding: 9px 8px 9px 4px;
   font-size: 13px;
   color: var(--nos-ink-soft);
   background: none;
@@ -451,8 +504,9 @@ body.narrative-os-body {
 }
 
 .narrative-os-app .beat-dot {
-  position: absolute;
-  left: 0;
+  position: relative;
+  left: auto;
+  flex: none;
   width: 10px;
   height: 10px;
   border-radius: 50%;
@@ -489,22 +543,38 @@ body.narrative-os-body {
   flex: 1;
   overflow-y: auto;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Centered manuscript shell — canvas is a direct descendant like the prototype */
+.narrative-os-app .narrative-stage-shell {
+  width: min(100%, var(--manuscript-column-width));
+  flex: none;
+  margin: 0 auto;
   position: relative;
 }
 
 .narrative-os-app .canvas {
   width: 100%;
-  max-width: 620px;
-  padding: 54px 10px 160px;
+  padding:
+    var(--manuscript-padding-top)
+    var(--manuscript-padding-horizontal)
+    var(--manuscript-padding-bottom)
+    calc(var(--manuscript-left-gutter) + var(--manuscript-padding-horizontal));
   position: relative;
+  box-sizing: border-box;
+}
+
+.narrative-os-app.focus .canvas {
+  padding-top: var(--manuscript-padding-top-focus);
 }
 
 .narrative-os-app .format-badge {
-  position: fixed;
-  top: 66px;
-  left: 50%;
-  transform: translateX(-280px);
+  position: absolute;
+  top: 14px;
+  left: calc(var(--manuscript-left-gutter) + var(--manuscript-padding-horizontal));
   font-size: 10.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -546,18 +616,47 @@ body.narrative-os-body {
   display: none !important;
 }
 
-.narrative-os-app .manuscript .ql-container {
+.narrative-os-app .manuscript .ql-container,
+.narrative-os-app .manuscript .ql-snow.ql-container,
+.narrative-os-app .manuscript .quill {
   border: none !important;
+  box-shadow: none !important;
   font-family: 'Newsreader', var(--katha-font-reading), serif;
+}
+
+/* Manuscript is a writing surface — no focus rings or container chrome on click */
+.narrative-os-app .manuscript .ql-editor:focus,
+.narrative-os-app .manuscript .ql-editor:focus-visible,
+.narrative-os-app .manuscript .ql-container:focus,
+.narrative-os-app .manuscript .ql-container:focus-within,
+.narrative-os-app .manuscript:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.narrative-os-app .story-title:focus,
+.narrative-os-app .story-title:focus-visible,
+.narrative-os-app .canvas:focus,
+.narrative-os-app .canvas:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.narrative-os-app .manuscript {
+  max-width: var(--manuscript-column-breadth);
 }
 
 .narrative-os-app .manuscript .ql-editor {
   padding: 0 !important;
   font-family: 'Newsreader', var(--katha-font-reading), serif !important;
-  font-size: 19px !important;
-  line-height: 1.75 !important;
+  font-size: var(--editor-font-size, 1.1875rem) !important;
+  line-height: var(--editor-line-height, var(--manuscript-line-height-latin)) !important;
   color: var(--nos-ink) !important;
-  min-height: 55vh;
+  min-height: 68vh;
+}
+
+.narrative-os-app--telugu .manuscript .ql-editor {
+  line-height: var(--editor-line-height, var(--manuscript-line-height-telugu)) !important;
 }
 
 .narrative-os-app .manuscript .ql-editor p {
@@ -942,29 +1041,9 @@ body.narrative-os-body {
   padding: 0;
 }
 
-.narrative-phonetic-menu {
+.narrative-os-app .narrative-phonetic-menu {
   position: fixed;
-  z-index: 50;
-  background: var(--nos-paper);
-  border: 1px solid var(--nos-hairline);
-  border-radius: 8px;
-  padding: 4px;
-  box-shadow: 0 8px 24px var(--nos-shadow);
-}
-
-.narrative-phonetic-menu button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 6px 10px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.narrative-phonetic-menu button.sel {
-  background: var(--nos-paper-deep);
+  z-index: 45;
 }
 
 /* Command palette */
@@ -1346,12 +1425,37 @@ body.narrative-os-body {
 
 .narrative-os-app .nos-mode-surface {
   width: 100%;
-  max-width: 680px;
+  max-width: var(--manuscript-column-width);
   margin: 0 auto;
   padding: 28px 16px 120px;
   min-height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 1024px) and (min-width: 768px) {
+  .narrative-os-app .narrative-stage-shell {
+    width: min(90vw, var(--manuscript-column-width));
+  }
+}
+
+@media (max-width: 767px) {
+  .narrative-os-app .narrative-stage-shell {
+    width: calc(100% - 32px);
+  }
+
+  .narrative-os-app .canvas {
+    padding-right: 16px;
+    padding-left: calc(var(--manuscript-left-gutter) + 12px);
+  }
+
+  .narrative-os-app .format-badge {
+    left: calc(var(--manuscript-left-gutter) + 12px);
+  }
+
+  .narrative-os-app .manuscript .ql-editor {
+    font-size: min(var(--editor-font-size, 1.1875rem), 1.125rem) !important;
+  }
 }
 
 .narrative-os-app .nos-mode-header {
