@@ -14,6 +14,7 @@
   --nos-oxblood: #7a3b36;
   --nos-sage: #62705c;
   --nos-hairline: #e7dcc4;
+  --nos-line: var(--nos-hairline);
   --nos-shadow: rgba(43, 36, 32, 0.1);
   --nos-spine-w: 5px;
   --paper: var(--nos-paper);
@@ -31,6 +32,43 @@
   --manuscript-para-ctx-offset: 30px;
   --manuscript-line-height-latin: 1.75;
   --manuscript-line-height-telugu: 1.95;
+}
+
+[data-theme='dark'] .narrative-os-app {
+  --nos-paper: #1a1512;
+  --nos-paper-deep: #241e19;
+  --nos-ink: #ede7d8;
+  --nos-ink-soft: #a89f92;
+  --nos-ink-faint: #6b6358;
+  --nos-hairline: #3a332c;
+  --nos-line: var(--nos-hairline);
+  --nos-shadow: rgba(0, 0, 0, 0.35);
+}
+
+.narrative-os-app .nos-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 8px 12px;
+  background: var(--nos-ink);
+  color: var(--nos-paper);
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.narrative-os-app .nos-skip-link:focus {
+  left: 12px;
+  top: 48px;
+}
+
+.narrative-os-app .nos-write-find {
+  position: fixed;
+  top: 48px;
+  right: 16px;
+  z-index: 50;
+  max-width: min(520px, calc(100vw - 32px));
 }
 
 body.narrative-os-body {
@@ -621,7 +659,7 @@ body.narrative-os-body {
 .narrative-os-app .manuscript .quill {
   border: none !important;
   box-shadow: none !important;
-  font-family: 'Newsreader', var(--katha-font-reading), serif;
+  font-family: var(--katha-font-reading), 'Newsreader', serif;
 }
 
 /* Manuscript is a writing surface — no focus rings or container chrome on click */
@@ -648,15 +686,32 @@ body.narrative-os-body {
 
 .narrative-os-app .manuscript .ql-editor {
   padding: 0 !important;
-  font-family: 'Newsreader', var(--katha-font-reading), serif !important;
+  font-family: var(--katha-font-reading), 'Newsreader', serif !important;
   font-size: var(--editor-font-size, 1.1875rem) !important;
   line-height: var(--editor-line-height, var(--manuscript-line-height-latin)) !important;
   color: var(--nos-ink) !important;
   min-height: 68vh;
 }
 
-.narrative-os-app--telugu .manuscript .ql-editor {
+.narrative-os-app--telugu .manuscript .ql-editor,
+.narrative-os-app--telugu .manuscript .ql-container {
+  font-family: var(--font-telugu), var(--katha-font-reading), serif !important;
+  letter-spacing: var(--katha-telugu-letter-spacing, 0.02em);
   line-height: var(--editor-line-height, var(--manuscript-line-height-telugu)) !important;
+}
+
+.narrative-os-app--telugu .story-title,
+.narrative-os-app--telugu .nos-chapter-title,
+.narrative-os-app--telugu .nos-crumb-story,
+.narrative-os-app--telugu .nos-crumb-scene,
+.narrative-os-app--telugu .nos-refine-reader__prose {
+  font-family: var(--font-telugu), var(--katha-font-reading), serif;
+  letter-spacing: var(--katha-telugu-letter-spacing, 0.02em);
+}
+
+.narrative-os-app .manuscript .ql-editor:focus-visible {
+  outline: 2px solid rgba(169, 129, 47, 0.35) !important;
+  outline-offset: 2px;
 }
 
 .narrative-os-app .manuscript .ql-editor p {
@@ -714,8 +769,9 @@ body.narrative-os-body {
   background: none;
   font-size: 10.5px;
   color: var(--nos-ink-soft);
-  cursor: pointer;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
 }
 
 .narrative-os-app .bottomnav {

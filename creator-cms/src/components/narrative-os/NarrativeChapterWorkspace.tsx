@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { SceneBlock } from '../Editor/SceneSidebar';
-import type { NarrativeFormat, ArrivalMomentum, CompanionSuggestion, WritingPhase } from '../../lib/narrativeOsTypes';
+import type { NarrativeFormat, ArrivalMomentum, WritingPhase } from '../../lib/narrativeOsTypes';
 import type { FontScale } from '../../lib/comfortPrefs';
 import type { ChapterFindMatch } from '../../lib/chapterFind';
 import type { StoryAuthorComment } from '../../../../packages/shared/collaboration';
@@ -56,7 +56,6 @@ export interface NarrativeChapterWorkspaceProps {
   isChapterImmutable: boolean;
   isDemo: boolean;
   arrivalMomentum: ArrivalMomentum | null;
-  companionSuggestion: CompanionSuggestion | null;
   selectionRect: DOMRect | null;
   onSelectionRectChange: (rect: DOMRect | null) => void;
   slashCmdOpen: boolean;
@@ -65,8 +64,7 @@ export interface NarrativeChapterWorkspaceProps {
   cmdAnchor: { top: number; left: number } | null;
   onSlashCommandRequest: (payload: { anchor: { top: number; left: number }; filter: string }) => void;
   onSlashCommandDismiss: () => void;
-  stageScrollTop: number;
-  onStageScroll: (top: number) => void;
+  onStageScroll?: (top: number) => void;
   findOpen: boolean;
   findQuery: string;
   findReplace: string;
@@ -96,6 +94,7 @@ export interface NarrativeChapterWorkspaceProps {
     clearSlashTrigger: () => void;
   } | null>;
   selectionCaptureRef: React.MutableRefObject<(() => EditorSelectionAnchor | null) | null>;
+  highlightNoteRef?: React.MutableRefObject<((comment: StoryAuthorComment) => void) | null>;
   onBack: () => void;
   onSaveDraft: () => void;
   onPublish: () => void;
@@ -151,7 +150,6 @@ export function NarrativeChapterWorkspace({
   isChapterImmutable,
   isDemo,
   arrivalMomentum,
-  companionSuggestion,
   selectionRect,
   onSelectionRectChange,
   slashCmdOpen,
@@ -160,7 +158,6 @@ export function NarrativeChapterWorkspace({
   cmdAnchor,
   onSlashCommandRequest,
   onSlashCommandDismiss,
-  stageScrollTop,
   onStageScroll,
   findOpen,
   findQuery,
@@ -184,6 +181,7 @@ export function NarrativeChapterWorkspace({
   flushRef,
   formatActionRef,
   selectionCaptureRef,
+  highlightNoteRef,
   onBack,
   onSaveDraft,
   onPublish,
@@ -204,30 +202,42 @@ export function NarrativeChapterWorkspace({
   const { t, locale } = useLocale();
   const stageRef = useRef<HTMLDivElement>(null);
   const [explorerView, setExplorerView] = useState<'structure' | 'beats'>('structure');
-  const [phase, setPhase] = useState<WritingPhase>('write');
+  const [inspectorTab, setInspectorTab] = useState<'scene' | 'people' | 'notes' | 'settings'>('scene');
+  const [phase, setPhase] = useState<WritingPhase>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const match = /phase=(\w+)/.exec(hash);
+    const p = match?.[1];
+    if (p === 'think' || p === 'structure' || p === 'refine' || p === 'publish' || p === 'write') return p;
+    return 'write';
+  });
+
+  const readOnly = isChapterImmutable;
 
   const handlePhaseChange = (next: WritingPhase) => {
     setPhase(next);
     if (next !== 'refine') onFindClose();
+    try {
+      const url = new URL(window.location.href);
+      url.hash = next === 'write' ? '' : `phase=${next}`;
+      window.history.replaceState(null, '', url.toString());
+    } catch { /* */ }
   };
 
-  useEffect(() => {
-    if (findOpen && phase !== 'refine') setPhase('refine');
-  }, [findOpen, phase]);
-
   const backToWrite = () => handlePhaseChange('write');
+
+  const noop = () => {};
 
   return (
     <NarrativeEditorApp
       storyTitle={storyTitle}
       chapterTitle={chapterTitle}
-      onChapterTitleChange={onChapterTitleChange}
+      onChapterTitleChange={readOnly ? noop : onChapterTitleChange}
       chapterNum={chapterNum}
       scenes={scenes}
       activeSceneId={activeSceneId}
       activeSceneIndex={activeSceneIndex}
       narrativeFormat={narrativeFormat}
-      onNarrativeFormatChange={onNarrativeFormatChange}
+      onNarrativeFormatChange={readOnly ? noop : onNarrativeFormatChange}
       phase={phase}
       onPhaseChange={handlePhaseChange}
       wordCount={wordCount}
@@ -237,7 +247,7 @@ export function NarrativeChapterWorkspace({
       focusMode={focusMode}
       onToggleFocus={onToggleFocus}
       phoneticLive={phoneticLive}
-      companionSuggestion={companionSuggestion}
+      readOnly={readOnly}
       arrivalMomentum={arrivalMomentum}
       showArrival={showArrival}
       onFormatBold={() => formatActionRef.current?.bold()}
@@ -253,16 +263,32 @@ export function NarrativeChapterWorkspace({
       onSlashCmdOpenChange={onSlashCmdOpenChange}
       onSlashPaletteClose={() => formatActionRef.current?.clearSlashTrigger()}
       cmdAnchor={cmdAnchor}
-      stageScrollTop={stageScrollTop}
+      stageRef={stageRef}
       languageLabel={locale === 'te' ? 'తెలుగు' : 'English'}
       onBack={onBack}
-      onSaveDraft={onSaveDraft}
+      onSaveDraft={readOnly ? undefined : onSaveDraft}
       onPublish={onPublish}
       onHistory={onHistory}
       onOpenRefine={() => handlePhaseChange('refine')}
-      onRequestFind={() => { handlePhaseChange('refine'); onOpenFind(); }}
+      onRequestFind={onOpenFind}
       findOpen={findOpen}
+      findReadOnly={readOnly}
+      findFocusRestoreKey={`${findQuery}:${findMatches.length}`}
+      findQuery={findQuery}
+      findReplace={findReplace}
+      findShowReplace={findShowReplace}
+      findMatchIndex={findMatchIndex}
+      findMatchCount={findMatches.length}
+      onFindQueryChange={onFindQueryChange}
+      onFindReplaceChange={onFindReplaceChange}
+      onFindToggleReplace={onFindToggleReplace}
       onFindClose={onFindClose}
+      onFindNext={onFindNext}
+      onFindPrev={onFindPrev}
+      onFindReplace={readOnly ? noop : onFindReplace}
+      onFindReplaceNext={readOnly ? noop : onFindReplaceNext}
+      onFindReplaceAll={readOnly ? noop : onFindReplaceAll}
+      onOpenInspectorNotes={() => setInspectorTab('notes')}
       publishLabel={publishLabel}
       publishing={publishing}
       publishDisabled={publishDisabled}
@@ -279,30 +305,35 @@ export function NarrativeChapterWorkspace({
           view={explorerView}
           onViewChange={setExplorerView}
           onSwitchScene={onSwitchScene}
-          onAddScene={onAddScene}
-          onReorderScenes={onReorderScenes}
-          onDeleteScene={onDeleteScene}
-          onDuplicateScene={onDuplicateScene}
-          onUpdateBeatName={onUpdateBeatName}
+          onAddScene={readOnly ? noop : onAddScene}
+          onReorderScenes={readOnly ? noop : onReorderScenes}
+          onDeleteScene={readOnly ? noop : onDeleteScene}
+          onDuplicateScene={readOnly ? noop : onDuplicateScene}
+          onUpdateBeatName={readOnly ? noop : onUpdateBeatName}
           phoneticLive={phoneticLive}
           chapterTitle={chapterTitle}
           chapterNum={chapterNum}
+          readOnly={readOnly}
+          locale={locale}
         />
       )}
       inspectorPanel={(
         <NarrativeInspectorPanel
           activeScene={activeScene}
           narrativeFormat={narrativeFormat}
-          onNarrativeFormatChange={onNarrativeFormatChange}
+          onNarrativeFormatChange={readOnly ? noop : onNarrativeFormatChange}
           wordCount={wordCount}
           charCount={charCount}
           charLimit={charLimit}
           phoneticLive={phoneticLive}
-          onTogglePhonetic={onTogglePhonetic}
+          onTogglePhonetic={readOnly ? noop : onTogglePhonetic}
           fontScale={fontScale}
           onFontScaleChange={onFontScaleChange}
           peopleSlot={peopleSlot}
           notesSlot={notesSlot}
+          readOnly={readOnly}
+          activeTab={inspectorTab}
+          onTabChange={setInspectorTab}
         />
       )}
       thinkView={(
@@ -337,9 +368,9 @@ export function NarrativeChapterWorkspace({
           onFindClose={onFindClose}
           onFindNext={onFindNext}
           onFindPrev={onFindPrev}
-          onFindReplace={onFindReplace}
-          onFindReplaceNext={onFindReplaceNext}
-          onFindReplaceAll={onFindReplaceAll}
+          onFindReplace={readOnly ? noop : onFindReplace}
+          onFindReplaceNext={readOnly ? noop : onFindReplaceNext}
+          onFindReplaceAll={readOnly ? noop : onFindReplaceAll}
         />
       )}
       publishView={(
@@ -359,15 +390,16 @@ export function NarrativeChapterWorkspace({
             comfortStyle={editorComfortStyle}
             activeScene={activeScene}
             narrativeFormat={narrativeFormat}
-            updateSceneTitle={updateSceneTitle}
-            updateSceneContent={updateSceneContent}
-            readOnly={isChapterImmutable}
+            updateSceneTitle={readOnly ? noop : updateSceneTitle}
+            updateSceneContent={readOnly ? noop : updateSceneContent}
+            readOnly={readOnly}
             phoneticLive={phoneticLive}
             flushRef={flushRef}
             formatActionRef={formatActionRef}
             selectionCaptureRef={selectionCaptureRef}
+            highlightNoteRef={highlightNoteRef}
             onSelectionRectChange={onSelectionRectChange}
-            onSlashCommandRequest={onSlashCommandRequest}
+            onSlashCommandRequest={readOnly ? undefined : onSlashCommandRequest}
             onSlashCommandDismiss={onSlashCommandDismiss}
             slashCmdOpen={slashCmdOpen}
             onStageScroll={onStageScroll}
@@ -381,9 +413,11 @@ export function NarrativeChapterWorkspace({
         ) : (
           <div className="canvas narrative-empty-scene" style={editorComfortStyle}>
             <p className="narrative-empty-scene__title">{t('narrativeOs.emptyScene')}</p>
-            <button type="button" className="narrative-empty-scene__btn" onClick={onAddScene}>
-              {t('narrativeOs.addFirstScene')}
-            </button>
+            {!readOnly && (
+              <button type="button" className="narrative-empty-scene__btn" onClick={onAddScene}>
+                {t('narrativeOs.addFirstScene')}
+              </button>
+            )}
           </div>
         )}
     </NarrativeEditorApp>

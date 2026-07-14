@@ -119,10 +119,15 @@ export type StudioStringKey =
   | 'createStory.changeNote'
   | 'narrativeOs.explorer'
   | 'narrativeOs.inspector'
+  | 'narrativeOs.inspectorScene'
+  | 'narrativeOs.inspectorPeople'
+  | 'narrativeOs.inspectorNotes'
+  | 'narrativeOs.inspectorSettings'
   | 'narrativeOs.structure'
   | 'narrativeOs.beats'
   | 'narrativeOs.saved'
   | 'narrativeOs.wordsRead'
+  | 'narrativeOs.words'
   | 'narrativeOs.continueWriting'
   | 'narrativeOs.startNew'
   | 'narrativeOs.skipArrival'
@@ -1024,10 +1029,15 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.changeNote': 'ఈ వివరాలు తర్వాత మార్చవచ్చు.',
     'narrativeOs.explorer': 'ఎక్స్‌ప్లోరర్',
     'narrativeOs.inspector': 'సీన్ ఇన్‌స్పెక్టర్',
+    'narrativeOs.inspectorScene': 'సీన్',
+    'narrativeOs.inspectorPeople': 'పాత్రలు',
+    'narrativeOs.inspectorNotes': 'నోట్స్',
+    'narrativeOs.inspectorSettings': 'సెట్టింగ్స్',
     'narrativeOs.structure': 'నిర్మాణం',
     'narrativeOs.beats': 'కథా బీట్స్',
     'narrativeOs.saved': 'సేవ్ అయింది',
     'narrativeOs.wordsRead': 'పదాలు · చదవడానికి',
+    'narrativeOs.words': 'పదాలు',
     'narrativeOs.continueWriting': 'రాయడం కొనసాగించండి →',
     'narrativeOs.startNew': 'కొత్తది ప్రారంభించండి',
     'narrativeOs.skipArrival': 'నేరుగా మాన్యుస్క్రిప్ట్‌కు వెళ్లండి',
@@ -1926,10 +1936,15 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.changeNote': 'You can change these details later.',
     'narrativeOs.explorer': 'Explorer',
     'narrativeOs.inspector': 'Scene Inspector',
+    'narrativeOs.inspectorScene': 'Scene',
+    'narrativeOs.inspectorPeople': 'People',
+    'narrativeOs.inspectorNotes': 'Notes',
+    'narrativeOs.inspectorSettings': 'Settings',
     'narrativeOs.structure': 'Structure',
     'narrativeOs.beats': 'Story Beats',
     'narrativeOs.saved': 'Saved',
     'narrativeOs.wordsRead': 'words · read',
+    'narrativeOs.words': 'words',
     'narrativeOs.continueWriting': 'Continue writing →',
     'narrativeOs.startNew': 'Start something new',
     'narrativeOs.skipArrival': 'Jump straight to the manuscript',

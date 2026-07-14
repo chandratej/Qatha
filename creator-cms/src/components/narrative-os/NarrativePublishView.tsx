@@ -38,7 +38,7 @@ export function NarrativePublishView({
         <div className="nos-publish__card">
           <p className="nos-publish__stat">
             <strong>{wordCount.toLocaleString()}</strong>
-            <span>{t('narrativeOs.wordsRead').split('·')[0]?.trim() || 'words'}</span>
+            <span>{t('narrativeOs.words')}</span>
           </p>
           <p className="nos-publish__stat">
             <strong>{sceneCount}</strong>

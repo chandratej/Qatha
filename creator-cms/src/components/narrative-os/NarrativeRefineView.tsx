@@ -5,6 +5,7 @@ import {
 import type { SceneBlock } from '../Editor/SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
 import { sceneHasContent } from '../../lib/sceneContent';
+import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { refineEncouragement } from '../../lib/refineEncouragement';
 import { useLocale } from '../../context/LocaleContext';
 import { NarrativeRefineFindOverlay } from './NarrativeRefineFindOverlay';
@@ -190,7 +191,7 @@ export function NarrativeRefineView({
                     <h2 className="nos-refine-reader__scene-title">{scene.title}</h2>
                   )}
                   {sceneHasContent(scene.content) ? (
-                    <div className="nos-refine-reader__prose" dangerouslySetInnerHTML={{ __html: scene.content }} />
+                    <div className="nos-refine-reader__prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(scene.content) }} />
                   ) : null}
                 </section>
               ))}

@@ -8,6 +8,7 @@ interface InlineChapterTitleProps {
   className?: string;
   placeholder?: string;
   maxLength?: number;
+  readOnly?: boolean;
 }
 
 export function InlineChapterTitle({
@@ -17,6 +18,7 @@ export function InlineChapterTitle({
   className = '',
   placeholder = 'Untitled Chapter',
   maxLength = 60,
+  readOnly = false,
 }: InlineChapterTitleProps) {
   const [editing, setEditing] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,14 @@ export function InlineChapterTitle({
     document.addEventListener('mousedown', onPointerDown);
     return () => document.removeEventListener('mousedown', onPointerDown);
   }, [editing]);
+
+  if (readOnly) {
+    return (
+      <span className={`katha-inline-title ${className}`} aria-label={`Chapter title: ${value || placeholder}`}>
+        {value || placeholder}
+      </span>
+    );
+  }
 
   if (editing) {
     return (

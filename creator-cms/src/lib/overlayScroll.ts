@@ -98,7 +98,8 @@ export function initOverlayScrollRegions(): () => void {
     }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  const observeRoot = document.querySelector('.narrative-os-app, .app-viewport, #root') ?? document.body;
+  observer.observe(observeRoot, { childList: true, subtree: true });
 
   return () => {
     observer.disconnect();

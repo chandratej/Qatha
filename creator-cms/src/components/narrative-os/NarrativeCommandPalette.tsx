@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { NarrativeFormat } from '../../lib/narrativeOsTypes';
+import { commandMatchesPrefix } from '../../lib/slashCommand';
 
 export interface NarrativeCommand {
   id: string;
@@ -25,8 +26,6 @@ export function buildNarrativeCommands(opts: {
   onInsertNote: () => void;
   onInsertSceneBreak: () => void;
   onAiContinue: () => void;
-  onAiRewrite: () => void;
-  onAiExpand: () => void;
   onFormatSwitch: (f: NarrativeFormat) => void;
   onOpenExplorer: () => void;
   onOpenInspector: () => void;
@@ -35,14 +34,14 @@ export function buildNarrativeCommands(opts: {
   onOpenPreview?: () => void;
 }): NarrativeCommand[] {
   return [
-    { id: 'continue', group: 'Write', label: 'Continue writing', desc: 'AI', icon: '✎', run: opts.onAiContinue, keywords: ['ai'] },
+    { id: 'continue', group: 'Write', label: 'Continue writing', desc: 'Open Think workspace', icon: '✎', run: opts.onAiContinue, keywords: ['ai', 'think'] },
     { id: 'dialogue', group: 'Write', label: 'Add dialogue', icon: '"', run: opts.onInsertDialogue },
     { id: 'note', group: 'Write', label: 'Add note', icon: '◈', run: opts.onInsertNote },
     { id: 'break', group: 'Write', label: 'Scene break', icon: '—', run: opts.onInsertSceneBreak },
     { id: 'novel', group: 'Switch narrative mode', label: 'Novel', desc: '/novel', icon: '📖', run: () => opts.onFormatSwitch('novel') },
     { id: 'chat', group: 'Switch narrative mode', label: 'Chat Fiction', desc: '/chat', icon: '💬', run: () => opts.onFormatSwitch('chat') },
     { id: 'letter', group: 'Switch narrative mode', label: 'Epistolary', desc: '/letter', icon: '✉', run: () => opts.onFormatSwitch('letter') },
-    { id: 'choice', group: 'Switch narrative mode', label: 'Interactive choice', desc: '/choice', icon: '⑂', run: () => opts.onFormatSwitch('choice') },
+
     { id: 'explorer', group: 'Navigate', label: 'Open Explorer', icon: '◎', run: opts.onOpenExplorer },
     { id: 'inspector', group: 'Navigate', label: 'Open Inspector', icon: '◉', run: opts.onOpenInspector },
     { id: 'timeline', group: 'Navigate', label: 'Open timeline', icon: '⏱', run: opts.onOpenTimeline },
@@ -65,15 +64,13 @@ export function NarrativeCommandPalette({
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const slashMode = Boolean(anchor);
 
   const filtered = useMemo(() => {
-    const q = (slashMode ? slashFilter : query).trim().toLowerCase();
+    const q = (slashMode ? slashFilter : query).trim();
     if (!q) return commands;
-    return commands.filter((cmd) => {
-      const hay = [cmd.label, cmd.desc, cmd.group, cmd.id, ...(cmd.keywords ?? [])].join(' ').toLowerCase();
-      return hay.includes(q);
-    });
+    return commands.filter((cmd) => commandMatchesPrefix(cmd, q));
   }, [commands, query, slashFilter, slashMode]);
 
   const groups = useMemo(() => {
@@ -96,6 +93,32 @@ export function NarrativeCommandPalette({
   }, [open, anchor]);
 
   useEffect(() => {
+    if (!open || !dialogRef.current) return;
+    const dialog = dialogRef.current;
+    const focusables = () => Array.from(
+      dialog.querySelectorAll<HTMLElement>('input, button, [tabindex]:not([tabindex="-1"])'),
+    ).filter((el) => !el.hasAttribute('disabled'));
+
+    const onKeyTrap = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    dialog.addEventListener('keydown', onKeyTrap);
+    if (!slashMode) inputRef.current?.focus();
+    return () => dialog.removeEventListener('keydown', onKeyTrap);
+  }, [open, slashMode]);
+
+  useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { e.preventDefault(); onClose(); }
@@ -115,8 +138,10 @@ export function NarrativeCommandPalette({
     <>
       <div className="cmdk-backdrop" onClick={onClose} role="presentation" />
       <div
+        ref={dialogRef}
         className="cmdk open"
         role="dialog"
+        aria-modal="true"
         aria-label="Commands"
         style={anchor
           ? { position: 'fixed', top: anchor.top, left: anchor.left }
@@ -142,6 +167,8 @@ export function NarrativeCommandPalette({
                   key={cmd.id}
                   type="button"
                   className={`cmdk-item${sel ? ' sel' : ''}`}
+                  id={`nos-cmd-${cmd.id}`}
+                  aria-selected={sel}
                   onMouseEnter={() => setIndex(thisIdx)}
                   onClick={() => { cmd.run(); onClose(); }}
                 >

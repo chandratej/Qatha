@@ -4,6 +4,7 @@ import type { SceneBlock } from './SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
 import { sceneHasContent } from '../../lib/sceneContent';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
+import { sanitizeHtml } from '../../lib/sanitizeHtml';
 
 interface PreviewPaneProps {
   chapterTitle: string;
@@ -218,7 +219,7 @@ export function PreviewPane({
                   {sceneHasContent(scene.content) ? (
                     <div
                       className="katha-proto-preview-scene-body"
-                      dangerouslySetInnerHTML={{ __html: scene.content }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(scene.content) }}
                     />
                   ) : (
                     <p className="katha-proto-preview-scene-empty">Start writing this scene…</p>

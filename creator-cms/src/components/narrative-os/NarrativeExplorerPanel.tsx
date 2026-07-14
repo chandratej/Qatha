@@ -9,13 +9,7 @@ import {
 } from '../../lib/sceneSearch';
 import { useLocale } from '../../context/LocaleContext';
 
-function sceneWordCount(html: string) {
-  if (!html) return 0;
-  const temp = document.createElement('div');
-  temp.innerHTML = html;
-  const text = temp.textContent || '';
-  return text.trim().split(/\s+/).filter((w) => w.length > 0).length;
-}
+import { getSceneWordCount } from '../../lib/scenePacing';
 
 interface SceneRowProps {
   idx: number;
@@ -36,9 +30,9 @@ function DragDots() {
 }
 
 function ExplorerSceneRow({
-  idx, scene, active, onClick, onDelete, onDuplicate, draggable,
-}: SceneRowProps) {
-  const words = sceneWordCount(scene.content);
+  idx, scene, active, onClick, onDelete, onDuplicate, draggable, locale = 'en',
+}: SceneRowProps & { locale?: string }) {
+  const words = getSceneWordCount(scene.content, locale);
   const dragControls = useDragControls();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -58,6 +52,7 @@ function ExplorerSceneRow({
       onClick={onClick}
       role="button"
       tabIndex={0}
+      aria-current={active ? 'true' : undefined}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); }
       }}
@@ -127,6 +122,8 @@ export interface NarrativeExplorerPanelProps {
   phoneticLive?: boolean;
   chapterTitle: string;
   chapterNum: number;
+  readOnly?: boolean;
+  locale?: string;
 }
 
 export function NarrativeExplorerPanel({
@@ -143,6 +140,8 @@ export function NarrativeExplorerPanel({
   phoneticLive = true,
   chapterTitle,
   chapterNum,
+  readOnly = false,
+  locale = 'en',
 }: NarrativeExplorerPanelProps) {
   const { t } = useLocale();
   const [searchTerm, setSearchTerm] = useState('');
@@ -205,13 +204,14 @@ export function NarrativeExplorerPanel({
                     scene={scene}
                     active={activeSceneId === scene.id}
                     onClick={() => onSwitchScene(scene.id)}
-                    onDelete={onDeleteScene}
-                    onDuplicate={onDuplicateScene}
+                    onDelete={readOnly ? undefined : onDeleteScene}
+                    onDuplicate={readOnly ? undefined : onDuplicateScene}
+                    locale={locale}
                   />
                 );
               })
             ) : (
-              <Reorder.Group axis="y" values={scenes} onReorder={onReorderScenes}>
+              <Reorder.Group axis="y" values={scenes} onReorder={readOnly ? () => {} : onReorderScenes}>
                 {scenes.map((scene, idx) => (
                   <ExplorerSceneRow
                     key={scene.id}
@@ -219,17 +219,20 @@ export function NarrativeExplorerPanel({
                     scene={scene}
                     active={activeSceneId === scene.id}
                     onClick={() => onSwitchScene(scene.id)}
-                    onDelete={onDeleteScene}
-                    onDuplicate={onDuplicateScene}
-                    draggable
+                    onDelete={readOnly ? undefined : onDeleteScene}
+                    onDuplicate={readOnly ? undefined : onDuplicateScene}
+                    draggable={!readOnly}
+                    locale={locale}
                   />
                 ))}
               </Reorder.Group>
             )}
           </div>
-          <button type="button" className="nos-add-scene" onClick={onAddScene}>
-            <Plus size={14} /> Add scene
-          </button>
+          {!readOnly && (
+            <button type="button" className="nos-add-scene" onClick={onAddScene}>
+              <Plus size={14} /> Add scene
+            </button>
+          )}
         </div>
       ) : (
         <div className="beats active">
@@ -242,7 +245,7 @@ export function NarrativeExplorerPanel({
                   type="button"
                   className={`beat-item${scene.id === activeSceneId ? ' active' : ''}`}
                   onClick={() => onSwitchScene(scene.id)}
-                  onDoubleClick={(e) => {
+                  onDoubleClick={readOnly ? undefined : (e) => {
                     e.preventDefault();
                     const next = window.prompt('Beat name', beat);
                     if (next?.trim()) onUpdateBeatName(scene.id, next.trim());

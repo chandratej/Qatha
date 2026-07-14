@@ -1,3 +1,4 @@
+/* @refresh reset */
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PanelRightOpen, List, X } from 'lucide-react';
@@ -81,22 +82,16 @@ import { useLocale } from '../context/LocaleContext';
 import { NarrativeChapterWorkspace } from '../components/narrative-os/NarrativeChapterWorkspace';
 import type { ArrivalMomentum, NarrativeFormat } from '../lib/narrativeOsTypes';
 import '../styles/narrative-os.css';
-import '../styles/editor-prototype.css';
+import { countWordsInScenes } from '../lib/wordCount';
 
-const NARRATIVE_OS_ENABLED = true;
+const NARRATIVE_OS_ENABLED = import.meta.env.VITE_LEGACY_EDITOR !== 'true';
 
 const CHAPTER_WORD_GOAL = 2000;
 
 const CHAR_LIMIT = 50_000;
 
-function getWordCountFromScenes(scenes: SceneBlock[]): number {
-  return scenes.reduce((total, scene) => {
-    if (!scene.content) return total;
-    const temp = document.createElement('div');
-    temp.innerHTML = scene.content;
-    const text = temp.textContent || '';
-    return total + text.trim().split(/\s+/).filter(w => w.length > 0).length;
-  }, 0);
+function getWordCountFromScenes(scenes: SceneBlock[], locale = 'en'): number {
+  return countWordsInScenes(scenes, locale);
 }
 
 function getPlainCharCountFromScenes(scenes: SceneBlock[]): number {
@@ -184,6 +179,8 @@ export function ChapterEditor() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [chapterStatus, setChapterStatus] = useState<string | null>(null);
+  const isChapterImmutable = chapterStatus === 'published';
+  const [chapterNarrativeFormat, setChapterNarrativeFormat] = useState<NarrativeFormat>('novel');
   const [moderationStatus, setModerationStatus] = useState<string | null>(null);
   const [moderationNotes, setModerationNotes] = useState<string | null>(null);
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
@@ -204,7 +201,7 @@ export function ChapterEditor() {
   const [slashCmdOpen, setSlashCmdOpen] = useState(false);
   const [slashFilter, setSlashFilter] = useState('');
   const [cmdAnchor, setCmdAnchor] = useState<{ top: number; left: number } | null>(null);
-  const [editorScrollTop, setEditorScrollTop] = useState(0);
+
   const formatActionRef = useRef<{
     bold: () => void;
     italic: () => void;
@@ -297,7 +294,7 @@ export function ChapterEditor() {
   }, []);
 
   const persistDraft = useCallback(() => {
-    if (!storyId) return;
+    if (!storyId || isChapterImmutable) return;
     if (isDemo) {
       saveChapterScenes(storyId, chapterNumber, scenes);
       updateChapterStats(storyId, chapterNumber, {
@@ -315,9 +312,7 @@ export function ChapterEditor() {
       scenes,
       updated_at: Date.now(),
     }).catch(() => {});
-  }, [storyId, chapterNumber, scenes, chapterTitle, isDemo]);
-
-  const isChapterImmutable = chapterStatus === 'published';
+  }, [storyId, chapterNumber, scenes, chapterTitle, isDemo, isChapterImmutable]);
 
   const cloudSaveDraft = useCallback(async () => {
     if (!storyId || isDemo || isChapterImmutable) return;
@@ -337,6 +332,7 @@ export function ChapterEditor() {
     charCount: htmlCharCount,
     triggerLocalSave: persistDraft,
     triggerCloudSave: isDemo ? undefined : cloudSaveDraft,
+    enabled: !isChapterImmutable,
   });
   const { versions, saveSceneVersion } = useVersionHistory(chapterKey);
 
@@ -510,30 +506,37 @@ export function ChapterEditor() {
       setActiveSceneId(scenes[0].id);
     }
   }, [scenes, activeSceneId]);
-  const narrativeFormat: NarrativeFormat = activeScene?.narrativeFormat ?? 'novel';
+  const narrativeFormat: NarrativeFormat = chapterNarrativeFormat;
+  const wordCount = getWordCountFromScenes(scenes, locale);
+
+  useEffect(() => {
+    const fromScene = scenes.find((s) => s.narrativeFormat)?.narrativeFormat;
+    if (fromScene) setChapterNarrativeFormat(fromScene);
+  }, [scenes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const arrivalMomentum: ArrivalMomentum | null = useMemo(() => {
     if (!chapterTitle && !activeScene?.title) return null;
     return {
       storyTitle: storyDisplayTitle || chapterTitle || 'Untitled Chapter',
       lastSceneTitle: activeScene?.title || undefined,
+      progressPercent: wordCount > 0 ? Math.min(100, Math.round((wordCount / CHAPTER_WORD_GOAL) * 100)) : undefined,
     };
-  }, [storyDisplayTitle, chapterTitle, activeScene?.title]);
+  }, [storyDisplayTitle, chapterTitle, activeScene?.title, wordCount]);
 
   const handleNarrativeFormatChange = useCallback((format: NarrativeFormat) => {
-    if (!activeSceneId) return;
-    setScenes((prev) => prev.map((s) =>
-      s.id === activeSceneId ? { ...s, narrativeFormat: format } : s,
-    ));
+    if (isChapterImmutable) return;
+    setChapterNarrativeFormat(format);
+    setScenes((prev) => prev.map((s) => ({ ...s, narrativeFormat: format })));
     setDirty(true);
-  }, [activeSceneId]);
+  }, [isChapterImmutable]);
 
   const handleUpdateBeatName = useCallback((sceneId: string, beatName: string) => {
+    if (isChapterImmutable) return;
     setScenes((prev) => prev.map((s) =>
       s.id === sceneId ? { ...s, beatName } : s,
     ));
     setDirty(true);
-  }, []);
+  }, [isChapterImmutable]);
 
   const activeSceneLinkedIds = useMemo(() => {
     const ids = new Set<string>();
@@ -588,7 +591,6 @@ export function ChapterEditor() {
     }
   }, [storyId, isDemo, addingCharacterName]);
 
-  const wordCount = getWordCountFromScenes(scenes);
   const readMins = wordCount === 0 ? 0 : Math.max(1, Math.round(wordCount / 200));
   const workspaceLayout = layoutForWorkspace(authoringWorkspace);
   const overLimit = charCount > CHAR_LIMIT;
@@ -647,10 +649,12 @@ export function ChapterEditor() {
   }, [storyId, chapterNumber, isDemo]);
 
   const updateSceneTitle = (id: string, newTitle: string) => {
+    if (isChapterImmutable) return;
     setScenes(prev => prev.map(s => s.id === id ? { ...s, title: newTitle } : s));
   };
 
   const updateSceneContent = (id: string, html: string) => {
+    if (isChapterImmutable) return;
     setScenes(prev => {
       const next = prev.map(s => s.id === id ? { ...s, content: html } : s);
       const scene = next.find(s => s.id === id);
@@ -673,6 +677,7 @@ export function ChapterEditor() {
   };
 
   const handleAddScene = () => {
+    if (isChapterImmutable) return;
     flushEditor();
     const newScene = createBlankScene(scenes.length + 1);
     setScenes(prev => [...prev, newScene]);
@@ -680,12 +685,12 @@ export function ChapterEditor() {
   };
 
   const requestDeleteScene = (id: string) => {
-    if (scenes.length <= 1) return;
+    if (isChapterImmutable || scenes.length <= 1) return;
     setDeleteSceneId(id);
   };
 
   const confirmDeleteScene = () => {
-    if (!deleteSceneId) return;
+    if (isChapterImmutable || !deleteSceneId) return;
     flushEditor();
     const id = deleteSceneId;
     setScenes(prev => {
@@ -697,6 +702,7 @@ export function ChapterEditor() {
   };
 
   const handleDuplicateScene = (id: string) => {
+    if (isChapterImmutable) return;
     flushEditor();
     const sceneToDup = scenes.find(s => s.id === id);
     if (!sceneToDup) return;
@@ -708,6 +714,7 @@ export function ChapterEditor() {
   };
 
   const handleRestoreVersion = (sceneId: string, content: string) => {
+    if (isChapterImmutable) return;
     setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, content } : s));
   };
 
@@ -722,6 +729,7 @@ export function ChapterEditor() {
   const needsResubmit = moderationStatus === 'needs_revision' || moderationStatus === 'rejected';
 
   const handleSaveDraft = useCallback(async () => {
+    if (isChapterImmutable) return;
     setSavingDraft(true);
     setPublishError(null);
     setPublishSuccess(null);
@@ -741,7 +749,7 @@ export function ChapterEditor() {
     } finally {
       setSavingDraft(false);
     }
-  }, [flushEditor, isDemo, persistDraft, cloudSaveDraft, setLastSaved, markClean]);
+  }, [flushEditor, isDemo, persistDraft, cloudSaveDraft, setLastSaved, markClean, isChapterImmutable]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -945,6 +953,7 @@ export function ChapterEditor() {
   }, [findMatches.length]);
 
   const applyReplaceAt = useCallback((match: ChapterFindMatch, advance: boolean) => {
+    if (isChapterImmutable) return;
     flushEditor();
     const scene = scenes.find((s) => s.id === match.sceneId);
     if (!scene) return;
@@ -961,14 +970,14 @@ export function ChapterEditor() {
     if (advance && findMatches.length > 1) {
       goToFindMatch(findMatchIndex + 1);
     }
-  }, [scenes, findReplace, findMatches.length, findMatchIndex, goToFindMatch, flushEditor]);
+  }, [scenes, findReplace, findMatches.length, findMatchIndex, goToFindMatch, flushEditor, isChapterImmutable]);
 
   const handleReplaceAll = useCallback(() => {
-    if (!findQuery.trim()) return;
+    if (isChapterImmutable || !findQuery.trim()) return;
     flushEditor();
     setScenes(replaceAllInChapter(scenes, findQuery, findReplace));
     setFindMatchIndex(0);
-  }, [findQuery, findReplace, scenes, flushEditor]);
+  }, [findQuery, findReplace, scenes, flushEditor, isChapterImmutable]);
 
   const editorCommands = useMemo(
     () => buildEditorCommands({
@@ -1171,7 +1180,7 @@ export function ChapterEditor() {
           isChapterImmutable={isChapterImmutable}
           isDemo={isDemo}
           arrivalMomentum={arrivalMomentum}
-          companionSuggestion={null}
+
           selectionRect={selectionRect}
           onSelectionRectChange={setSelectionRect}
           slashCmdOpen={slashCmdOpen}
@@ -1187,8 +1196,7 @@ export function ChapterEditor() {
             setSlashCmdOpen(true);
           }}
           onSlashCommandDismiss={() => setSlashCmdOpen(false)}
-          stageScrollTop={editorScrollTop}
-          onStageScroll={setEditorScrollTop}
+          highlightNoteRef={highlightAuthorNoteRef}
           findOpen={findOpen}
           findQuery={findQuery}
           findReplace={findReplace}

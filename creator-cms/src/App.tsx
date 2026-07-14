@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider } from './context/AuthContext';
@@ -11,7 +12,6 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Stories } from './pages/Stories';
 import { CreateStory } from './pages/CreateStory';
-import { ChapterEditor } from './pages/ChapterEditor';
 import { EpistolaryEditor } from './pages/editors/EpistolaryEditor';
 import { EnglishEditor } from './pages/editors/EnglishEditor';
 import { BranchingEditor } from './pages/editors/BranchingEditor';
@@ -23,7 +23,7 @@ import { Analytics } from './pages/Analytics';
 import { Onboarding } from './pages/Onboarding';
 import { Profile } from './pages/Profile';
 import { Community } from './pages/Community';
-import { Moderation } from './pages/Moderation';
+
 import { ModerationRoute } from './components/ModerationRoute';
 import { LabsRoute } from './components/LabsRoute';
 import { OnboardingGate } from './components/OnboardingGate';
@@ -31,11 +31,9 @@ import { Settings } from './pages/Settings';
 import { Notifications } from './pages/Notifications';
 import { Schedule } from './pages/Schedule';
 import { PublishingCenter } from './pages/PublishingCenter';
-import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
 import { EventCreate } from './pages/EventCreate';
 import { ReviewerMarketplace } from './pages/ReviewerMarketplace';
-import { ReviewWorkspace } from './pages/ReviewWorkspace';
 import { TagsModeration } from './pages/TagsModeration';
 import { Monetization } from './pages/Monetization';
 import { PlatformMap } from './pages/PlatformMap';
@@ -78,7 +76,15 @@ import './styles/cohesion-wave26.css';
 import './styles/cohesion-wave27.css';
 import './styles/cohesion-wave28.css';
 import './styles/cohesion-wave29.css';
-import './styles/narrative-os.css';
+
+const ChapterEditor = lazy(() => import('./pages/ChapterEditor').then((m) => ({ default: m.ChapterEditor })));
+const ReviewWorkspace = lazy(() => import('./pages/ReviewWorkspace').then((m) => ({ default: m.ReviewWorkspace })));
+const Events = lazy(() => import('./pages/Events').then((m) => ({ default: m.Events })));
+const Moderation = lazy(() => import('./pages/Moderation').then((m) => ({ default: m.Moderation })));
+
+function RouteFallback() {
+  return <div className="cms-loading-shell" aria-busy="true" style={{ padding: '2rem', textAlign: 'center' }}>Loading…</div>;
+}
 
 function App() {
   return (
@@ -90,6 +96,7 @@ function App() {
           <BrowserRouter>
             <div className="app-viewport">
               <OverlayScrollManager />
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
               <Route path="/login" element={<Login />} />
               <Route element={<ProtectedRoute />}>
@@ -136,6 +143,7 @@ function App() {
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              </Suspense>
             </div>
           </BrowserRouter>
         </AuthProvider>

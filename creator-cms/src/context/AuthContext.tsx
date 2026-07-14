@@ -230,7 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: userId,
         phone: '',
         email: 'demo@katha.in',
-        role: 'admin',
+        role: 'creator',
         display_name: 'Demo Creator',
         subscription_status: 'free',
         phone_verified: false,

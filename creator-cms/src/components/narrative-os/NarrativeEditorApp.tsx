@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ChapterFindBar } from '../Editor/ChapterFindBar';
 import {
   Focus, Sun, Moon, Bold, Italic, MessageCircle, Sparkles, PenLine,
   ArrowLeft, Cloud, Rocket, History, Eye, Loader2,
 } from 'lucide-react';
 import type { SceneBlock } from '../Editor/SceneSidebar';
-import type { ArrivalMomentum, CompanionSuggestion, NarrativeFormat, WritingPhase } from '../../lib/narrativeOsTypes';
+import type { ArrivalMomentum, NarrativeFormat, WritingPhase } from '../../lib/narrativeOsTypes';
 import { NARRATIVE_FORMAT_SPINE, WRITING_PHASES } from '../../lib/narrativeOsTypes';
 import { InlineChapterTitle } from '../Editor/InlineChapterTitle';
 import { useLocale } from '../../context/LocaleContext';
@@ -55,7 +56,7 @@ export interface NarrativeEditorAppProps {
   focusMode: boolean;
   onToggleFocus: () => void;
   phoneticLive: boolean;
-  companionSuggestion: CompanionSuggestion | null;
+  readOnly?: boolean;
   arrivalMomentum: ArrivalMomentum | null;
   showArrival: boolean;
   onFormatBold: () => void;
@@ -70,8 +71,24 @@ export interface NarrativeEditorAppProps {
   onSlashCmdOpenChange: (open: boolean) => void;
   cmdAnchor: { top: number; left: number } | null;
   slashFilter?: string;
-  stageScrollTop: number;
+  stageRef?: React.RefObject<HTMLDivElement | null>;
   languageLabel?: string;
+  findReadOnly?: boolean;
+  findFocusRestoreKey?: string;
+  onFindQueryChange?: (value: string) => void;
+  onFindReplaceChange?: (value: string) => void;
+  onFindToggleReplace?: () => void;
+  onFindNext?: () => void;
+  onFindPrev?: () => void;
+  onFindReplace?: () => void;
+  onFindReplaceNext?: () => void;
+  onFindReplaceAll?: () => void;
+  findQuery?: string;
+  findReplace?: string;
+  findShowReplace?: boolean;
+  findMatchIndex?: number;
+  findMatchCount?: number;
+  onOpenInspectorNotes?: () => void;
   onBack?: () => void;
   onSaveDraft?: () => void;
   onPublish?: () => void;
@@ -113,7 +130,7 @@ export function NarrativeEditorApp({
   focusMode,
   onToggleFocus,
   phoneticLive,
-  companionSuggestion,
+  readOnly = false,
   arrivalMomentum,
   showArrival,
   onFormatBold,
@@ -143,6 +160,23 @@ export function NarrativeEditorApp({
   statusContent,
   onSlashPaletteClose,
   wordGoalSlot,
+  stageRef: stageRefProp,
+  findReadOnly = false,
+  findFocusRestoreKey,
+  onFindQueryChange,
+  onFindReplaceChange,
+  onFindToggleReplace,
+  onFindNext,
+  onFindPrev,
+  onFindReplace,
+  onFindReplaceNext,
+  onFindReplaceAll,
+  findQuery = '',
+  findReplace = '',
+  findShowReplace = false,
+  findMatchIndex = 0,
+  findMatchCount = 0,
+  onOpenInspectorNotes,
 }: NarrativeEditorAppProps) {
   const { t, locale } = useLocale();
   const { theme, toggleTheme } = useTheme();
@@ -150,8 +184,9 @@ export function NarrativeEditorApp({
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [globalCmdOpen, setGlobalCmdOpen] = useState(false);
-  const [companionNoteOpen, setCompanionNoteOpen] = useState(false);
   const [formatBadgeVisible, setFormatBadgeVisible] = useState(false);
+  const internalStageRef = useRef<HTMLDivElement>(null);
+  const stageRef = stageRefProp ?? internalStageRef;
   const [arrivalDismissed, setArrivalDismissed] = useState(() => {
     try { return !!sessionStorage.getItem('katha-narrative-os-arrival-dismissed'); } catch { return true; }
   });
@@ -207,8 +242,6 @@ export function NarrativeEditorApp({
     onInsertNote,
     onInsertSceneBreak,
     onAiContinue: () => enterPhase('think'),
-    onAiRewrite: () => enterPhase('think'),
-    onAiExpand: () => enterPhase('think'),
     onFormatSwitch: handleFormatSwitch,
     onOpenExplorer: () => enterPhase('structure'),
     onOpenInspector: () => { setInspectorOpen(true); setExplorerOpen(false); },
@@ -237,9 +270,13 @@ export function NarrativeEditorApp({
         e.preventDefault();
         onToggleFocus();
       }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && !e.shiftKey) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && e.shiftKey) {
         e.preventDefault();
         enterPhase(isStructurePhase && explorerOpen ? 'write' : 'structure');
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && !e.shiftKey && !readOnly) {
+        e.preventDefault();
+        onFormatBold();
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
         e.preventDefault();
@@ -255,7 +292,7 @@ export function NarrativeEditorApp({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onToggleFocus, onClearSelection, cmdOpen, closeCmdPalette, slashCmdOpen, phase, enterPhase, isStructurePhase, explorerOpen, closePanels, findOpen, onFindClose]);
+  }, [onToggleFocus, onClearSelection, cmdOpen, closeCmdPalette, slashCmdOpen, phase, enterPhase, isStructurePhase, explorerOpen, closePanels, findOpen, onFindClose, onFormatBold, readOnly]);
 
   const handleBackdropClick = () => {
     closePanels();
@@ -270,7 +307,8 @@ export function NarrativeEditorApp({
   })();
 
   return (
-    <div className={`narrative-os-app app mode-${phase}${focusMode ? ' focus' : ''}${showCrumb ? ' show-crumb' : ''}${locale === 'te' ? ' narrative-os-app--telugu' : ''}`}>
+    <div className={`narrative-os-app app mode-${phase}${focusMode ? ' focus' : ''}${showCrumb ? ' show-crumb' : ''}${locale === 'te' ? ' narrative-os-app--telugu' : ''}`} role="application" aria-label="Narrative editor">
+      <a href="#narrative-stage" className="nos-skip-link">Skip to manuscript</a>
       <NarrativeArrivalScreen
         visible={arrivalVisible}
         momentum={arrivalMomentum}
@@ -279,10 +317,10 @@ export function NarrativeEditorApp({
         onSkip={dismissArrival}
       />
 
-      <div className="topbar">
+      <header className="topbar" role="banner">
         <div className="topbar-left">
           {onBack && (
-            <button type="button" className="icon-btn" onClick={onBack} title={t('narrativeOs.back')}>
+            <button type="button" className="icon-btn" onClick={onBack} title={t('narrativeOs.back')} aria-label={t('narrativeOs.back')}>
               <ArrowLeft size={16} />
             </button>
           )}
@@ -302,7 +340,8 @@ export function NarrativeEditorApp({
           <InlineChapterTitle
             value={chapterTitle}
             onChange={onChapterTitleChange}
-            phoneticLive={phoneticLive}
+            phoneticLive={phoneticLive && !readOnly}
+            readOnly={readOnly}
             className="nos-chapter-title"
             placeholder={`Chapter ${chapterNum}`}
           />
@@ -321,12 +360,12 @@ export function NarrativeEditorApp({
             {saving ? t('editor.saving') : dirty ? t('editor.unsaved') : t('narrativeOs.saved')}
           </span>
           {isWritePhase && onOpenRefine && (
-            <button type="button" className="icon-btn" onClick={() => onOpenRefine()} title={t('narrativeOs.refinePreview')}>
+            <button type="button" className="icon-btn" onClick={() => onOpenRefine()} title={t('narrativeOs.refinePreview')} aria-label={t('narrativeOs.refinePreview')}>
               <Eye size={16} />
             </button>
           )}
           {onHistory && (
-            <button type="button" className="icon-btn" onClick={onHistory} title={t('narrativeOs.history')}>
+            <button type="button" className="icon-btn" onClick={onHistory} title={t('narrativeOs.history')} aria-label={t('narrativeOs.history')}>
               <History size={16} />
             </button>
           )}
@@ -342,14 +381,14 @@ export function NarrativeEditorApp({
               <span className="nos-btn-label">{publishLabel}</span>
             </button>
           )}
-          <button type="button" className="icon-btn" onClick={toggleTheme} title="Toggle theme">
+          <button type="button" className="icon-btn" onClick={toggleTheme} title="Toggle theme" aria-label="Toggle theme">
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <button type="button" className="icon-btn" onClick={onToggleFocus} title="Focus mode (⌘\)">
+          <button type="button" className="icon-btn" onClick={onToggleFocus} title="Focus mode (⌘\)" aria-label="Focus mode">
             <Focus size={16} />
           </button>
         </div>
-      </div>
+      </header>
 
       {statusContent && !focusMode && isWritePhase && (
         <div className="narrative-os-status">{statusContent}</div>
@@ -363,7 +402,7 @@ export function NarrativeEditorApp({
             onClick={() => enterPhase('structure')}
             aria-label={t('narrativeOs.explorer')}
           />
-          <span className="spine-peek">{t('narrativeOs.explorer')} ⌘B</span>
+          <span className="spine-peek">{t('narrativeOs.explorer')} ⌘⇧B</span>
         </>
       )}
 
@@ -385,7 +424,7 @@ export function NarrativeEditorApp({
         {inspectorPanel}
       </aside>
 
-      <div className="stage" id="narrative-stage">
+      <main className="stage" id="narrative-stage" ref={stageRef} role="main" tabIndex={-1}>
         <div className="narrative-stage-shell">
           {isWritePhase && (
             <div className={`format-badge${formatBadgeVisible ? ' show' : ''}`}>
@@ -394,21 +433,44 @@ export function NarrativeEditorApp({
           )}
           {stageContent}
         </div>
-      </div>
+      </main>
+
+      {isWritePhase && findOpen && onFindQueryChange && (
+        <div className="nos-write-find">
+          <ChapterFindBar
+            open={findOpen}
+            query={findQuery}
+            replaceText={findReplace}
+            showReplace={findShowReplace && !findReadOnly}
+            matchIndex={findMatchIndex}
+            matchCount={findMatchCount}
+            focusRestoreKey={findFocusRestoreKey}
+            onQueryChange={onFindQueryChange}
+            onReplaceTextChange={onFindReplaceChange ?? (() => {})}
+            onToggleReplace={onFindToggleReplace ?? (() => {})}
+            onClose={onFindClose ?? (() => {})}
+            onNext={onFindNext ?? (() => {})}
+            onPrev={onFindPrev ?? (() => {})}
+            onReplace={findReadOnly ? (() => {}) : (onFindReplace ?? (() => {}))}
+            onReplaceNext={findReadOnly ? (() => {}) : (onFindReplaceNext ?? (() => {}))}
+            onReplaceAll={findReadOnly ? (() => {}) : (onFindReplaceAll ?? (() => {}))}
+          />
+        </div>
+      )}
 
       {isWritePhase && selectionRect && selectionRect.width > 0 && (
         <div
           className="float-tb show"
           style={{
             left: selectionRect.left + selectionRect.width / 2 - 60,
-            top: selectionRect.top - 46 + window.scrollY,
+            top: selectionRect.top - 46,
           }}
           role="toolbar"
         >
-          <button type="button" title="Bold" onClick={onFormatBold}><Bold size={14} /></button>
-          <button type="button" title="Italic" onClick={onFormatItalic}><Italic size={14} /></button>
-          <button type="button" title="Comment" onClick={onClearSelection}><MessageCircle size={14} /></button>
-          <button type="button" title="Ask AI" onClick={() => { enterPhase('think'); onClearSelection(); }}><Sparkles size={14} /></button>
+          <button type="button" title="Bold" aria-label="Bold" onClick={onFormatBold}><Bold size={14} /></button>
+          <button type="button" title="Italic" aria-label="Italic" onClick={onFormatItalic}><Italic size={14} /></button>
+          <button type="button" title="Add note" aria-label="Add note" onClick={() => { onOpenInspectorNotes?.(); onClearSelection(); }}><MessageCircle size={14} /></button>
+          <button type="button" title="Ask AI" aria-label="Ask AI" onClick={() => { enterPhase('think'); onClearSelection(); }}><Sparkles size={14} /></button>
         </div>
       )}
 
@@ -417,19 +479,6 @@ export function NarrativeEditorApp({
           <PenLine size={16} />
         </button>
       )}
-      {companionSuggestion && (
-        <div className={`companion-note${companionNoteOpen ? ' show' : ''}`}>
-          <div className="cn-title">{companionSuggestion.title || t('narrativeOs.companionTitle')}</div>
-          {companionSuggestion.body}
-          <div className="cn-actions">
-            <button type="button" className="primary" onClick={() => { enterPhase('think'); setCompanionNoteOpen(false); }}>
-              {t('narrativeOs.companionShow')}
-            </button>
-            <button type="button" onClick={() => setCompanionNoteOpen(false)}>{t('narrativeOs.companionDismiss')}</button>
-          </div>
-        </div>
-      )}
-
       <NarrativeCommandPalette
         open={cmdOpen}
         onClose={closeCmdPalette}
@@ -442,7 +491,7 @@ export function NarrativeEditorApp({
         <div className="statusbar">
           <span>{wordCount.toLocaleString()} {t('narrativeOs.wordsRead')} {readMins}m</span>
           {wordGoalSlot}
-          <button type="button" className="lang-pill">{languageLabel}</button>
+          <span className="lang-pill" aria-label={`Writing language: ${languageLabel}`}>{languageLabel}</span>
         </div>
       )}
 

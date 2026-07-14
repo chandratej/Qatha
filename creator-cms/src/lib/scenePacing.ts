@@ -4,13 +4,10 @@ export type ScenePacing = 'short' | 'on-pace' | 'long';
 
 export const DEFAULT_SCENE_WORD_TARGET = 400;
 
-export function getSceneWordCount(html: string): number {
-  if (!html) return 0;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  const text = (div.textContent || '').trim();
-  if (!text) return 0;
-  return text.split(/\s+/).filter(Boolean).length;
+import { countWordsInHtml } from './wordCount';
+
+export function getSceneWordCount(html: string, locale = 'en'): number {
+  return countWordsInHtml(html, locale);
 }
 
 export function getScenePacing(wordCount: number, target = DEFAULT_SCENE_WORD_TARGET): ScenePacing {

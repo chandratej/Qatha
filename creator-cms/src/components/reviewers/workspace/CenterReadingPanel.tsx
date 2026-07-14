@@ -6,6 +6,7 @@ import { useReviewLanguage } from './ReviewLanguageBar';
 import { getRangeOffsets, renderHighlightedParagraphHtml, scrollToCommentAnchor } from '../../../lib/reviewAnchors';
 import { ReviewComfortBar } from './ReviewComfortBar';
 import { ReviewLanguageBar } from './ReviewLanguageBar';
+import { sanitizeHtml } from '../../../lib/sanitizeHtml';
 
 interface Props {
   id?: string;
@@ -196,7 +197,7 @@ function renderScenes(
                             if (id) onCommentMarkerClick(id);
                           }
                         }}
-                        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightedHtml) }}
                       />
                       {showTrackChanges && paraChanges.map((tc) => (
                         <div key={tc.id} className="rw-track-change">

@@ -2,12 +2,11 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import type { EditorSelectionAnchor } from '../../lib/editorAnchor';
-import { applyAuthorNoteHighlights } from '../../lib/authorNoteAnchors';
+import { applyAuthorNoteHighlights, scrollToAuthorNoteAnchor } from '../../lib/authorNoteAnchors';
 import type { StoryAuthorComment } from '../../../../packages/shared/collaboration';
 import {
   getPhoneticSuggestions,
   getSemanticAlternatives,
-  phoneticToTelugu,
   type Suggestion,
 } from '../../lib/phonetic';
 import type { SceneBlock } from '../Editor/SceneSidebar';
@@ -20,67 +19,15 @@ import { PhoneticTextInput } from '../Editor/PhoneticTextInput';
 import { PhoneticSuggestionsMenu } from '../Editor/PhoneticSuggestionsMenu';
 import { mapCursorAfterLivePhonetic } from '../../business/phoneticText';
 import type { NarrativeFormat } from '../../lib/narrativeOsTypes';
+import {
+  applyLivePhoneticToHtml,
+  isEmptyEditorHtml,
+  replaceTrailingRomanInHtml,
+} from '../../lib/quillPhonetic';
+import { parseSlashLine } from '../../lib/slashCommand';
+import { useLocale } from '../../context/LocaleContext';
 
-function applyLivePhoneticToHtml(html: string): { html: string; trailingWord: string } {
-  if (!html) return { html: '', trailingWord: '' };
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  const fullPlain = div.textContent || '';
-  const match = fullPlain.match(/[a-zA-Z]+$/);
-  let trailingWord = match ? match[0] : '';
-  let convertLen = trailingWord ? fullPlain.length - trailingWord.length : fullPlain.length;
-  if (trailingWord.length >= 2) {
-    const last = trailingWord[trailingWord.length - 1];
-    const prev = trailingWord[trailingWord.length - 2];
-    if (last.toLowerCase() === prev.toLowerCase() && /[a-zA-Z]/.test(last)) {
-      convertLen = fullPlain.length;
-      trailingWord = trailingWord.slice(-1);
-    }
-  }
-  let pos = 0;
-  function walk(node: Node) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || '';
-      const start = pos;
-      const end = pos + text.length;
-      pos = end;
-      if (end <= convertLen) node.textContent = phoneticToTelugu(text);
-      else if (start < convertLen) {
-        node.textContent = phoneticToTelugu(text.slice(0, convertLen - start)) + text.slice(convertLen - start);
-      }
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      Array.from(node.childNodes).forEach(walk);
-    }
-  }
-  walk(div);
-  return { html: div.innerHTML, trailingWord };
-}
-
-function replaceTrailingRomanInHtml(html: string, teluguWord: string): string {
-  if (!html) return html;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  let found = false;
-  function walk(node: Node) {
-    if (found) return;
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent || '';
-      const m = text.match(/[a-zA-Z]+$/);
-      if (m) { node.textContent = text.slice(0, text.length - m[0].length) + teluguWord; found = true; }
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      for (const child of Array.from(node.childNodes).reverse()) { walk(child); if (found) break; }
-    }
-  }
-  walk(div);
-  return div.innerHTML;
-}
-
-function isEmptyEditorHtml(html: string) {
-  if (!html) return true;
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return !(div.textContent || '').trim();
-}
+const PHONETIC_DEBOUNCE_MS = 48;
 
 export interface NarrativeManuscriptEditorProps {
   activeScene: SceneBlock;
@@ -99,6 +46,7 @@ export interface NarrativeManuscriptEditorProps {
     clearSlashTrigger: () => void;
   } | null>;
   selectionCaptureRef?: React.MutableRefObject<(() => EditorSelectionAnchor | null) | null>;
+  highlightNoteRef?: React.MutableRefObject<((comment: StoryAuthorComment) => void) | null>;
   onSelectionRectChange?: (rect: DOMRect | null) => void;
   onSlashCommandRequest?: (payload: { anchor: { top: number; left: number }; filter: string }) => void;
   onSlashCommandDismiss?: () => void;
@@ -123,6 +71,7 @@ export function NarrativeManuscriptEditor({
   flushRef,
   formatActionRef,
   selectionCaptureRef,
+  highlightNoteRef,
   onSelectionRectChange,
   onSlashCommandRequest,
   onSlashCommandDismiss,
@@ -136,7 +85,9 @@ export function NarrativeManuscriptEditor({
   findSceneMatches = [],
   comfortStyle,
 }: NarrativeManuscriptEditorProps) {
+  const { locale } = useLocale();
   const quillRef = useRef<ReactQuill>(null);
+  const phoneticTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionsPos, setSuggestionsPos] = useState({ top: 0, left: 0 });
@@ -211,15 +162,15 @@ export function NarrativeManuscriptEditor({
     return () => { flushRef.current = null; };
   }, [flushRef, flushActiveScene]);
 
-  const format = (name: string, value?: unknown) => {
+  const format = useCallback((name: string, value?: unknown) => {
     const editor = getEditor();
-    if (!editor) return;
+    if (!editor || readOnly) return;
     focusEditor();
     editor.format(name, value ?? !editor.getFormat()[name]);
     flushActiveScene();
-  };
+  }, [readOnly, focusEditor, flushActiveScene]);
 
-  const insertDialogue = () => {
+  const insertDialogue = useCallback(() => {
     const editor = getEditor();
     if (!editor || readOnly) return;
     focusEditor();
@@ -229,9 +180,9 @@ export function NarrativeManuscriptEditor({
     editor.insertText(index + 1, '\u201D', 'user');
     editor.setSelection(index + 1, 0);
     flushActiveScene();
-  };
+  }, [readOnly, focusEditor, flushActiveScene]);
 
-  const insertNote = () => {
+  const insertNote = useCallback(() => {
     const editor = getEditor();
     if (!editor || readOnly) return;
     focusEditor();
@@ -240,9 +191,9 @@ export function NarrativeManuscriptEditor({
     const index = selection?.index ?? editor.getLength();
     editor.clipboard.dangerouslyPasteHTML(index, noteHtml);
     flushActiveScene();
-  };
+  }, [readOnly, focusEditor, flushActiveScene]);
 
-  const insertSceneBreak = () => {
+  const insertSceneBreak = useCallback(() => {
     const editor = getEditor();
     if (!editor || readOnly) return;
     focusEditor();
@@ -251,7 +202,7 @@ export function NarrativeManuscriptEditor({
     const index = selection?.index ?? editor.getLength();
     editor.clipboard.dangerouslyPasteHTML(index, breakHtml);
     flushActiveScene();
-  };
+  }, [readOnly, focusEditor, flushActiveScene]);
 
   const clearSlashTrigger = useCallback(() => {
     const editor = getEditor();
@@ -279,7 +230,7 @@ export function NarrativeManuscriptEditor({
       insertSceneBreak,
       clearSlashTrigger,
     };
-  }, [formatActionRef, insertDialogue, insertNote, insertSceneBreak, clearSlashTrigger]);
+  }, [formatActionRef, format, insertDialogue, insertNote, insertSceneBreak, clearSlashTrigger]);
 
   const detectSlashCommand = useCallback((editor: NonNullable<ReturnType<typeof getEditor>>) => {
     if (!onSlashCommandRequest) return;
@@ -289,8 +240,8 @@ export function NarrativeManuscriptEditor({
     };
     const lineStart = editor.getText(0, range.index).lastIndexOf('\n') + 1;
     const lineText = editor.getText(lineStart, range.index - lineStart);
-    const match = lineText.match(/^\s*\/(\w*)$/);
-    if (match) {
+    const parsed = parseSlashLine(lineText);
+    if (parsed.match) {
       const slashIndex = lineStart + (lineText.search('/') >= 0 ? lineText.search('/') : 0);
       slashTriggerIndexRef.current = slashIndex;
       const bounds = editor.getBounds(range.index, 0);
@@ -301,7 +252,7 @@ export function NarrativeManuscriptEditor({
             top: rootRect.top + bounds.top - 8,
             left: rootRect.left + bounds.left,
           },
-          filter: match[1] ?? '',
+          filter: parsed.filter,
         });
       }
     } else if (slashCmdOpen) {
@@ -310,36 +261,54 @@ export function NarrativeManuscriptEditor({
     }
   }, [onSlashCommandRequest, onSlashCommandDismiss, slashCmdOpen]);
 
+  const applyPhoneticHtml = useCallback((editor: NonNullable<ReturnType<typeof getEditor>>, content: string) => {
+    const result = applyLivePhoneticToHtml(content);
+    if (result.html === content) return result;
+    const selection = editor.getSelection();
+    const oldPlain = editor.getText(0, Math.max(0, editor.getLength() - 1));
+    const newPlain = stripHtml(result.html);
+    editor.root.innerHTML = result.html;
+    if (selection) {
+      const mapped = mapCursorAfterLivePhonetic(oldPlain, newPlain, selection.index);
+      queueMicrotask(() => {
+        editor.setSelection(Math.min(mapped, Math.max(0, editor.getLength() - 1)), 0, 'silent');
+        updateSuggestionPosition();
+      });
+    }
+    return result;
+  }, [updateSuggestionPosition]);
+
   const handleChange = (content: string, _delta: unknown, source: string) => {
     if (readOnly || source !== 'user') return;
     const editor = getEditor();
     if (!editor) return;
-    let html = content;
-    let trailing = '';
-    if (phoneticLive) {
-      const result = applyLivePhoneticToHtml(content);
-      html = result.html;
-      trailing = result.trailingWord;
-      if (html !== content) {
-        const selection = editor.getSelection();
-        const oldPlain = editor.getText(0, Math.max(0, editor.getLength() - 1));
-        const newPlain = stripHtml(html);
-        editor.root.innerHTML = html;
-        if (selection) {
-          const mapped = mapCursorAfterLivePhonetic(oldPlain, newPlain, selection.index);
-          queueMicrotask(() => {
-            editor.setSelection(Math.min(mapped, Math.max(0, editor.getLength() - 1)), 0, 'silent');
-            updateSuggestionPosition();
-          });
-        }
+
+    const runUpdate = () => {
+      let html = content;
+      let trailing = '';
+      if (phoneticLive) {
+        const result = applyPhoneticHtml(editor, content);
+        html = result.html;
+        trailing = result.trailingWord;
       }
+      saveSceneHtml(activeScene.id, html, trailing);
+      queueMicrotask(() => {
+        const ed = getEditor();
+        if (ed) detectSlashCommand(ed);
+      });
+    };
+
+    if (phoneticLive) {
+      if (phoneticTimerRef.current) clearTimeout(phoneticTimerRef.current);
+      phoneticTimerRef.current = setTimeout(runUpdate, PHONETIC_DEBOUNCE_MS);
+    } else {
+      runUpdate();
     }
-    saveSceneHtml(activeScene.id, html, trailing);
-    queueMicrotask(() => {
-      const ed = getEditor();
-      if (ed) detectSlashCommand(ed);
-    });
   };
+
+  useEffect(() => () => {
+    if (phoneticTimerRef.current) clearTimeout(phoneticTimerRef.current);
+  }, []);
 
   useEffect(() => {
     const editor = getEditor();
@@ -426,6 +395,20 @@ export function NarrativeManuscriptEditor({
     );
   }, [authorComments, activeScene.id, activeAuthorCommentId, readOnly, activeScene.content]);
 
+  useEffect(() => {
+    if (!highlightNoteRef) return;
+    highlightNoteRef.current = (comment: StoryAuthorComment) => {
+      const editor = getEditor();
+      if (!editor) return;
+      const quillEditor = editor as Parameters<typeof applyAuthorNoteHighlights>[0]
+        & Parameters<typeof scrollToAuthorNoteAnchor>[0];
+      const scrollEl = stageRef?.current ?? document.getElementById('narrative-stage');
+      scrollToAuthorNoteAnchor(quillEditor, scrollEl, comment);
+      applyAuthorNoteHighlights(quillEditor, authorComments, activeScene.id, comment.id);
+    };
+    return () => { highlightNoteRef.current = null; };
+  }, [highlightNoteRef, authorComments, activeScene.id, stageRef]);
+
   const insertSuggestion = useCallback((suggestion: Suggestion) => {
     const editor = getEditor();
     if (!editor) return;
@@ -460,7 +443,8 @@ export function NarrativeManuscriptEditor({
     return () => el.removeEventListener('scroll', handler);
   }, [stageRef, onStageScroll, showSuggestions, updateSuggestionPosition]);
 
-  const formatSkinClass = `manuscript-skin manuscript-skin--${narrativeFormat}${narrativeFormat === 'novel' ? ' first-cap' : ''}`;
+  const useDropCap = narrativeFormat === 'novel' && locale !== 'te';
+  const formatSkinClass = `manuscript-skin manuscript-skin--${narrativeFormat}${useDropCap ? ' first-cap' : ''}`;
 
   return (
     <div className="canvas" style={comfortStyle}>
@@ -489,7 +473,7 @@ export function NarrativeManuscriptEditor({
 
       {showSuggestions && suggestions.length > 0 && (
         <PhoneticSuggestionsMenu
-          className="narrative-phonetic-menu katha-proto-phonetic-menu"
+          className="narrative-phonetic-menu"
           style={suggestionsPos}
           suggestions={suggestions}
           selectedIndex={selectedIndex}
