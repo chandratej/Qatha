@@ -103,6 +103,12 @@ function slugifyTag(label) {
 
 export const platformRouter = Router();
 
+/** Preserve AppError status codes (401/400) instead of wrapping as 500. */
+function forwardRouteError(err, next) {
+  if (err?.status && err?.code) return next(err);
+  return next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+}
+
 platformRouter.use(requireAuth());
 platformRouter.use(platformWriteRateLimit());
 
@@ -428,7 +434,7 @@ platformRouter.get('/notifications', async (req, res, next) => {
     const notifications = await listNotificationsForUser(userId);
     res.json({ notifications });
   } catch (err) {
-    next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+    forwardRouteError(err, next);
   }
 });
 
@@ -438,7 +444,7 @@ platformRouter.post('/notifications/read-all', async (req, res, next) => {
     const marked = await markAllNotificationsRead(userId);
     res.json({ marked });
   } catch (err) {
-    next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
+    forwardRouteError(err, next);
   }
 });
 
@@ -448,7 +454,7 @@ platformRouter.post('/notifications/:id/read', async (req, res, next) => {
     const notification = await markNotificationRead(userId, req.params.id);
     res.json({ notification });
   } catch (err) {
-    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+    forwardRouteError(err, next);
   }
 });
 

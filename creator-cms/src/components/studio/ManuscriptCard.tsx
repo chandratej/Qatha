@@ -1,9 +1,13 @@
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, BookOpen, Pencil, PenLine, Share2, Trash2 } from 'lucide-react';
+import { BarChart3, BookOpen, ImagePlus, Loader2, Pencil, PenLine, Share2, Trash2 } from 'lucide-react';
 import type { StoryData } from '../../types/database';
+import { api } from '../../lib/api';
 import { StoryTrustBadge } from './StoryTrustBadge';
+import { BookSpine } from './BookSpine';
+import { StudioIllustration } from './StudioIllustration';
 import { trustLevelForReaders } from '../../../../packages/shared/story-trust';
-import { PRD_GENRES } from '../../lib/platformConstants';
+import { CONTENT_TYPES, PRD_GENRES } from '../../lib/platformConstants';
 import { useLocale } from '../../context/LocaleContext';
 
 function genreLabel(id: string, locale: 'te' | 'en') {
@@ -33,6 +37,7 @@ export interface ManuscriptCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onShare?: () => void;
+  onCoverUpdated?: () => void;
   deleting?: boolean;
   variant?: 'shelf' | 'grid';
   earnings?: number;
@@ -43,12 +48,34 @@ export function ManuscriptCard({
   onEdit,
   onDelete,
   onShare,
+  onCoverUpdated,
   deleting,
   variant = 'grid',
   earnings,
 }: ManuscriptCardProps) {
   const { locale, t } = useLocale();
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
   const trustLevel = trustLevelForReaders(story.total_readers);
+
+  const arcProgress = Math.min(100, Math.round((story.chapter_count / 50) * 100));
+  const isMuseum = variant === 'grid';
+  const contentTypeDef = story.content_type
+    ? CONTENT_TYPES.find((ct) => ct.id === story.content_type)
+    : undefined;
+  const isMoatFormat = contentTypeDef && 'moat' in contentTypeDef && contentTypeDef.moat;
+
+  const handleCoverUpload = async (file: File) => {
+    if (!onCoverUpdated) return;
+    setCoverUploading(true);
+    try {
+      const { url: cover_url } = await api.uploadImage(file);
+      await api.updateStory(story.id, { cover_url });
+      onCoverUpdated();
+    } finally {
+      setCoverUploading(false);
+    }
+  };
 
   const statusLabel = (() => {
     const s = story.moderation_status || 'draft';
@@ -60,7 +87,7 @@ export function ManuscriptCard({
 
   return (
     <article
-      className={`manuscript-card manuscript-card--${variant} ${statusCardClass(story.moderation_status)}`}
+      className={`manuscript-card manuscript-card--${variant}${isMuseum ? ' manuscript-card--museum' : ''} ${statusCardClass(story.moderation_status)}`}
       role="listitem"
     >
       <div className="manuscript-card__spine" aria-hidden />
@@ -73,16 +100,65 @@ export function ManuscriptCard({
             className={`manuscript-card__cover-img${variant === 'grid' ? ' manuscript-card__cover-img--featured' : ''}`}
           />
         ) : (
-          <div className="manuscript-card__cover-placeholder">
+          <div className="manuscript-card__cover-placeholder manuscript-card__cover-placeholder--upload">
+            {isMuseum && (
+              <>
+                <BookSpine
+                  chapterNumber={Math.max(1, story.chapter_count)}
+                  title={story.title}
+                  status={story.moderation_status}
+                />
+                <StudioIllustration id="manuscript-stack" tone="gold" size={56} className="manuscript-card__illus" />
+              </>
+            )}
             <span className="manuscript-card__mark">క</span>
             <span className="manuscript-card__genre">{genreLabel(story.genre, locale)}</span>
+            {isMuseum && onCoverUpdated && (
+              <>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="manuscript-card__cover-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleCoverUpload(file);
+                    e.target.value = '';
+                  }}
+                  aria-label={t('stories.coverUpload')}
+                />
+                <button
+                  type="button"
+                  className="manuscript-card__cover-upload"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    coverInputRef.current?.click();
+                  }}
+                  disabled={coverUploading}
+                >
+                  {coverUploading
+                    ? <Loader2 size={16} className="cms-loading__spin" aria-hidden />
+                    : <ImagePlus size={16} aria-hidden />}
+                  {t('stories.coverUpload')}
+                </button>
+              </>
+            )}
           </div>
         )}
-        <span className={`manuscript-stamp ${statusStampClass(story.moderation_status)}`}>{statusLabel}</span>
+        {isMuseum && story.moderation_status === 'published' ? (
+          <span className="manuscript-card__ribbon">{statusLabel}</span>
+        ) : (
+          <span className={`manuscript-stamp ${statusStampClass(story.moderation_status)}`}>{statusLabel}</span>
+        )}
       </Link>
 
       <div className="manuscript-card__body">
         <Link to={`/stories/${story.id}`} className="manuscript-card__title">{story.title}</Link>
+        {contentTypeDef && (
+          <span className={`manuscript-format-pill${isMoatFormat ? ' manuscript-format-pill--moat' : ''}`}>
+            {locale === 'te' ? contentTypeDef.labelTelugu : contentTypeDef.label}
+          </span>
+        )}
         {story.description && (
           <p className="manuscript-card__excerpt">{story.description}</p>
         )}
@@ -92,6 +168,16 @@ export function ManuscriptCard({
           <span>{story.total_readers.toLocaleString('en-IN')} {t('stories.readers')}</span>
           {earnings != null && earnings > 0 && <span>₹{earnings.toLocaleString('en-IN')} this month</span>}
         </div>
+        {isMuseum && (
+          <div className="manuscript-card__arc-wrap">
+            <div className="manuscript-card__arc" role="presentation">
+              <span className="manuscript-card__arc-fill" style={{ width: `${arcProgress}%` }} />
+            </div>
+            <span className="manuscript-card__arc-label">
+              {story.chapter_count} / 50 {t('stories.debutArc')}
+            </span>
+          </div>
+        )}
         <div className="manuscript-card__actions">
           <Link to={`/stories/${story.id}`} className="manuscript-card__action manuscript-card__action--primary">
             <PenLine size={15} aria-hidden />

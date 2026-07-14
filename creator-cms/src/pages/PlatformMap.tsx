@@ -3,6 +3,7 @@ import { Map } from 'lucide-react';
 import { platformApi } from '../lib/platformApi';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { StudioGlyph } from '../components/studio/StudioGlyph';
+import { StudioIllustration } from '../components/studio/StudioIllustration';
 import type { StudioGlyphId } from '../components/studio/StudioGlyph';
 import { useLocale } from '../context/LocaleContext';
 import type { StudioStringKey } from '../lib/studioLocale';
@@ -111,7 +112,8 @@ export function PlatformMap() {
   );
 
   return (
-    <div className="cms-page studio-page platform-map-page--premium platform-map-page--v2 wc-page-enter">
+    <div className="cms-page studio-page platform-map-page--premium platform-map-page--v2 platform-map-page--wave20 platform-map-page--wave27 studio-page--calm26 wc-page-enter">
+      <StudioIllustration id="open-book" tone="neutral" size={96} className="platform-map-page__illus" />
       <StudioPageHeader
         variant="hero"
         eyebrow={t('platformMap.eyebrow')}

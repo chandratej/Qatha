@@ -109,7 +109,7 @@ export function Login() {
   };
 
   return (
-    <div className="cms-auth-page cms-auth-page--v2 wc-page-enter">
+    <div className="cms-auth-page cms-auth-page--v2 cms-auth-page--wave28 wc-page-enter">
       <div className="cms-auth-page__theme">
         <button
           type="button"

@@ -24,11 +24,12 @@ export function saveEnglishProse(
   storyId: string,
   chapter: number,
   draft: Pick<EnglishProseDraft, 'title' | 'prose'>,
+  updatedAt?: number,
 ): void {
   try {
     localStorage.setItem(
       cacheKey(storyId, chapter),
-      JSON.stringify({ ...draft, updated_at: Date.now() }),
+      JSON.stringify({ ...draft, updated_at: updatedAt ?? Date.now() }),
     );
   } catch {
     /* storage quota — silent fail */

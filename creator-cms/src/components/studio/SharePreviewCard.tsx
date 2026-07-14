@@ -40,7 +40,7 @@ export function SharePreviewCard({
   };
 
   return (
-    <div className="share-preview" aria-label="Link preview — how readers see your chapter on social">
+    <div className="share-preview share-preview--wave28" aria-label="Link preview — how readers see your chapter on social">
       <p className="share-preview__eyebrow">
         <Share2 size={14} aria-hidden />
         Preview on WhatsApp &amp; social
@@ -56,6 +56,9 @@ export function SharePreviewCard({
           </div>
         )}
         <div className="share-preview__body">
+          <span className="share-preview__domain">{(() => {
+            try { return new URL(url).hostname; } catch { return 'katha.app'; }
+          })()}</span>
           <div className="share-preview__brand">
             <BrandMark size="xs" />
             <span className="share-preview__brand-name">Katha</span>

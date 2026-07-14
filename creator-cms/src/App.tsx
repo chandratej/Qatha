@@ -14,6 +14,8 @@ import { CreateStory } from './pages/CreateStory';
 import { ChapterEditor } from './pages/ChapterEditor';
 import { EpistolaryEditor } from './pages/editors/EpistolaryEditor';
 import { EnglishEditor } from './pages/editors/EnglishEditor';
+import { BranchingEditor } from './pages/editors/BranchingEditor';
+import { AlternateReaderShell } from './pages/readers/AlternateReaderShell';
 import { StorySeasons } from './pages/StorySeasons';
 import { StoryBible } from './pages/StoryBible';
 import { MediaLibrary } from './pages/MediaLibrary';
@@ -37,6 +39,7 @@ import { ReviewWorkspace } from './pages/ReviewWorkspace';
 import { TagsModeration } from './pages/TagsModeration';
 import { Monetization } from './pages/Monetization';
 import { PlatformMap } from './pages/PlatformMap';
+import { MagazineEdition } from './pages/MagazineEdition';
 import './styles/theme.css';
 import './styles/scroll-overlay.css';
 import './styles/components.css';
@@ -60,6 +63,22 @@ import './styles/design-tokens.css';
 import './styles/championship-premium.css';
 import './styles/cohesion-wave13.css';
 import './styles/cohesion-wave14.css';
+import './styles/cohesion-wave15.css';
+import './styles/cohesion-wave16.css';
+import './styles/cohesion-wave17.css';
+import './styles/cohesion-wave18.css';
+import './styles/cohesion-wave19.css';
+import './styles/cohesion-wave20.css';
+import './styles/cohesion-wave21.css';
+import './styles/cohesion-wave22.css';
+import './styles/cohesion-wave23.css';
+import './styles/cohesion-wave24.css';
+import './styles/cohesion-wave25.css';
+import './styles/cohesion-wave26.css';
+import './styles/cohesion-wave27.css';
+import './styles/cohesion-wave28.css';
+import './styles/cohesion-wave29.css';
+import './styles/narrative-os.css';
 
 function App() {
   return (
@@ -95,6 +114,7 @@ function App() {
                   <Route path="/events" element={<Events />} />
                   <Route path="/events/new" element={<EventCreate />} />
                   <Route path="/events/:eventId" element={<EventDetail />} />
+                  <Route path="/magazine" element={<MagazineEdition />} />
                   {/* Literary Council is core trust infrastructure — not Labs-gated (DEC-007 revision) */}
                   <Route path="/reviewers" element={<ReviewerMarketplace />} />
                   <Route element={<LabsRoute />}>
@@ -108,6 +128,8 @@ function App() {
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />
                 <Route path="/stories/:storyId/chapters/:chapterNum" element={<ChapterEditor />} />
                 <Route path="/stories/:storyId/epistolary/:chapterNum" element={<EpistolaryEditor />} />
+                <Route path="/stories/:storyId/branching/:chapterNum" element={<BranchingEditor />} />
+                <Route path="/stories/:storyId/read/:format/:chapterNum" element={<AlternateReaderShell />} />
                 <Route path="/stories/:storyId/en/chapters/:chapterNum" element={<EnglishEditor />} />
                 <Route path="/reviewers/assignments/:assignmentId" element={<ReviewWorkspace />} />
                 </Route>

@@ -58,12 +58,16 @@ export type StudioStringKey =
   | 'common.confirm'
   | 'common.viewAll'
   | 'common.learnMore'
+  | 'createStory.backToStories'
   | 'createStory.title'
   | 'createStory.subtitle'
   | 'createStory.eyebrow'
   | 'createStory.storyTitle'
   | 'createStory.storyTitlePlaceholder'
   | 'createStory.contentType'
+  | 'createStory.contentTypeCore'
+  | 'createStory.contentTypeMoat'
+  | 'createStory.formatBadge'
   | 'createStory.primaryGenre'
   | 'createStory.secondaryGenres'
   | 'createStory.ageRating'
@@ -82,6 +86,7 @@ export type StudioStringKey =
   | 'createStory.coverHint'
   | 'createStory.coverPlaceholder'
   | 'createStory.coverUpload'
+  | 'createStory.coverTeaser'
   | 'createStory.submit'
   | 'createStory.submitting'
   | 'createStory.coverRequired'
@@ -96,6 +101,76 @@ export type StudioStringKey =
   | 'createStory.sidecardTitle'
   | 'createStory.sidecardText'
   | 'createStory.submitHint'
+  | 'createStory.subtitleV21'
+  | 'createStory.storyTitlePlaceholderV21'
+  | 'createStory.descriptionPlaceholderV21'
+  | 'createStory.stepStory'
+  | 'createStory.stepDetails'
+  | 'createStory.coverDragHint'
+  | 'createStory.writingTips'
+  | 'createStory.tipCover'
+  | 'createStory.tipTitle'
+  | 'createStory.tipHook'
+  | 'createStory.saveDraft'
+  | 'createStory.continue'
+  | 'createStory.draftSaved'
+  | 'createStory.autoSaved'
+  | 'createStory.autoSaving'
+  | 'createStory.changeNote'
+  | 'narrativeOs.explorer'
+  | 'narrativeOs.inspector'
+  | 'narrativeOs.structure'
+  | 'narrativeOs.beats'
+  | 'narrativeOs.saved'
+  | 'narrativeOs.wordsRead'
+  | 'narrativeOs.continueWriting'
+  | 'narrativeOs.startNew'
+  | 'narrativeOs.skipArrival'
+  | 'narrativeOs.arrivalQuestion'
+  | 'narrativeOs.openStory'
+  | 'narrativeOs.companionTitle'
+  | 'narrativeOs.companionDismiss'
+  | 'narrativeOs.companionShow'
+  | 'narrativeOs.focusExit'
+  | 'narrativeOs.back'
+  | 'narrativeOs.saveDraft'
+  | 'narrativeOs.publish'
+  | 'narrativeOs.history'
+  | 'narrativeOs.find'
+  | 'narrativeOs.emptyScene'
+  | 'narrativeOs.addFirstScene'
+  | 'narrativeOs.phaseThink'
+  | 'narrativeOs.phaseStructure'
+  | 'narrativeOs.phaseWrite'
+  | 'narrativeOs.phaseRefine'
+  | 'narrativeOs.phasePublish'
+  | 'narrativeOs.phaseThinkHint'
+  | 'narrativeOs.phaseRefineHint'
+  | 'narrativeOs.phasePublishHint'
+  | 'narrativeOs.backToWrite'
+  | 'narrativeOs.refineEmptyTitle'
+  | 'narrativeOs.refineEmptyHint'
+  | 'narrativeOs.thinkPlaceholder'
+  | 'narrativeOs.publishNote'
+  | 'narrativeOs.refineEyebrow'
+  | 'narrativeOs.refineTagline'
+  | 'narrativeOs.refineDeviceLabel'
+  | 'narrativeOs.refineThemeLabel'
+  | 'narrativeOs.refineDevicePhone'
+  | 'narrativeOs.refineDeviceTablet'
+  | 'narrativeOs.refineDeviceReader'
+  | 'narrativeOs.refineThemeLight'
+  | 'narrativeOs.refineThemeSepia'
+  | 'narrativeOs.refineThemeDark'
+  | 'narrativeOs.refineStartWriting'
+  | 'narrativeOs.refineKeepWriting'
+  | 'narrativeOs.refineUntitled'
+  | 'narrativeOs.refineWords'
+  | 'narrativeOs.refineMinRead'
+  | 'narrativeOs.refineScenes'
+  | 'narrativeOs.refineStatsLabel'
+  | 'narrativeOs.refineFindHint'
+  | 'narrativeOs.refinePreview'
   | 'stories.prideTitle'
   | 'stories.prideText'
   | 'notifications.eyebrow'
@@ -107,6 +182,8 @@ export type StudioStringKey =
   | 'notifications.filterReview'
   | 'notifications.filterPublish'
   | 'notifications.filterModeration'
+  | 'notifications.filterRevenue'
+  | 'notifications.filterReaders'
   | 'notifications.emptyTitle'
   | 'notifications.emptyText'
   | 'notifications.open'
@@ -141,6 +218,7 @@ export type StudioStringKey =
   | 'stories.ongoing'
   | 'stories.completed'
   | 'stories.chapters'
+  | 'stories.debutArc'
   | 'stories.readers'
   | 'stories.lastUpdated'
   | 'stories.manage'
@@ -266,6 +344,27 @@ export type StudioStringKey =
   | 'events.rulesVersion'
   | 'events.rulesRecognitionOnly'
   | 'events.rulesNoCash'
+  | 'events.rulesTrustBadge'
+  | 'events.legalPanelTitle'
+  | 'events.legalPanelHint'
+  | 'events.legalSkillBased'
+  | 'events.legalFreeEntry'
+  | 'events.legalNoCash'
+  | 'events.legalApproved'
+  | 'events.legalPending'
+  | 'events.legalApprovalRequired'
+  | 'events.legalQueueClear'
+  | 'events.legalQueuePending'
+  | 'events.legalQueueCount'
+  | 'events.eligibilityChipOk'
+  | 'events.eligibilityChipBlocked'
+  | 'events.eligibilityChipChapters'
+  | 'events.eligibilityChipWarnings'
+  | 'magazine.editionEyebrow'
+  | 'magazine.editionTitle'
+  | 'magazine.editionSubtitle'
+  | 'magazine.featuredStories'
+  | 'magazine.comingSoon'
   | 'events.statusRegistrationOpen'
   | 'events.statusSubmissionsOpen'
   | 'events.statusPublished'
@@ -436,6 +535,10 @@ export type StudioStringKey =
   | 'englishEditor.minReadLabel'
   | 'englishEditor.savedPrefix'
   | 'englishEditor.wordGoalLabel'
+  | 'englishEditor.cloudSyncing'
+  | 'englishEditor.cloudSynced'
+  | 'englishEditor.cloudPending'
+  | 'englishEditor.cloudError'
   | 'epistolaryEditor.badge'
   | 'epistolaryEditor.back'
   | 'epistolaryEditor.addMessage'
@@ -447,6 +550,99 @@ export type StudioStringKey =
   | 'epistolaryEditor.roleProtagonist'
   | 'epistolaryEditor.roleAntagonist'
   | 'epistolaryEditor.roleNarrator'
+  | 'epistolaryEditor.threadLabel'
+  | 'epistolaryEditor.messageCount'
+  | 'epistolaryEditor.saveDraft'
+  | 'epistolaryEditor.saving'
+  | 'epistolaryEditor.savedPrefix'
+  | 'epistolaryEditor.cloudSyncing'
+  | 'epistolaryEditor.cloudSynced'
+  | 'epistolaryEditor.cloudPending'
+  | 'epistolaryEditor.cloudError'
+  | 'epistolaryEditor.persistHint'
+  | 'epistolaryEditor.previewLabel'
+  | 'epistolaryEditor.previewMode'
+  | 'epistolaryEditor.editMode'
+  | 'epistolaryEditor.previewEmpty'
+  | 'epistolaryEditor.previewFootnote'
+  | 'epistolaryEditor.previewNext'
+  | 'epistolaryEditor.previewReset'
+  | 'epistolaryEditor.previewTyping'
+  | 'epistolaryEditor.previewTap'
+  | 'branchingEditor.badge'
+  | 'branchingEditor.back'
+  | 'branchingEditor.chapterTitle'
+  | 'branchingEditor.scaffoldHint'
+  | 'branchingEditor.addNode'
+  | 'branchingEditor.nodeTitle'
+  | 'branchingEditor.nodeBodyPlaceholder'
+  | 'branchingEditor.choiceA'
+  | 'branchingEditor.choiceB'
+  | 'branchingEditor.flowLabel'
+  | 'branchingEditor.nodeCount'
+  | 'branchingEditor.saveDraft'
+  | 'branchingEditor.saving'
+  | 'branchingEditor.savedPrefix'
+  | 'branchingEditor.cloudSyncing'
+  | 'branchingEditor.cloudSynced'
+  | 'branchingEditor.cloudPending'
+  | 'branchingEditor.cloudError'
+  | 'branchingEditor.persistHint'
+  | 'branchingEditor.previewLabel'
+  | 'branchingEditor.previewMode'
+  | 'branchingEditor.editMode'
+  | 'branchingEditor.previewEmpty'
+  | 'branchingEditor.previewFootnote'
+  | 'branchingEditor.previewReset'
+  | 'branchingEditor.previewPath'
+  | 'branchingEditor.previewEnd'
+  | 'branchingEditor.graphMapLabel'
+  | 'branchingEditor.targetA'
+  | 'branchingEditor.targetB'
+  | 'branchingEditor.targetEnd'
+  | 'branchingEditor.openReader'
+  | 'branchingEditor.canvasLabel'
+  | 'branchingEditor.graphValid'
+  | 'branchingEditor.graphIssuesLabel'
+  | 'branchingEditor.issueCycle'
+  | 'branchingEditor.issueOrphan'
+  | 'branchingEditor.issueUnreachable'
+  | 'branchingEditor.issueDeadEnd'
+  | 'branchingEditor.issueInvalidTarget'
+  | 'epistolaryEditor.openReader'
+  | 'readerShell.backToEditor'
+  | 'readerShell.branchingLabel'
+  | 'readerShell.epistolaryLabel'
+  | 'readerShell.footnote'
+  | 'readerShell.copyLink'
+  | 'readerShell.linkCopied'
+  | 'readerShell.previewBadge'
+  | 'readerShell.readingProgress'
+  | 'readerShell.chapterLabel'
+  | 'championship.bracketLabel'
+  | 'championship.bracketQuarter'
+  | 'championship.bracketSemi'
+  | 'championship.bracketFinal'
+  | 'championship.bracketYou'
+  | 'championship.bracketTbd'
+  | 'championship.magazineTeaserTitle'
+  | 'championship.magazineTeaserHint'
+  | 'championship.matchFeedLabel'
+  | 'championship.matchScheduled'
+  | 'championship.matchQuarterDesc'
+  | 'championship.matchUpcoming'
+  | 'championship.matchSemiDesc'
+  | 'championship.viewMagazine'
+  | 'championship.countdownLabel'
+  | 'manuscript.chapterGoal'
+  | 'championship.yourProgress'
+  | 'championship.eligible'
+  | 'championship.notEligible'
+  | 'stories.coverUpload'
+  | 'championship.timelineLabel'
+  | 'championship.timelineDebut'
+  | 'championship.timelineLeague'
+  | 'championship.timelineMagazine'
   | 'manuscript.eyebrow'
   | 'manuscript.subtitle'
   | 'manuscript.bookshelf'
@@ -644,6 +840,7 @@ export type StudioStringKey =
   | 'editor.minRead'
   | 'editor.drafting'
   | 'editor.scenes'
+  | 'editor.chapterWordGoal'
   | 'reviewWorkspace.eyebrow'
   | 'reviewWorkspace.back'
   | 'reviewWorkspace.chapterNav'
@@ -692,6 +889,7 @@ export type StudioStringKey =
   | 'dashboard.debutGradShare'
   | 'dashboard.debutGradCopy'
   | 'dashboard.debutGradCta'
+  | 'dashboard.debutGradCertificate'
   | 'dashboard.chapters'
   | 'dashboard.metricsReads'
   | 'dashboard.metricsSubs'
@@ -706,6 +904,14 @@ export type StudioStringKey =
   | 'dashboard.studioPausedHint'
   | 'dashboard.tryAgain'
   | 'dashboard.signInAgain'
+  | 'dashboard.quickActionsTitle'
+  | 'dashboard.quickNewStory'
+  | 'dashboard.quickNewStoryHint'
+  | 'dashboard.quickSchedule'
+  | 'dashboard.quickEvents'
+  | 'dashboard.quickReviews'
+  | 'dashboard.tasksTitle'
+  | 'dashboard.tasksViewAll'
   | 'stats.writingStreak'
   | 'stats.badge'
   | 'stats.storyTrust'
@@ -757,12 +963,16 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'common.confirm': 'నిర్ధారించండి',
     'common.viewAll': 'అన్నీ చూడండి',
     'common.learnMore': 'మరింత తెలుసుకోండి',
+    'createStory.backToStories': 'కథలకు తిరిగి',
     'createStory.title': 'మీ కథను సృష్టించండి',
     'createStory.subtitle': 'మీ హృదయంలోని కథకు ఇక్కడే తలుపు తెరవండి — ప్రతి గ్రంథం ఒక కొత్త ప్రపంచాన్ని పుడుస్తుంది.',
     'createStory.eyebrow': 'కొత్త కథ',
     'createStory.storyTitle': 'కథ పేరు *',
     'createStory.storyTitlePlaceholder': 'ఉదా: ప్రేమ కథ లేదా prema katha',
     'createStory.contentType': 'కంటెంట్ రకం *',
+    'createStory.contentTypeCore': 'ప్రధాన ఫార్మాట్లు',
+    'createStory.contentTypeMoat': 'కథా ప్రత్యేక ఫార్మాట్లు',
+    'createStory.formatBadge': 'ప్రత్యేక',
     'createStory.primaryGenre': 'ప్రధాన జానర్ *',
     'createStory.secondaryGenres': 'అదనపు జానర్లు (గరిష్ఠ 3)',
     'createStory.ageRating': 'వయస్సు రేటింగ్ *',
@@ -781,6 +991,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.coverHint': 'లైవ్ కావడానికి ముందు కవర్ తప్పనిసరి. 600×900 (2:3), JPG/PNG 1MB లోపు.',
     'createStory.coverPlaceholder': '600×900 (2:3) సిఫార్సు',
     'createStory.coverUpload': 'కవర్ అప్‌లోడ్ చేయడానికి క్లిక్ చేయండి',
+    'createStory.coverTeaser': 'మీ కథకు అందమైన ముఖచిత్రం — పాఠకులు మొదట ఇదే చూస్తారు',
     'createStory.submit': 'కథ సృష్టించి 1వ అధ్యాయం రాయండి',
     'createStory.submitting': 'సృష్టిస్తోంది…',
     'createStory.coverRequired': 'ప్రచురించే ముందు కవర్ చిత్రం తప్పనిసరి.',
@@ -795,6 +1006,76 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.sidecardTitle': 'మీ కథ — మీ గౌరవం',
     'createStory.sidecardText': 'తెలుగు పాఠకులకు నిజమైన కథలు. మొదటి అధ్యాయం రాసిన తర్వాత డెబ్యూ సీజన్ ప్రయాణం ప్రారంభమవుతుంది.',
     'createStory.submitHint': 'కవర్ + శీర్షిక తప్పనిసరి — తర్వాత సీన్ ఎడిటర్ తెరుచుకుంటుంది.',
+    'createStory.subtitleV21': 'మీ శీర్షికతో ప్రారంభించండి. మీరు తర్వాత ప్రతిదీ మార్చవచ్చు.',
+    'createStory.storyTitlePlaceholderV21': 'మీ కథ పేరు ఏమిటి?',
+    'createStory.descriptionPlaceholderV21': 'మీ కథ ప్రత్యేకత ఏమిటో పాఠకులకు చెప్పండి…',
+    'createStory.stepStory': 'కథ',
+    'createStory.stepDetails': 'వివరాలు',
+    'createStory.coverDragHint': 'కవర్ అప్‌లోడ్ చేయడానికి క్లిక్ చేయండి లేదా డ్రాగ్ చేయండి',
+    'createStory.writingTips': 'రచనా సూచనలు',
+    'createStory.tipCover': 'మంచి కవర్లు కనుగొనడాన్ని మెరుగుపరుస్తాయి.',
+    'createStory.tipTitle': 'శీర్షికలు గుర్తుండేలా ఉండాలి.',
+    'createStory.tipHook': 'పాఠకులు సెకన్లలో నిర్ణయం తీసుకుంటారు.',
+    'createStory.saveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'createStory.continue': 'ముందుకు →',
+    'createStory.draftSaved': 'డ్రాఫ్ట్ సేవ్ అయింది',
+    'createStory.autoSaved': 'ఆటో-సేవ్ చేయబడింది',
+    'createStory.autoSaving': 'ఆటో-సేవ్…',
+    'createStory.changeNote': 'ఈ వివరాలు తర్వాత మార్చవచ్చు.',
+    'narrativeOs.explorer': 'ఎక్స్‌ప్లోరర్',
+    'narrativeOs.inspector': 'సీన్ ఇన్‌స్పెక్టర్',
+    'narrativeOs.structure': 'నిర్మాణం',
+    'narrativeOs.beats': 'కథా బీట్స్',
+    'narrativeOs.saved': 'సేవ్ అయింది',
+    'narrativeOs.wordsRead': 'పదాలు · చదవడానికి',
+    'narrativeOs.continueWriting': 'రాయడం కొనసాగించండి →',
+    'narrativeOs.startNew': 'కొత్తది ప్రారంభించండి',
+    'narrativeOs.skipArrival': 'నేరుగా మాన్యుస్క్రిప్ట్‌కు వెళ్లండి',
+    'narrativeOs.arrivalQuestion': 'ఈ రోజు మిమ్మల్ని ఏ కథ లాగుతోంది?',
+    'narrativeOs.openStory': 'తెరవండి',
+    'narrativeOs.companionTitle': 'ఏదో గమనించాను',
+    'narrativeOs.companionDismiss': 'ఇప్పుడు కాదు',
+    'narrativeOs.companionShow': 'చూపించు',
+    'narrativeOs.focusExit': 'ఫోకస్ నుండి నిష్క్రమించండి',
+    'narrativeOs.back': 'కథకు తిరిగి',
+    'narrativeOs.saveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'narrativeOs.publish': 'ప్రచురించు',
+    'narrativeOs.history': 'చరిత్ర',
+    'narrativeOs.find': 'వెతకండి',
+    'narrativeOs.emptyScene': 'ఇంకా సీన్ లేదు',
+    'narrativeOs.addFirstScene': 'మొదటి సీన్ జోడించండి',
+    'narrativeOs.phaseThink': 'ఆలోచన',
+    'narrativeOs.phaseStructure': 'నిర్మాణం',
+    'narrativeOs.phaseWrite': 'రాయడం',
+    'narrativeOs.phaseRefine': 'పరిష్కరించు',
+    'narrativeOs.phasePublish': 'ప్రచురించు',
+    'narrativeOs.phaseThinkHint': 'కథ గురించి ఆలోచించండి — AI సూచనలు మరియు నోట్స్',
+    'narrativeOs.phaseRefineHint': 'పాఠకుల వీక్షణ — మీ ప్రచురణకు ముందు చదవండి',
+    'narrativeOs.phasePublishHint': 'మీ అధ్యాయం సిద్ధంగా ఉందా? సమీక్షకు సమర్పించండి',
+    'narrativeOs.backToWrite': 'రాయడానికి తిరిగి',
+    'narrativeOs.refineEmptyTitle': 'ఇంకా వ్రాయాల్సిన కంటెంట్ లేదు',
+    'narrativeOs.refineEmptyHint': 'రాయడం మోడ్‌లో వ్రాసిన తర్వాత ఇక్కడ ప్రివ్యూ చూడండి',
+    'narrativeOs.refineEyebrow': 'పాఠకుల ప్రివ్యూ',
+    'narrativeOs.refineTagline': 'ప్రతి పరికరంలో మీ కథ ఎలా కనిపిస్తుందో చూడండి',
+    'narrativeOs.refineDeviceLabel': 'పరికరం',
+    'narrativeOs.refineThemeLabel': 'చదివే మోడ్',
+    'narrativeOs.refineDevicePhone': 'ఫోన్',
+    'narrativeOs.refineDeviceTablet': 'టాబ్లెట్',
+    'narrativeOs.refineDeviceReader': 'రీడర్',
+    'narrativeOs.refineThemeLight': 'లైట్',
+    'narrativeOs.refineThemeSepia': 'సీపియా',
+    'narrativeOs.refineThemeDark': 'డార్క్',
+    'narrativeOs.refineStartWriting': 'రాయడం ప్రారంభించండి',
+    'narrativeOs.refineKeepWriting': 'రాయడం కొనసాగించండి',
+    'narrativeOs.refineUntitled': 'శీర్షిక లేని అధ్యాయం',
+    'narrativeOs.refineWords': 'పదాలు',
+    'narrativeOs.refineMinRead': 'నిమిషాల చదవడం',
+    'narrativeOs.refineScenes': 'సీన్లు',
+    'narrativeOs.refineStatsLabel': 'అధ్యాయ గణాంకాలు',
+    'narrativeOs.refineFindHint': '⌘F లేదా Ctrl+F — వెతకండి మరియు భర్తీ చేయండి',
+    'narrativeOs.refinePreview': 'పాఠకుల ప్రివ్యూ',
+    'narrativeOs.thinkPlaceholder': 'మీ కథ గురించి ఆలోచనలు ఇక్కడ నోట్ చేయండి',
+    'narrativeOs.publishNote': 'ప్రచురణ తర్వాత మోడరేషన్ క్యూలో ఉంటుంది. మీరు ఎప్పుడైనా డ్రాఫ్ట్ సేవ్ చేయవచ్చు.',
     'stories.prideTitle': 'మీ కథలు — మీ గుర్తింపు',
     'stories.prideText': 'ప్రతి గ్రంథం మీ చేతి వ్రాత. మరో అధ్యాయం రాయండి, పాఠకులతో పంచుకోండి.',
     'notifications.eyebrow': 'అలర్ట్‌లు',
@@ -806,6 +1087,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'notifications.filterReview': 'సమీక్ష',
     'notifications.filterPublish': 'ప్రచురణ',
     'notifications.filterModeration': 'మోడరేషన్',
+    'notifications.filterRevenue': 'ఆదాయం',
+    'notifications.filterReaders': 'పాఠకులు',
     'notifications.emptyTitle': 'ఈ ఫిల్టర్‌లో అలర్ట్‌లు లేవు',
     'notifications.emptyText': 'సమీక్ష ఆహ్వానాలు, ప్రచురణ నవీకరణలు ఇక్కడ కనిపిస్తాయి.',
     'notifications.open': 'తెరవండి',
@@ -840,6 +1123,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'stories.ongoing': 'కొనసాగుతోంది',
     'stories.completed': 'పూర్తయింది',
     'stories.chapters': 'అధ్యాయాలు',
+    'stories.debutArc': 'అవతరణ అధ్యాయాలు',
     'stories.readers': 'పాఠకులు',
     'stories.lastUpdated': 'చివరి అప్‌డేట్',
     'stories.manage': 'నిర్వహించండి',
@@ -965,6 +1249,27 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'events.rulesVersion': 'నియమాల వెర్షన్',
     'events.rulesRecognitionOnly': 'గుర్తింపు బహుమతులు మాత్రమే — నగదు లేదు',
     'events.rulesNoCash': 'నగదు బహుమతులు లేవు',
+    'events.rulesTrustBadge': 'న్యాయ ధృవీకరించబడింది',
+    'events.legalPanelTitle': 'పోటీ న్యాయ & అనుసరణ',
+    'events.legalPanelHint': 'నైపుణ్య ఆధారిత సాహిత్య కార్యక్రమాలు — లాటరీ లేదు, నగదు బహుమతులు లేవు.',
+    'events.legalSkillBased': 'నైపుణ్య ఆధారిత',
+    'events.legalFreeEntry': 'ఉచిత నమోదు',
+    'events.legalNoCash': 'గుర్తింపు మాత్రమే',
+    'events.legalApproved': 'న్యాయ ధృవీకరించబడింది',
+    'events.legalPending': 'న్యాయ అనుమోదన పెండింగ్',
+    'events.legalApprovalRequired': 'చెల్లింపు ఎంట్రీ ఫీ లేదా నగదు బహుమతులు న్యాయ అనుమోదన అవసరం.',
+    'events.legalQueueClear': 'న్యాయ అనుమోదన క్యూ ఖాళీ — అన్ని ఈవెంట్‌లు అనుసరణకు అనుగుణంగా ఉన్నాయి.',
+    'events.legalQueuePending': 'న్యాయ అనుమోదన పెండింగ్',
+    'events.legalQueueCount': '{count} ఈవెంట్(లు) ఫౌండర్-OS న్యాయ సమీక్ష కోసం వేచి ఉన్నాయి.',
+    'events.eligibilityChipOk': 'అర్హత ఉంది',
+    'events.eligibilityChipBlocked': 'అర్హత లేదు',
+    'events.eligibilityChipChapters': '{count} అధ్యాయాలు',
+    'events.eligibilityChipWarnings': '{count} హెచ్చరికలు',
+    'magazine.editionEyebrow': 'ప్రీమియం మ్యాగజైన్',
+    'magazine.editionTitle': 'ఎడిషన్ 1 — డెబ్యూ లారియట్ యాంథాలజీ',
+    'magazine.editionSubtitle': 'క్యూరేటెడ్ కథలు, రచయిత్రి ప్రొఫైల్‌లు, ఎడిషన్ కవర్.',
+    'magazine.featuredStories': 'ఫీచర్డ్ కథలు',
+    'magazine.comingSoon': 'ఎడిషన్ సిద్ధమవుతోంది — త్వరలో',
     'events.statusRegistrationOpen': 'నమోదు తెరిచి ఉంది',
     'events.statusSubmissionsOpen': 'సబ్మిషన్లు తెరిచి ఉన్నాయి',
     'events.statusPublished': 'ప్రచురించబడింది',
@@ -1135,6 +1440,10 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'englishEditor.minReadLabel': 'నిమిషాల చదవడం',
     'englishEditor.savedPrefix': 'సేవ్ అయింది',
     'englishEditor.wordGoalLabel': 'అధ్యాయ పదాల లక్ష్యం',
+    'englishEditor.cloudSyncing': 'క్లౌడ్‌కు సేవ్ అవుతోంది…',
+    'englishEditor.cloudSynced': 'క్లౌడ్‌లో సేవ్ అయింది',
+    'englishEditor.cloudPending': 'స్థానిక డ్రాఫ్ట్ — క్లౌడ్ పెండింగ్',
+    'englishEditor.cloudError': 'క్లౌడ్ సేవ్ విఫలమైంది',
     'epistolaryEditor.badge': 'ఎపిస్టలరీ · దశ 1',
     'epistolaryEditor.back': 'గ్రంధానికి వెనక్కి',
     'epistolaryEditor.addMessage': 'సందేశం జోడించండి',
@@ -1146,6 +1455,99 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.roleProtagonist': 'నాయకుడు',
     'epistolaryEditor.roleAntagonist': 'విరోధి',
     'epistolaryEditor.roleNarrator': 'వర్ణనకర్త',
+    'epistolaryEditor.threadLabel': 'సంభాషణ థ్రెడ్',
+    'epistolaryEditor.messageCount': 'సందేశాలు',
+    'epistolaryEditor.saveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'epistolaryEditor.saving': 'సేవ్ అవుతోంది…',
+    'epistolaryEditor.savedPrefix': 'సేవ్ అయింది',
+    'epistolaryEditor.cloudSyncing': 'క్లౌడ్‌కు సేవ్ అవుతోంది…',
+    'epistolaryEditor.cloudSynced': 'క్లౌడ్‌లో సేవ్ అయింది',
+    'epistolaryEditor.cloudPending': 'స్థానిక డ్రాఫ్ట్ — క్లౌడ్ పెండింగ్',
+    'epistolaryEditor.cloudError': 'క్లౌడ్ సేవ్ విఫలమైంది',
+    'epistolaryEditor.persistHint': 'సందేశాలు స్థానికంగా & క్లౌడ్‌లో స్వయంచాలకంగా సేవ్ అవుతాయి.',
+    'epistolaryEditor.previewLabel': 'పాఠకుల ప్రివ్యూ',
+    'epistolaryEditor.previewMode': 'ప్రివ్యూ',
+    'epistolaryEditor.editMode': 'ఎడిట్',
+    'epistolaryEditor.previewEmpty': 'ప్రివ్యూ చూడడానికి సందేశం టైప్ చేయండి.',
+    'epistolaryEditor.previewFootnote': 'ట్యాప్ లేదా తదుపరి బటన్ — టైపింగ్ ఇండికేటర్ తో సందేశాలు వెల్లడవుతాయి. పూర్తి రీడర్ యాప్ ఇంకా రాబోతోంది.',
+    'epistolaryEditor.previewNext': 'తదుపరి సందేశం',
+    'epistolaryEditor.previewReset': 'ప్రివ్యూ రీసెట్',
+    'epistolaryEditor.previewTyping': 'టైప్ చేస్తోంది…',
+    'epistolaryEditor.previewTap': 'తదుపరి సందేశం చూడటానికి ట్యాప్ చేయండి',
+    'branchingEditor.badge': 'బ్రాంచింగ్ · దశ 1',
+    'branchingEditor.back': 'గ్రంధానికి వెనక్కి',
+    'branchingEditor.chapterTitle': 'అధ్యాయ శీర్షిక',
+    'branchingEditor.scaffoldHint': 'ఎంపిక నోడ్ స్కాఫోల్డ్ — దశ 2 లో పర్సిస్టెన్స్ & రీడర్ ప్రివ్యూ',
+    'branchingEditor.addNode': 'నోడ్ జోడించండి',
+    'branchingEditor.nodeTitle': 'నోడ్ శీర్షిక',
+    'branchingEditor.nodeBodyPlaceholder': 'ఈ బిందువులో జరిగే దృశ్యం…',
+    'branchingEditor.choiceA': 'ఎంపిక A',
+    'branchingEditor.choiceB': 'ఎంపిక B',
+    'branchingEditor.flowLabel': 'కథా శాఖలు',
+    'branchingEditor.nodeCount': 'నోడ్లు',
+    'branchingEditor.saveDraft': 'డ్రాఫ్ట్ సేవ్',
+    'branchingEditor.saving': 'సేవ్ అవుతోంది…',
+    'branchingEditor.savedPrefix': 'సేవ్ అయింది',
+    'branchingEditor.cloudSyncing': 'క్లౌడ్‌కు సేవ్ అవుతోంది…',
+    'branchingEditor.cloudSynced': 'క్లౌడ్‌లో సేవ్ అయింది',
+    'branchingEditor.cloudPending': 'స్థానిక డ్రాఫ్ట్ — క్లౌడ్ పెండింగ్',
+    'branchingEditor.cloudError': 'క్లౌడ్ సేవ్ విఫలమైంది',
+    'branchingEditor.persistHint': 'నోడ్లు స్థానికంగా & క్లౌడ్‌లో స్వయంచాలకంగా సేవ్ అవుతాయి.',
+    'branchingEditor.previewLabel': 'పాఠకుల ప్రివ్యూ',
+    'branchingEditor.previewMode': 'ప్రివ్యూ',
+    'branchingEditor.editMode': 'ఎడిట్',
+    'branchingEditor.previewEmpty': 'ప్రివ్యూ చూడడానికి నోడ్ బాడీ లేదా ఎంపికలు జోడించండి.',
+    'branchingEditor.previewFootnote': 'ఎంపికలు గ్రాఫ్ టార్గెట్‌లను అనుసరిస్తాయి — పూర్తి రీడర్ యాప్ ఇంకా రాబోతోంది.',
+    'branchingEditor.previewReset': 'పాత్ రీసెట్',
+    'branchingEditor.previewPath': 'మీ ఎంపికల పాత్',
+    'branchingEditor.previewEnd': 'ఈ శాఖ యొక్క చివరి నోడ్.',
+    'branchingEditor.graphMapLabel': 'బ్రాంచ్ గ్రాఫ్',
+    'branchingEditor.targetA': 'ఎంపిక A → నోడ్',
+    'branchingEditor.targetB': 'ఎంపిక B → నోడ్',
+    'branchingEditor.targetEnd': 'ముగింపు (లింక్ లేదు)',
+    'branchingEditor.openReader': 'రీడర్ తెరవండి',
+    'branchingEditor.canvasLabel': 'విజువల్ బ్రాంచ్ గ్రాఫ్',
+    'branchingEditor.graphValid': 'గ్రాఫ్ స్ట్రక్చర్ సరిగ్గా ఉంది — సైకిల్స్ లేవు.',
+    'branchingEditor.graphIssuesLabel': 'గ్రాఫ్ సమస్యలు',
+    'branchingEditor.issueCycle': 'సైకిల్ గుర్తించబడింది',
+    'branchingEditor.issueOrphan': 'ఆర్ఫన్ నోడ్',
+    'branchingEditor.issueUnreachable': 'చేరుకోలేని నోడ్',
+    'branchingEditor.issueDeadEnd': 'డెడ్ ఎండ్ — ఎంపికలు ఉన్నా టార్గెట్ లేదు',
+    'branchingEditor.issueInvalidTarget': 'చెల్లని టార్గెట్',
+    'epistolaryEditor.openReader': 'రీడర్ తెరవండి',
+    'readerShell.backToEditor': 'ఎడిటర్‌కు వెనక్కి',
+    'readerShell.branchingLabel': 'బ్రాంచింగ్ రీడర్',
+    'readerShell.epistolaryLabel': 'ఎపిస్టలరీ రీడర్',
+    'readerShell.footnote': 'స్టాండ్‌అలోన్ రీడర్ షెల్ — పబ్లిష్ చేసిన పాఠకుల అనుభవం ఇంకా రాబోతోంది.',
+    'readerShell.copyLink': 'లింక్ షేర్',
+    'readerShell.linkCopied': 'కాపీ అయింది',
+    'readerShell.previewBadge': 'ప్రివ్యూ మోడ్ — పబ్లిష్ చేసిన రీడర్ ఇంకా రాబోతోంది',
+    'readerShell.readingProgress': 'చదివే ప్రగతి',
+    'readerShell.chapterLabel': 'అధ్యాయం',
+    'championship.bracketLabel': 'ఛాంపియన్‌షిప్ బ్రాకెట్',
+    'championship.bracketQuarter': 'క్వార్టర్-ఫైనల్',
+    'championship.bracketSemi': 'సెమీ-ఫైనల్',
+    'championship.bracketFinal': 'ఫైనల్',
+    'championship.bracketYou': 'మీ స్లాట్',
+    'championship.bracketTbd': 'త్వరలో నిర్ణయం',
+    'championship.magazineTeaserTitle': 'ప్రీమియం మ్యాగజైన్ ఎడిషన్',
+    'championship.magazineTeaserHint': 'డెబ్యూ లారియట్ కథల క్యూరేటెడ్ యాంథాలజీ — ఎడిషన్ 1 స్కాఫోల్డ్.',
+    'championship.matchFeedLabel': 'మ్యాచ్ ఫీడ్',
+    'championship.matchScheduled': 'షెడ్యూల్',
+    'championship.matchQuarterDesc': 'క్వార్టర్-ఫైనల్ — మీ స్లాట్ నిర్ణయించబడింది',
+    'championship.matchUpcoming': 'రాబోయేది',
+    'championship.matchSemiDesc': 'సెమీ-ఫైనల్ — ఫలితాల తర్వాత నిర్ణయం',
+    'championship.viewMagazine': 'మ్యాగజైన్ ఎడిషన్ చూడండి',
+    'championship.countdownLabel': 'తదుపరి మ్యాచ్ — 14 రోజుల్లో (స్కాఫోల్డ్)',
+    'championship.yourProgress': 'మీ డెబ్యూ ప్రగతి',
+    'championship.eligible': 'ఛాంపియన్‌షిప్ కోసం అర్హత పొందారు',
+    'championship.notEligible': 'డెబ్యూ పూర్తి చేసిన తర్వాత ఛాంపియన్‌షిప్ తెరుచుకుంటుంది',
+    'manuscript.chapterGoal': 'అధ్యాయ లక్ష్యం',
+    'stories.coverUpload': 'కవర్ అప్‌లోడ్',
+    'championship.timelineLabel': 'ఛాంపియన్‌షిప్ టైమ్‌లైన్',
+    'championship.timelineDebut': 'డెబ్యూ సీజన్',
+    'championship.timelineLeague': 'ప్రీమియర్ లీగ్',
+    'championship.timelineMagazine': 'మ్యాగజైన్',
     'manuscript.eyebrow': 'గ్రంధం · Manuscript',
     'manuscript.subtitle': 'మీ అధ్యాయాల బుక్‌షెల్ఫ్ — రాయండి, సవరించండి, ప్రచురించండి.',
     'manuscript.bookshelf': 'అధ్యాయ బుక్‌షెల్ఫ్',
@@ -1343,6 +1745,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'editor.minRead': 'నిమి చదవడం',
     'editor.drafting': 'రాయడం',
     'editor.scenes': 'సీన్లు',
+    'editor.chapterWordGoal': 'అధ్యాయ పదాల లక్ష్యం',
     'reviewWorkspace.eyebrow': 'సాహిత్య మండలి · సమీక్ష',
     'reviewWorkspace.back': 'సమీక్షకులకు వెనక్కి',
     'reviewWorkspace.chapterNav': 'అధ్యాయ నావిగేషన్',
@@ -1391,6 +1794,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.debutGradShare': 'మీ బ్యాడ్జ్ షేర్ చేయండి',
     'dashboard.debutGradCopy': 'లింక్ కాపీ',
     'dashboard.debutGradCta': 'కొనసాగించండి',
+    'dashboard.debutGradCertificate': 'ప్రమాణపత్రం డౌన్‌లోడ్',
     'dashboard.chapters': 'అధ్యాయాలు',
     'dashboard.metricsReads': 'మొత్తం చదివినవి',
     'dashboard.metricsSubs': 'చురుకైన సభ్యులు',
@@ -1405,6 +1809,14 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.studioPausedHint': 'మీ స్టూడియో లోడ్ కాలేదు.',
     'dashboard.tryAgain': 'మళ్ళీ ప్రయత్నించండి',
     'dashboard.signInAgain': 'మళ్ళీ సైన్ ఇన్',
+    'dashboard.quickActionsTitle': 'త్వరిత చర్యలు',
+    'dashboard.quickNewStory': 'కొత్త కథ',
+    'dashboard.quickNewStoryHint': 'కొత్త గ్రంథం ప్రారంభించండి',
+    'dashboard.quickSchedule': 'షెడ్యూల్',
+    'dashboard.quickEvents': 'ఈవెంట్స్',
+    'dashboard.quickReviews': 'రివ్యూలు',
+    'dashboard.tasksTitle': 'నేటి పనులు',
+    'dashboard.tasksViewAll': 'అన్ని పనులు చూడండి',
     'stats.writingStreak': 'రోజులు దీపం వెలిగింది',
     'stats.badge': 'బ్యాజ్',
     'stats.storyTrust': 'స్టోరీ ట్రస్ట్',
@@ -1453,12 +1865,16 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'common.confirm': 'Confirm',
     'common.viewAll': 'View all',
     'common.learnMore': 'Learn more',
+    'createStory.backToStories': 'Back to stories',
     'createStory.title': 'Create your story',
     'createStory.subtitle': 'Open the door to the story in your heart — every manuscript begins a new world.',
     'createStory.eyebrow': 'New manuscript',
     'createStory.storyTitle': 'Story title *',
     'createStory.storyTitlePlaceholder': 'e.g. ప్రేమ కథ or type prema katha',
     'createStory.contentType': 'Content type *',
+    'createStory.contentTypeCore': 'Core formats',
+    'createStory.contentTypeMoat': 'Katha signature formats',
+    'createStory.formatBadge': 'Signature',
     'createStory.primaryGenre': 'Primary genre *',
     'createStory.secondaryGenres': 'Secondary genres (up to 3)',
     'createStory.ageRating': 'Age rating *',
@@ -1477,6 +1893,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.coverHint': 'Required before your story goes live. 600×900 (2:3), JPG/PNG under 1MB.',
     'createStory.coverPlaceholder': '600×900 (2:3) recommended',
     'createStory.coverUpload': 'Click to upload cover',
+    'createStory.coverTeaser': 'మీ కథకు అందమైన ముఖచిత్రం — readers see this first',
     'createStory.submit': 'Create Story & Write Chapter 1',
     'createStory.submitting': 'Creating…',
     'createStory.coverRequired': 'Cover image is required before publishing your story.',
@@ -1491,6 +1908,76 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.sidecardTitle': 'Your story — your pride',
     'createStory.sidecardText': 'Real stories for Telugu readers. Your Debut Season journey begins after chapter 1.',
     'createStory.submitHint': 'Cover + title required — then the scene editor opens.',
+    'createStory.subtitleV21': 'Start with your title. You can change everything later.',
+    'createStory.storyTitlePlaceholderV21': 'What is your story called?',
+    'createStory.descriptionPlaceholderV21': 'Tell readers what makes your story special…',
+    'createStory.stepStory': 'Story',
+    'createStory.stepDetails': 'Details',
+    'createStory.coverDragHint': 'Click or drag to upload cover',
+    'createStory.writingTips': 'Writing tips',
+    'createStory.tipCover': 'Good covers improve discovery.',
+    'createStory.tipTitle': 'Titles should be memorable.',
+    'createStory.tipHook': 'Readers decide in seconds.',
+    'createStory.saveDraft': 'Save draft',
+    'createStory.continue': 'Continue →',
+    'createStory.draftSaved': 'Draft saved',
+    'createStory.autoSaved': 'Auto-saved',
+    'createStory.autoSaving': 'Auto-saving…',
+    'createStory.changeNote': 'You can change these details later.',
+    'narrativeOs.explorer': 'Explorer',
+    'narrativeOs.inspector': 'Scene Inspector',
+    'narrativeOs.structure': 'Structure',
+    'narrativeOs.beats': 'Story Beats',
+    'narrativeOs.saved': 'Saved',
+    'narrativeOs.wordsRead': 'words · read',
+    'narrativeOs.continueWriting': 'Continue writing →',
+    'narrativeOs.startNew': 'Start something new',
+    'narrativeOs.skipArrival': 'Jump straight to the manuscript',
+    'narrativeOs.arrivalQuestion': 'What story is pulling at you today?',
+    'narrativeOs.openStory': 'Open',
+    'narrativeOs.companionTitle': 'I noticed something',
+    'narrativeOs.companionDismiss': 'Not now',
+    'narrativeOs.companionShow': 'Show me',
+    'narrativeOs.focusExit': 'Exit focus mode',
+    'narrativeOs.back': 'Back to story',
+    'narrativeOs.saveDraft': 'Save draft',
+    'narrativeOs.publish': 'Publish',
+    'narrativeOs.history': 'History',
+    'narrativeOs.find': 'Find',
+    'narrativeOs.emptyScene': 'No scene selected yet',
+    'narrativeOs.addFirstScene': 'Add your first scene',
+    'narrativeOs.phaseThink': 'Think',
+    'narrativeOs.phaseStructure': 'Structure',
+    'narrativeOs.phaseWrite': 'Write',
+    'narrativeOs.phaseRefine': 'Refine',
+    'narrativeOs.phasePublish': 'Publish',
+    'narrativeOs.phaseThinkHint': 'Explore ideas — AI notes and story thinking',
+    'narrativeOs.phaseRefineHint': 'Reader view — read your chapter before it goes live',
+    'narrativeOs.phasePublishHint': 'Ready to share? Submit your chapter for review',
+    'narrativeOs.backToWrite': 'Back to writing',
+    'narrativeOs.refineEmptyTitle': 'Nothing to preview yet',
+    'narrativeOs.refineEmptyHint': 'Write in Write mode, then return here to read as your audience will',
+    'narrativeOs.thinkPlaceholder': 'Capture story ideas and notes here',
+    'narrativeOs.publishNote': 'After publishing, your chapter enters the moderation queue. You can save a draft anytime.',
+    'narrativeOs.refineEyebrow': 'Reader preview',
+    'narrativeOs.refineTagline': 'See exactly how your story appears on each device',
+    'narrativeOs.refineDeviceLabel': 'Device',
+    'narrativeOs.refineThemeLabel': 'Reading mode',
+    'narrativeOs.refineDevicePhone': 'Phone',
+    'narrativeOs.refineDeviceTablet': 'Tablet',
+    'narrativeOs.refineDeviceReader': 'Reader',
+    'narrativeOs.refineThemeLight': 'Light',
+    'narrativeOs.refineThemeSepia': 'Sepia',
+    'narrativeOs.refineThemeDark': 'Dark',
+    'narrativeOs.refineStartWriting': 'Start writing',
+    'narrativeOs.refineKeepWriting': 'Keep writing',
+    'narrativeOs.refineUntitled': 'Untitled chapter',
+    'narrativeOs.refineWords': 'words',
+    'narrativeOs.refineMinRead': 'min read',
+    'narrativeOs.refineScenes': 'scenes',
+    'narrativeOs.refineStatsLabel': 'Chapter stats',
+    'narrativeOs.refineFindHint': '⌘F or Ctrl+F to find and replace',
+    'narrativeOs.refinePreview': 'Reader preview',
     'stories.prideTitle': 'Your stories — your identity',
     'stories.prideText': 'Every manuscript is your craft. Write another chapter, share with pride.',
     'notifications.eyebrow': 'Alerts',
@@ -1502,6 +1989,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'notifications.filterReview': 'Review',
     'notifications.filterPublish': 'Publish',
     'notifications.filterModeration': 'Moderation',
+    'notifications.filterRevenue': 'Revenue',
+    'notifications.filterReaders': 'Readers',
     'notifications.emptyTitle': 'No alerts in this filter',
     'notifications.emptyText': 'Review invitations and moderation updates appear here.',
     'notifications.open': 'Open',
@@ -1536,6 +2025,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'stories.ongoing': 'Ongoing',
     'stories.completed': 'Completed',
     'stories.chapters': 'Chapters',
+    'stories.debutArc': 'debut arc chapters',
     'stories.readers': 'Readers',
     'stories.lastUpdated': 'Last updated',
     'stories.manage': 'Manage',
@@ -1661,6 +2151,27 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'events.rulesVersion': 'Rules version',
     'events.rulesRecognitionOnly': 'Recognition rewards only — no cash prizes',
     'events.rulesNoCash': 'No cash prizes',
+    'events.rulesTrustBadge': 'Legally verified',
+    'events.legalPanelTitle': 'Contest legal & compliance',
+    'events.legalPanelHint': 'Skill-based literary programs — no lottery, no cash prizes.',
+    'events.legalSkillBased': 'Skill-based',
+    'events.legalFreeEntry': 'Free entry',
+    'events.legalNoCash': 'Recognition only',
+    'events.legalApproved': 'Legally approved',
+    'events.legalPending': 'Pending legal approval',
+    'events.legalApprovalRequired': 'Paid entry fees or cash prizes require legal approval before publishing.',
+    'events.legalQueueClear': 'Legal approval queue clear — all events comply.',
+    'events.legalQueuePending': 'Legal approval pending',
+    'events.legalQueueCount': '{count} event(s) awaiting founder-OS legal review.',
+    'events.eligibilityChipOk': 'Eligible',
+    'events.eligibilityChipBlocked': 'Not eligible',
+    'events.eligibilityChipChapters': '{count} chapters',
+    'events.eligibilityChipWarnings': '{count} warnings',
+    'magazine.editionEyebrow': 'Premium Magazine',
+    'magazine.editionTitle': 'Edition 1 — Debut Laureate Anthology',
+    'magazine.editionSubtitle': 'Curated stories, author profiles, and edition cover.',
+    'magazine.featuredStories': 'Featured stories',
+    'magazine.comingSoon': 'Edition in preparation — coming soon',
     'events.statusRegistrationOpen': 'Registration open',
     'events.statusSubmissionsOpen': 'Submissions open',
     'events.statusPublished': 'Published',
@@ -1831,6 +2342,10 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'englishEditor.minReadLabel': 'min read',
     'englishEditor.savedPrefix': 'Saved',
     'englishEditor.wordGoalLabel': 'Chapter word goal',
+    'englishEditor.cloudSyncing': 'Syncing to cloud…',
+    'englishEditor.cloudSynced': 'Saved to cloud',
+    'englishEditor.cloudPending': 'Local draft — cloud pending',
+    'englishEditor.cloudError': 'Cloud save failed',
     'epistolaryEditor.badge': 'Epistolary · Phase 1',
     'epistolaryEditor.back': 'Back to manuscript',
     'epistolaryEditor.addMessage': 'Add message',
@@ -1842,6 +2357,99 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.roleProtagonist': 'Protagonist',
     'epistolaryEditor.roleAntagonist': 'Antagonist',
     'epistolaryEditor.roleNarrator': 'Narrator',
+    'epistolaryEditor.threadLabel': 'Conversation thread',
+    'epistolaryEditor.messageCount': 'messages',
+    'epistolaryEditor.saveDraft': 'Save draft',
+    'epistolaryEditor.saving': 'Saving…',
+    'epistolaryEditor.savedPrefix': 'Saved',
+    'epistolaryEditor.cloudSyncing': 'Syncing to cloud…',
+    'epistolaryEditor.cloudSynced': 'Saved to cloud',
+    'epistolaryEditor.cloudPending': 'Local draft — cloud pending',
+    'epistolaryEditor.cloudError': 'Cloud save failed',
+    'epistolaryEditor.persistHint': 'Messages auto-save locally and to cloud.',
+    'epistolaryEditor.previewLabel': 'Reader preview',
+    'epistolaryEditor.previewMode': 'Preview',
+    'epistolaryEditor.editMode': 'Edit',
+    'epistolaryEditor.previewEmpty': 'Type a message to see the reader preview.',
+    'epistolaryEditor.previewFootnote': 'Tap or Next — messages reveal with typing indicator. Full reader app still coming.',
+    'epistolaryEditor.previewNext': 'Next message',
+    'epistolaryEditor.previewReset': 'Reset preview',
+    'epistolaryEditor.previewTyping': 'Typing…',
+    'epistolaryEditor.previewTap': 'Tap to reveal next message',
+    'branchingEditor.badge': 'Branching · Phase 1',
+    'branchingEditor.back': 'Back to manuscript',
+    'branchingEditor.chapterTitle': 'Chapter title',
+    'branchingEditor.scaffoldHint': 'Choice-node scaffold — persistence and reader preview in phase 2',
+    'branchingEditor.addNode': 'Add node',
+    'branchingEditor.nodeTitle': 'Node title',
+    'branchingEditor.nodeBodyPlaceholder': 'What happens at this branch point…',
+    'branchingEditor.choiceA': 'Choice A',
+    'branchingEditor.choiceB': 'Choice B',
+    'branchingEditor.flowLabel': 'Story branches',
+    'branchingEditor.nodeCount': 'nodes',
+    'branchingEditor.saveDraft': 'Save draft',
+    'branchingEditor.saving': 'Saving…',
+    'branchingEditor.savedPrefix': 'Saved',
+    'branchingEditor.cloudSyncing': 'Syncing to cloud…',
+    'branchingEditor.cloudSynced': 'Saved to cloud',
+    'branchingEditor.cloudPending': 'Local draft — cloud pending',
+    'branchingEditor.cloudError': 'Cloud save failed',
+    'branchingEditor.persistHint': 'Nodes auto-save locally and to cloud.',
+    'branchingEditor.previewLabel': 'Reader preview',
+    'branchingEditor.previewMode': 'Preview',
+    'branchingEditor.editMode': 'Edit',
+    'branchingEditor.previewEmpty': 'Add node body or choices to see the reader preview.',
+    'branchingEditor.previewFootnote': 'Choices follow graph targets — full reader app still coming.',
+    'branchingEditor.previewReset': 'Reset path',
+    'branchingEditor.previewPath': 'Your choice path',
+    'branchingEditor.previewEnd': 'End of this branch path.',
+    'branchingEditor.graphMapLabel': 'Branch graph',
+    'branchingEditor.targetA': 'Choice A → node',
+    'branchingEditor.targetB': 'Choice B → node',
+    'branchingEditor.targetEnd': 'End (no link)',
+    'branchingEditor.openReader': 'Open reader',
+    'branchingEditor.canvasLabel': 'Visual branch graph',
+    'branchingEditor.graphValid': 'Graph structure looks good — no cycles detected.',
+    'branchingEditor.graphIssuesLabel': 'Graph issues',
+    'branchingEditor.issueCycle': 'Cycle detected',
+    'branchingEditor.issueOrphan': 'Orphan node',
+    'branchingEditor.issueUnreachable': 'Unreachable node',
+    'branchingEditor.issueDeadEnd': 'Dead end — choices without targets',
+    'branchingEditor.issueInvalidTarget': 'Invalid target',
+    'epistolaryEditor.openReader': 'Open reader',
+    'readerShell.backToEditor': 'Back to editor',
+    'readerShell.branchingLabel': 'Branching reader',
+    'readerShell.epistolaryLabel': 'Epistolary reader',
+    'readerShell.footnote': 'Standalone reader shell — published reader experience still coming.',
+    'readerShell.copyLink': 'Share link',
+    'readerShell.linkCopied': 'Copied',
+    'readerShell.previewBadge': 'Preview mode — published reader still coming',
+    'readerShell.readingProgress': 'Reading progress',
+    'readerShell.chapterLabel': 'Chapter',
+    'championship.bracketLabel': 'Championship bracket',
+    'championship.bracketQuarter': 'Quarter-final',
+    'championship.bracketSemi': 'Semi-final',
+    'championship.bracketFinal': 'Final',
+    'championship.bracketYou': 'Your slot',
+    'championship.bracketTbd': 'TBD',
+    'championship.magazineTeaserTitle': 'Premium Magazine edition',
+    'championship.magazineTeaserHint': 'Curated anthology for Debut Laureates — Edition 1 scaffold.',
+    'championship.matchFeedLabel': 'Match feed',
+    'championship.matchScheduled': 'Scheduled',
+    'championship.matchQuarterDesc': 'Quarter-final — your slot is set',
+    'championship.matchUpcoming': 'Upcoming',
+    'championship.matchSemiDesc': 'Semi-final — determined after results',
+    'championship.viewMagazine': 'View magazine edition',
+    'championship.countdownLabel': 'Next match — in 14 days (scaffold)',
+    'championship.yourProgress': 'Your Debut progress',
+    'championship.eligible': 'Eligible for Championship consideration',
+    'championship.notEligible': 'Championship opens after Debut completion',
+    'manuscript.chapterGoal': 'of chapter goal',
+    'stories.coverUpload': 'Upload cover',
+    'championship.timelineLabel': 'Championship timeline',
+    'championship.timelineDebut': 'Debut Season',
+    'championship.timelineLeague': 'Premier League',
+    'championship.timelineMagazine': 'Magazine',
     'manuscript.eyebrow': 'గ్రంధం · Manuscript',
     'manuscript.subtitle': 'Your chapter bookshelf — write, refine, and publish with confidence.',
     'manuscript.bookshelf': 'Chapter bookshelf',
@@ -2039,6 +2647,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'editor.minRead': 'min read',
     'editor.drafting': 'Drafting',
     'editor.scenes': 'Scenes',
+    'editor.chapterWordGoal': 'Chapter word goal',
     'reviewWorkspace.eyebrow': 'Literary Council · Review',
     'reviewWorkspace.back': 'Back to Reviewer Pool',
     'reviewWorkspace.chapterNav': 'Chapter navigation',
@@ -2087,6 +2696,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.debutGradShare': 'Share your badge',
     'dashboard.debutGradCopy': 'Copy link',
     'dashboard.debutGradCta': 'Continue',
+    'dashboard.debutGradCertificate': 'Download certificate',
     'dashboard.chapters': 'chapters',
     'dashboard.metricsReads': 'Total reads',
     'dashboard.metricsSubs': 'Active subscribers',
@@ -2101,6 +2711,14 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.studioPausedHint': 'We could not load your studio.',
     'dashboard.tryAgain': 'Try again',
     'dashboard.signInAgain': 'Sign in again',
+    'dashboard.quickActionsTitle': 'Quick actions',
+    'dashboard.quickNewStory': 'New story',
+    'dashboard.quickNewStoryHint': 'Start a fresh manuscript',
+    'dashboard.quickSchedule': 'Schedule',
+    'dashboard.quickEvents': 'Events',
+    'dashboard.quickReviews': 'Reviews',
+    'dashboard.tasksTitle': "Today's tasks",
+    'dashboard.tasksViewAll': 'View all tasks',
     'stats.writingStreak': 'day lamp lit',
     'stats.badge': 'Badge',
     'stats.storyTrust': 'Story Trust',

@@ -5,6 +5,7 @@ import { ShareLinkField } from '../components/ShareLinkField';
 import { BookSpine } from '../components/studio/BookSpine';
 import { buildChapterShareUrl, isChapterShareable, resolveStorySlug } from '../lib/shareLinks';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
+import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { Reorder } from 'framer-motion';
 import {
   getOrInitDemoData,
@@ -18,9 +19,11 @@ import {
 } from '../lib/demoStorage';
 import { api, type ChapterListItem } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
+import { chapterEditorPath } from '../lib/storyEditorRoutes';
+import { CONTENT_TYPES } from '../lib/platformConstants';
 
 export function StorySeasons() {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const { storyId = 'demo-rrr' } = useParams();
   const navigate = useNavigate();
   const isDemo = storyId === 'demo-rrr';
@@ -38,6 +41,8 @@ export function StorySeasons() {
     slug?: string | null;
     cover_url?: string | null;
     description?: string | null;
+    content_type?: string | null;
+    language?: string | null;
   } | null>(null);
   const [apiChapters, setApiChapters] = useState<ChapterListItem[]>([]);
   const [loading, setLoading] = useState(!isDemo);
@@ -58,6 +63,12 @@ export function StorySeasons() {
           ...story,
           cover_url: fullStory?.cover_url ?? null,
           description: fullStory?.description ?? null,
+          content_type: (fullStory as { content_type?: string } | undefined)?.content_type
+            ?? (story as { content_type?: string }).content_type
+            ?? 'serialized_story',
+          language: (fullStory as { language?: string } | undefined)?.language
+            ?? (story as { language?: string }).language
+            ?? 'te',
         });
         setStorySlug(story.slug ?? null);
       }
@@ -113,14 +124,21 @@ export function StorySeasons() {
       if (!selectedSeason) return;
       const nextCh = addChapterToSeason(storyId, selectedSeason.id);
       refreshFromStorage();
-      navigate(`/stories/${storyId}/seasons/${selectedSeason.id}/chapters/${nextCh}`);
+      navigate(chapterEditorPath(storyId, nextCh, {
+        seasonId: selectedSeason.id,
+        contentType: storyMeta?.content_type,
+        language: storyMeta?.language,
+      }));
       return;
     }
 
     const nextNum = apiChapters.length > 0
       ? Math.max(...apiChapters.map(c => c.chapter_number)) + 1
       : 1;
-    navigate(`/stories/${storyId}/chapters/${nextNum}`);
+    navigate(chapterEditorPath(storyId, nextNum, {
+      contentType: storyMeta?.content_type,
+      language: storyMeta?.language,
+    }));
   };
 
   const handleReorderSeasons = (newOrder: DemoSeason[]) => {
@@ -147,7 +165,7 @@ export function StorySeasons() {
 
   if (loading) {
     return (
-      <div className="cms-page studio-page manuscript-studio manuscript-studio--premium wc-page-enter">
+      <div className="cms-page studio-page manuscript-studio manuscript-studio--premium manuscript-studio--museum wc-page-enter">
         <div className="cms-loading">
           <Loader2 size={20} className="cms-loading__spin" />
           {t('manuscript.loading')}
@@ -157,7 +175,18 @@ export function StorySeasons() {
   }
 
   return (
-    <div className="cms-page studio-page manuscript-studio manuscript-studio--premium wc-page-enter">
+    <div className="cms-page studio-page manuscript-studio manuscript-studio--premium manuscript-studio--museum studio-page--calm26 wc-page-enter">
+      {storyMeta?.content_type && (() => {
+        const ct = CONTENT_TYPES.find((item) => item.id === storyMeta.content_type);
+        if (!ct) return null;
+        const isMoat = 'moat' in ct && ct.moat;
+        return (
+          <span className={`manuscript-format-pill${isMoat ? ' manuscript-format-pill--moat' : ''}`}>
+            {locale === 'te' ? ct.labelTelugu : ct.label}
+          </span>
+        );
+      })()}
+
       <StudioPageHeader
         variant="hero"
         eyebrow={t('manuscript.eyebrow')}
@@ -319,12 +348,22 @@ export function StorySeasons() {
             </button>
           </div>
 
-          {currentChapters.length === 0 ? (
-            <div className="studio-empty" style={{ padding: '32px 24px' }}>
-              <div className="studio-empty__glyph" aria-hidden><BookOpen size={28} /></div>
-              <h3 className="studio-empty__title">{t('manuscript.emptyBookshelf')}</h3>
-              <p className="studio-empty__text">{t('manuscript.emptyBookshelfHint')}</p>
+          {currentChapters.length > 0 && (
+            <div className="manuscript-bookshelf-shelf" aria-hidden>
+              {currentChapters.slice(0, 8).map((ch) => (
+                <span key={ch} className="manuscript-bookshelf-shelf__spine" />
+              ))}
             </div>
+          )}
+
+          {currentChapters.length === 0 ? (
+            <StudioEmptyState
+              icon={BookOpen}
+              iconSize={28}
+              title={t('manuscript.emptyBookshelf')}
+              text={t('manuscript.emptyBookshelfHint')}
+              as="h3"
+            />
           ) : isDemo ? (
             <Reorder.Group
               axis="y"
@@ -342,14 +381,18 @@ export function StorySeasons() {
                       title={chTitle}
                       words={stats.words}
                       scenes={stats.scenes}
-                      editorLink={`/stories/${storyId}/seasons/${selectedSeason?.id}/chapters/${chNum}`}
+                      editorLink={chapterEditorPath(storyId, chNum, {
+                        seasonId: selectedSeason?.id,
+                        contentType: storyMeta?.content_type,
+                        language: storyMeta?.language,
+                      })}
                     />
                   </Reorder.Item>
                 );
               })}
             </Reorder.Group>
           ) : (
-            <div className="studio-chapter-list">
+            <div className="studio-chapter-list manuscript-bookshelf--museum">
               {apiChapters.map((ch) => (
                 <ChapterRow
                   key={ch.chapter_number}
@@ -362,7 +405,10 @@ export function StorySeasons() {
                   scenes={ch.scene_count || 1}
                   status={ch.status}
                   statusBadge={statusBadge(ch.status)}
-                  editorLink={`/stories/${storyId}/chapters/${ch.chapter_number}`}
+                  editorLink={chapterEditorPath(storyId, ch.chapter_number, {
+                    contentType: storyMeta?.content_type,
+                    language: storyMeta?.language,
+                  })}
                   onRefresh={loadProdChapters}
                 />
               ))}
@@ -380,11 +426,24 @@ export function StorySeasons() {
 
       <div className="cms-footer-actions">
         {isDemo ? (
-          <Link to={`/stories/${storyId}/seasons/${selectedSeason?.id}/chapters/${currentChapters[0] || 1}`} className="btn btn-ghost">
+          <Link
+            to={chapterEditorPath(storyId, currentChapters[0] || 1, {
+              seasonId: selectedSeason?.id,
+              contentType: storyMeta?.content_type,
+              language: storyMeta?.language,
+            })}
+            className="btn btn-ghost"
+          >
             Jump to first chapter in this season
           </Link>
         ) : currentChapters[0] ? (
-          <Link to={`/stories/${storyId}/chapters/${currentChapters[0]}`} className="btn btn-ghost">
+          <Link
+            to={chapterEditorPath(storyId, currentChapters[0], {
+              contentType: storyMeta?.content_type,
+              language: storyMeta?.language,
+            })}
+            className="btn btn-ghost"
+          >
             Jump to first chapter
           </Link>
         ) : null}
@@ -417,7 +476,7 @@ export function StorySeasons() {
 function ChapterRow({
   storyId,
   storySlug,
-  coverUrl,
+  coverUrl: _coverUrl,
   chNum,
   title,
   words,
@@ -484,15 +543,15 @@ function ChapterRow({
     }
   };
 
+  const wordGoal = 2000;
+  const progressPct = typeof words === 'number' && words > 0
+    ? Math.min(100, Math.round((words / wordGoal) * 100))
+    : 0;
+
   return (
-    <div className="studio-chapter-row cms-chapter-row">
-      {coverUrl && (
-        <div className="studio-chapter-row__cover" aria-hidden>
-          <img src={coverUrl} alt="" />
-        </div>
-      )}
+    <div className="studio-chapter-row cms-chapter-row manuscript-chapter-spine-card">
       <BookSpine chapterNumber={chNum} title={title} status={status} />
-      <div className="studio-chapter-row__content">
+      <div className="manuscript-chapter-spine-card__body studio-chapter-row__content">
         <div style={{ flex: 1, minWidth: 0 }}>
           {editing ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -513,6 +572,16 @@ function ChapterRow({
               <div className="studio-chapter-row__meta cms-chapter-row__meta">
                 {displayWords} words • {displayScenes} scenes
               </div>
+              {progressPct > 0 && (
+                <>
+                  <div className="manuscript-chapter-spine-card__arc" aria-hidden>
+                    <span className="manuscript-chapter-spine-card__arc-fill" style={{ width: `${progressPct}%` }} />
+                  </div>
+                  <span className="manuscript-chapter-spine-card__arc-label">
+                    {progressPct}% {t('manuscript.chapterGoal')}
+                  </span>
+                </>
+              )}
               {shareUrl && (
                 <div className="cms-chapter-row__share">
                   <ShareLinkField url={shareUrl} label={`Chapter ${chNum} share link`} compact />
@@ -523,7 +592,7 @@ function ChapterRow({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+      <div className="manuscript-chapter-spine-card__actions">
         {onRefresh && storyId && !editing && (
           <>
             <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => { setEditTitle(title); setEditing(true); }} disabled={busy} aria-label="Rename">

@@ -11,6 +11,8 @@ import { useLocale } from '../context/LocaleContext';
 import type { StudioStringKey } from '../lib/studioLocale';
 import { useAuth } from '../context/AuthContext';
 import { canHostEvent, hostEligibilityMessage } from '../lib/hostEventEligibility';
+import { ContestLegalPanel } from '../components/events/ContestLegalPanel';
+import { LegalApprovalQueuePanel } from '../components/events/LegalApprovalQueuePanel';
 
 const FREE_ENTRY_INR = 0;
 
@@ -75,7 +77,8 @@ export function EventCreate() {
       });
       navigate(`/events/${event.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not publish event');
+      const msg = e instanceof Error ? e.message : '';
+      setError(msg === 'LEGAL_APPROVAL_REQUIRED' ? t('events.legalApprovalRequired') : (msg || 'Could not publish event'));
     } finally {
       setSubmitting(false);
     }
@@ -95,7 +98,7 @@ export function EventCreate() {
   }
 
   return (
-    <div className="cms-page studio-page event-create-page event-create-page--premium wc-page-enter">
+    <div className="cms-page studio-page event-create-page event-create-page--premium event-create-page--wave23 event-create-page--wave28 studio-page--calm26 wc-page-enter">
       <BackLink to="/events" label={t('events.title')} />
       <StudioPageHeader
         variant="hero"
@@ -203,13 +206,18 @@ export function EventCreate() {
               )}
 
               {step === 2 && (
-                <div className="event-create-free-entry event-create-free-entry--premium">
-                  <p className="event-create-free-entry__badge">{t('events.freeEntry')}</p>
-                  <p className="studio-page-header__subtitle">{t('events.registrationDesc')}</p>
-                </div>
+                <>
+                  <ContestLegalPanel />
+                  <div className="event-create-free-entry event-create-free-entry--premium">
+                    <p className="event-create-free-entry__badge">{t('events.freeEntry')}</p>
+                    <p className="studio-page-header__subtitle">{t('events.registrationDesc')}</p>
+                  </div>
+                </>
               )}
 
               {step === 3 && (
+                <>
+                <ContestLegalPanel compact />
                 <ul className="event-prize-tier-list event-prize-tier-list--premium event-prize-tier-list--compact">
                   {EVENT_PRIZE_TIERS.map((tier) => (
                     <li key={tier.id} className="event-prize-tier event-prize-tier--premium">
@@ -225,6 +233,7 @@ export function EventCreate() {
                     </li>
                   ))}
                 </ul>
+                </>
               )}
 
               {step === 4 && (
@@ -244,10 +253,14 @@ export function EventCreate() {
               )}
 
               {step === 6 && (
-                <div className="event-wizard__info-card">
-                  <span className="event-wizard__info-card__icon" aria-hidden><Send size={20} /></span>
-                  <p className="studio-page-header__subtitle">{t('events.publishingDesc')}</p>
-                </div>
+                <>
+                  <ContestLegalPanel compact />
+                  <LegalApprovalQueuePanel />
+                  <div className="event-wizard__info-card">
+                    <span className="event-wizard__info-card__icon" aria-hidden><Send size={20} /></span>
+                    <p className="studio-page-header__subtitle">{t('events.publishingDesc')}</p>
+                  </div>
+                </>
               )}
             </div>
 

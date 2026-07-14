@@ -40,6 +40,8 @@ export {
 export {
   CONTENT_TYPES,
   CREATABLE_CONTENT_TYPES,
+  CORE_CONTENT_TYPES,
+  MOAT_CONTENT_TYPES,
   STORY_STATUSES,
   AGE_RATINGS,
   LANGUAGES,
@@ -47,6 +49,7 @@ export {
 export type {
   ContentTypeId,
   ContentTypeDef,
+  MoatContentTypeId,
   StoryStatusId,
   AgeRatingId,
   LanguageId,

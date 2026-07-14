@@ -88,7 +88,7 @@ function ScheduleCalendar({
   const monthLabel = month.toLocaleString(undefined, { month: 'long', year: 'numeric' });
 
   return (
-    <div className="schedule-calendar">
+    <div className="schedule-calendar schedule-calendar--v2">
       <div className="schedule-calendar__head">
         <button
           type="button"
@@ -128,11 +128,14 @@ function ScheduleCalendar({
             >
               <span className="schedule-calendar__day">{day}</span>
               {dayItems.length > 0 && (
-                <span className="schedule-calendar__dots" aria-hidden>
-                  {dayItems.slice(0, 3).map((item) => (
-                    <span key={item.id} className="schedule-calendar__dot" />
-                  ))}
-                </span>
+                <>
+                  <span className="schedule-calendar__release-count" aria-hidden>{dayItems.length}</span>
+                  <span className="schedule-calendar__dots" aria-hidden>
+                    {dayItems.slice(0, 3).map((item) => (
+                      <span key={item.id} className="schedule-calendar__dot" />
+                    ))}
+                  </span>
+                </>
               )}
             </div>
           );
@@ -252,7 +255,7 @@ export function Schedule() {
   const loading = storiesLoading || scheduledLoading;
 
   return (
-    <div className="cms-page studio-page schedule-studio-page schedule-studio-page--premium wc-page-enter">
+    <div className="cms-page studio-page schedule-studio-page schedule-studio-page--premium schedule-studio-page--wave23 schedule-studio-page--wave26 studio-page--calm26 wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('schedule.eyebrow')}

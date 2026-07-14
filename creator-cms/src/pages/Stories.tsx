@@ -13,6 +13,7 @@ import { ManuscriptCard } from '../components/studio/ManuscriptCard';
 import { ShareModal } from '../components/studio/ShareModal';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { StudioEmptyState } from '../components/studio/StudioEmptyState';
+import { StudioIllustration } from '../components/studio/StudioIllustration';
 
 type StatusFilter = '' | 'draft' | 'published' | 'pending_review' | 'needs_revision';
 
@@ -66,7 +67,7 @@ export function Stories() {
   }, []);
 
   return (
-    <div className="cms-page studio-page stories-studio--premium wc-page-enter">
+    <div className="cms-page studio-page stories-studio--premium stories-studio--wave20 stories-studio--wave26 studio-page--calm26 wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('stories.eyebrow')}
@@ -148,7 +149,7 @@ export function Stories() {
       )}
 
       {!loading && (filteredStories.length > 0 || isMockMode) && (
-        <div className="manuscript-grid manuscript-grid--premium" role="list" aria-label={t('stories.title')}>
+        <div className="manuscript-grid manuscript-grid--premium manuscript-grid--museum" role="list" aria-label={t('stories.title')}>
           {isMockMode && (
             <ManuscriptCard
               story={{
@@ -171,6 +172,7 @@ export function Stories() {
               variant="grid"
               onShare={story.moderation_status === 'published' ? () => { void handleShare(story); } : undefined}
               onEdit={() => setEditing(story)}
+              onCoverUpdated={reload}
               onDelete={() => { void handleDelete(story); }}
               deleting={deleting === story.id}
             />
@@ -179,6 +181,10 @@ export function Stories() {
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
+        <>
+        <div className="stories-page__illus" aria-hidden>
+          <StudioIllustration id="palm-scroll" tone="maroon" size={80} />
+        </div>
         <StudioEmptyState
           icon={PenLine}
           iconSize={32}
@@ -191,6 +197,7 @@ export function Stories() {
             {t('stories.createFirst')}
           </Link>
         </StudioEmptyState>
+        </>
       )}
 
       {editing && (

@@ -137,6 +137,16 @@ interface EditorWorkspaceProps {
   authorComments?: StoryAuthorComment[];
   activeAuthorCommentId?: string | null;
   highlightNoteRef?: React.MutableRefObject<((comment: StoryAuthorComment) => void) | null>;
+  narrativeOsEnabled?: boolean;
+  onSelectionRectChange?: (rect: DOMRect | null) => void;
+  onSlashCommandRequest?: (anchor: { top: number; left: number }) => void;
+  formatActionRef?: React.MutableRefObject<{
+    bold: () => void;
+    italic: () => void;
+    insertDialogue: () => void;
+    insertNote: () => void;
+    insertSceneBreak: () => void;
+  } | null>;
 }
 
 export function EditorWorkspace({
@@ -170,6 +180,10 @@ export function EditorWorkspace({
   authorComments = [],
   activeAuthorCommentId = null,
   highlightNoteRef,
+  narrativeOsEnabled = false,
+  onSelectionRectChange,
+  onSlashCommandRequest,
+  formatActionRef,
 }: EditorWorkspaceProps) {
   const [internalAiOpen, setInternalAiOpen] = useState(false);
   const aiCompanionOpen = controlledAiOpen ?? internalAiOpen;
@@ -370,6 +384,7 @@ export function EditorWorkspace({
     }
 
     saveSceneHtml(activeScene.id, html, trailing);
+    if (narrativeOsEnabled) detectSlashCommand(editor);
   };
 
   const insertSuggestion = useCallback((suggestion: Suggestion) => {
@@ -411,6 +426,27 @@ export function EditorWorkspace({
     flushActiveScene();
   };
 
+  const insertDialogue = () => {
+    const editor = getEditor();
+    if (!editor || !activeScene || readOnly) return;
+    const selection = editor.getSelection(true);
+    const index = selection?.index ?? editor.getLength();
+    editor.insertText(index, '\u201C', 'user');
+    editor.insertText(index + 1, '\u201D', 'user');
+    editor.setSelection(index + 1, 0);
+    flushActiveScene();
+  };
+
+  const insertNote = () => {
+    const editor = getEditor();
+    if (!editor || !activeScene || readOnly) return;
+    const noteHtml = '<div class="note-block" data-note="true"><p>Author note…</p></div>';
+    const selection = editor.getSelection(true);
+    const index = selection?.index ?? editor.getLength();
+    editor.clipboard.dangerouslyPasteHTML(index, noteHtml);
+    flushActiveScene();
+  };
+
   const insertSceneBreak = () => {
     const editor = getEditor();
     if (!editor || !activeScene || readOnly) return;
@@ -433,6 +469,64 @@ export function EditorWorkspace({
     flushActiveScene();
     editor.setSelection(Math.min(index + 1, editor.getLength()), 0);
   };
+
+  useEffect(() => {
+    if (!formatActionRef) return;
+    formatActionRef.current = {
+      bold: () => format('bold'),
+      italic: () => format('italic'),
+      insertDialogue,
+      insertNote,
+      insertSceneBreak,
+    };
+    return () => { formatActionRef.current = null; };
+  }, [formatActionRef, insertDialogue, insertNote, insertSceneBreak, activeScene?.id]);
+
+  useEffect(() => {
+    if (!narrativeOsEnabled) return;
+    const editor = getEditor();
+    if (!editor) return;
+
+    const onSelectionChange = (range: { index: number; length: number } | null) => {
+      if (!range?.length || !onSelectionRectChange) {
+        onSelectionRectChange?.(null);
+        return;
+      }
+      const bounds = editor.getBounds(range.index, range.length);
+      if (!bounds) {
+        onSelectionRectChange(null);
+        return;
+      }
+      const rootRect = editor.root.getBoundingClientRect();
+      onSelectionRectChange(new DOMRect(
+        rootRect.left + bounds.left,
+        rootRect.top + bounds.top,
+        bounds.width,
+        bounds.height,
+      ));
+    };
+
+    editor.on('selection-change', onSelectionChange);
+    return () => { editor.off('selection-change', onSelectionChange); };
+  }, [narrativeOsEnabled, onSelectionRectChange, activeScene?.id]);
+
+  const detectSlashCommand = useCallback((editor: ReturnType<NonNullable<typeof quillRef.current>['getEditor']>) => {
+    if (!onSlashCommandRequest) return;
+    const range = editor.getSelection();
+    if (!range) return;
+    const lineStart = editor.getText(0, range.index).lastIndexOf('\n') + 1;
+    const lineText = editor.getText(lineStart, range.index - lineStart);
+    if (lineText === '/') {
+      const bounds = editor.getBounds(range.index, 0);
+      if (bounds) {
+        const rootRect = editor.root.getBoundingClientRect();
+        onSlashCommandRequest({
+          top: rootRect.top + bounds.top - 8,
+          left: rootRect.left + bounds.left,
+        });
+      }
+    }
+  }, [onSlashCommandRequest]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -490,23 +584,25 @@ export function EditorWorkspace({
         </div>
       )}
 
-      <FormatToolbar
-        phoneticLive={phoneticLive}
-        onTogglePhonetic={onTogglePhonetic}
-        onConvertAll={handleConvertAll}
-        onBold={() => format('bold')}
-        onItalic={() => format('italic')}
-        onUnderline={() => format('underline')}
-        onAlign={align => format('align', align)}
-        onUndo={() => getEditor()?.history.undo()}
-        onRedo={() => getEditor()?.history.redo()}
-        onSceneBreak={insertSceneBreak}
-        onLink={insertLink}
-        onInsertImage={storyId && !readOnly ? () => setMediaInsertOpen(true) : undefined}
-        readOnly={readOnly}
-        minimal={toolbarMinimal}
-        onOpenAi={CREATOR_AI.generativeEnabled ? () => setAiCompanionOpen(true) : undefined}
-      />
+      {!narrativeOsEnabled && (
+        <FormatToolbar
+          phoneticLive={phoneticLive}
+          onTogglePhonetic={onTogglePhonetic}
+          onConvertAll={handleConvertAll}
+          onBold={() => format('bold')}
+          onItalic={() => format('italic')}
+          onUnderline={() => format('underline')}
+          onAlign={align => format('align', align)}
+          onUndo={() => getEditor()?.history.undo()}
+          onRedo={() => getEditor()?.history.redo()}
+          onSceneBreak={insertSceneBreak}
+          onLink={insertLink}
+          onInsertImage={storyId && !readOnly ? () => setMediaInsertOpen(true) : undefined}
+          readOnly={readOnly}
+          minimal={toolbarMinimal}
+          onOpenAi={CREATOR_AI.generativeEnabled ? () => setAiCompanionOpen(true) : undefined}
+        />
+      )}
 
       {!focusMode && showSceneNav && sceneCount > 1 && (
         <div className="katha-proto-scene-nav" role="navigation" aria-label="Scene navigation">
@@ -570,7 +666,7 @@ export function EditorWorkspace({
         </div>
       </div>
 
-      {CREATOR_AI.generativeEnabled && (
+      {CREATOR_AI.generativeEnabled && !narrativeOsEnabled && (
         <AiAssistantDock
           open={aiCompanionOpen}
           onOpenChange={setAiCompanionOpen}

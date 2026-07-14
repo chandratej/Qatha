@@ -47,6 +47,8 @@ export interface StoryData {
   release_schedule?: string;
   slug?: string | null;
   moderation_status?: 'draft' | 'pending_review' | 'published' | 'needs_revision';
+  content_type?: string;
+  language?: string;
 }
 
 export interface ChapterListItem {

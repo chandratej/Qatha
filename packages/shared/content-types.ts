@@ -55,27 +55,27 @@ export const CONTENT_TYPES = [
   },
   {
     id: 'epistolary_chat',
-    label: 'Epistolary Chat',
-    labelTelugu: 'చాట్ కథ',
+    label: 'Vernacular Chat-Fiction',
+    labelTelugu: 'ఇంటరాక్టివ్ చాట్-కథ',
     maxChapters: null,
     minChapters: 20,
     minWordsPerChapter: 500,
-    guideTelugu: 'చాట్ సంభాషణల రూపంలో కథ — త్వరలో వస్తుంది.',
-    guideEnglish: 'Stories told through chat conversations — coming soon.',
-    comingSoon: true,
-    phase: 'phase_2' as const,
+    guideTelugu: 'తెలుగు చాట్-బబుల్ ఫార్మాట్ — సంభాషణలలో కథ. కనీసం 20 ఎపిసోడ్లు, ప్రతి ఎపిసోడ్ 500+ పదాలు.',
+    guideEnglish: 'Telugu chat-bubble format — story through conversations. At least 20 episodes, 500+ words each.',
+    moat: true,
+    phase: 'phase_1' as const,
   },
   {
     id: 'interactive_branching',
-    label: 'Interactive Branching',
-    labelTelugu: 'ఇంటరాక్టివ్ కథ',
+    label: 'Interactive Fiction',
+    labelTelugu: 'ఇంటరాక్టివ్ ఫిక్షన్',
     maxChapters: null,
     minChapters: 10,
     minWordsPerChapter: 800,
-    guideTelugu: 'పాఠకులు ఎంపికలు చేసి కథ మార్పు చేసే ఫార్మాట్ — త్వరలో వస్తుంది.',
-    guideEnglish: 'Reader-choice branching narratives — coming soon.',
-    comingSoon: true,
-    phase: 'phase_3' as const,
+    guideTelugu: 'పాఠకుల ఎంపికలతో కథ శాఖలు — కథా ప్రత్యేక ఫార్మాట్. కనీసం 10 నోడ్లు, ప్రతి నోడ్ 800+ పదాలు.',
+    guideEnglish: 'Reader-choice branching paths — Katha moat format. At least 10 nodes, 800+ words each.',
+    moat: true,
+    phase: 'phase_2' as const,
   },
 ] as const;
 
@@ -83,10 +83,20 @@ export type ContentTypeId = (typeof CONTENT_TYPES)[number]['id'];
 
 export type ContentTypeDef = (typeof CONTENT_TYPES)[number];
 
-/** Content types available in the create-story UI (excludes deprecated & coming-soon). */
+/** Content types available in the create-story UI (excludes deprecated legacy formats). */
 export const CREATABLE_CONTENT_TYPES = CONTENT_TYPES.filter(
-  (ct) => !('deprecated' in ct && ct.deprecated) && !('comingSoon' in ct && ct.comingSoon),
+  (ct) => !('deprecated' in ct && ct.deprecated),
 );
+
+export const MOAT_CONTENT_TYPES = CREATABLE_CONTENT_TYPES.filter(
+  (ct) => 'moat' in ct && ct.moat,
+);
+
+export const CORE_CONTENT_TYPES = CREATABLE_CONTENT_TYPES.filter(
+  (ct) => !('moat' in ct && ct.moat),
+);
+
+export type MoatContentTypeId = (typeof MOAT_CONTENT_TYPES)[number]['id'];
 
 export const STORY_STATUSES = [
   { id: 'draft', label: 'Draft' },

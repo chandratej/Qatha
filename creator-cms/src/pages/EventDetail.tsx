@@ -25,6 +25,7 @@ import { api } from '../lib/api';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { buildEventProgress, formatEventDeadline } from '../business/eventProgress';
 import { EventProgressStepper } from '../components/events/EventProgressStepper';
+import { ContestLegalPanel } from '../components/events/ContestLegalPanel';
 import {
   validateStoryEligibilityForEvent,
   type ContestStoryInput,
@@ -206,7 +207,7 @@ export function EventDetail() {
   const isDebut = event.event_type === 'debut_season';
 
   return (
-    <div className="cms-page studio-page event-detail-page event-detail-page--premium event-detail-page--streamlined wc-page-enter">
+    <div className="cms-page studio-page event-detail-page event-detail-page--premium event-detail-page--streamlined event-detail-page--legal-v3 event-detail-page--wave27 event-detail-page--wave28 studio-page--calm26 wc-page-enter">
       <BackLink to="/events" label={t('events.title')} />
       <StudioPageHeader
         variant="hero"
@@ -278,6 +279,7 @@ export function EventDetail() {
             </div>
           ) : canRegister ? (
             <div className="event-register-box event-register-box--compact cms-mt-6">
+              <ContestLegalPanel compact />
               <CompetitionRulesPanel rules={rules} locale={locale} t={t} />
               <label className="event-rules-accept reviewer-onboarding__agreement cms-mt-6">
                 <input
@@ -349,6 +351,22 @@ export function EventDetail() {
                       {busy ? t('events.submitting') : t('events.submit')}
                     </button>
                   </div>
+
+                  {eligibility && selectedStory && (
+                    <div className="event-eligibility-summary" role="status" aria-label={t('events.eligibilityDesc')}>
+                      <span className={`event-eligibility-chip${eligibility.eligible ? ' event-eligibility-chip--ok' : ' event-eligibility-chip--warn'}`}>
+                        {eligibility.eligible ? t('events.eligibilityChipOk') : t('events.eligibilityChipBlocked')}
+                      </span>
+                      <span className="event-eligibility-chip">
+                        {t('events.eligibilityChipChapters').replace('{count}', String(selectedStory.chapter_count))}
+                      </span>
+                      {eligibility.warnings.length > 0 && (
+                        <span className="event-eligibility-chip event-eligibility-chip--warn">
+                          {t('events.eligibilityChipWarnings').replace('{count}', String(eligibility.warnings.length))}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {eligibility && !eligibility.eligible && (
                     <div className="event-eligibility-block event-eligibility-panel--premium" role="alert">
@@ -441,56 +459,69 @@ function CompetitionRulesPanel({
   const eligibilityNotes = isTe ? rules.eligibility.notesTelugu : rules.eligibility.notes;
 
   return (
-    <section className="event-rules-panel cms-panel cms-panel--flat" aria-labelledby="event-rules-title">
-      <h4 id="event-rules-title" className="dashboard-panel__title">
-        {t('events.rulesTitle')}
-        <span className="input-hint"> ({rules.version})</span>
-      </h4>
+    <section className="event-rules-panel event-rules-panel--compact event-rules-panel--legal-v2 cms-panel cms-panel--flat" aria-labelledby="event-rules-title">
+      <div className="event-rules-panel__title-row">
+        <h4 id="event-rules-title" className="dashboard-panel__title">
+          {t('events.rulesTitle')}
+          <span className="input-hint"> ({rules.version})</span>
+        </h4>
+        <span className="event-rules-panel__trust">
+          {t('events.rulesTrustBadge')}
+        </span>
+      </div>
 
-      <div className="event-rules-panel__grid">
-        <div>
-          <h5 className="event-rules-panel__heading">{t('events.rulesEligibility')}</h5>
-          <ul className="event-rules-panel__list">
-            {eligibilityNotes.map((note) => <li key={note}>{note}</li>)}
-          </ul>
+      <details className="event-rules-panel__section" open>
+        <summary>{t('events.rulesEligibility')}</summary>
+        <div className="event-rules-panel__section-body">
+          <div className="event-rules-panel__chips">
+            {eligibilityNotes.map((note) => (
+              <span key={note} className="event-rules-chip">{note}</span>
+            ))}
+          </div>
         </div>
+      </details>
 
-        <div>
-          <h5 className="event-rules-panel__heading">{t('events.rulesJudging')}</h5>
+      <details className="event-rules-panel__section">
+        <summary>{t('events.rulesJudging')}</summary>
+        <div className="event-rules-panel__section-body">
           <p className="input-hint">
             {isTe ? rules.judging.modelLabelTelugu : rules.judging.modelLabel}
             {' — '}
             {isTe ? rules.judging.rubricSummaryTelugu : rules.judging.rubricSummary}
           </p>
         </div>
+      </details>
 
-        <div>
-          <h5 className="event-rules-panel__heading">{t('events.rulesPrizes')}</h5>
+      <details className="event-rules-panel__section">
+        <summary>{t('events.rulesPrizes')}</summary>
+        <div className="event-rules-panel__section-body">
           <p className="input-hint">{t('events.rulesRecognitionOnly')}</p>
-          <ul className="event-rules-panel__list">
+          <div className="event-rules-panel__chips">
             {rules.prizes.tiers.slice(0, 3).map((tier) => (
-              <li key={tier.id}>
-                <strong>{isTe ? tier.labelTelugu : tier.label}</strong>
+              <span key={tier.id} className="event-rules-chip">
+                {isTe ? tier.labelTelugu : tier.label}
                 {' — '}
                 {(isTe ? tier.recognitionTelugu : tier.recognition).join(', ')}
-              </li>
+              </span>
             ))}
-          </ul>
+          </div>
         </div>
+      </details>
 
-        <div>
-          <h5 className="event-rules-panel__heading">{t('events.rulesTimeline')}</h5>
-          <ol className="event-rules-panel__list event-rules-panel__list--ordered">
+      <details className="event-rules-panel__section">
+        <summary>{t('events.rulesTimeline')}</summary>
+        <div className="event-rules-panel__section-body">
+          <div className="event-rules-panel__chips">
             {rules.timeline.phases.map((phase) => (
-              <li key={phase.id}>
-                <strong>{isTe ? phase.labelTelugu : phase.label}</strong>
+              <span key={phase.id} className="event-rules-chip">
+                {isTe ? phase.labelTelugu : phase.label}
                 {' — '}
                 {isTe ? phase.descriptionTelugu : phase.description}
-              </li>
+              </span>
             ))}
-          </ol>
+          </div>
         </div>
-      </div>
+      </details>
     </section>
   );
 }

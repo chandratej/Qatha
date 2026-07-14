@@ -1,0 +1,219 @@
+/**
+ * Wave 16 — Stories museum grid, community feed premium, dashboard illustration, English cloud status
+ */
+
+/* Manuscript shelf — museum grid rhythm */
+.manuscript-grid--museum {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
+.manuscript-card--museum {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  position: relative;
+}
+
+.manuscript-card--museum .manuscript-card__spine {
+  width: 12px;
+  background: linear-gradient(
+    180deg,
+    var(--katha-maroon) 0%,
+    color-mix(in srgb, var(--katha-gold) 70%, var(--katha-maroon)) 55%,
+    var(--katha-gold) 100%
+  );
+  box-shadow: inset -2px 0 6px rgba(0, 0, 0, 0.12);
+}
+
+.manuscript-card--museum .manuscript-card__page-edge {
+  opacity: 0.55;
+}
+
+.manuscript-card--museum .manuscript-card__cover-link {
+  position: relative;
+}
+
+.manuscript-card--museum .manuscript-card__ribbon {
+  position: absolute;
+  top: 12px;
+  right: -4px;
+  z-index: 2;
+  padding: 4px 10px 4px 12px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+  background: var(--katha-maroon);
+  border-radius: 4px 0 0 4px;
+  box-shadow: -2px 2px 8px rgba(107, 35, 56, 0.25);
+}
+
+.manuscript-card--museum.manuscript-card--published .manuscript-card__ribbon {
+  background: linear-gradient(135deg, var(--katha-gold) 0%, #a88642 100%);
+  color: var(--ink);
+}
+
+.manuscript-card--museum .manuscript-card__arc {
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--katha-gold) 12%, transparent);
+  overflow: hidden;
+}
+
+.manuscript-card--museum .manuscript-card__arc-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--katha-maroon), var(--katha-gold));
+  transition: width 0.4s var(--katha-ease);
+}
+
+.manuscript-card--museum .manuscript-card__arc-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--premium-muted);
+}
+
+.manuscript-card--museum .manuscript-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.manuscript-card--museum .manuscript-card__actions {
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.manuscript-card--museum .manuscript-card__cover-placeholder .book-spine {
+  position: absolute;
+  left: 8px;
+  bottom: 12px;
+  transform: scale(0.72);
+  transform-origin: bottom left;
+  opacity: 0.9;
+}
+
+/* Community feed — premium cards */
+.community-feed-list--premium {
+  gap: 14px;
+}
+
+.community-feed-card--premium {
+  padding: 18px 20px;
+  border-radius: var(--wc-radius-lg, 18px);
+  background:
+    linear-gradient(145deg, var(--premium-surface) 0%, color-mix(in srgb, var(--katha-gold) 3%, var(--premium-surface)) 100%);
+  border: 1px solid var(--premium-border);
+  box-shadow: var(--premium-shadow-rest);
+  transition:
+    transform var(--katha-duration-fast) var(--katha-ease),
+    box-shadow var(--katha-duration-fast) var(--katha-ease);
+}
+
+.community-feed-card--premium:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--premium-shadow-hover);
+}
+
+.community-feed-card--premium .community-feed-card__avatar-ring {
+  display: grid;
+  place-items: center;
+}
+
+.community-feed-card--premium .community-feed-card__avatar-letter {
+  position: absolute;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--katha-maroon);
+}
+
+.community-feed-card--premium .community-feed-card__avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+}
+
+.community-feed-card--premium .community-feed-card__story {
+  border: 1px solid color-mix(in srgb, var(--katha-maroon) 12%, transparent);
+}
+
+.community-feed-card--premium .community-feed-card__action {
+  background: color-mix(in srgb, var(--katha-gold) 6%, var(--premium-surface));
+  border: 1px solid var(--premium-border);
+}
+
+.community-feed-card--premium .community-feed-card__action.is-loved {
+  background: color-mix(in srgb, var(--katha-ember, #c45) 10%, var(--premium-surface));
+  border-color: color-mix(in srgb, var(--katha-ember, #c45) 25%, transparent);
+}
+
+/* Dashboard illustration orbs */
+.quick-actions-panel__illustration {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 120px;
+  height: 80px;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 0 var(--wc-radius-lg, 18px) 0 0;
+}
+
+.dashboard-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(28px);
+  opacity: 0.45;
+}
+
+.dashboard-orb--gold {
+  width: 80px;
+  height: 80px;
+  top: -20px;
+  right: -10px;
+  background: var(--katha-gold);
+}
+
+.dashboard-orb--maroon {
+  width: 60px;
+  height: 60px;
+  top: 20px;
+  right: 40px;
+  background: var(--katha-maroon);
+  opacity: 0.28;
+}
+
+.quick-actions-panel.dashboard-widget--glyph {
+  position: relative;
+  overflow: hidden;
+}
+
+/* English editor cloud sync status */
+.english-editor__sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.english-editor__sync--cloud {
+  color: var(--accent-sage, #4a7c59);
+}
+
+.english-editor__sync--pending {
+  color: var(--premium-muted);
+}
+
+.english-editor__sync--error {
+  color: var(--katha-maroon);
+}

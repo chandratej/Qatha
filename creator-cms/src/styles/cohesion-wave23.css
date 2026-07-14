@@ -1,0 +1,220 @@
+/**
+ * Wave 23 — Contest legal engine, magazine edition, community/schedule/host polish
+ */
+
+/* Contest legal panel */
+.contest-legal-panel {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+}
+
+.contest-legal-panel--compact {
+  padding: 10px 12px;
+}
+
+.contest-legal-panel__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.contest-legal-panel__icon {
+  flex-shrink: 0;
+  color: var(--katha-maroon);
+}
+
+.contest-legal-panel__title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.contest-legal-panel__hint {
+  margin: 4px 0 0;
+}
+
+.contest-legal-panel__status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.contest-legal-panel__status--approved {
+  background: color-mix(in srgb, var(--katha-gold) 12%, var(--surface));
+  color: var(--katha-maroon);
+}
+
+.contest-legal-panel__status--pending_legal {
+  background: color-mix(in srgb, var(--katha-maroon) 8%, var(--surface));
+  color: var(--katha-maroon);
+}
+
+.contest-legal-panel__badges {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.contest-legal-panel__badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--katha-gold) 6%, var(--surface));
+  border: 1px solid var(--premium-border);
+  color: var(--ink-muted);
+}
+
+.contest-legal-panel__warning {
+  margin: 10px 0 0;
+}
+
+/* Magazine edition page */
+.magazine-edition-page__hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.magazine-edition-page__cover {
+  flex-shrink: 0;
+}
+
+.magazine-edition-page__section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 1rem;
+}
+
+.magazine-edition-page__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.magazine-edition-page__card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: var(--wc-radius-md, 14px);
+}
+
+.magazine-edition-page__card-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--katha-maroon) 10%, var(--surface));
+  color: var(--katha-maroon);
+}
+
+.magazine-edition-page__card h3 {
+  margin: 0 0 4px;
+  font-size: 0.875rem;
+}
+
+.magazine-edition-page__footer {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .magazine-edition-page__hero {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+}
+
+/* Community wave 23 */
+.community-studio--wave23 .community-studio__hero {
+  margin-bottom: 20px;
+}
+
+.community-studio--wave23 .community-feed-section {
+  border-radius: var(--wc-radius-lg, 18px);
+}
+
+.community-studio--wave23 .community-signals {
+  gap: 12px;
+}
+
+.community-studio--wave23 .community-signal {
+  border-radius: var(--wc-radius-md, 14px);
+  padding: 12px 14px;
+}
+
+/* Schedule wave 23 */
+.schedule-studio-page--wave23 .schedule-layout {
+  gap: 20px;
+}
+
+.schedule-studio-page--wave23 .schedule-form-panel--pro {
+  border-radius: var(--wc-radius-lg, 18px);
+}
+
+.schedule-studio-page--wave23 .schedule-calendar-panel,
+.schedule-studio-page--wave23 .schedule-list-panel--v2 {
+  border-radius: var(--wc-radius-md, 14px);
+}
+
+.schedule-studio-page--wave23 .schedule-item--dense {
+  border-radius: 12px;
+}
+
+/* Host event wave 23 */
+.event-create-page--wave23 .event-wizard__panel {
+  border-radius: var(--wc-radius-lg, 18px);
+}
+
+.event-create-page--wave23 .event-wizard__sidebar {
+  border-radius: var(--wc-radius-md, 14px);
+}
+
+.event-create-page--wave23 .event-create-free-entry--premium {
+  border-radius: var(--wc-radius-md, 14px);
+}
+
+/* Event detail legal v3 */
+.event-detail-page--legal-v3 .event-register-box--compact {
+  border-radius: var(--wc-radius-md, 14px);
+}
+
+.championship-magazine-teaser__link {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--katha-maroon);
+  text-decoration: none;
+}
+
+.championship-magazine-teaser__link:hover {
+  text-decoration: underline;
+}

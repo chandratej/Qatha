@@ -21,7 +21,10 @@ export function NotificationBell() {
     () => api.getMilestones().catch(() => ({ milestones: [] })),
   );
   const { data: platformData, mutate: mutatePlatform } = useApi(
-    () => platformApi.getNotifications(userId).then((r) => r.notifications.map(normalizePlatformNotification)),
+    () => platformApi
+      .getNotifications(userId)
+      .then((r) => r.notifications.map(normalizePlatformNotification))
+      .catch(() => [] as ReturnType<typeof normalizePlatformNotification>[]),
     [userId],
   );
   const [open, setOpen] = useState(false);

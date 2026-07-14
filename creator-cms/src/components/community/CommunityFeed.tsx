@@ -5,6 +5,7 @@ import { togglePostLove, type CommunityPost } from '../../lib/communityStore';
 import { useLocale } from '../../context/LocaleContext';
 import { formatRelativeTime } from '../../lib/relativeTime';
 import { StudioEmptyState } from '../studio/StudioEmptyState';
+import { StudioGlyph } from '../studio/StudioGlyph';
 
 interface Props {
   posts: CommunityPost[];
@@ -40,13 +41,18 @@ export function CommunityFeed({ posts, onUpdate }: Props) {
   };
 
   return (
-    <ul className="community-feed-list" role="list">
+    <ul className="community-feed-list community-feed-list--premium community-feed-list--wave24" role="list">
       {posts.map((post) => (
-        <li key={post.id} className="community-feed-card">
+        <li key={post.id} className="community-feed-card community-feed-card--premium">
           <header className="community-feed-card__head">
-            <span className="community-feed-card__avatar" aria-hidden>
-              {post.author_name.slice(0, 1).toUpperCase()}
-            </span>
+            <div className="community-feed-card__avatar-wrap">
+              <span className="community-feed-card__avatar-ring">
+                <StudioGlyph id="users" variant="soft" size={18} />
+              </span>
+              <span className="community-feed-card__avatar-letter" aria-hidden>
+                {post.author_name.slice(0, 1).toUpperCase()}
+              </span>
+            </div>
             <div>
               <strong className="community-feed-card__author">{post.author_name}</strong>
               <time className="community-feed-card__time" dateTime={post.created_at}>

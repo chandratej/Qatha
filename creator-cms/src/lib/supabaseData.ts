@@ -2,12 +2,15 @@
  * Direct Supabase Data API layer (§4 + §7.1 services backing).
  * RLS-authorized reads/writes + Edge Function invokes for privileged flows.
  */
+import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase, isMockMode } from './supabase';
 import { deriveStoryModerationStatus } from '../business/moderationStatus';
 import { buildDropOffInsights } from '../business/dropOffInsights';
 import { getNextPayoutDate } from '../business/payout';
 import { slugifyTitle } from './shareLinks';
 import { getSchemaCapabilities } from './schemaCapabilities';
+import { isForeignKeyError, isInvalidEnumError, isMissingColumnError } from './schemaHealth';
+import { ensureCreatorRow } from './creatorProfile';
 import { requireSessionUser, getSessionUser } from './authSession';
 import type {
   StoryData,
@@ -231,28 +234,90 @@ export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
   return { stories: storiesWithStatus };
 }
 
+const STORY_OPTIONAL_MIGRATION_COLS = [
+  'content_type',
+  'age_rating',
+  'language',
+  'story_status',
+  'secondary_genres',
+  'setting',
+  'themes',
+  'slug',
+] as const;
+
+const MOAT_CONTENT_TYPES = new Set(['epistolary_chat', 'interactive_branching']);
+
+function stripStoryOptionalCols(payload: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...payload };
+  for (const col of STORY_OPTIONAL_MIGRATION_COLS) delete next[col];
+  return next;
+}
+
+function formatStoryInsertError(
+  error: PostgrestError,
+  requestedContentType?: string,
+): string {
+  const msg = (error.message || '').toLowerCase();
+  if (isInvalidEnumError(error) && requestedContentType && MOAT_CONTENT_TYPES.has(requestedContentType)) {
+    return 'Signature formats (chat-fiction / branching) need migration 038 in Supabase. Choose Serialized Story, or run supabase/migrations/038_interactive_content_types.sql in the SQL editor.';
+  }
+  if (msg.includes('char_length') && msg.includes('title')) {
+    return 'Story title must be between 3 and 100 characters.';
+  }
+  if (msg.includes('char_length') && msg.includes('description')) {
+    return 'Description must be 300 characters or fewer.';
+  }
+  return error.message || 'Could not create story';
+}
+
 export async function sbCreateStory(body: {
   title: string;
   description?: string;
   genre: string;
   cover_url?: string;
   release_schedule?: string;
+  content_type?: string;
+  age_rating?: string;
+  language?: string;
+  story_status?: string;
+  secondary_genres?: string[];
+  setting?: string;
+  themes?: string[];
 }): Promise<{ story: { id: string } }> {
   const user = await requireUser();
+  const penName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Creator';
+  await ensureCreatorRow(user.id, penName);
 
   const caps = getSchemaCapabilities();
+  const title = body.title.trim();
+  if (title.length < 3 || title.length > 100) {
+    throw new Error('Story title must be between 3 and 100 characters.');
+  }
+
+  const description = body.description?.trim()
+    ? body.description.trim().slice(0, 300)
+    : body.description;
+
   const insertPayload: Record<string, unknown> = {
     author_id: user.id,
-    title: body.title,
-    description: body.description,
+    title,
+    description,
     genre: body.genre,
     cover_url: body.cover_url,
     release_schedule: body.release_schedule || 'irregular',
     is_published: true,
   };
 
+  if (body.content_type) insertPayload.content_type = body.content_type;
+  if (body.age_rating) insertPayload.age_rating = body.age_rating;
+  if (body.language) insertPayload.language = body.language;
+  if (body.story_status) insertPayload.story_status = body.story_status;
+  if (body.secondary_genres?.length) insertPayload.secondary_genres = body.secondary_genres;
+  if (body.setting) insertPayload.setting = body.setting;
+  if (body.themes?.length) insertPayload.themes = body.themes;
+
   if (caps.storySlug) {
-    const slugBase = slugifyTitle(body.title) || `story-${user.id.replace(/-/g, '').slice(0, 12)}`;
+    const slugBase = slugifyTitle(title) || `story-${user.id.replace(/-/g, '').slice(0, 12)}`;
     let slug = slugBase;
     for (let n = 0; n < 20; n += 1) {
       const candidate = n === 0 ? slugBase : `${slugBase}-${n}`;
@@ -265,9 +330,25 @@ export async function sbCreateStory(body: {
     insertPayload.slug = slug;
   }
 
-  const { data, error } = await supabase.from('stories').insert(insertPayload).select('id').single();
+  const insertStory = (payload: Record<string, unknown>) =>
+    supabase.from('stories').insert(payload).select('id').single();
 
-  if (error) throw new Error(error.message);
+  let { data, error } = await insertStory(insertPayload);
+
+  if (error && isForeignKeyError(error)) {
+    await ensureCreatorRow(user.id, penName);
+    ({ data, error } = await insertStory(insertPayload));
+  }
+
+  if (error && isMissingColumnError(error)) {
+    ({ data, error } = await insertStory(stripStoryOptionalCols(insertPayload)));
+  }
+
+  if (error && isInvalidEnumError(error) && body.content_type && MOAT_CONTENT_TYPES.has(body.content_type)) {
+    throw new Error(formatStoryInsertError(error, body.content_type));
+  }
+
+  if (error || !data) throw new Error(error ? formatStoryInsertError(error, body.content_type) : 'Could not create story');
   return { story: { id: data.id } };
 }
 

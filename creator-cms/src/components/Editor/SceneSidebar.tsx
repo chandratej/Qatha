@@ -19,6 +19,10 @@ export interface SceneBlock {
   content: string;
   keywords?: string[];
   aliases?: string[];
+  /** Author-editable beat label — relabeling layer over same scene data */
+  beatName?: string;
+  /** Per-scene narrative format for multi-format canvas */
+  narrativeFormat?: 'novel' | 'chat' | 'letter' | 'choice';
 }
 
 interface SceneSidebarProps {

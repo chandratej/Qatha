@@ -53,6 +53,12 @@ import {
   CURRENT_COMPETITION_RULES_VERSION,
 } from '../../../packages/shared/competitionRules';
 import { eventAcceptsRegistration, platformRevenueFromEntry } from '../business/eventRegistration';
+import {
+  evaluateEventLegalApproval,
+  listLegalApprovalQueue,
+  queueLegalApprovalRequest,
+  getPendingLegalCount,
+} from './contestLegalApproval';
 import { resetReviewDevData, seedReviewDevScenario } from './seedReviewDevData';
 import {
   applyToReviewerPool as applyToReviewerPoolLocal,
@@ -133,6 +139,21 @@ export const platformApi = {
     withPlatformFallback(
       () => platformBackend.createEvent(body),
       () => {
+        const entryFee = body.entry_fee_inr ?? 0;
+        const prizePool = body.prize_pool_inr ?? 0;
+        const legal = evaluateEventLegalApproval({
+          entryFeeInr: entryFee,
+          prizePoolInr: prizePool,
+          cashPrizesEnabled: prizePool > 0,
+        });
+        if (!legal.canPublish) {
+          queueLegalApprovalRequest(body.title ?? 'Untitled Event', {
+            entryFeeInr: entryFee,
+            prizePoolInr: prizePool,
+            cashPrizesEnabled: prizePool > 0,
+          });
+          throw new Error('LEGAL_APPROVAL_REQUIRED');
+        }
         const open = body.open_registration !== false;
         const event = createPlatformEvent({
           organizer_id: 'self',
@@ -156,6 +177,11 @@ export const platformApi = {
       () => platformBackend.getCompetitionRules(),
       () => ({ rules: DEFAULT_COMPETITION_RULES_V1, version: CURRENT_COMPETITION_RULES_VERSION }),
     ),
+  getLegalApprovalQueue: () =>
+    Promise.resolve({
+      queue: listLegalApprovalQueue(),
+      pendingCount: getPendingLegalCount(),
+    }),
   /** Author registration — free or paid entry with escrow split attribution */
   registerForEvent: (opts: {
     eventId: string;

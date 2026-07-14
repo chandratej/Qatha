@@ -1,0 +1,155 @@
+/**
+ * Wave 28 — Reader publish chrome, legal queue panel, share OG polish, auth/review calm
+ */
+
+/* Reader shell — published parity scaffold */
+.reader-shell--wave28 {
+  background: color-mix(in srgb, var(--surface) 98%, var(--katha-gold) 2%);
+}
+
+.reader-shell--wave28 .reader-shell__chapter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 auto 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: color-mix(in srgb, var(--ink) 4%, var(--surface));
+}
+
+.reader-shell--wave28 .reader-shell__footnote {
+  display: none;
+}
+
+.reader-shell--wave28 .reader-shell__frame {
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+/* Legal approval queue */
+.legal-queue-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--wc-radius-md, 14px);
+  font-size: 0.8125rem;
+}
+
+.legal-queue-panel--ok {
+  background: color-mix(in srgb, var(--katha-gold) 6%, var(--surface));
+  border: 1px solid var(--premium-border);
+}
+
+.legal-queue-panel--pending {
+  background: color-mix(in srgb, var(--katha-maroon) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--katha-maroon) 20%, transparent);
+}
+
+.legal-queue-panel__title {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: var(--katha-maroon);
+}
+
+.legal-queue-panel__hint {
+  margin: 0;
+}
+
+/* Debut certificate download */
+.debut-graduation-modal__cert-btn {
+  margin-top: 12px;
+  width: 100%;
+}
+
+/* Share preview — YouTube-style density */
+.share-modal--wave28 .share-modal__preview {
+  margin-bottom: 14px;
+}
+
+.share-preview--wave28 .share-preview__card {
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.share-preview--wave28 .share-preview__cover {
+  aspect-ratio: 1.91 / 1;
+  max-height: 140px;
+}
+
+.share-preview--wave28 .share-preview__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.share-preview--wave28 .share-preview__domain {
+  font-size: 0.6875rem;
+  color: var(--premium-muted);
+}
+
+/* Auth login calm */
+.cms-auth-page--wave28 .cms-auth-card {
+  border-radius: var(--wc-radius-lg, 18px);
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+/* Review workspace calm */
+.review-workspace-page--wave28 .rw-chrome {
+  padding: 8px 12px;
+}
+
+/* Dashboard wave28 — rail breathing */
+.dashboard-page--wave28 .dashboard-bento__rail {
+  gap: 14px;
+}
+
+.dashboard-page--wave28 .studio-workspace__aside {
+  gap: 14px;
+}
+
+/* Event eligibility chips */
+.event-eligibility-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.event-eligibility-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--katha-gold) 8%, var(--surface));
+  border: 1px solid var(--premium-border);
+  color: var(--ink-muted);
+}
+
+.event-eligibility-chip--ok {
+  color: var(--katha-maroon);
+  border-color: color-mix(in srgb, var(--katha-gold) 30%, transparent);
+}
+
+.event-eligibility-chip--warn {
+  color: var(--ember, #c45c26);
+  border-color: color-mix(in srgb, var(--ember, #c45c26) 25%, transparent);
+}
+
+/* Championship countdown scaffold */
+.championship-countdown {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--katha-maroon) 6%, var(--surface));
+  color: var(--katha-maroon);
+}

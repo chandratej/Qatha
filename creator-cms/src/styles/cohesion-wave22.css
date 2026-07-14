@@ -1,0 +1,251 @@
+/**
+ * Wave 22 — Branch graph canvas, validation, reader publish chrome, dashboard polish, legal v2
+ */
+
+/* Branch graph canvas */
+.branch-graph-canvas {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  overflow: hidden;
+}
+
+.branch-graph-canvas__label {
+  margin: 0 0 10px;
+}
+
+.branch-graph-canvas__viewport {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 160px;
+}
+
+.branch-graph-canvas__lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.branch-graph-canvas__line {
+  stroke-width: 2;
+  fill: none;
+  opacity: 0.55;
+}
+
+.branch-graph-canvas__line--a {
+  stroke: var(--katha-maroon);
+}
+
+.branch-graph-canvas__line--b {
+  stroke: color-mix(in srgb, var(--katha-gold) 80%, var(--ink));
+}
+
+.branch-graph-canvas__edge-label {
+  font-size: 9px;
+  font-weight: 800;
+  fill: var(--premium-muted);
+  text-anchor: middle;
+}
+
+.branch-graph-canvas__nodes {
+  position: relative;
+}
+
+.branch-graph-canvas__node {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--premium-border);
+  background: color-mix(in srgb, var(--katha-gold) 5%, var(--surface));
+  box-shadow: var(--premium-shadow-rest);
+  text-align: center;
+}
+
+.branch-graph-canvas__node--active {
+  border-color: var(--katha-gold);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--katha-gold) 20%, transparent);
+}
+
+.branch-graph-canvas__node--issue {
+  border-color: var(--ember, #c45c26);
+}
+
+.branch-graph-canvas__node-title {
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Graph validation */
+.branch-graph-validation {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.branch-graph-validation--ok {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--katha-gold) 8%, var(--surface));
+}
+
+.branch-graph-validation__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.branch-graph-validation__item--error {
+  color: var(--ember, #c45c26);
+  background: color-mix(in srgb, var(--ember, #c45c26) 8%, var(--surface));
+}
+
+.branch-graph-validation__item--warning {
+  color: color-mix(in srgb, var(--katha-gold) 90%, var(--ink));
+  background: color-mix(in srgb, var(--katha-gold) 10%, var(--surface));
+}
+
+/* Reader published chrome */
+.reader-shell--published {
+  max-width: 480px;
+  padding-bottom: 28px;
+}
+
+.reader-shell__chrome--published {
+  align-items: center;
+}
+
+.reader-shell__subtitle {
+  margin: 4px 0 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--premium-muted);
+}
+
+.reader-shell__actions {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.reader-shell__device-chrome {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.reader-shell__device-notch {
+  width: 96px;
+  height: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+/* Dashboard wave 22 */
+.dashboard-page--wave22 .dashboard-bento__rail .dashboard-panel {
+  border-radius: var(--wc-radius-lg, 18px);
+}
+
+.dashboard-page--wave22 .studio-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-page--wave22 .studio-workspace {
+  gap: 20px;
+}
+
+.dashboard-page--wave22 .dashboard-bottom-grid {
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-page--wave22 .studio-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Event legal engine v2 */
+.event-rules-panel--legal-v2 {
+  border-left: 3px solid var(--katha-gold);
+}
+
+.event-rules-panel--legal-v2 .event-rules-panel__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.event-rules-panel--legal-v2 .event-rules-panel__trust {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: color-mix(in srgb, var(--katha-maroon) 8%, var(--surface));
+  color: var(--katha-maroon);
+}
+
+/* Championship match feed */
+.championship-spotlight--wave22 .championship-match-feed {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+}
+
+.championship-spotlight--wave22 .championship-match-feed__list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.championship-spotlight--wave22 .championship-match-feed__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--katha-gold) 4%, var(--surface));
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.championship-spotlight--wave22 .championship-match-feed__item--live {
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 35%, transparent);
+}
+
+.championship-spotlight--wave22 .championship-match-feed__status {
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--katha-maroon);
+}

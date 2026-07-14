@@ -1,0 +1,277 @@
+/**
+ * Wave 20 — Interactive reader preview, illustration expansion, championship live hooks
+ */
+
+/* Interactive preview controls */
+.alternate-reader-preview__reset {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid var(--premium-border);
+  background: var(--premium-surface);
+  color: var(--premium-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.alternate-reader-preview__reset:hover {
+  color: var(--katha-maroon);
+  border-color: color-mix(in srgb, var(--katha-gold) 35%, transparent);
+}
+
+.alternate-reader-preview__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.alternate-reader-preview__progress {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--premium-muted);
+}
+
+.katha-btn--sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+/* Epistolary interactive */
+.epistolary-reader-preview--interactive .epistolary-reader-preview__device {
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.epistolary-reader-preview--interactive .epistolary-reader-preview__device:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--katha-gold) 50%, transparent);
+  outline-offset: 2px;
+}
+
+.epistolary-reader-bubble--enter {
+  animation: reader-bubble-enter 0.35s var(--katha-ease) both;
+}
+
+@keyframes reader-bubble-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.epistolary-reader-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  align-self: flex-start;
+}
+
+.epistolary-reader-typing__dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--katha-gold) 14%, var(--surface));
+}
+
+.epistolary-reader-typing__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--premium-muted);
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+
+.epistolary-reader-typing__dots span:nth-child(2) { animation-delay: 0.15s; }
+.epistolary-reader-typing__dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+.epistolary-reader-typing__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--premium-muted);
+}
+
+/* Branching interactive */
+.branching-reader-preview--interactive .branching-reader-preview__path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--katha-gold) 5%, var(--surface));
+  border: 1px solid var(--premium-border);
+}
+
+.branching-reader-preview__crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.branching-reader-preview__crumb-sep {
+  color: var(--premium-muted);
+  font-size: 0.75rem;
+}
+
+.branching-reader-preview__crumb-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  color: var(--premium-muted);
+}
+
+.branching-reader-preview__crumb-pill--active {
+  color: var(--katha-maroon);
+  border-color: color-mix(in srgb, var(--katha-gold) 40%, transparent);
+}
+
+.branching-reader-preview__scene--live {
+  animation: reader-scene-enter 0.3s var(--katha-ease) both;
+}
+
+@keyframes reader-scene-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.branching-reader-preview__scene-title {
+  margin: 0 0 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.branching-reader-choice--btn {
+  width: 100%;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.branching-reader-choice--btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--premium-shadow-hover);
+}
+
+.branching-reader-choice--btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.branching-reader-preview__end {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+/* Championship live hooks */
+.championship-spotlight--wave20 .championship-spotlight__live {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--katha-maroon);
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--katha-gold) 14%, transparent);
+  overflow: hidden;
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--katha-maroon), var(--katha-gold));
+  transition: width 0.4s var(--katha-ease);
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-status {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--premium-muted);
+}
+
+.championship-spotlight--wave20 .championship-spotlight__live-status--ready {
+  color: color-mix(in srgb, var(--katha-gold) 80%, var(--ink));
+}
+
+/* Page-level illustration art direction */
+.platform-map-page--wave20 {
+  position: relative;
+}
+
+.platform-map-page--wave20 .platform-map-page__illus {
+  position: absolute;
+  top: 12px;
+  right: clamp(12px, 4vw, 48px);
+  opacity: 0.28;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.stories-studio--premium.stories-studio--wave20 .stories-page__illus {
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 12px;
+  opacity: 0.5;
+}
+
+.events-studio-page.events-studio--wave20 .debut-season-hero--streamlined {
+  position: relative;
+  overflow: hidden;
+}
+
+.events-studio-page.events-studio--wave20 .debut-season-hero__illus {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  opacity: 0.35;
+  pointer-events: none;
+}

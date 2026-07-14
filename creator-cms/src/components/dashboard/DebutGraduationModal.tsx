@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { Award, Share2 } from 'lucide-react';
+import { Award, Download, Share2 } from 'lucide-react';
 import { useLocale } from '../../context/LocaleContext';
 import { shareViaWhatsApp, shareViaX } from '../../lib/socialShare';
 import { trackCreatorEvent } from '../../lib/analyticsEvents';
+import { downloadDebutCertificate } from '../../lib/debutCertificate';
 
 interface Props {
   storyTitle?: string | null;
@@ -92,6 +93,22 @@ export function DebutGraduationModal({ storyTitle, awardLevel, onClose }: Props)
             <span className="debut-graduation-modal__badge-label">{awardLabel}</span>
           </p>
         )}
+        <button
+          type="button"
+          className="katha-btn katha-btn--ghost debut-graduation-modal__cert-btn"
+          onClick={() => {
+            trackCreatorEvent('debut_certificate_download', { award_level: awardLevel ?? 'debut_author' });
+            downloadDebutCertificate({
+              storyTitle: storyTitle ?? (locale === 'te' ? 'నా నవల' : 'My novel'),
+              awardLabel,
+              locale,
+            });
+          }}
+        >
+          <Download size={16} aria-hidden />
+          {t('dashboard.debutGradCertificate')}
+        </button>
+
         <div className="debut-graduation-modal__share">
           <p className="debut-graduation-modal__share-label">
             <Share2 size={16} aria-hidden />

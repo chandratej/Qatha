@@ -1,0 +1,33 @@
+/**
+ * Wave 24 — Events legal strip, community feed density, championship polish
+ */
+
+.events-studio--wave24 .contest-legal-panel--compact {
+  margin-bottom: 18px;
+}
+
+.events-studio--wave24 .debut-season-hero {
+  border-radius: var(--wc-radius-lg, 18px);
+}
+
+.community-feed-list--wave24 .community-feed-card--premium {
+  border-radius: var(--wc-radius-md, 14px);
+  padding: 16px 18px;
+}
+
+.community-feed-list--wave24 .community-feed-card__avatar-ring {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--katha-gold) 15%, transparent);
+}
+
+.community-feed-list--wave24 .community-feed-card__action.is-loved {
+  color: var(--katha-maroon);
+}
+
+.championship-spotlight--wave24 .championship-bracket {
+  gap: 10px;
+}
+
+.championship-spotlight--wave24 .championship-bracket__slot--you {
+  font-weight: 800;
+  color: var(--katha-maroon);
+}

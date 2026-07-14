@@ -31,6 +31,20 @@ export function isMissingColumnError(error: PostgrestError | null | undefined): 
   );
 }
 
+/** Invalid enum value (e.g. content_type before migration 038). */
+export function isInvalidEnumError(error: PostgrestError | null | undefined): boolean {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  return error.code === '22P02' || msg.includes('invalid input value for enum');
+}
+
+/** FK violation — e.g. missing creators row for author_id. */
+export function isForeignKeyError(error: PostgrestError | null | undefined): boolean {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  return error.code === '23503' || msg.includes('foreign key');
+}
+
 export async function checkSchemaHealth(): Promise<SchemaHealth> {
   const { error } = await supabase.from('profiles').select('id').limit(1);
 

@@ -22,7 +22,9 @@ import { canHostEvent } from '../lib/hostEventEligibility';
 import { debutSeasonProgressPct } from '../lib/eventEligibility';
 import { api } from '../lib/api';
 import { ChampionshipSpotlight } from '../components/events/ChampionshipSpotlight';
+import { ContestLegalPanel } from '../components/events/ContestLegalPanel';
 import { StudioEmptyState } from '../components/studio/StudioEmptyState';
+import { StudioIllustration } from '../components/studio/StudioIllustration';
 
 function eventTypeLabel(id: string, locale: 'te' | 'en') {
   const match = EVENT_TYPES.find((t) => t.id === id);
@@ -50,6 +52,8 @@ export function Events() {
   const [maxChapters, setMaxChapters] = useState(0);
   const [championshipEnabled, setChampionshipEnabled] = useState(false);
   const [magazineEnabled, setMagazineEnabled] = useState(false);
+  const [debutEnrolled, setDebutEnrolled] = useState(false);
+  const [debutGraduated, setDebutGraduated] = useState(false);
 
   const mayHost = canHostEvent(user);
 
@@ -62,7 +66,8 @@ export function Events() {
         : Promise.resolve({ registrations: [] }),
       api.getCreatorStories().catch(() => ({ stories: [] })),
       api.getFounderOsConfig().catch(() => null),
-    ]).then(([ev, mine, stories, founderOs]) => {
+      api.getDebutSeasonProgress().catch(() => ({ progress: { enrolled: false, chapter_count: 0, graduated: false } })),
+    ]).then(([ev, mine, stories, founderOs, debut]) => {
       setEvents(ev.events);
       setMyRegEventIds(new Set(mine.registrations.map((r) => r.event_id)));
       const chapters = (stories.stories ?? []).reduce(
@@ -73,6 +78,11 @@ export function Events() {
       const features = founderOs?.config?.features;
       setChampionshipEnabled(Boolean(features?.championship_ecosystem?.enabled));
       setMagazineEnabled(Boolean(features?.premium_magazine?.enabled));
+      setDebutEnrolled(Boolean(debut?.progress?.enrolled));
+      setDebutGraduated(Boolean(debut?.progress?.graduated));
+      if (debut?.progress?.enrolled && debut.progress.chapter_count > chapters) {
+        setMaxChapters(debut.progress.chapter_count);
+      }
       setLoading(false);
     });
   }, [user?.id]);
@@ -100,7 +110,7 @@ export function Events() {
   ];
 
   return (
-    <div className="cms-page studio-page events-studio-page wc-page-enter">
+    <div className="cms-page studio-page events-studio-page events-studio--wave20 events-studio--wave24 events-studio--wave26 studio-page--calm26 wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('events.eyebrow')}
@@ -116,10 +126,13 @@ export function Events() {
       />
 
       <div className="wc-stagger-children">
-      <section className="debut-season-hero cms-panel" aria-labelledby="debut-season-title">
+      <ContestLegalPanel compact />
+
+      <section className="debut-season-hero debut-season-hero--streamlined cms-panel" aria-labelledby="debut-season-title">
+        <StudioIllustration id="diya-flame" tone="gold" size={72} className="debut-season-hero__illus" />
         <div className="debut-season-hero__head">
           <div>
-            <p className="debut-season-hero__eyebrow">
+            <p className="debut-season-hero__eyebrow katha-token-eyebrow">
               <Sparkles size={16} aria-hidden />
               {t('events.debutSeasonBadge')}
             </p>
@@ -129,7 +142,7 @@ export function Events() {
             <p className="debut-season-hero__subtitle">{t('events.debutHeroSubtitle')}</p>
           </div>
           <div className="debut-season-hero__badge" aria-hidden>
-            <Trophy size={28} />
+            <Trophy size={24} />
           </div>
         </div>
 
@@ -158,7 +171,7 @@ export function Events() {
           </div>
         </div>
 
-        <div className="debut-season-hero__grid">
+        <div className="debut-season-hero__body">
           <div className="debut-season-journey">
             <h3 className="debut-season-journey__title">{t('events.debutJourney')}</h3>
             <ol className="debut-season-journey__steps">
@@ -167,20 +180,17 @@ export function Events() {
                 return (
                   <li key={step.id} className="debut-season-journey__step">
                     <span className="debut-season-journey__marker" aria-hidden>
-                      <Icon size={16} />
+                      <Icon size={14} />
                     </span>
                     <span className="debut-season-journey__label">{journeyLabels[i]}</span>
-                    {i < JOURNEY_STEPS.length - 1 && (
-                      <span className="debut-season-journey__connector" aria-hidden />
-                    )}
                   </li>
                 );
               })}
             </ol>
           </div>
 
-          <div className="debut-season-metrics">
-            <h3 className="debut-season-metrics__title">{t('events.debutEvaluation')}</h3>
+          <details className="debut-season-metrics debut-season-metrics--collapsible">
+            <summary>{t('events.debutEvaluation')}</summary>
             <table className="debut-season-metrics__table">
               <thead>
                 <tr>
@@ -197,13 +207,18 @@ export function Events() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </details>
         </div>
       </section>
 
       <ChampionshipSpotlight
         championshipEnabled={championshipEnabled}
         magazineEnabled={magazineEnabled}
+        debutChapterCount={maxChapters}
+        debutChapterGoal={DEBUT_SEASON_REQUIREMENTS.chapterCount}
+        debutProgressPct={debutProgress}
+        debutGraduated={debutGraduated}
+        debutEnrolled={debutEnrolled}
       />
 
       {!mayHost && (

@@ -106,7 +106,7 @@ export function PublishingCenter() {
   const loading = storiesLoading || scheduledLoading || queueLoading;
 
   return (
-    <div className="cms-page studio-page publishing-center-page publishing-center-page--premium wc-page-enter">
+    <div className="cms-page studio-page publishing-center-page publishing-center-page--premium publishing-center--wave26 studio-page--calm26 wc-page-enter">
       <StudioPageHeader
         variant="hero"
         eyebrow={t('publishing.eyebrow')}

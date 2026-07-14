@@ -41,7 +41,7 @@ export function Community() {
   }, [reloadFeed]);
 
   return (
-    <div className="cms-page studio-page community-studio community-studio--premium wc-page-enter">
+    <div className="cms-page studio-page community-studio community-studio--premium community-studio--wave23 community-studio--wave26 studio-page--calm26 wc-page-enter">
       <div className="community-studio__hero community-studio__hero--uplift">
         <div className="community-hero__glow" aria-hidden />
         <StudioPageHeader

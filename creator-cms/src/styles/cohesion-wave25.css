@@ -1,0 +1,204 @@
+/**
+ * Wave 25 — Calm premium Create Story, moat format visibility, overlap fixes
+ */
+
+.create-story-studio--wave25 {
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.create-story-studio--wave25 .create-story-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: color-mix(in srgb, var(--katha-gold) 4%, var(--surface));
+  border: 1px solid var(--premium-border);
+}
+
+.create-story-studio--wave25 .create-story-step {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  gap: 6px;
+}
+
+.create-story-studio--wave25 .create-story-step--active {
+  color: var(--ink);
+}
+
+.create-story-studio--wave25 .create-story-step__num {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6875rem;
+}
+
+.create-story-bento--calm {
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+}
+
+.create-story-bento--calm .create-story-bento__side {
+  display: none;
+}
+
+.create-story-bento--calm .create-story-bento__hero {
+  grid-template-columns: 1fr minmax(160px, 200px);
+  gap: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-story-bento--calm .create-story-bento__title-input {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem) !important;
+  min-height: 48px !important;
+}
+
+.create-story-cover--illustrated .create-story-cover__orb--gold {
+  width: 56px;
+  height: 56px;
+  top: 4px;
+  right: 4px;
+  opacity: 0.18;
+}
+
+.create-story-cover--illustrated .create-story-cover__frame {
+  inset: 8px;
+}
+
+.create-story-cover--illustrated .create-story-cover__spine {
+  width: 10px;
+  opacity: 0.5;
+}
+
+.create-story-cover--illustrated .create-story-cover__teaser {
+  font-size: 0.6875rem;
+  max-width: 140px;
+  text-align: center;
+}
+
+.create-story-types--calm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.create-story-types__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.create-story-types__section-label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.create-story-types__section-label--moat {
+  color: var(--katha-maroon);
+}
+
+.create-story-types__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 8px;
+}
+
+.create-story-content-type--moat {
+  border-color: color-mix(in srgb, var(--katha-gold) 28%, var(--premium-border));
+  background: color-mix(in srgb, var(--katha-gold) 4%, var(--surface));
+}
+
+.create-story-content-type--moat.create-story-content-type--active {
+  border-color: var(--katha-gold);
+  background: color-mix(in srgb, var(--katha-gold) 10%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--katha-gold) 18%, transparent);
+  transform: none;
+}
+
+.create-story-types--premium .create-story-content-type {
+  transform: none;
+  padding: 12px 14px;
+}
+
+.create-story-types--premium .create-story-content-type--active {
+  transform: none;
+}
+
+.create-story-content-type__badge {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--katha-maroon);
+}
+
+.create-story-content-type__meta {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+
+.create-story-guide--premium {
+  margin-top: 10px;
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+}
+
+.create-story-bento--calm .create-story-panel {
+  padding: 16px 18px;
+}
+
+.create-story-bento--calm .create-story-meta-grid {
+  gap: 10px 14px;
+}
+
+.create-story-submit-bar--calm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: var(--wc-radius-md, 14px);
+  background: var(--premium-surface);
+  border: 1px solid var(--premium-border);
+}
+
+.create-story-submit-bar--calm .create-story-submit-bar__hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  max-width: 28rem;
+}
+
+@media (max-width: 720px) {
+  .create-story-bento--calm .create-story-bento__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .create-story-bento--calm .create-story-bento__cover {
+    min-height: 160px;
+    max-width: 200px;
+    margin-inline: auto;
+  }
+
+  .create-story-types__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .create-story-submit-bar--calm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

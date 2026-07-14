@@ -149,10 +149,13 @@ export const api = {
     title?: string;
     content: string;
     content_delta?: { scenes: Array<{ id: string; title: string; content: string }> };
-  }) =>
+  }): Promise<{ saved: boolean; draft: import('../types/database').ChapterDraftData }> =>
     useSupabaseDirect()
       ? sb.sbSaveDraft(storyId, body)
-      : request(`/chapters/${storyId}/draft`, { method: 'POST', body: JSON.stringify(body) }),
+      : request<{ saved: boolean; draft: import('../types/database').ChapterDraftData }>(
+        `/chapters/${storyId}/draft`,
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
   publishChapter: async (storyId: string, body: {
     chapter_number: number;
     title?: string;

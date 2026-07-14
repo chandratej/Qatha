@@ -241,7 +241,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="cms-page dashboard-page dashboard-page--premium studio-page studio-page--elevated wc-page-enter">
+    <div className="cms-page dashboard-page dashboard-page--premium dashboard-page--breathing dashboard-page--wave22 dashboard-page--wave26 dashboard-page--wave28 studio-page studio-page--elevated studio-page--calm26 wc-page-enter">
       {showDebutGraduation && (
         <DebutGraduationModal
           storyTitle={debutDisplayTitle}
@@ -270,7 +270,7 @@ export function Dashboard() {
         </p>
       )}
 
-      <div className="dashboard-bento wc-stagger-children">
+      <div className="dashboard-bento dashboard-bento--breathing wc-stagger-children">
         <div className="dashboard-bento__main">
           <StudioHero
             displayName={displayName}

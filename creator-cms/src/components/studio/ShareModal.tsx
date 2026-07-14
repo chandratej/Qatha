@@ -84,7 +84,7 @@ export function ShareModal({ story, chapters, onClose, authorName }: ShareModalP
   return (
     <div className="share-modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="share-modal"
+        className="share-modal share-modal--wave28"
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-modal-title"

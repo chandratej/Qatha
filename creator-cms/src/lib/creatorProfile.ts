@@ -108,3 +108,14 @@ export async function ensureCreatorProfile(session: Session, displayName?: strin
 
   return { profile: upsert.data as ProfileRow, error: null, schemaMissing: false as const };
 }
+
+/** Ensure creators row exists before story insert (author_id FK). */
+export async function ensureCreatorRow(userId: string, penName = 'Creator') {
+  const { error } = await supabase.from('creators').upsert(
+    { id: userId, pen_name: penName },
+    { onConflict: 'id' },
+  );
+  if (error && !isSchemaMissingError(error)) {
+    throw new Error(error.message);
+  }
+}

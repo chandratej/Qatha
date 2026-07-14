@@ -1,0 +1,244 @@
+/**
+ * Wave 15 — Chapter editor parity, Create Story tokens, Events debut streamline, Schedule calendar v2
+ */
+
+/* Chapter editor — English shell parity strip */
+.chapter-editor--parity .chapter-editor__progress {
+  padding: 10px clamp(16px, 3vw, 28px);
+  background: color-mix(in srgb, var(--katha-gold) 4%, var(--premium-surface, var(--surface)));
+  border-bottom: 1px solid var(--premium-border, rgba(107, 35, 56, 0.08));
+}
+
+.chapter-editor--parity .chapter-editor__progress .ink-progress {
+  max-width: 420px;
+}
+
+.chapter-editor--parity .chapter-editor__progress .ink-progress__hint {
+  font-size: 0.75rem;
+}
+
+/* Create Story — design token form pass */
+.create-story-form--tokens .create-story-panel__title {
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.create-story-form--tokens .input-group label,
+.create-story-form--tokens .create-story-bento__title-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-soft, var(--ink-muted));
+}
+
+.create-story-form--tokens .input-group select,
+.create-story-form--tokens .input-group input,
+.create-story-form--tokens .input-group textarea,
+.create-story-form--tokens .create-story-bento__title-input {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid var(--premium-border);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.create-story-form--tokens .input-group select:focus,
+.create-story-form--tokens .input-group input:focus,
+.create-story-form--tokens .input-group textarea:focus,
+.create-story-form--tokens .create-story-bento__title-input:focus {
+  border-color: color-mix(in srgb, var(--katha-gold) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--katha-gold) 14%, transparent);
+}
+
+.create-story-form--tokens .create-story-panel {
+  border: 1px solid var(--premium-border);
+  box-shadow: var(--premium-shadow-rest);
+}
+
+/* Debut season hero — streamlined density */
+.debut-season-hero--streamlined {
+  padding: clamp(18px, 3vw, 24px);
+  margin-bottom: 20px;
+}
+
+.debut-season-hero--streamlined .debut-season-hero__head {
+  margin-bottom: 16px;
+}
+
+.debut-season-hero--streamlined .debut-season-hero__title {
+  font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+}
+
+.debut-season-hero--streamlined .debut-season-hero__subtitle {
+  font-size: 0.875rem;
+  max-width: 48ch;
+}
+
+.debut-season-hero--streamlined .debut-season-hero__badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+.debut-season-hero--streamlined .debut-season-hero__progress {
+  margin-bottom: 16px;
+}
+
+.debut-season-hero--streamlined .debut-season-hero__body {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 720px) {
+  .debut-season-hero--streamlined .debut-season-hero__body {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+  }
+}
+
+.debut-season-hero--streamlined .debut-season-journey__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.debut-season-hero--streamlined .debut-season-journey__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--premium-surface, var(--surface));
+  border: 1px solid var(--premium-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.debut-season-hero--streamlined .debut-season-journey__marker {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--katha-gold) 12%, transparent);
+  color: var(--katha-maroon);
+}
+
+.debut-season-hero--streamlined .debut-season-journey__connector {
+  display: none;
+}
+
+.debut-season-hero--streamlined .debut-season-metrics--collapsible {
+  border-radius: var(--wc-radius-md, 14px);
+  border: 1px solid var(--premium-border);
+  background: color-mix(in srgb, var(--katha-gold) 3%, var(--premium-surface, var(--surface)));
+}
+
+.debut-season-hero--streamlined .debut-season-metrics--collapsible summary {
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+
+.debut-season-hero--streamlined .debut-season-metrics--collapsible summary::-webkit-details-marker {
+  display: none;
+}
+
+.debut-season-hero--streamlined .debut-season-metrics__table {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.debut-season-hero--streamlined .debut-season-metrics--collapsible .debut-season-metrics__table {
+  padding: 0 14px 12px;
+}
+
+.debut-season-hero--streamlined .debut-season-journey__title {
+  margin-bottom: 10px;
+  font-size: 0.75rem;
+}
+
+/* Schedule calendar v2 */
+.schedule-calendar--v2 .schedule-calendar__cell {
+  min-height: 52px;
+  padding: 6px 4px;
+  border-radius: 10px;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.schedule-calendar--v2 .schedule-calendar__cell--today {
+  background: color-mix(in srgb, var(--katha-gold) 10%, var(--premium-surface, var(--surface)));
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--katha-gold) 40%, transparent);
+}
+
+.schedule-calendar--v2 .schedule-calendar__cell--has-release {
+  background: color-mix(in srgb, var(--katha-maroon) 5%, var(--premium-surface, var(--surface)));
+}
+
+.schedule-calendar--v2 .schedule-calendar__cell--has-release:hover {
+  box-shadow: var(--premium-shadow-rest);
+}
+
+.schedule-calendar--v2 .schedule-calendar__day {
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.schedule-calendar--v2 .schedule-calendar__release-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-top: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: var(--katha-maroon);
+  color: #fff;
+}
+
+.schedule-calendar--v2 .schedule-calendar__dots {
+  margin-top: 3px;
+}
+
+.schedule-calendar--v2 .schedule-calendar__dot {
+  width: 5px;
+  height: 5px;
+  background: var(--katha-gold);
+}
+
+/* Dashboard widget glyph tiles */
+.dashboard-widget--glyph .quick-action-btn__icon .studio-glyph--tile,
+.dashboard-widget--glyph .tasks-panel__glyph {
+  width: 40px;
+  height: 40px;
+}
+
+.dashboard-widget--glyph .quick-action-btn--tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.dashboard-widget--glyph .tasks-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dashboard-widget--glyph .tasks-panel__head-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

@@ -5,6 +5,7 @@ import { getTimeGreeting } from '../../lib/dashboardGreeting';
 import type { ProductivitySnapshot, WritingStreakData } from '../../lib/writingStreak';
 import { DiyaIcon } from './DiyaIcon';
 import { InkProgress } from './InkProgress';
+import { StudioIllustration } from './StudioIllustration';
 import { useLocale } from '../../context/LocaleContext';
 
 const INSPIRATIONS = [
@@ -37,6 +38,11 @@ export function StudioHero({
 
   return (
     <section className="studio-hero studio-hero--v2 studio-hero--v3" aria-label="Your writing studio">
+      <div className="studio-hero__illustration" aria-hidden>
+        <span className="dashboard-orb dashboard-orb--gold" />
+        <span className="dashboard-orb dashboard-orb--maroon" />
+        <StudioIllustration id="writer-lamp" tone="maroon" size={72} />
+      </div>
       {continueStoryCover && continueStoryHref && (
         <Link to={continueStoryHref} className="studio-hero__cover" aria-label={`Continue ${continueStoryTitle}`}>
           <img src={continueStoryCover} alt="" className="studio-hero__cover-img" />

@@ -14,11 +14,12 @@ import {
   type NotificationFilter,
 } from '../lib/notificationFeed';
 
-const FILTER_KEYS: Record<NotificationFilter, 'notifications.filterAll' | 'notifications.filterReview' | 'notifications.filterPublish' | 'notifications.filterModeration'> = {
+const FILTER_KEYS: Record<NotificationFilter, 'notifications.filterAll' | 'notifications.filterReview' | 'notifications.filterPublish' | 'notifications.filterRevenue' | 'notifications.filterReaders'> = {
   all: 'notifications.filterAll',
-  review: 'notifications.filterReview',
-  publish: 'notifications.filterPublish',
-  moderation: 'notifications.filterModeration',
+  reviews: 'notifications.filterReview',
+  publishing: 'notifications.filterPublish',
+  revenue: 'notifications.filterRevenue',
+  readers: 'notifications.filterReaders',
 };
 
 export function Notifications() {

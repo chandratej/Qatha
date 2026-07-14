@@ -84,6 +84,16 @@ const TYPE_META = {
 /** @type {Map<string, object[]>} */
 const mockFeed = new Map();
 
+function isNotificationsSchemaError(error) {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    msg.includes('notifications') && (msg.includes('does not exist') || msg.includes('schema cache'))
+  );
+}
+
 export async function createInAppNotification(userId, typeId, opts = {}) {
   const meta = TYPE_META[typeId];
   if (!meta) throw new Error(`Unknown notification type: ${typeId}`);
@@ -119,14 +129,23 @@ export async function listNotificationsForUser(userId, limit = 50) {
   if (isMockMode()) {
     return (mockFeed.get(userId) || []).slice(0, limit);
   }
-  const { data, error } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
-  return data || [];
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) {
+      if (isNotificationsSchemaError(error)) return [];
+      throw new Error(error.message);
+    }
+    return data || [];
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('Supabase not configured') || msg.includes('notifications')) return [];
+    throw err;
+  }
 }
 
 export async function markNotificationRead(userId, notificationId) {
