@@ -26,6 +26,7 @@ import { requireAuth } from './middleware/authenticate.js';
 import { scheduleNotifications } from './services/notifications.js';
 import { isMockMode } from './lib/mockMode.js';
 import { deprecationHeaders } from './middleware/deprecation.js';
+import { versionsRouter } from './versioning/routes/versions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -105,6 +106,7 @@ app.use('/api/engagement', engagementRouter);
 app.use('/api/upload', requireAuth(), uploadRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/platform', platformRouter);
+app.use('/api/versions', versionsRouter);
 
 app.use(express.static(path.join(__dirname, '../../landing')));
 

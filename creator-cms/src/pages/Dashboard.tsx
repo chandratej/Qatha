@@ -1,40 +1,34 @@
-import { useNavigate } from 'react-router-dom';
-import { BookOpen, IndianRupee, TrendingUp, Users } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { BookOpen, Circle, Flame, MessageSquare, PenLine, Trophy } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import type { CreatorMilestone } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
-import { BRAND } from '../lib/constants';
-import { effectiveCreatorSharePct, trustLevelForReaders } from '../lib/platformConstants';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { isSessionError } from '../lib/errors';
-import { buildActivityFeed } from '../lib/buildActivityFeed';
-import { formatCompact, formatInr } from '../lib/dashboardFormat';
 import { ensureDemoStreak, getProductivitySnapshot, getWritingStreak } from '../lib/writingStreak';
 import { buildDashboardTasks } from '../lib/dashboardTasks';
-
-import { StoriesWidget } from '../components/dashboard/StoriesWidget';
-import { QuickActionsPanel } from '../components/dashboard/QuickActionsPanel';
-import { EventsSpotlight } from '../components/dashboard/EventsSpotlight';
-import { ActivityFeedPanel } from '../components/dashboard/ActivityFeedPanel';
-import { TopPerformingStories } from '../components/dashboard/TopPerformingStories';
-import { CreatorBadgeBar } from '../components/dashboard/CreatorBadgeBar';
-import { StudioHero } from '../components/studio/StudioHero';
-
+import { getTimeGreeting } from '../lib/dashboardGreeting';
 import { ReviewerPersonaDashboard } from '../components/dashboard/ReviewerPersonaDashboard';
-import { DashboardNotificationsWidget } from '../components/dashboard/DashboardNotificationsWidget';
-import { PendingInvitesWidget } from '../components/dashboard/PendingInvitesWidget';
-import { PendingReaderFeedbackWidget } from '../components/dashboard/PendingReaderFeedbackWidget';
-import { ReviewerPoolSummaryWidget } from '../components/dashboard/ReviewerPoolSummaryWidget';
-import { ScheduleCalendarWidget } from '../components/dashboard/ScheduleCalendarWidget';
-import { TasksPanel } from '../components/dashboard/TasksPanel';
-import { useCreatorPersona } from '../hooks/useCreatorPersona';
-import { DebutSeasonDashboardCard } from '../components/dashboard/DebutSeasonDashboardCard';
 import { DebutGraduationModal } from '../components/dashboard/DebutGraduationModal';
 import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { StudioGlyph } from '../components/studio/StudioGlyph';
 import { useLocale } from '../context/LocaleContext';
+import { useCreatorPersona } from '../hooks/useCreatorPersona';
+import { DEBUT_SEASON_REQUIREMENTS } from '../lib/platformConstants';
+
+function statusBadgeClass(status?: string) {
+  if (status === 'published') return 'sv21__badge sv21__badge--published';
+  return 'sv21__badge sv21__badge--draft';
+}
+
+function statusLabel(status: string | undefined, t: (k: import('../lib/studioLocale').StudioStringKey) => string) {
+  if (status === 'published') return t('stories.statusPublished');
+  if (status === 'pending_review') return t('stories.statusPendingReview');
+  if (status === 'needs_revision') return t('stories.statusNeedsRevision');
+  return t('stories.draft');
+}
 
 export function Dashboard() {
   const { t } = useLocale();
@@ -76,30 +70,15 @@ export function Dashboard() {
   }, [milestonesData, activeMilestone]);
 
   const displayName = user?.display_name || 'Creator';
-  const totalReads = useMemo(() => (d?.stories ?? []).reduce((s, x) => s + x.total_readers, 0), [d]);
   const streak = useMemo(() => {
     if (!d) return getWritingStreak();
+    const totalReads = (d?.stories ?? []).reduce((s, x) => s + x.total_readers, 0);
     if (isMockMode) return ensureDemoStreak(totalReads);
     return getWritingStreak();
-  }, [d, totalReads, isMockMode]);
+  }, [d, isMockMode]);
   const productivity = useMemo(() => getProductivitySnapshot(), [streak]);
 
-  const earningsMap = useMemo(() => {
-    const map = new Map<string, { earnings: number; readers: number }>();
-    for (const row of d?.earnings_by_story ?? []) map.set(row.story_id, { earnings: row.earnings_this_month, readers: row.total_readers });
-    return map;
-  }, [d]);
-
   const isDemoMetrics = isMockMode || Boolean(d?.mock);
-  const growth = d?.week_over_week_growth_pct;
-  const showGrowthTrend = growth != null && (isDemoMetrics || growth !== 0);
-  const activity = useMemo(() => (d ? buildActivityFeed(d, milestonesData?.milestones ?? []) : []), [d, milestonesData]);
-  const topStories = useMemo(() => [...(d?.earnings_by_story ?? [])].sort((a, b) => b.total_readers - a.total_readers).slice(0, 4), [d]);
-  const analyticsHref = d?.stories[0]?.id ? `/analytics/${d.stories[0].id}` : undefined;
-  const publishedCount = storiesData?.stories?.filter((s) => s.moderation_status === 'published').length ?? 0;
-  const storyTrust = trustLevelForReaders(totalReads);
-  const effectiveSharePct = effectiveCreatorSharePct(storyTrust) || BRAND.creatorSharePct;
-
   const dashboardTasks = useMemo(
     () => buildDashboardTasks(storiesData?.stories ?? [], lifecycleStage),
     [storiesData, lifecycleStage],
@@ -111,61 +90,36 @@ export function Dashboard() {
     return [...stories].sort((a, b) => b.chapter_count - a.chapter_count)[0];
   }, [storiesData]);
 
-  const debutStory = useMemo(() => {
-    const stories = storiesData?.stories ?? [];
-    if (!stories.length) return null;
-    const published = stories.filter((s) => s.moderation_status === 'published');
-    if (published.length === 0) return stories[0];
-    return [...published].sort((a, b) => b.chapter_count - a.chapter_count)[0];
-  }, [storiesData]);
-
   const debutProgress = debutData?.progress;
-  const debutChapterCount = debutProgress?.enrolled
-    ? debutProgress.chapter_count
-    : (debutStory?.chapter_count ?? 0);
-  const debutDisplayTitle = debutProgress?.story_title ?? debutStory?.title;
-  const debutEnrolled = debutProgress?.enrolled ?? publishedCount > 0;
-
-  const milestoneBtnRef = useRef<HTMLButtonElement>(null);
+  const debutDisplayTitle = debutProgress?.story_title ?? continueStory?.title;
   const graduationAttemptedRef = useRef(false);
+  const milestoneBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const progress = debutData?.progress;
     if (!progress?.enrolled) return;
-
     const seenKey = progress.graduation_date
       ? `debut-graduation-seen-${progress.graduation_date}`
       : progress.story_id
         ? `debut-graduation-seen-${progress.story_id}`
         : null;
-
     if (progress.graduated) {
       if (seenKey && sessionStorage.getItem(seenKey)) return;
       setDebutAwardLevel(progress.award_level);
       setShowDebutGraduation(true);
       return;
     }
-
-    if (
-      progress.progress_pct >= 100
-      && progress.story_status === 'completed'
-      && !graduationAttemptedRef.current
-    ) {
+    if (progress.progress_pct >= 100 && progress.story_status === 'completed' && !graduationAttemptedRef.current) {
       graduationAttemptedRef.current = true;
       void api.graduateDebutSeason(progress.story_id ? { story_id: progress.story_id } : undefined)
         .then((res) => {
           if (res.graduation.graduated) {
-            const award = res.graduation.award_level
-              ?? res.graduation.entry?.award_level
-              ?? null;
-            setDebutAwardLevel(award);
+            setDebutAwardLevel(res.graduation.award_level ?? res.graduation.entry?.award_level ?? null);
             setShowDebutGraduation(true);
             mutateDebut();
           }
         })
-        .catch(() => {
-          graduationAttemptedRef.current = false;
-        });
+        .catch(() => { graduationAttemptedRef.current = false; });
     }
   }, [debutData, mutateDebut]);
 
@@ -192,9 +146,7 @@ export function Dashboard() {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => milestoneBtnRef.current?.focus());
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleAcknowledge();
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleAcknowledge(); };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
@@ -202,21 +154,25 @@ export function Dashboard() {
     };
   }, [activeMilestone, handleAcknowledge]);
 
+  const wordGoal = productivity.dailyGoal || 500;
+  const wordProgress = Math.min(100, Math.round((productivity.wordsToday / wordGoal) * 100));
+  const stories = storiesData?.stories ?? [];
+  const sortedStories = useMemo(
+    () => [...stories].sort((a, b) => b.chapter_count - a.chapter_count).slice(0, 5),
+    [stories],
+  );
+
   if (loading || personaLoading) {
     return (
-      <div className="cms-page dashboard-page dashboard-page--premium studio-page">
-        <div className="dashboard-skeleton studio-skeleton-hero" aria-hidden />
-        <div className="studio-metrics" aria-busy="true" aria-label="Loading studio metrics">
-          {[1, 2, 3, 4].map((i) => <div key={i} className="dashboard-skeleton studio-skeleton-metric" />)}
-        </div>
-        <p className="cms-loading cms-loading--inline">Lighting your studio…</p>
+      <div className="sv21">
+        <p className="sv21__loading" aria-busy="true">{t('common.loading')}</p>
       </div>
     );
   }
 
   if (error || !d) {
     return (
-      <div className="cms-page dashboard-page dashboard-page--premium studio-page">
+      <div className="sv21">
         <StudioEmptyState
           icon={BookOpen}
           iconSize={32}
@@ -224,7 +180,7 @@ export function Dashboard() {
           text={error || t('dashboard.studioPausedHint')}
           as="h2"
         >
-          <button type="button" className="katha-cta katha-cta--soft" onClick={() => (isSessionError(error) ? navigate('/login') : mutate())}>
+          <button type="button" className="sv21__cta sv21__cta--soft" onClick={() => (isSessionError(error) ? navigate('/login') : mutate())}>
             {isSessionError(error) ? t('dashboard.signInAgain') : t('dashboard.tryAgain')}
           </button>
         </StudioEmptyState>
@@ -234,14 +190,14 @@ export function Dashboard() {
 
   if (persona === 'reviewer') {
     return (
-      <div className="cms-page dashboard-page dashboard-page--premium studio-page">
+      <div className="sv21 sv21--wide">
         <ReviewerPersonaDashboard displayName={displayName} />
       </div>
     );
   }
 
   return (
-    <div className="cms-page dashboard-page dashboard-page--premium dashboard-page--breathing dashboard-page--wave22 dashboard-page--wave26 dashboard-page--wave28 studio-page studio-page--elevated studio-page--calm26 wc-page-enter">
+    <div className="sv21">
       {showDebutGraduation && (
         <DebutGraduationModal
           storyTitle={debutDisplayTitle}
@@ -257,7 +213,7 @@ export function Dashboard() {
             <h2 id="milestone-title" className="studio-empty__title">{t('dashboard.milestoneTitle')}</h2>
             <p className="milestone-modal__te katha-token-subtitle-te" lang="te">{t('dashboard.milestoneTe')}</p>
             <p className="studio-empty__text">{t('dashboard.milestoneBody')}</p>
-            <button ref={milestoneBtnRef} type="button" className="dashboard-cta cms-auth-cta" onClick={handleAcknowledge}>
+            <button ref={milestoneBtnRef} type="button" className="sv21__cta" onClick={handleAcknowledge}>
               {t('dashboard.milestoneCta')}
             </button>
           </div>
@@ -265,85 +221,122 @@ export function Dashboard() {
       )}
 
       {isDemoMetrics && (
-        <p className="dashboard-demo-banner dashboard-demo-banner--quiet" role="status">
-          {t('dashboard.demoBanner')}
-        </p>
+        <p className="sv21__demo" role="status">{t('dashboard.demoBanner')}</p>
       )}
 
-      <div className="dashboard-bento dashboard-bento--breathing wc-stagger-children">
-        <div className="dashboard-bento__main">
-          <StudioHero
-            displayName={displayName}
-            productivity={productivity}
-            streak={streak}
-            continueStoryHref={continueStory ? `/stories/${continueStory.id}` : undefined}
-            continueStoryTitle={continueStory?.title}
-            continueStoryCover={continueStory?.cover_url}
-          />
-          <DebutSeasonDashboardCard
-            publishedChapters={debutChapterCount}
-            storyTitle={debutDisplayTitle}
-            enrolled={debutEnrolled}
-          />
-        </div>
-        <div className="dashboard-bento__rail">
-          <CreatorBadgeBar totalReads={totalReads} publishedStories={publishedCount} />
-          <DashboardNotificationsWidget />
-          <EventsSpotlight />
-        </div>
-      </div>
-
-      <div className="studio-metrics" role="list" aria-label="Studio metrics">
-        <button type="button" className="studio-metric" role="listitem" onClick={() => navigate('/stories')}>
-          <span className="studio-metric__icon"><BookOpen size={18} aria-hidden /></span>
-          <span>
-            <span className="studio-metric__value">{formatCompact(totalReads)}</span>
-            <span className="studio-metric__label">{t('dashboard.metricsReads')}</span>
-            {showGrowthTrend && (
-              <span className="studio-metric__trend">{growth! >= 0 ? '+' : ''}{growth}% this week</span>
+      <div className="sv21__head sv21__head--start">
+        <div>
+          <p className="sv21__subtitle" style={{ marginBottom: 4 }}>
+            {getTimeGreeting()}, {displayName}
+          </p>
+          <h1 className="sv21__title">
+            {continueStory ? (
+              <>
+                {t('dashboard.continueWriting')}{' '}
+                &ldquo;<span lang="te">{continueStory.title}</span>&rdquo;
+              </>
+            ) : (
+              t('dashboard.welcomeStudio')
             )}
-          </span>
-        </button>
-        <div className="studio-metric" role="listitem">
-          <span className="studio-metric__icon"><Users size={18} aria-hidden /></span>
-          <span>
-            <span className="studio-metric__value">{d.total_subscribers.toLocaleString('en-IN')}</span>
-            <span className="studio-metric__label">{t('dashboard.metricsSubs')}</span>
-          </span>
+          </h1>
         </div>
-        <div className="studio-metric studio-metric--earnings" role="listitem">
-          <span className="studio-metric__icon"><IndianRupee size={18} aria-hidden /></span>
-          <span>
-            <span className="studio-metric__value">{formatInr(d.earnings_this_month)}</span>
-            <span className="studio-metric__label">{t('dashboard.metricsEarnings')}</span>
-          </span>
-        </div>
-        <button type="button" className="studio-metric" role="listitem" onClick={() => navigate('/monetization')}>
-          <span className="studio-metric__icon"><TrendingUp size={18} aria-hidden /></span>
-          <span>
-            <span className="studio-metric__value">{effectiveSharePct}%+</span>
-            <span className="studio-metric__label">{t('dashboard.metricsTrust')}</span>
-            <span className="studio-metric__trend">Up to 60% at Apex</span>
-          </span>
-        </button>
+        <Link to="/stories/new" className="sv21__cta">
+          <PenLine size={16} aria-hidden />
+          {t('stories.newStory')}
+        </Link>
       </div>
 
-      <div className="studio-workspace">
-        <StoriesWidget stories={storiesData?.stories ?? []} earningsMap={earningsMap} />
-        <div className="studio-workspace__aside">
-          <PendingInvitesWidget />
-          <PendingReaderFeedbackWidget />
-          <ReviewerPoolSummaryWidget />
-          <QuickActionsPanel />
+      <div className="sv21__streak">
+        <div>
+          <p className="sv21__streak-label">{t('dashboard.todayWriting')}</p>
+          <p className="sv21__streak-value">
+            {productivity.wordsToday}{' '}
+            <span className="muted">/ {wordGoal} {t('dashboard.words')}</span>
+          </p>
+        </div>
+        <div
+          className="sv21__progress-track"
+          role="progressbar"
+          aria-valuenow={wordProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="sv21__progress-fill" style={{ width: `${wordProgress}%` }} />
+        </div>
+        <p className="sv21__streak-days">
+          <Flame size={14} aria-hidden />
+          {t('dashboard.longestStreak')}: {streak.longestStreak} {t('dashboard.days')}
+        </p>
+      </div>
+
+      <div className="sv21__section-head">
+        <h3>{t('dashboard.yourStories')}</h3>
+        <Link to="/stories" className="sv21__view-all">{t('dashboard.viewLibrary')}</Link>
+      </div>
+
+      {sortedStories.length === 0 ? (
+        <div className="sv21__empty">
+          <BookOpen size={26} aria-hidden />
+          <p>{t('stories.emptyShelfText')}</p>
+          <Link to="/stories/new" className="sv21__cta" style={{ marginTop: 12 }}>
+            {t('stories.createFirst')}
+          </Link>
+        </div>
+      ) : (
+        <div className="sv21__list">
+          {sortedStories.map((story, i) => {
+            const debutPct = Math.min(100, Math.round((story.chapter_count / DEBUT_SEASON_REQUIREMENTS.chapterCount) * 100));
+            const meta = story.moderation_status === 'published' && story.chapter_count > 0
+              ? `${story.chapter_count} / ${DEBUT_SEASON_REQUIREMENTS.chapterCount} ${t('stories.chapters')} · ${debutPct}% ${t('stories.debutArc')}`
+              : t('stories.recentlyEdited');
+            return (
+              <div key={story.id} className="sv21__row" style={i === sortedStories.length - 1 ? { borderBottom: 'none' } : undefined}>
+                <Link to={`/stories/${story.id}`} className="sv21__row-link">
+                  <p className="sv21__row-title" lang="te">{story.title}</p>
+                  <p className="sv21__row-meta">{meta}</p>
+                </Link>
+                <span className={statusBadgeClass(story.moderation_status)}>
+                  {statusLabel(story.moderation_status, t)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="sv21__two-col">
+        <div className="sv21__panel">
+          <div className="sv21__panel-head">
+            <MessageSquare size={16} aria-hidden />
+            <span>{t('dashboard.requestReview')}</span>
+          </div>
+          <p className="sv21__panel-body">{t('dashboard.requestReviewHint')}</p>
+          <Link to="/reviewers" className="sv21__cta sv21__cta--soft sv21__cta--sm">
+            {t('dashboard.requestReviewCta')}
+          </Link>
+        </div>
+        <div className="sv21__panel">
+          <div className="sv21__panel-head">
+            <Trophy size={16} aria-hidden />
+            <span>{t('events.title')}</span>
+          </div>
+          <p className="sv21__panel-body" style={{ marginBottom: 0 }}>{t('events.subtitle')}</p>
         </div>
       </div>
 
-      <div className="dashboard-bottom-grid">
-        <TasksPanel tasks={dashboardTasks} />
-        <ScheduleCalendarWidget />
-        <ActivityFeedPanel items={activity} />
-        <TopPerformingStories stories={topStories} analyticsHref={analyticsHref} />
-      </div>
+      {dashboardTasks.length > 0 && (
+        <>
+          <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>{t('dashboard.tasksTitle')}</h3>
+          <div className="sv21__tasks">
+            {dashboardTasks.slice(0, 5).map((task) => (
+              <div key={task.id} className="sv21__task">
+                <Circle size={16} aria-hidden />
+                <p lang="te">{task.label}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

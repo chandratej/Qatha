@@ -7,7 +7,9 @@ import type { SceneBlock } from '../components/Editor/SceneSidebar';
 import { EditorWorkspace } from '../components/Editor/EditorWorkspace';
 import { PreviewPane } from '../components/Editor/PreviewPane';
 import { EditorNavbar } from '../components/Editor/EditorNavbar';
-import { VersionHistoryModal } from '../components/Editor/VersionHistoryModal';
+import { VersionHistoryPanel } from '../versioning/components/VersionHistoryPanel';
+import { buildChapterContent, createVersion } from '../versioning/versionClient';
+import type { VersionContent } from '../versioning/types';
 import { EditorStatusStrip } from '../components/Editor/EditorStatusStrip';
 import { PublishConfirmModal } from '../components/Editor/PublishConfirmModal';
 import { DeleteSceneModal } from '../components/Editor/DeleteSceneModal';
@@ -84,11 +86,21 @@ import type { ArrivalMomentum, NarrativeFormat } from '../lib/narrativeOsTypes';
 import '../styles/narrative-os.css';
 import { countWordsInScenes } from '../lib/wordCount';
 
-const NARRATIVE_OS_ENABLED = import.meta.env.VITE_LEGACY_EDITOR !== 'true';
+import { FEATURE_FLAGS } from '../config/feature_flags';
+import { UI_CONFIG } from '../config/ui_config';
+import {
+  looksLikeBranchingJson,
+  looksLikeEpistolaryJson,
+  narrativeFormatFromContentType,
+  resolveChapterEditorPath,
+} from '../lib/storyContentFormat';
+import { stripHtml } from '../lib/chapterFind';
 
-const CHAPTER_WORD_GOAL = 2000;
+const NARRATIVE_OS_ENABLED = FEATURE_FLAGS.narrativeOs;
 
-const CHAR_LIMIT = 50_000;
+const CHAPTER_WORD_GOAL = UI_CONFIG.editor.chapterWordGoal;
+
+const CHAR_LIMIT = UI_CONFIG.editor.maxChapterChars;
 
 function getWordCountFromScenes(scenes: SceneBlock[], locale = 'en'): number {
   return countWordsInScenes(scenes, locale);
@@ -188,6 +200,12 @@ export function ChapterEditor() {
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
   const [pendingPublish, setPendingPublish] = useState(false);
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleSuccess, setScheduleSuccess] = useState<string | null>(null);
+  const [chapterOptions, setChapterOptions] = useState<Array<{ chapterNumber: number; title: string }>>([]);
+  const [storyContentType, setStoryContentType] = useState<string | null>(null);
+  const [storyLanguage, setStoryLanguage] = useState<string | null>(null);
   const [deleteSceneId, setDeleteSceneId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [findOpen, setFindOpen] = useState(false);
@@ -334,7 +352,7 @@ export function ChapterEditor() {
     triggerCloudSave: isDemo ? undefined : cloudSaveDraft,
     enabled: !isChapterImmutable,
   });
-  const { versions, saveSceneVersion } = useVersionHistory(chapterKey);
+  const { saveSceneVersion } = useVersionHistory(chapterKey);
 
   // Mark clean after successful autosave
   useEffect(() => {
@@ -365,6 +383,24 @@ export function ChapterEditor() {
           setChapterTitle(title);
           dirtyBaselineRef.current = JSON.stringify({ title, scenes: chapterScenes });
           setDirty(false);
+          try {
+            const demo = getOrInitDemoData(storyId);
+            const opts: Array<{ chapterNumber: number; title: string }> = [];
+            for (const season of demo.seasons ?? []) {
+              for (const num of season.chapterNums ?? []) {
+                opts.push({
+                  chapterNumber: num,
+                  title: getChapterTitle(storyId, num) || `Chapter ${num}`,
+                });
+              }
+            }
+            if (opts.length === 0) {
+              opts.push({ chapterNumber, title });
+            }
+            setChapterOptions(opts);
+          } catch {
+            setChapterOptions([{ chapterNumber, title }]);
+          }
           setLoading(false);
         }
         return;
@@ -372,15 +408,54 @@ export function ChapterEditor() {
 
       setLoading(true);
       try {
-        const [{ chapter }, chaptersMeta] = await Promise.all([
+        const [{ chapter }, chaptersMeta, storiesRes] = await Promise.all([
           api.getChapter(storyId, chapterNumber),
-          api.getStoryChapters(storyId).catch(() => ({ story: undefined as { title?: string } | undefined, chapters: [] })),
+          api.getStoryChapters(storyId).catch(() => ({ story: undefined as { title?: string } | undefined, chapters: [] as Array<{ chapter_number: number; title?: string }> })),
+          api.getCreatorStories().catch(() => ({ stories: [] as Array<{ id: string; content_type?: string; language?: string; title?: string }> })),
         ]);
         if (chaptersMeta.story?.title) setStoryDisplayTitle(chaptersMeta.story.title);
+        const storyRow = (storiesRes.stories ?? []).find((s) => s.id === storyId);
+        const contentType = storyRow?.content_type || null;
+        const language = storyRow?.language || null;
+        if (storyRow?.title && !chaptersMeta.story?.title) setStoryDisplayTitle(storyRow.title);
+        setStoryContentType(contentType);
+        setStoryLanguage(language);
+
+        // MVP1: specialized formats open in dedicated editors — never show raw JSON in prose canvas
+        if (contentType === 'interactive_branching' || contentType === 'epistolary_chat') {
+          const target = resolveChapterEditorPath(storyId, chapterNumber, { contentType, language });
+          if (!cancelled) navigate(target, { replace: true });
+          return;
+        }
+
+        // Also redirect if chapter payload is clearly branching/epistolary JSON
+        const probe = chapter.content || chapter.content_delta?.scenes?.[0]?.content || '';
+        const plainProbe = stripHtml(probe).trim();
+        if (looksLikeBranchingJson(plainProbe) || looksLikeBranchingJson(probe)) {
+          if (!cancelled) navigate(resolveChapterEditorPath(storyId, chapterNumber, { contentType: 'interactive_branching' }), { replace: true });
+          return;
+        }
+        if (looksLikeEpistolaryJson(plainProbe) || looksLikeEpistolaryJson(probe)) {
+          if (!cancelled) navigate(resolveChapterEditorPath(storyId, chapterNumber, { contentType: 'epistolary_chat' }), { replace: true });
+          return;
+        }
+
+        // Lock chapter canvas to story content format
+        setChapterNarrativeFormat(narrativeFormatFromContentType(contentType));
+
+        const chList = (chaptersMeta.chapters ?? []).map((ch) => ({
+          chapterNumber: ch.chapter_number,
+          title: ch.title || `Chapter ${ch.chapter_number}`,
+        }));
+        if (chList.length > 0) setChapterOptions(chList);
+        else setChapterOptions([{ chapterNumber, title: chapter.title || `Chapter ${chapterNumber}` }]);
         if (cancelled) return;
 
         const cached = await loadDraftFromCache(storyId, chapterNumber).catch(() => null);
-        const cloudScenes = scenesFromChapterPayload(chapter);
+        const cloudScenes = scenesFromChapterPayload(chapter).map((s) => ({
+          ...s,
+          narrativeFormat: narrativeFormatFromContentType(contentType),
+        }));
         const cloudTitle = chapter.title || `Chapter ${chapterNumber}`;
         const cloudUpdatedRaw = chapter.last_saved_at || chapter.updated_at || null;
         const cloudUpdatedAt = cloudUpdatedRaw ? Date.parse(cloudUpdatedRaw) || null : null;
@@ -456,7 +531,7 @@ export function ChapterEditor() {
 
     loadChapter();
     return () => { cancelled = true; };
-  }, [storyId, chapterNumber, isDemo]);
+  }, [storyId, chapterNumber, isDemo, navigate]);
 
   useEffect(() => {
     if (!storyId || isDemo) return;
@@ -523,12 +598,10 @@ export function ChapterEditor() {
     };
   }, [storyDisplayTitle, chapterTitle, activeScene?.title, wordCount]);
 
-  const handleNarrativeFormatChange = useCallback((format: NarrativeFormat) => {
-    if (isChapterImmutable) return;
-    setChapterNarrativeFormat(format);
-    setScenes((prev) => prev.map((s) => ({ ...s, narrativeFormat: format })));
-    setDirty(true);
-  }, [isChapterImmutable]);
+  /** MVP1: format is fixed at story creation — ignore in-editor format changes. */
+  const handleNarrativeFormatChange = useCallback((_format: NarrativeFormat) => {
+    /* no-op: format locked */
+  }, []);
 
   const handleUpdateBeatName = useCallback((sceneId: string, beatName: string) => {
     if (isChapterImmutable) return;
@@ -713,10 +786,28 @@ export function ChapterEditor() {
     setActiveSceneId(newId);
   };
 
-  const handleRestoreVersion = (sceneId: string, content: string) => {
+  /** Restore from Story Versioning System — applies full chapter snapshot, history preserved. */
+  const handleRestoreVersionSnapshot = useCallback((content: VersionContent) => {
     if (isChapterImmutable) return;
-    setScenes(prev => prev.map(s => s.id === sceneId ? { ...s, content } : s));
-  };
+    if (content.title) setChapterTitle(content.title);
+    if (content.scenes?.length) {
+      const next = content.scenes.map((s) => ({
+        id: s.id,
+        title: s.title,
+        content: s.content,
+        narrativeFormat: (s.narrativeFormat as NarrativeFormat | undefined) || chapterNarrativeFormat,
+      }));
+      setScenes(next);
+      setActiveSceneId(next[0]?.id || '');
+      setDirty(true);
+      setPublishSuccess(locale === 'te' ? 'వెర్షన్ పునరుద్ధరించబడింది' : 'Version restored');
+      return;
+    }
+    if (content.plainContent && activeSceneId) {
+      setScenes((prev) => prev.map((s) => (s.id === activeSceneId ? { ...s, content: content.plainContent! } : s)));
+      setDirty(true);
+    }
+  }, [isChapterImmutable, chapterNarrativeFormat, activeSceneId, locale]);
 
   const navigateScene = useCallback((direction: -1 | 1) => {
     if (scenes.length < 2) return;
@@ -744,12 +835,20 @@ export function ChapterEditor() {
       setLastSaved(new Date());
       markClean();
       setPublishSuccess('Draft saved');
+      // Domain versioning: draft checkpoint (storage-agnostic)
+      void createVersion({
+        storyId,
+        chapterId: String(chapterNumber),
+        versionType: 'Draft',
+        versionName: 'Draft save',
+        content: buildChapterContent({ title: chapterTitle, scenes: scenesRef.current }),
+      });
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSavingDraft(false);
     }
-  }, [flushEditor, isDemo, persistDraft, cloudSaveDraft, setLastSaved, markClean, isChapterImmutable]);
+  }, [flushEditor, isDemo, persistDraft, cloudSaveDraft, setLastSaved, markClean, isChapterImmutable, storyId, chapterNumber, chapterTitle]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -834,6 +933,12 @@ export function ChapterEditor() {
     return () => window.clearTimeout(t);
   }, [publishSuccess]);
 
+  useEffect(() => {
+    if (!scheduleSuccess) return;
+    const t = window.setTimeout(() => setScheduleSuccess(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [scheduleSuccess]);
+
   const executePublish = async () => {
     setPublishing(true);
     setPublishError(null);
@@ -874,6 +979,13 @@ export function ChapterEditor() {
             ? ` Story Trust SPI: ${result.story_trust.score}.`
             : '';
           setPublishSuccess(`Submitted for moderation — typically reviewed within 1–2 hours.${trustNote}`);
+          void createVersion({
+            storyId,
+            chapterId: String(chapterNumber),
+            versionType: 'Publish',
+            versionName: 'Published',
+            content: buildChapterContent({ title: chapterTitle, scenes }),
+          });
         } catch (pubErr) {
           if (isLikelyOfflineError(pubErr)) {
             await enqueuePublishJob({
@@ -926,6 +1038,47 @@ export function ChapterEditor() {
     }
     setPublishConfirmOpen(true);
   };
+
+  const handleSchedulePublish = useCallback(async (isoDatetime: string) => {
+    setScheduleError(null);
+    setScheduleSuccess(null);
+    if (!hasContent) {
+      setScheduleError('Add some content before scheduling');
+      return;
+    }
+    if (overLimit) {
+      setScheduleError(`Chapter exceeds ${CHAR_LIMIT.toLocaleString()} character limit`);
+      return;
+    }
+    const when = new Date(isoDatetime);
+    if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now() + 60_000) {
+      setScheduleError('Pick a time at least a few minutes in the future');
+      return;
+    }
+    setScheduling(true);
+    try {
+      flushEditor();
+      if (isDemo) {
+        persistDraft();
+        setScheduleSuccess(`Scheduled for ${when.toLocaleString()} (demo)`);
+        setChapterStatus('scheduled');
+        return;
+      }
+      await cloudSaveDraft();
+      persistDraft();
+      await api.scheduleChapter(storyId, {
+        chapter_number: chapterNumber,
+        scheduled_publish_at: when.toISOString(),
+      });
+      setChapterStatus('scheduled');
+      setScheduleSuccess(`Scheduled for ${when.toLocaleString()}`);
+      markClean();
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : 'Could not schedule publish');
+    } finally {
+      setScheduling(false);
+    }
+  }, [hasContent, overLimit, flushEditor, isDemo, persistDraft, cloudSaveDraft, storyId, chapterNumber, markClean]);
 
   const handlePhoneVerified = async () => {
     await refreshUser();
@@ -1029,13 +1182,15 @@ export function ChapterEditor() {
         onClose={() => setDeleteSceneId(null)}
         onConfirm={confirmDeleteScene}
       />
-      <VersionHistoryModal
+      <VersionHistoryPanel
         open={historyOpen}
         onClose={() => setHistoryOpen(false)}
+        storyId={storyId}
+        chapterNumber={chapterNumber}
+        chapterTitle={chapterTitle}
         scenes={scenes}
-        activeSceneId={activeSceneId}
-        versions={versions}
-        onRestore={handleRestoreVersion}
+        onRestored={handleRestoreVersionSnapshot}
+        readOnly={isChapterImmutable}
       />
       <DraftConflictModal
         open={draftConflictOpen}
@@ -1222,6 +1377,10 @@ export function ChapterEditor() {
           onBack={() => navigate(`/stories/${storyId}`)}
           onSaveDraft={handleSaveDraft}
           onPublish={handlePublish}
+          onSchedulePublish={handleSchedulePublish}
+          scheduling={scheduling}
+          scheduleError={scheduleError}
+          scheduleSuccess={scheduleSuccess}
           onHistory={() => setHistoryOpen(true)}
           onOpenTimeline={() => navigate(`/stories/${storyId}`)}
           publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
@@ -1232,7 +1391,17 @@ export function ChapterEditor() {
           previewTheme={previewTheme}
           onPreviewDeviceChange={(d) => { setPreviewDevice(d); saveEditorPrefs(storyId, chapterNumber, { previewDevice: d }); }}
           onPreviewThemeChange={(th) => { setPreviewTheme(th); saveEditorPrefs(storyId, chapterNumber, { previewTheme: th }); }}
-          showArrival={wordCount === 0 && scenes.every((s) => !s.content?.trim())}
+          showArrival={false}
+          chapterOptions={chapterOptions}
+          onSwitchChapter={(num) => {
+            if (num === chapterNumber) return;
+            navigate(resolveChapterEditorPath(storyId, num, {
+              contentType: storyContentType,
+              language: storyLanguage,
+            }));
+          }}
+          storyContentType={storyContentType}
+          formatLocked
           peopleSlot={!isDemo && activeSceneId ? (
             <SceneCharacterPanel
               characters={storyCharacters}

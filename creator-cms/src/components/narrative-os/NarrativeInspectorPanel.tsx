@@ -5,8 +5,10 @@ import { NARRATIVE_FORMAT_LABELS } from '../../lib/narrativeOsTypes';
 import { EditorComfortControls } from '../Editor/EditorComfortControls';
 import type { FontScale } from '../../lib/comfortPrefs';
 import { useLocale } from '../../context/LocaleContext';
+import { UI_CONFIG } from '../../config/ui_config';
 
 const FORMATS: NarrativeFormat[] = ['novel', 'chat', 'letter'];
+const CHAR_WARN_RATIO = UI_CONFIG.editor.charWarnRatio;
 
 const TAB_KEYS = ['scene', 'people', 'notes', 'settings'] as const;
 type InspectorTab = typeof TAB_KEYS[number];
@@ -25,6 +27,9 @@ export interface NarrativeInspectorPanelProps {
   peopleSlot?: React.ReactNode;
   notesSlot?: React.ReactNode;
   readOnly?: boolean;
+  /** MVP1: story format is fixed at creation — no per-chapter mode switch. */
+  formatLocked?: boolean;
+  storyContentType?: string | null;
   activeTab?: InspectorTab;
   onTabChange?: (tab: InspectorTab) => void;
 }
@@ -43,10 +48,12 @@ export function NarrativeInspectorPanel({
   peopleSlot,
   notesSlot,
   readOnly = false,
+  formatLocked = true,
+  storyContentType = null,
   activeTab: controlledTab,
   onTabChange,
 }: NarrativeInspectorPanelProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [internalTab, setInternalTab] = useState<InspectorTab>('scene');
   const tab = controlledTab ?? internalTab;
   const setTab = (id: InspectorTab) => {
@@ -88,32 +95,48 @@ export function NarrativeInspectorPanel({
             <div className="insp-value">{activeScene?.title || 'Untitled'}</div>
           </div>
           <div className="insp-row">
-            <div className="insp-label">Chapter format</div>
-            <div className="nos-format-picks">
-              {FORMATS.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  className={`nos-format-pick${narrativeFormat === f ? ' active' : ''}`}
-                  onClick={() => !readOnly && onNarrativeFormatChange(f)}
-                  disabled={readOnly}
-                  aria-pressed={narrativeFormat === f}
-                >
-                  {NARRATIVE_FORMAT_LABELS[f]}
-                </button>
-              ))}
-            </div>
+            <div className="insp-label">{locale === 'te' ? 'కథా ఫార్మాట్' : 'Story format'}</div>
+            {formatLocked ? (
+              <div className="insp-value nos-format-locked">
+                {NARRATIVE_FORMAT_LABELS[narrativeFormat]}
+                <span className="nos-format-locked__hint">
+                  {locale === 'te'
+                    ? 'కథ సృష్టి సమయంలో సెట్ — MVP1లో ఎడిటర్‌లో మార్చలేరు'
+                    : 'Set at story creation — locked in MVP1'}
+                  {storyContentType ? ` (${storyContentType})` : ''}
+                </span>
+              </div>
+            ) : (
+              <div className="nos-format-picks">
+                {FORMATS.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    className={`nos-format-pick${narrativeFormat === f ? ' active' : ''}`}
+                    onClick={() => !readOnly && onNarrativeFormatChange(f)}
+                    disabled={readOnly}
+                    aria-pressed={narrativeFormat === f}
+                  >
+                    {NARRATIVE_FORMAT_LABELS[f]}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="insp-row">
             <div className="insp-label">Words</div>
             <div className="insp-value">{wordCount.toLocaleString()}</div>
           </div>
-          <div className="insp-row">
-            <div className="insp-label">Characters</div>
-            <div className={`insp-value${charCount > charLimit ? ' nos-over-limit' : ''}`}>
-              {charCount.toLocaleString()} / {charLimit.toLocaleString()}
+          {/* Character limit is a real product constraint (~50k) but constant chrome
+              mid-scene is noise. Surface only when approaching or over the limit. */}
+          {charCount > charLimit * CHAR_WARN_RATIO && (
+            <div className="insp-row insp-row--warning">
+              <div className="insp-label">{charCount > charLimit ? 'Over limit' : 'Nearing limit'}</div>
+              <div className={`insp-value${charCount > charLimit ? ' nos-over-limit' : ' nos-near-limit'}`}>
+                {charCount.toLocaleString()} / {charLimit.toLocaleString()}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 

@@ -41,13 +41,41 @@ function serializePayload(kind: AlternateEditorKind, data: EpistolaryBubble[] | 
 
 function parsePayload(kind: AlternateEditorKind, raw: string): EpistolaryBubble[] | BranchNode[] | null {
   if (!raw.trim()) return null;
+  // Strip accidental HTML wrappers from prose-editor misloads
+  const cleaned = raw
+    .replace(/^<p>/i, '')
+    .replace(/<\/p>$/i, '')
+    .replace(/<br\s*\/?>/gi, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
   try {
-    const parsed = JSON.parse(raw) as CloudPayload;
-    if (parsed.kind === 'epistolary' && kind === 'epistolary' && Array.isArray(parsed.bubbles)) {
-      return parsed.bubbles;
+    const parsed = JSON.parse(cleaned) as CloudPayload | BranchNode[] | EpistolaryBubble[];
+    if (Array.isArray(parsed)) {
+      if (kind === 'branching' && parsed.length > 0 && 'body' in (parsed[0] as object)) {
+        return parsed as BranchNode[];
+      }
+      if (kind === 'epistolary' && parsed.length > 0 && 'speaker' in (parsed[0] as object)) {
+        return parsed as EpistolaryBubble[];
+      }
+      return null;
     }
-    if (parsed.kind === 'branching' && kind === 'branching' && Array.isArray(parsed.nodes)) {
-      return parsed.nodes;
+    if (parsed && typeof parsed === 'object') {
+      if (kind === 'epistolary' && Array.isArray(parsed.bubbles)) {
+        return parsed.bubbles;
+      }
+      if (kind === 'branching' && Array.isArray(parsed.nodes)) {
+        return parsed.nodes;
+      }
+      // Accept payloads without kind field
+      if (kind === 'branching' && Array.isArray((parsed as { nodes?: BranchNode[] }).nodes)) {
+        return (parsed as { nodes: BranchNode[] }).nodes;
+      }
+      if (kind === 'epistolary' && Array.isArray((parsed as { bubbles?: EpistolaryBubble[] }).bubbles)) {
+        return (parsed as { bubbles: EpistolaryBubble[] }).bubbles;
+      }
     }
   } catch {
     /* fall through */
@@ -65,12 +93,22 @@ async function loadFromCloud(
     const { chapter: data } = await api.getChapter(storyId, chapter);
     const sid = sceneId(kind, chapter);
     const scene = data.content_delta?.scenes?.find((s) => s.id === sid);
-    const raw = scene?.content ?? data.content ?? '';
-    const parsed = parsePayload(kind, raw);
+    // Prefer specialized scene; else any scene content; else raw chapter content
+    const candidates = [
+      scene?.content,
+      ...(data.content_delta?.scenes ?? []).map((s) => s.content),
+      data.content,
+    ].filter((v): v is string => Boolean(v && String(v).trim()));
+
+    let parsed: EpistolaryBubble[] | BranchNode[] | null = null;
+    for (const raw of candidates) {
+      parsed = parsePayload(kind, raw);
+      if (parsed && parsed.length > 0) break;
+    }
     const ts = Date.parse(data.last_saved_at || data.updated_at || '') || 0;
     return {
       title: data.title || fallbackTitle,
-      data: parsed ?? (kind === 'epistolary' ? [] : []),
+      data: parsed ?? [],
       updated_at: ts,
     };
   } catch {

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Send, BookOpen } from 'lucide-react';
+import { BookOpen, Send } from 'lucide-react';
 import { createCommunityPost } from '../../lib/communityStore';
 import { useAuth } from '../../context/AuthContext';
 import { useLocale } from '../../context/LocaleContext';
@@ -11,28 +11,63 @@ interface Props {
   onPosted: () => void;
 }
 
+const PROMPT_CHIPS = [
+  {
+    id: 'question',
+    te: '📖 ఒక ప్రశ్న అడగండి',
+    en: '📖 Ask a question',
+    textTe: 'పాఠకులారా, మీకు ఏ సీన్ అత్యంత బలంగా అనిపించింది?',
+    textEn: 'Readers — which scene hit hardest for you?',
+  },
+  {
+    id: 'milestone',
+    te: '🎉 మైలురాయి జరుపుకోండి',
+    en: '🎉 Celebrate a milestone',
+    textTe: 'ఒక మైలురాయి చేరుకున్నాం — మీ మద్దతుకి ధన్యవాదాలు 🙏',
+    textEn: 'We hit a milestone — thank you for walking with this story 🙏',
+  },
+  {
+    id: 'inspire',
+    te: '✨ ప్రేరణ పంచుకోండి',
+    en: '✨ Share inspiration',
+    textTe: 'ఈ వారం రాయడం నాకు నేర్పింది…',
+    textEn: 'Writing this week taught me…',
+  },
+  {
+    id: 'thanks',
+    te: '🙏 కృతజ్ఞతలు చెప్పండి',
+    en: '🙏 Say thanks',
+    textTe: 'మీరంతా ఇక్కడి వరకు నాతో ఉన్నందుకు హృదయపూర్వక ధన్యవాదాలు.',
+    textEn: 'Heartfelt thanks for staying with me this far.',
+  },
+];
+
 export function CommunityComposer({ stories, onPosted }: Props) {
   const { user } = useAuth();
-  const { t } = useLocale();
+  const { locale } = useLocale();
+  const te = locale === 'te';
   const [body, setBody] = useState('');
   const [storyId, setStoryId] = useState(stories[0]?.id ?? '');
-  const [chapter, setChapter] = useState('1');
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    if (!storyId && stories[0]?.id) setStoryId(stories[0].id);
+  }, [stories, storyId]);
+
   const selected = stories.find((s) => s.id === storyId);
+  const initial = (user?.display_name || 'C').slice(0, 1).toUpperCase();
 
   const handlePost = async () => {
-    if (!body.trim() || !user || busy) return;
+    if (!body.trim() || busy) return;
     setBusy(true);
     try {
       await createCommunityPost({
-        author_id: user.id,
-        author_name: user.display_name || 'Creator',
-        type: 'chapter_share',
+        author_id: user?.id || 'local-author',
+        author_name: user?.display_name || 'Creator',
+        type: 'discussion',
         body: body.trim(),
         story_id: storyId || undefined,
         story_title: selected?.title,
-        chapter_number: chapter ? Number(chapter) : undefined,
       });
       setBody('');
       onPosted();
@@ -42,61 +77,62 @@ export function CommunityComposer({ stories, onPosted }: Props) {
   };
 
   return (
-    <section className="community-composer" aria-label={t('community.composerLabel')}>
-      <div className="community-composer__avatar" aria-hidden>
-        {(user?.display_name || 'C').slice(0, 1).toUpperCase()}
-      </div>
-      <div className="community-composer__body">
+    <section className="cv2-composer" aria-label={te ? 'కమ్యూనిటీ పోస్ట్' : 'Community post'}>
+      <div className="cv2-composer-top">
+        <div className="cv2-composer-avatar" aria-hidden>{initial}</div>
         <textarea
-          className="community-composer__input"
-          placeholder={t('community.composerPlaceholder')}
+          placeholder={te ? 'మీ పాఠకులతో ఏమి పంచుకోవాలనుకుంటున్నారు?' : 'What do you want to share with your readers?'}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          rows={3}
           maxLength={500}
+          lang="te"
+          rows={2}
         />
-        {stories.length > 0 && (
-          <div className="community-composer__attach">
+      </div>
+
+      <div className="cv2-prompt-chips" lang={te ? 'te' : 'en'}>
+        {PROMPT_CHIPS.map((chip) => (
+          <button
+            key={chip.id}
+            type="button"
+            className="cv2-prompt-chip"
+            onClick={() => setBody(te ? chip.textTe : chip.textEn)}
+          >
+            {te ? chip.te : chip.en}
+          </button>
+        ))}
+      </div>
+
+      <div className="cv2-composer-actions">
+        {stories.length > 0 ? (
+          <label className="cv2-composer-attach">
             <BookOpen size={14} aria-hidden />
             <select
-              className="community-composer__select"
               value={storyId}
               onChange={(e) => setStoryId(e.target.value)}
-              aria-label={t('community.attachStory')}
+              aria-label={te ? 'కథ జోడించు' : 'Attach story'}
             >
               {stories.map((s) => (
-                <option key={s.id} value={s.id}>{s.title}</option>
+                <option key={s.id} value={s.id}>
+                  {te ? `${s.title} జోడించు` : `Add ${s.title}`}
+                </option>
               ))}
             </select>
-            <select
-              className="community-composer__select community-composer__select--chapter"
-              value={chapter}
-              onChange={(e) => setChapter(e.target.value)}
-              aria-label={t('community.attachChapter')}
-            >
-              {Array.from({ length: Math.max(selected?.chapter_count ?? 1, 1) }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={n}>{t('community.chapterShort')} {n}</option>
-              ))}
-            </select>
-          </div>
+          </label>
+        ) : (
+          <span className="cv2-composer-attach">
+            <Link to="/stories/new">{te ? 'ముందు ఒక కథ సృష్టించండి' : 'Create a story first'}</Link>
+          </span>
         )}
-        {stories.length === 0 && (
-          <p className="community-composer__hint">
-            <Link to="/stories/new">{t('community.createStoryFirst')}</Link>
-          </p>
-        )}
-        <div className="community-composer__actions">
-          <span className="community-composer__note">{t('community.kathaFirstHint')}</span>
-          <button
-            type="button"
-            className="katha-cta katha-cta--maroon community-composer__submit"
-            disabled={busy || !body.trim()}
-            onClick={() => void handlePost()}
-          >
-            <Send size={16} aria-hidden />
-            {busy ? t('common.loading') : t('community.postToFeed')}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="cv2-composer-submit"
+          disabled={busy || !body.trim()}
+          onClick={() => void handlePost()}
+        >
+          <Send size={14} aria-hidden />
+          {busy ? (te ? 'పోస్ట్…' : 'Posting…') : (te ? 'పోస్ట్ చేయండి' : 'Post')}
+        </button>
       </div>
     </section>
   );

@@ -117,6 +117,20 @@ export type StudioStringKey =
   | 'createStory.autoSaved'
   | 'createStory.autoSaving'
   | 'createStory.changeNote'
+  | 'createStory.step1Subtitle'
+  | 'createStory.step2Subtitle'
+  | 'createStory.step3Subtitle'
+  | 'createStory.descriptionOneLine'
+  | 'createStory.optional'
+  | 'createStory.changeFormat'
+  | 'createStory.coverDefer'
+  | 'createStory.coverDeferLink'
+  | 'createStory.continueToDetails'
+  | 'createStory.continueToPublish'
+  | 'createStory.backToStory'
+  | 'createStory.backToDetails'
+  | 'createStory.createAndWrite'
+  | 'createStory.coverMissing'
   | 'narrativeOs.explorer'
   | 'narrativeOs.inspector'
   | 'narrativeOs.inspectorScene'
@@ -237,7 +251,11 @@ export type StudioStringKey =
   | 'stories.noMatchTitle'
   | 'stories.noMatchText'
   | 'stories.clearFilters'
+  | 'stories.sortRecent'
+  | 'stories.sortReads'
+  | 'stories.sortTitle'
   | 'stories.loading'
+  | 'common.sort'
   | 'stories.emptyShelfTitle'
   | 'stories.emptyShelfTe'
   | 'stories.emptyShelfText'
@@ -268,6 +286,11 @@ export type StudioStringKey =
   | 'events.viewEvent'
   | 'events.viewRegistration'
   | 'events.upcomingClosed'
+  | 'events.recognitionOnly'
+  | 'events.complianceNote'
+  | 'events.lockedFeaturesNote'
+  | 'events.registeredStatus'
+  | 'events.openRegistration'
   | 'events.emptyTitle'
   | 'events.emptyText'
   | 'events.debutHeroTitle'
@@ -466,12 +489,16 @@ export type StudioStringKey =
   | 'media.uploadImage'
   | 'media.assets'
   | 'media.empty'
+  | 'media.emptyV21'
+  | 'media.dropzoneHint'
   | 'storyBible.eyebrow'
   | 'storyBible.subtitle'
   | 'storyBible.characters'
   | 'storyBible.world'
   | 'storyBible.team'
   | 'storyBible.addCharacter'
+  | 'storyBible.addCharacterTitle'
+  | 'storyBible.noCharactersV21'
   | 'storyBible.addEntry'
   | 'storyBible.addTask'
   | 'storyBible.taskPlaceholder'
@@ -917,6 +944,19 @@ export type StudioStringKey =
   | 'dashboard.quickReviews'
   | 'dashboard.tasksTitle'
   | 'dashboard.tasksViewAll'
+  | 'dashboard.continueWriting'
+  | 'dashboard.welcomeStudio'
+  | 'dashboard.todayWriting'
+  | 'dashboard.words'
+  | 'dashboard.longestStreak'
+  | 'dashboard.days'
+  | 'dashboard.yourStories'
+  | 'dashboard.viewLibrary'
+  | 'dashboard.requestReview'
+  | 'dashboard.requestReviewHint'
+  | 'dashboard.requestReviewCta'
+  | 'stories.recentlyEdited'
+  | 'common.more'
   | 'stats.writingStreak'
   | 'stats.badge'
   | 'stats.storyTrust'
@@ -1027,6 +1067,20 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.autoSaved': 'ఆటో-సేవ్ చేయబడింది',
     'createStory.autoSaving': 'ఆటో-సేవ్…',
     'createStory.changeNote': 'ఈ వివరాలు తర్వాత మార్చవచ్చు.',
+    'createStory.step1Subtitle': 'మీ శీర్షికతో ప్రారంభించండి. మిగతా వివరాలు తర్వాతి దశలో.',
+    'createStory.step2Subtitle': 'జానర్, భాష, ప్రచురణ షెడ్యూల్ — మీ కథ యొక్క వివరాలు.',
+    'createStory.step3Subtitle': 'మీ కథ సిద్ధంగా ఉందో చూడండి, ఆపై రాయడం ప్రారంభించండి.',
+    'createStory.descriptionOneLine': 'ఒక వాక్యంలో వివరణ',
+    'createStory.optional': 'ఐచ్ఛికం',
+    'createStory.changeFormat': 'మార్చండి',
+    'createStory.coverDefer': 'కవర్ ఇప్పుడు అవసరం లేదు —',
+    'createStory.coverDeferLink': 'తర్వాతి దశలో జోడించండి',
+    'createStory.continueToDetails': 'వివరాలకు వెళ్ళండి',
+    'createStory.continueToPublish': 'ప్రచురణకు వెళ్ళండి',
+    'createStory.backToStory': 'కథకు తిరిగి',
+    'createStory.backToDetails': 'వివరాలకు తిరిగి',
+    'createStory.createAndWrite': 'సృష్టించి రాయడం ప్రారంభించండి',
+    'createStory.coverMissing': 'ఇంకా జోడించలేదు',
     'narrativeOs.explorer': 'ఎక్స్‌ప్లోరర్',
     'narrativeOs.inspector': 'సీన్ ఇన్‌స్పెక్టర్',
     'narrativeOs.inspectorScene': 'సీన్',
@@ -1147,7 +1201,11 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'stories.noMatchTitle': 'సరిపోలే కథలు లేవు',
     'stories.noMatchText': 'వేరే శోధన పదం లేదా ఫిల్టర్ ప్రయత్నించండి.',
     'stories.clearFilters': 'ఫిల్టర్లు క్లియర్ చేయండి',
+    'stories.sortRecent': 'ఇటీవల సవరించినవి',
+    'stories.sortReads': 'ఎక్కువ చదివినవి',
+    'stories.sortTitle': 'పేరు ప్రకారం',
     'stories.loading': 'మీ గ్రంథాలయం తెరుస్తోంది…',
+    'common.sort': 'క్రమం',
     'stories.emptyShelfTitle': 'మీ షెల్ఫ్ సిద్ధంగా ఉంది',
     'stories.emptyShelfTe': 'మీ గ్రంథాలయం మొదటి కథ కోసం సిద్ధంగా ఉంది',
     'stories.emptyShelfText': 'ప్రతి గొప్ప తెలుగు కథ ఒక్క అధ్యాయంతో మొదలవుతుంది. ఈరోజే మీది రాయండి — పాఠకులు మీ తలుపు కోసం ఎదురు చూస్తున్నారు.',
@@ -1162,7 +1220,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'shareModal.freeHint': 'చందా లేని పాఠకులు మొదటి 10 అధ్యాయాలు ఉచితంగా చదువుతారు.',
     'shareModal.linkLabel': 'షేర్ లింక్',
     'events.title': 'ఈవెంట్లు & పోటీలు',
-    'events.subtitle': 'మీ అవతరణ కాలం ప్రయాణం — 50 అధ్యాయాల ధారావాహిక కథ, గుర్తింపు బహుమతులు, తెలుగు కళా గౌరవం.',
+    'events.subtitle': 'ప్రస్తుతం ఉచిత, ప్లాట్‌ఫారమ్ నిర్వహించే పోటీలు మాత్రమే తెరిచి ఉన్నాయి. చెల్లింపు పోటీలు న్యాయ సమీక్ష తర్వాత తెరుచుకుంటాయి.',
     'events.eyebrow': 'సృజనాత్మక కార్యక్రమాలు',
     'events.hostEvent': 'ఈవెంట్ హోస్ట్ చేయండి',
     'events.openEvents': 'తెరిచి ఉన్న ఈవెంట్లు',
@@ -1178,6 +1236,11 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'events.viewEvent': 'ఈవెంట్ చూడండి',
     'events.viewRegistration': 'మీ నమోదు చూడండి',
     'events.upcomingClosed': 'రాబోయే & ముగిసినవి',
+    'events.recognitionOnly': 'గుర్తింపు మాత్రమే — నగదు బహుమతులు లేవు',
+    'events.complianceNote': 'ప్రస్తుతం చూపిస్తున్న అన్ని పోటీలు ఉచితం మరియు ప్లాట్‌ఫారమ్ నిర్వహించేవి. చెల్లింపు, బహుమతి-పూల్ పోటీలు న్యాయ & పేమెంట్ కంప్లయన్స్ సమీక్ష పూర్తయ్యాక మాత్రమే తెరుచుకుంటాయి.',
+    'events.lockedFeaturesNote': 'చెల్లింపు పోటీలు (బహుమతి పూల్‌తో సహా), ప్రీమియర్ లీగ్, మరియు మ్యాగజైన్ ఎడిషన్ — న్యాయ సమీక్ష పూర్తయ్యాక founderOS నుండి తెరవబడతాయి.',
+    'events.registeredStatus': 'నమోదు అయ్యింది',
+    'events.openRegistration': 'నమోదు తెరిచి ఉంది',
     'events.emptyTitle': 'ఇంకా ఈవెంట్లు లేవు',
     'events.emptyText': 'ప్లాట్‌ఫారమ్ పోటీలు తెరిచినప్పుడు తిరిగి చూడండి, లేదా అవతరణ కాలంలో పాల్గొనండి.',
     'events.debutHeroTitle': 'కథా అవతరణ కాలం',
@@ -1376,12 +1439,16 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'media.uploadImage': 'చిత్రం అప్‌లోడ్',
     'media.assets': 'ఆసెట్లు',
     'media.empty': 'ఇంకా మీడియా లేదు — కవర్లు మరియు చిత్రీకరణలు అప్‌లోడ్ చేయండి.',
+    'media.emptyV21': 'ఇంకా మీడియా లేదు — కవర్లు మరియు చిత్రీకరణలు అప్‌లోడ్ చేయండి, అవి ఇక్కడ గ్రిడ్‌గా కనిపిస్తాయి.',
+    'media.dropzoneHint': 'ఇక్కడ క్లిక్ చేయండి లేదా చిత్రాన్ని లాగి వదలండి',
     'storyBible.eyebrow': 'కథా బైబిల్ · Story Bible',
     'storyBible.subtitle': 'పాత్రలు, ప్రపంచం, బృందం — మీ కథ యొక్క ఖచ్చితమైన రికార్డ్. సహ-రచయితలతో సమన్వయం ఇక్కడే.',
     'storyBible.characters': 'పాత్రలు',
     'storyBible.world': 'ప్రపంచం & లోర్',
     'storyBible.team': 'బృందం & టాస్క్‌లు',
     'storyBible.addCharacter': 'పాత్ర జోడించండి',
+    'storyBible.addCharacterTitle': 'కొత్త పాత్రను జోడించండి',
+    'storyBible.noCharactersV21': 'ఇంకా పాత్రలు లేవు — మీ ప్రధాన పాత్ర మరియు ప్రధాన నటులను జోడించండి, తర్వాత అధ్యాయాలు రాసేటప్పుడు వారి వివరాలు ఇక్కడ నుండి తీసుకోవచ్చు.',
     'storyBible.addEntry': 'ఎంట్రీ జోడించండి',
     'storyBible.addTask': 'టాస్క్ జోడించండి',
     'storyBible.taskPlaceholder': 'సహకార టాస్క్ (ఉదా: అధ్యాయం 3 రివ్యూ)',
@@ -1827,6 +1894,19 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.quickReviews': 'రివ్యూలు',
     'dashboard.tasksTitle': 'నేటి పనులు',
     'dashboard.tasksViewAll': 'అన్ని పనులు చూడండి',
+    'dashboard.continueWriting': 'కొనసాగించండి',
+    'dashboard.welcomeStudio': 'మీ రచనా స్టూడియోకు స్వాగతం',
+    'dashboard.todayWriting': 'నేటి రచన',
+    'dashboard.words': 'పదాలు',
+    'dashboard.longestStreak': 'అత్యంత పొడవైన స్ట్రీక్',
+    'dashboard.days': 'రోజులు',
+    'dashboard.yourStories': 'మీ కథలు',
+    'dashboard.viewLibrary': 'లైబ్రరీ చూడండి',
+    'dashboard.requestReview': 'చెల్లింపు రివ్యూ అభ్యర్థించండి',
+    'dashboard.requestReviewHint': 'ప్రచురించే ముందు అధ్యాయం లేదా డ్రాఫ్ట్‌పై నిపుణుల అభిప్రాయం పొందండి.',
+    'dashboard.requestReviewCta': 'రివ్యూ అభ్యర్థించండి',
+    'stories.recentlyEdited': 'ఇటీవల సవరించారు',
+    'common.more': 'మరిన్ని ఎంపికలు',
     'stats.writingStreak': 'రోజులు దీపం వెలిగింది',
     'stats.badge': 'బ్యాజ్',
     'stats.storyTrust': 'స్టోరీ ట్రస్ట్',
@@ -1934,6 +2014,20 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'createStory.autoSaved': 'Auto-saved',
     'createStory.autoSaving': 'Auto-saving…',
     'createStory.changeNote': 'You can change these details later.',
+    'createStory.step1Subtitle': 'Start with your title. Details come in the next step.',
+    'createStory.step2Subtitle': 'Genre, language, release schedule — your story metadata.',
+    'createStory.step3Subtitle': 'Review your story, then start writing.',
+    'createStory.descriptionOneLine': 'One-line description',
+    'createStory.optional': 'optional',
+    'createStory.changeFormat': 'Change',
+    'createStory.coverDefer': 'Cover not required yet —',
+    'createStory.coverDeferLink': 'add in the next step',
+    'createStory.continueToDetails': 'Continue to details',
+    'createStory.continueToPublish': 'Continue to publish',
+    'createStory.backToStory': 'Back to story',
+    'createStory.backToDetails': 'Back to details',
+    'createStory.createAndWrite': 'Create & start writing',
+    'createStory.coverMissing': 'Not added yet',
     'narrativeOs.explorer': 'Explorer',
     'narrativeOs.inspector': 'Scene Inspector',
     'narrativeOs.inspectorScene': 'Scene',
@@ -2054,7 +2148,11 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'stories.noMatchTitle': 'No manuscripts match',
     'stories.noMatchText': 'Try a different search term or clear the filter.',
     'stories.clearFilters': 'Clear filters',
+    'stories.sortRecent': 'Recently edited',
+    'stories.sortReads': 'Most read',
+    'stories.sortTitle': 'By title',
     'stories.loading': 'Opening your library…',
+    'common.sort': 'Sort',
     'stories.emptyShelfTitle': 'Your shelf is waiting',
     'stories.emptyShelfTe': 'మీ గ్రంథాలయం మొదటి కథ కోసం సిద్ధంగా ఉంది',
     'stories.emptyShelfText': 'Every great Telugu story starts with a single chapter. Create yours today — readers are waiting to walk through the door you open.',
@@ -2069,7 +2167,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'shareModal.freeHint': 'Non-subscribers can read the first 10 chapters free.',
     'shareModal.linkLabel': 'Share link',
     'events.title': 'Events & Contests',
-    'events.subtitle': 'Your Debut Season journey — a 50-chapter serialized arc, recognition rewards, and Telugu literary prestige.',
+    'events.subtitle': 'Only free, platform-run contests are open for now. Paid contests unlock after legal review.',
     'events.eyebrow': 'Creator Events',
     'events.hostEvent': 'Host an event',
     'events.openEvents': 'Open events',
@@ -2085,6 +2183,11 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'events.viewEvent': 'View event',
     'events.viewRegistration': 'View registration',
     'events.upcomingClosed': 'Upcoming & closed',
+    'events.recognitionOnly': 'Recognition only — no cash prizes',
+    'events.complianceNote': 'All contests shown are free and platform-run. Paid and prize-pool contests unlock only after legal & payment compliance review.',
+    'events.lockedFeaturesNote': 'Paid contests (including prize pools), Premier League, and Magazine Edition — unlock from founderOS after legal review.',
+    'events.registeredStatus': 'Registered',
+    'events.openRegistration': 'Registration open',
     'events.emptyTitle': 'No events yet',
     'events.emptyText': 'Check back when platform contests open, or join the Debut Season journey.',
     'events.debutHeroTitle': 'Katha Debut Season',
@@ -2283,12 +2386,16 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'media.uploadImage': 'Upload image',
     'media.assets': 'Assets',
     'media.empty': 'No media yet — upload covers and illustrations for your publishing pipeline.',
+    'media.emptyV21': 'No media yet — upload covers and illustrations and they will appear here as a grid.',
+    'media.dropzoneHint': 'Click here or drag and drop an image',
     'storyBible.eyebrow': 'కథా బైబిల్ · Story Bible',
     'storyBible.subtitle': 'Characters, world, and team — the canonical record of your story. Coordinate with co-authors here.',
     'storyBible.characters': 'Characters',
     'storyBible.world': 'World & lore',
     'storyBible.team': 'Team & tasks',
     'storyBible.addCharacter': 'Add character',
+    'storyBible.addCharacterTitle': 'Add a new character',
+    'storyBible.noCharactersV21': 'No characters yet — add your protagonist and key cast; pull details from here while you write chapters.',
     'storyBible.addEntry': 'Add entry',
     'storyBible.addTask': 'Add task',
     'storyBible.taskPlaceholder': 'Collaboration task (e.g. review chapter 3)',
@@ -2734,6 +2841,19 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'dashboard.quickReviews': 'Reviews',
     'dashboard.tasksTitle': "Today's tasks",
     'dashboard.tasksViewAll': 'View all tasks',
+    'dashboard.continueWriting': 'Continue',
+    'dashboard.welcomeStudio': 'Welcome to your writing studio',
+    'dashboard.todayWriting': "Today's writing",
+    'dashboard.words': 'words',
+    'dashboard.longestStreak': 'Longest streak',
+    'dashboard.days': 'days',
+    'dashboard.yourStories': 'Your stories',
+    'dashboard.viewLibrary': 'View library',
+    'dashboard.requestReview': 'Request a paid review',
+    'dashboard.requestReviewHint': 'Get expert feedback on a chapter or full draft before you publish.',
+    'dashboard.requestReviewCta': 'Request review',
+    'stories.recentlyEdited': 'Recently edited',
+    'common.more': 'More options',
     'stats.writingStreak': 'day lamp lit',
     'stats.badge': 'Badge',
     'stats.storyTrust': 'Story Trust',

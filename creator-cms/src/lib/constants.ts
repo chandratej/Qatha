@@ -1,11 +1,14 @@
-/** Synced with packages/shared/constants.ts + brand.ts — single source of truth for CMS */
+/** Synced with packages/shared + src/config — CMS constants re-export. */
 
 import { BRAND_IDENTITY, BRAND_COPY as SHARED_BRAND_COPY } from '../../../packages/shared/brand';
+import { FEATURE_FLAGS } from '../config/feature_flags';
+import { UI_CONFIG } from '../config/ui_config';
+import { API_CONFIG } from '../config/api_config';
 
-/** Generative AI disabled per Katha Brand Identity System */
+/** Generative AI disabled per MVP1 + Brand Identity System */
 export const CREATOR_AI = {
-  generativeEnabled: false,
-  planningNotesEnabled: false,
+  generativeEnabled: FEATURE_FLAGS.aiWriter,
+  planningNotesEnabled: FEATURE_FLAGS.planningNotes,
 } as const;
 
 export const BRAND = {
@@ -22,9 +25,9 @@ export const BRAND = {
   creatorPromiseTelugu: BRAND_IDENTITY.creatorPromiseTelugu,
   prideLine: BRAND_IDENTITY.prideLine,
   prideLineTelugu: BRAND_IDENTITY.prideLineTelugu,
-  creatorSharePct: 40,
-  platformSharePct: 60,
-  priceMonthly: 99,
+  creatorSharePct: UI_CONFIG.brand.creatorSharePct,
+  platformSharePct: UI_CONFIG.brand.platformSharePct,
+  priceMonthly: UI_CONFIG.brand.priceMonthly,
 } as const;
 
 export const BRAND_COPY = SHARED_BRAND_COPY;
@@ -39,13 +42,12 @@ export const RELEASE_SCHEDULES = [
 ] as const;
 
 export const PAYWALL = {
-  maxChapterChars: 50_000,
-  maxStoryTitleChars: 100,
-  maxStoryDescChars: 300,
+  maxChapterChars: UI_CONFIG.editor.maxChapterChars,
+  maxStoryTitleChars: UI_CONFIG.editor.maxStoryTitleChars,
+  maxStoryDescChars: UI_CONFIG.editor.maxStoryDescChars,
 } as const;
 
 export const ONBOARDING_KEY = 'katha_onboarding_complete';
 
 /** Reader gateway — Trojan Horse share links (VITE_GATEWAY_URL in .env) */
-export const GATEWAY_URL =
-  import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000';
+export const GATEWAY_URL = API_CONFIG.gatewayUrl;

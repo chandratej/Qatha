@@ -9,13 +9,12 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { filterStoriesByQuery } from '../lib/storySearch';
 import { StoryEditModal } from '../components/StoryEditModal';
-import { ManuscriptCard } from '../components/studio/ManuscriptCard';
+import { StoryCardV21 } from '../components/studio/StoryCardV21';
 import { ShareModal } from '../components/studio/ShareModal';
-import { StudioPageHeader } from '../components/studio/StudioPageHeader';
-import { StudioEmptyState } from '../components/studio/StudioEmptyState';
-import { StudioIllustration } from '../components/studio/StudioIllustration';
+
 
 type StatusFilter = '' | 'draft' | 'published' | 'pending_review' | 'needs_revision';
+type SortFilter = 'recent' | 'reads' | 'title';
 
 export function Stories() {
   const { isMockMode } = useAuth();
@@ -25,6 +24,7 @@ export function Stories() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('');
+  const [sortFilter, setSortFilter] = useState<SortFilter>('recent');
   const [sharingStory, setSharingStory] = useState<StoryData | null>(null);
   const [shareChapters, setShareChapters] = useState<ChapterListItem[]>([]);
   const [shareLoading, setShareLoading] = useState(false);
@@ -32,9 +32,22 @@ export function Stories() {
   const filteredStories = useMemo(() => {
     const list = data?.stories ?? [];
     const searched = filterStoriesByQuery(list, search);
-    if (!statusFilter) return searched;
-    return searched.filter((s) => (s.moderation_status || 'draft') === statusFilter);
-  }, [data?.stories, search, statusFilter]);
+    const statusFiltered = !statusFilter
+      ? searched
+      : searched.filter((s) => (s.moderation_status || 'draft') === statusFilter);
+    return [...statusFiltered].sort((a, b) => {
+      if (sortFilter === 'reads') return b.total_readers - a.total_readers;
+      if (sortFilter === 'title') return a.title.localeCompare(b.title, 'te');
+      return b.chapter_count - a.chapter_count;
+    });
+  }, [data?.stories, search, statusFilter, sortFilter]);
+
+  const stats = useMemo(() => {
+    const list = data?.stories ?? [];
+    const published = list.filter((s) => s.moderation_status === 'published').length;
+    const drafts = list.length - published;
+    return { total: list.length, published, drafts };
+  }, [data?.stories]);
 
   const handleDelete = async (story: StoryData) => {
     if (!confirm(`${t('stories.archiveConfirm')}\n\n"${story.title}"`)) return;
@@ -66,49 +79,52 @@ export function Stories() {
     setShareChapters([]);
   }, []);
 
+  const demoStory: StoryData = {
+    id: 'demo-rrr',
+    title: 'RRR - రాజమౌళి (Demo)',
+    description: 'Story → Seasons → Chapters → Editor with scenes.',
+    genre: 'family_drama',
+    chapter_count: 24,
+    total_readers: 0,
+    moderation_status: 'draft',
+  };
+
   return (
-    <div className="cms-page studio-page stories-studio--premium stories-studio--wave20 stories-studio--wave26 studio-page--calm26 wc-page-enter">
-      <StudioPageHeader
-        variant="hero"
-        eyebrow={t('stories.eyebrow')}
-        eyebrowIcon={Library}
-        title={t('stories.title')}
-        subtitle={t('stories.subtitle')}
-        actions={(
-          <Link to="/stories/new" className="katha-cta katha-cta--maroon">
-            <Plus size={18} aria-hidden />
-            {t('stories.newStory')}
-          </Link>
-        )}
-      />
+    <div className="sv21 sv21--wide">
+      <div className="sv21__head">
+        <div>
+          <p className="sv21__eyebrow">
+            <Library size={14} aria-hidden />
+            {t('stories.eyebrow')}
+          </p>
+          <h1 className="sv21__title">{t('stories.title')}</h1>
+          {!loading && stats.total > 0 && (
+            <p className="sv21__subtitle">
+              {stats.total} {t('stories.title').toLowerCase()} · {stats.published} {t('stories.statusPublished').toLowerCase()} · {stats.drafts} {t('stories.draft').toLowerCase()}
+            </p>
+          )}
+        </div>
+        <Link to="/stories/new" className="sv21__cta">
+          <Plus size={16} aria-hidden />
+          {t('stories.newStory')}
+        </Link>
+      </div>
 
-      <div className="wc-stagger-children">
       {loading && (
-        <div className="cms-loading" role="status" aria-live="polite">
-          <Loader2 size={20} className="cms-loading__spin" aria-hidden />
+        <p className="sv21__loading" role="status" aria-live="polite">
+          <Loader2 size={16} className="cms-loading__spin" style={{ verticalAlign: 'middle', marginRight: 6 }} />
           {t('stories.loading')}
-        </div>
+        </p>
       )}
 
-      {error && <div className="cms-panel cms-error-text">{error}</div>}
+      {error && <p className="sv21__error" role="alert">{error}</p>}
 
       {!loading && (data?.stories?.length ?? 0) > 0 && (
-        <div className="stories-pride-banner" role="note">
-          <span className="stories-pride-banner__glyph" aria-hidden>క</span>
-          <div>
-            <p className="stories-pride-banner__title">{t('stories.prideTitle')}</p>
-            <p className="stories-pride-banner__text">{t('stories.prideText')}</p>
-          </div>
-        </div>
-      )}
-
-      {!loading && (data?.stories?.length ?? 0) > 0 && (
-        <div className="cms-toolbar cms-toolbar--premium">
-          <label className="cms-search-field">
+        <div className="sv21__toolbar">
+          <label className="sv21__search">
             <Search size={16} aria-hidden />
             <input
               type="search"
-              className="cms-input cms-search-field__input"
               placeholder={t('stories.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -116,7 +132,7 @@ export function Stories() {
             />
           </label>
           <select
-            className="cms-select cms-toolbar__select"
+            className="sv21__select"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             aria-label={t('stories.filterStatus')}
@@ -127,52 +143,38 @@ export function Stories() {
             <option value="pending_review">{t('stories.statusPendingReview')}</option>
             <option value="needs_revision">{t('stories.statusNeedsRevision')}</option>
           </select>
+          <select
+            className="sv21__select"
+            value={sortFilter}
+            onChange={(e) => setSortFilter(e.target.value as SortFilter)}
+            aria-label={t('common.sort')}
+          >
+            <option value="recent">{t('stories.sortRecent')}</option>
+            <option value="reads">{t('stories.sortReads')}</option>
+            <option value="title">{t('stories.sortTitle')}</option>
+          </select>
         </div>
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) > 0 && filteredStories.length === 0 && (
-        <StudioEmptyState
-          variant="compact"
-          icon={Search}
-          iconSize={24}
-          title={t('stories.noMatchTitle')}
-          text={t('stories.noMatchText')}
-        >
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={() => { setSearch(''); setStatusFilter(''); }}
-          >
+        <div className="sv21__empty">
+          <Search size={26} aria-hidden />
+          <p>{t('stories.noMatchText')}</p>
+          <button type="button" className="sv21__cta sv21__cta--soft" style={{ marginTop: 12 }} onClick={() => { setSearch(''); setStatusFilter(''); }}>
             {t('stories.clearFilters')}
           </button>
-        </StudioEmptyState>
+        </div>
       )}
 
       {!loading && (filteredStories.length > 0 || isMockMode) && (
-        <div className="manuscript-grid manuscript-grid--premium manuscript-grid--museum" role="list" aria-label={t('stories.title')}>
-          {isMockMode && (
-            <ManuscriptCard
-              story={{
-                id: 'demo-rrr',
-                title: 'RRR - రాజమౌళి (Demo)',
-                description: 'Story → Seasons → Chapters → Editor with scenes. Per-chapter previews inside the editor.',
-                genre: 'family_drama',
-                chapter_count: 24,
-                total_readers: 0,
-                moderation_status: 'draft',
-              }}
-              variant="grid"
-            />
-          )}
-
+        <div className="sv21__grid">
+          {isMockMode && <StoryCardV21 story={demoStory} />}
           {filteredStories.map((story) => (
-            <ManuscriptCard
+            <StoryCardV21
               key={story.id}
               story={story}
-              variant="grid"
               onShare={story.moderation_status === 'published' ? () => { void handleShare(story); } : undefined}
               onEdit={() => setEditing(story)}
-              onCoverUpdated={reload}
               onDelete={() => { void handleDelete(story); }}
               deleting={deleting === story.id}
             />
@@ -181,23 +183,14 @@ export function Stories() {
       )}
 
       {!loading && !error && (data?.stories?.length ?? 0) === 0 && !isMockMode && (
-        <>
-        <div className="stories-page__illus" aria-hidden>
-          <StudioIllustration id="palm-scroll" tone="maroon" size={80} />
-        </div>
-        <StudioEmptyState
-          icon={PenLine}
-          iconSize={32}
-          title={t('stories.emptyShelfTitle')}
-          titleTe={t('stories.emptyShelfTe')}
-          text={t('stories.emptyShelfText')}
-        >
-          <Link to="/stories/new" className="katha-cta katha-cta--maroon studio-empty__cta">
-            <Plus size={18} aria-hidden />
+        <div className="sv21__empty">
+          <PenLine size={28} aria-hidden />
+          <p>{t('stories.emptyShelfText')}</p>
+          <Link to="/stories/new" className="sv21__cta" style={{ marginTop: 12 }}>
+            <Plus size={16} aria-hidden />
             {t('stories.createFirst')}
           </Link>
-        </StudioEmptyState>
-        </>
+        </div>
       )}
 
       {editing && (
@@ -205,11 +198,7 @@ export function Stories() {
       )}
 
       {sharingStory && !shareLoading && (
-        <ShareModal
-          story={sharingStory}
-          chapters={shareChapters}
-          onClose={closeShare}
-        />
+        <ShareModal story={sharingStory} chapters={shareChapters} onClose={closeShare} />
       )}
 
       {sharingStory && shareLoading && (
@@ -220,7 +209,6 @@ export function Stories() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }

@@ -1,0 +1,583 @@
+/**
+ * Publishing + Calendar pages — visual parity with
+ * katha_publishing_v2.html and katha_calendar_v2.html
+ * Scoped under .katha-ops-v2 so shell chrome does not fight the layout.
+ */
+
+.katha-ops-v2 {
+  --ops-bg: #faf7f0;
+  --ops-surface: #ffffff;
+  --ops-surface-1: #f5f0e6;
+  --ops-border: #e5dfd0;
+  --ops-border-strong: #d8cfb8;
+  --ops-text: #2b221a;
+  --ops-text-2: #6b5f4f;
+  --ops-text-3: #9c8f7a;
+  --ops-maroon: #7a2e2e;
+  --ops-maroon-dark: #5c2222;
+  --ops-gold: #b8863b;
+  --ops-radius: 8px;
+  --ops-radius-lg: 14px;
+
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  color: var(--ops-text);
+  font-family: Inter, 'Noto Sans Telugu', system-ui, sans-serif;
+  line-height: 1.5;
+  background: transparent;
+}
+
+.katha-ops-v2--calendar {
+  max-width: 780px;
+}
+
+.katha-ops-v2 [lang='te'] {
+  font-family: 'Noto Sans Telugu', Inter, system-ui, sans-serif;
+}
+
+/* Page head */
+.katha-ops-v2 .ops-page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.katha-ops-v2 .ops-eyebrow {
+  font-size: 12px;
+  color: var(--ops-maroon);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+}
+
+.katha-ops-v2 .ops-title {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ops-text);
+  letter-spacing: -0.01em;
+}
+
+.katha-ops-v2 .ops-subtitle {
+  font-size: 13px;
+  color: var(--ops-text-2);
+  margin: 6px 0 0;
+  max-width: 62ch;
+}
+
+.katha-ops-v2 .ops-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ops-maroon);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--ops-radius);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.katha-ops-v2 .ops-cta:hover {
+  background: var(--ops-maroon-dark);
+  color: #fff;
+}
+
+.katha-ops-v2 .ops-cta--ghost {
+  background: var(--ops-surface);
+  color: var(--ops-maroon);
+  border: 1px solid var(--ops-border-strong);
+  padding: 9px 15px;
+  font-size: 13px;
+}
+
+.katha-ops-v2 .ops-cta--ghost:hover {
+  background: var(--ops-surface-1);
+  color: var(--ops-maroon);
+}
+
+/* Tabs */
+.katha-ops-v2 .ops-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--ops-border);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.katha-ops-v2 .ops-tab {
+  font-size: 13px;
+  padding: 10px 4px;
+  margin-right: 20px;
+  color: var(--ops-text-2);
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.katha-ops-v2 .ops-tab:hover {
+  color: var(--ops-text);
+}
+
+.katha-ops-v2 .ops-tab.is-active {
+  color: var(--ops-maroon);
+  border-bottom-color: var(--ops-maroon);
+  font-weight: 500;
+}
+
+.katha-ops-v2 .ops-tab .ops-zero {
+  color: var(--ops-text-3);
+  font-weight: 400;
+}
+
+/* Stat cards */
+.katha-ops-v2 .ops-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 1.75rem;
+}
+
+@media (max-width: 640px) {
+  .katha-ops-v2 .ops-stat-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.katha-ops-v2 .ops-stat-card {
+  background: var(--ops-surface);
+  border: 1px solid var(--ops-border);
+  border-radius: var(--ops-radius-lg);
+  padding: 1rem 1.1rem;
+}
+
+.katha-ops-v2 .ops-stat-label {
+  font-size: 12px;
+  color: var(--ops-text-2);
+  margin: 0 0 4px;
+}
+
+.katha-ops-v2 .ops-stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ops-text);
+  line-height: 1.15;
+}
+
+.katha-ops-v2 .ops-stat-hint {
+  font-size: 11.5px;
+  color: var(--ops-text-3);
+  margin: 4px 0 0;
+}
+
+/* Upcoming note */
+.katha-ops-v2 .ops-upcoming-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--ops-text-2);
+  background: var(--ops-surface-1);
+  border-radius: var(--ops-radius-lg);
+  padding: 10px 14px;
+  margin-bottom: 1.75rem;
+}
+
+.katha-ops-v2 .ops-upcoming-note svg {
+  color: var(--ops-text-3);
+  flex-shrink: 0;
+}
+
+.katha-ops-v2 .ops-upcoming-note a {
+  color: var(--ops-maroon);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.katha-ops-v2 .ops-upcoming-note a:hover {
+  text-decoration: underline;
+}
+
+/* Section head */
+.katha-ops-v2 .ops-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.katha-ops-v2 .ops-section-head h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ops-text);
+}
+
+.katha-ops-v2 .ops-section-head h3.ops-h3-sm {
+  font-size: 14px;
+}
+
+.katha-ops-v2 .ops-link {
+  font-size: 13px;
+  color: var(--ops-maroon);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.katha-ops-v2 .ops-link:hover {
+  text-decoration: underline;
+}
+
+/* Story performance list */
+.katha-ops-v2 .ops-story-perf {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  border-top: 1px solid var(--ops-border);
+}
+
+.katha-ops-v2 .ops-story-perf__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--ops-border);
+  gap: 12px;
+}
+
+.katha-ops-v2 .ops-story-perf__name {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--ops-text);
+}
+
+.katha-ops-v2 .ops-story-perf__meta {
+  font-size: 12px;
+  color: var(--ops-text-3);
+  margin: 2px 0 0;
+}
+
+.katha-ops-v2 .ops-story-perf__stats {
+  display: flex;
+  gap: 18px;
+  font-size: 12.5px;
+  color: var(--ops-text-2);
+  flex-shrink: 0;
+}
+
+.katha-ops-v2 .ops-story-perf__stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* List panels (upcoming / published) */
+.katha-ops-v2 .ops-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--ops-border);
+}
+
+.katha-ops-v2 .ops-list__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.katha-ops-v2 .ops-list__title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 2px;
+}
+
+.katha-ops-v2 .ops-list__meta {
+  font-size: 12px;
+  color: var(--ops-text-3);
+  margin: 0;
+}
+
+.katha-ops-v2 .ops-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ops-maroon);
+  background: var(--ops-surface-1);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+}
+
+.katha-ops-v2 .ops-empty-inline {
+  font-size: 13px;
+  color: var(--ops-text-2);
+  padding: 1.25rem 0;
+  margin: 0;
+}
+
+.katha-ops-v2 .ops-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ops-text-2);
+  padding: 1rem 0;
+}
+
+/* ---- Calendar page ---- */
+
+.katha-ops-v2 .ops-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--ops-border-strong);
+  border-radius: var(--ops-radius-lg);
+  color: var(--ops-text-2);
+  margin-bottom: 1.75rem;
+  background: transparent;
+}
+
+.katha-ops-v2 .ops-empty-state svg {
+  color: var(--ops-text-3);
+  margin-bottom: 12px;
+}
+
+.katha-ops-v2 .ops-empty-state p {
+  font-size: 13px;
+  max-width: 38ch;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.katha-ops-v2 .ops-calendar-panel {
+  background: var(--ops-surface);
+  border: 1px solid var(--ops-border);
+  border-radius: var(--ops-radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 1.75rem;
+}
+
+.katha-ops-v2 .ops-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.katha-ops-v2 .ops-cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.katha-ops-v2 .ops-cal-nav button {
+  background: none;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: var(--ops-radius);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ops-text-2);
+  cursor: pointer;
+  padding: 0;
+}
+
+.katha-ops-v2 .ops-cal-nav button:hover {
+  background: var(--ops-surface-1);
+}
+
+.katha-ops-v2 .ops-cal-month {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ops-text);
+  min-width: 9rem;
+  text-align: center;
+}
+
+.katha-ops-v2 .ops-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.katha-ops-v2 .ops-cal-weekday {
+  font-size: 11px;
+  color: var(--ops-text-3);
+  text-align: center;
+  padding-bottom: 6px;
+}
+
+.katha-ops-v2 .ops-cal-cell {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--ops-text-2);
+  position: relative;
+  background: transparent;
+}
+
+.katha-ops-v2 .ops-cal-cell--empty {
+  visibility: hidden;
+}
+
+.katha-ops-v2 .ops-cal-cell--has-release {
+  background: var(--ops-surface-1);
+  color: var(--ops-maroon);
+  font-weight: 600;
+}
+
+.katha-ops-v2 .ops-cal-cell--has-release::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ops-gold);
+}
+
+.katha-ops-v2 .ops-cal-cell--today {
+  outline: 1px solid var(--ops-border-strong);
+}
+
+/* Upcoming releases list (calendar) */
+.katha-ops-v2 .ops-upcoming-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ops-border);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.katha-ops-v2 .ops-upcoming-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--ops-border);
+  gap: 12px;
+}
+
+.katha-ops-v2 .ops-upcoming-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--ops-text);
+}
+
+.katha-ops-v2 .ops-upcoming-meta {
+  font-size: 12px;
+  color: var(--ops-text-3);
+  margin: 2px 0 0;
+}
+
+.katha-ops-v2 .ops-upcoming-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.katha-ops-v2 .ops-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ops-radius);
+  border: 1px solid var(--ops-border-strong);
+  background: transparent;
+  color: var(--ops-text-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+}
+
+.katha-ops-v2 .ops-icon-btn:hover {
+  background: var(--ops-surface-1);
+  color: var(--ops-text);
+}
+
+.katha-ops-v2 .ops-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.katha-ops-v2 .ops-reschedule-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.katha-ops-v2 .ops-reschedule-row input[type='datetime-local'] {
+  font-family: inherit;
+  font-size: 13px;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: var(--ops-radius);
+  padding: 8px 10px;
+  background: #fff;
+  color: var(--ops-text);
+}
+
+.katha-ops-v2 .ops-reschedule-row button {
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 7px 12px;
+  border-radius: var(--ops-radius);
+  border: 1px solid var(--ops-border-strong);
+  background: var(--ops-surface);
+  color: var(--ops-text-2);
+  cursor: pointer;
+}
+
+.katha-ops-v2 .ops-reschedule-row button.ops-primary {
+  background: var(--ops-maroon);
+  border-color: var(--ops-maroon);
+  color: #fff;
+}
+
+.katha-ops-v2 .ops-error {
+  color: var(--ops-maroon);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+/* Soften outer cms-page padding when these shells are used */
+.cms-page:has(> .katha-ops-v2) {
+  background: var(--ops-bg, #faf7f0);
+}
+
+.cms-page.katha-ops-v2-page {
+  background: #faf7f0;
+  max-width: none;
+  padding: 0;
+}

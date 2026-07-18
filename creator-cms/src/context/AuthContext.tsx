@@ -11,6 +11,8 @@ import {
 } from '../lib/creatorProfile';
 import { verifyPhoneVerification, triggerPhoneVerification } from '../lib/phoneVerification';
 import { handleAuthFailure } from '../lib/authSession';
+import { getDeviceId } from '../lib/device';
+import { syncPhoneticCorrectionsFromCloud } from '../lib/phonetic';
 
 export type { AuthUser };
 
@@ -72,15 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setApiAuth(u, t);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: u, token: t }));
     if (!isMockMode) {
-      import('../lib/device').then(({ getDeviceId }) => {
-        import('../lib/supabaseData').then(({ sbMigrateLocalPhoneticCorrections, sbRegisterDevice }) => {
-          sbMigrateLocalPhoneticCorrections().catch(() => {});
-          sbRegisterDevice(getDeviceId()).catch(() => {});
-        });
+      import('../lib/supabaseData').then(({ sbMigrateLocalPhoneticCorrections, sbRegisterDevice }) => {
+        sbMigrateLocalPhoneticCorrections().catch(() => {});
+        sbRegisterDevice(getDeviceId()).catch(() => {});
       });
-      import('../lib/phonetic').then(({ syncPhoneticCorrectionsFromCloud }) => {
-        syncPhoneticCorrectionsFromCloud().catch(() => {});
-      });
+      syncPhoneticCorrectionsFromCloud().catch(() => {});
     }
   };
 

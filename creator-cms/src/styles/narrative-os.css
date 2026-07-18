@@ -77,7 +77,8 @@ body.narrative-os-body {
 }
 
 .narrative-os-app.app {
-  height: 100vh;
+  min-height: 100dvh;
+  height: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -728,17 +729,62 @@ body.narrative-os-body {
   font-weight: 500;
 }
 
-.narrative-os-app .manuscript-skin--chat .ql-editor {
-  font-family: 'Inter', var(--font-ui), sans-serif !important;
-  font-size: 14.5px !important;
+/*
+ * Format skins — STABLE geometry only.
+ * Avoid per-paragraph float/margin auto (causes canvas "dancing" + layout thrash).
+ * Width/padding locked to manuscript measure so typing never resizes the stage.
+ */
+.narrative-os-app .manuscript-skin--chat,
+.narrative-os-app .manuscript-skin--letter,
+.narrative-os-app .manuscript-skin--choice,
+.narrative-os-app .manuscript-skin--novel {
+  width: 100%;
+  max-width: var(--manuscript-column-width);
+  margin: 0 auto;
+  box-sizing: border-box;
+  contain: layout style;
 }
 
-.narrative-os-app .manuscript-skin--letter .canvas {
+.narrative-os-app .manuscript-skin--chat .ql-editor {
+  font-family: 'Inter', var(--font-ui), sans-serif !important;
+  font-size: 15px !important;
+  line-height: 1.65 !important;
+  /* Stable column — do not shrink with content */
+  min-height: 280px;
+  border-left: 3px solid color-mix(in srgb, var(--nos-sage) 55%, transparent);
+  padding-left: 14px !important;
+}
+
+.narrative-os-app .manuscript-skin--chat .ql-editor p {
+  /* Subtle chat cue without alternating float (no reflow dance) */
+  background: color-mix(in srgb, var(--nos-paper-deep) 80%, transparent);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+  border: 1px solid transparent;
+}
+
+/* Epistolary — fixed paper frame */
+.narrative-os-app .manuscript-skin--letter {
   background: #fefcf6;
   border: 1px solid var(--nos-hairline);
   border-radius: 4px;
-  box-shadow: 0 10px 30px var(--nos-shadow);
-  padding: 34px 36px;
+  box-shadow: 0 8px 24px var(--nos-shadow);
+  padding: 24px 28px;
+  min-height: 320px;
+}
+
+.narrative-os-app .manuscript-skin--letter .ql-editor {
+  font-family: 'Fraunces', Georgia, var(--katha-font-reading), serif !important;
+  font-size: 16px !important;
+  line-height: 1.85 !important;
+  min-height: 260px;
+}
+
+.narrative-os-app .manuscript-skin--choice .ql-editor {
+  min-height: 280px;
+  border-left: 3px solid color-mix(in srgb, var(--nos-brass) 60%, transparent);
+  padding-left: 14px !important;
 }
 
 .narrative-os-app .note-block {
@@ -1186,6 +1232,7 @@ body.narrative-os-body {
 
 /* Explorer panel enhancements */
 .narrative-os-app .nos-chapter-head {
+  position: relative;
   margin-bottom: 14px;
 }
 
@@ -1197,9 +1244,98 @@ body.narrative-os-body {
   color: var(--nos-ink);
 }
 
+.narrative-os-app .nos-chapter-head__switcher {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.narrative-os-app .nos-chapter-head__switcher:hover .nos-chapter-head__title {
+  color: var(--nos-oxblood);
+}
+
 .narrative-os-app .nos-chapter-head__meta {
   font-size: 11px;
   color: var(--nos-ink-faint);
+}
+
+.narrative-os-app .nos-chapter-switcher {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--nos-paper);
+  border: 1px solid var(--nos-hairline);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px var(--nos-shadow);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.narrative-os-app .nos-chapter-switcher button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--nos-ink);
+}
+
+.narrative-os-app .nos-chapter-switcher button:hover,
+.narrative-os-app .nos-chapter-switcher button.active {
+  background: var(--nos-paper-deep);
+}
+
+.narrative-os-app .nos-chapter-switcher__num {
+  font-size: 10px;
+  color: var(--nos-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.narrative-os-app .nos-chapter-switcher__title {
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.narrative-os-app .nos-scene-row__rename {
+  width: 100%;
+  border: 1px solid var(--nos-brass-soft);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 12.5px;
+  background: var(--nos-paper);
+  color: var(--nos-ink);
+}
+
+.narrative-os-app .nos-scene-row--renaming {
+  cursor: default;
+}
+
+.narrative-os-app .insp-row--warning .insp-label {
+  color: var(--nos-oxblood);
+  font-weight: 600;
+}
+
+.narrative-os-app .nos-near-limit {
+  color: var(--nos-brass);
+  font-weight: 600;
 }
 
 .narrative-os-app .nos-search {
@@ -1607,11 +1743,23 @@ body.narrative-os-body {
 
 .narrative-os-app .nos-refine-theater__eyebrow {
   margin: 0;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--nos-brass);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--nos-ink-soft);
+  font-weight: 500;
+}
+
+.narrative-os-app .nos-refine-theater__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--nos-oxblood);
+  flex-shrink: 0;
 }
 
 .narrative-os-app .nos-refine-theater__tagline {
@@ -2121,10 +2269,88 @@ body.narrative-os-body {
   line-height: 1.5;
 }
 
+.narrative-os-app .nos-publish__choice {
+  display: flex;
+  gap: 8px;
+  width: min(420px, 100%);
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--nos-paper-deep);
+}
+
+.narrative-os-app .nos-publish__choice button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  padding: 9px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--nos-ink-soft);
+  cursor: pointer;
+}
+
+.narrative-os-app .nos-publish__choice button.active {
+  background: var(--nos-paper);
+  color: var(--nos-oxblood);
+  font-weight: 600;
+  box-shadow: 0 1px 3px var(--nos-shadow);
+}
+
+.narrative-os-app .nos-publish__schedule-fields {
+  width: min(420px, 100%);
+  text-align: left;
+}
+
+.narrative-os-app .nos-publish__schedule-fields label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: var(--nos-ink);
+}
+
+.narrative-os-app .nos-publish__schedule-fields input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid var(--nos-hairline);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--nos-paper);
+  color: var(--nos-ink);
+}
+
+.narrative-os-app .nos-publish__schedule-hint {
+  font-size: 11.5px;
+  color: var(--nos-ink-soft);
+  margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.narrative-os-app .nos-publish__error {
+  color: var(--nos-oxblood);
+  font-size: 12.5px;
+  margin: 0;
+  text-align: center;
+}
+
+.narrative-os-app .nos-publish__success {
+  color: var(--nos-sage);
+  font-size: 12.5px;
+  margin: 0;
+  text-align: center;
+}
+
 .narrative-os-app .nos-publish__cta {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  width: min(420px, 100%);
   padding: 12px 24px;
   border: none;
   border-radius: 10px;
@@ -2138,6 +2364,10 @@ body.narrative-os-body {
 .narrative-os-app .nos-publish__cta:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.narrative-os-app .nos-publish__cta:not(:disabled):hover {
+  filter: brightness(0.95);
 }
 
 .narrative-os-app .nos-word-goal {

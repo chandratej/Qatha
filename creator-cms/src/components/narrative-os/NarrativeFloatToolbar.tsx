@@ -1,19 +1,20 @@
-import { Bold, Italic, MessageCircle, Sparkles } from 'lucide-react';
+import { Bold, Italic, MessageCircle } from 'lucide-react';
 
 interface NarrativeFloatToolbarProps {
   rect: DOMRect;
   onBold: () => void;
   onItalic: () => void;
   onComment: () => void;
-  onAskAi: () => void;
+  /** @deprecated Generative AI disabled in MVP1 — optional no-op kept for API stability. */
+  onAskAi?: () => void;
 }
 
+/** Selection float toolbar — no generative AI in MVP1. */
 export function NarrativeFloatToolbar({
   rect,
   onBold,
   onItalic,
   onComment,
-  onAskAi,
 }: NarrativeFloatToolbarProps) {
   const left = rect.left + rect.width / 2 - 60;
   const top = rect.top - 46 + window.scrollY;
@@ -28,7 +29,6 @@ export function NarrativeFloatToolbar({
       <button type="button" title="Bold" onClick={onBold}><Bold size={14} /></button>
       <button type="button" title="Italic" onClick={onItalic}><Italic size={14} /></button>
       <button type="button" title="Comment" onClick={onComment}><MessageCircle size={14} /></button>
-      <button type="button" title="Ask AI" onClick={onAskAi}><Sparkles size={14} /></button>
     </div>
   );
 }

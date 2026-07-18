@@ -231,6 +231,55 @@ export const api = {
         created_at: string;
       }>;
     }>(`/creators/versions/${storyId}/${chapterNumber}`),
+
+  /** Story Versioning System (domain API — storage-agnostic) */
+  requestVersionCreate: (body: {
+    story_id: string;
+    chapter_id?: string | null;
+    version_type?: string;
+    version_name?: string;
+    content: unknown;
+    force?: boolean;
+  }) =>
+    request<{ version: import('../versioning/types').StoryVersion | null; skipped?: boolean; reason?: string }>(
+      '/versions',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  requestVersionList: (params: {
+    story_id: string;
+    chapter_id?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const q = new URLSearchParams();
+    q.set('story_id', params.story_id);
+    if (params.chapter_id != null) q.set('chapter_id', params.chapter_id);
+    if (params.limit != null) q.set('limit', String(params.limit));
+    if (params.offset != null) q.set('offset', String(params.offset));
+    return request<{ versions: import('../versioning/types').StoryVersion[]; total: number }>(
+      `/versions?${q.toString()}`,
+    );
+  },
+  requestVersionTimeline: (params: { story_id: string; chapter_id?: string }) => {
+    const q = new URLSearchParams({ story_id: params.story_id });
+    if (params.chapter_id != null) q.set('chapter_id', params.chapter_id);
+    return request<{
+      timeline: {
+        storyId: string;
+        chapterId: string | null;
+        total: number;
+        entries: import('../versioning/types').VersionTimelineEntry[];
+      };
+    }>(`/versions/timeline?${q.toString()}`);
+  },
+  requestVersionGet: (versionId: string) =>
+    request<{ version: import('../versioning/types').StoryVersion }>(`/versions/${versionId}`),
+  requestVersionRestore: (versionId: string, body?: { version_name?: string }) =>
+    request<{ version: import('../versioning/types').StoryVersion }>(`/versions/${versionId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify(body || {}),
+    }),
+
   getModerationQueue: () =>
     useSupabaseDirect()
       ? sb.sbGetModerationQueue()

@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Plus, Edit3, BookOpen, BookMarked, GripVertical, Loader2, Copy, Trash2, Pencil, Link2, Image, BarChart3 } from 'lucide-react';
+import { Plus, Edit3, BookOpen, BookMarked, GripVertical, Loader2, Copy, Trash2, Pencil, Link2, Image, BarChart3, ArrowLeft, MoreHorizontal, PenLine, CalendarClock } from 'lucide-react';
 import { ShareLinkField } from '../components/ShareLinkField';
 import { BookSpine } from '../components/studio/BookSpine';
 import { buildChapterShareUrl, isChapterShareable, resolveStorySlug } from '../lib/shareLinks';
@@ -163,13 +163,93 @@ export function StorySeasons() {
     return <span className="badge">{status}</span>;
   };
 
+  const publishedCount = apiChapters.filter((c) => c.status === 'published').length;
+
   if (loading) {
     return (
-      <div className="cms-page studio-page manuscript-studio manuscript-studio--premium manuscript-studio--museum wc-page-enter">
-        <div className="cms-loading">
-          <Loader2 size={20} className="cms-loading__spin" />
+      <div className="sv21 sv21--medium">
+        <p className="sv21__loading">
+          <Loader2 size={16} className="cms-loading__spin" style={{ verticalAlign: 'middle', marginRight: 6 }} />
           {t('manuscript.loading')}
+        </p>
+      </div>
+    );
+  }
+
+  if (!isDemo) {
+    return (
+      <div className="sv21 sv21--medium">
+        <Link to="/stories" className="sv21__back">
+          <ArrowLeft size={14} aria-hidden />
+          {t('manuscript.backToLibrary')}
+        </Link>
+
+        <div className="sv21__head sv21__head--start">
+          <div>
+            <p className="sv21__eyebrow">
+              <BookOpen size={14} aria-hidden />
+              {t('manuscript.eyebrow')}
+            </p>
+            <h1 className="sv21__title sv21__title--sm" lang="te">{storyTitle}</h1>
+            <p className="sv21__subtitle">{t('manuscript.subtitle')}</p>
+          </div>
+          <div className="sv21__header-actions">
+            <Link to={`/stories/${storyId}/bible`} className="sv21__cta sv21__cta--soft sv21__cta--sm">
+              <BookMarked size={14} aria-hidden />
+              {t('manuscript.storyBible')}
+            </Link>
+            <Link to={`/stories/${storyId}/media`} className="sv21__cta sv21__cta--soft sv21__cta--sm">
+              <Image size={14} aria-hidden />
+              {t('manuscript.media')}
+            </Link>
+            <Link to={`/analytics/${storyId}`} className="sv21__cta sv21__cta--soft sv21__cta--sm">
+              <BarChart3 size={14} aria-hidden />
+              {t('manuscript.hubAnalytics')}
+            </Link>
+          </div>
         </div>
+
+        {error && <p className="sv21__error" role="alert">{error}</p>}
+
+        <div className="sv21__section-head">
+          <div>
+            <h3>{t('manuscript.bookshelf')}</h3>
+            <p className="sv21__subtitle" style={{ marginTop: 2, fontSize: 12 }}>
+              {apiChapters.length} {t('dashboard.chapters')}
+              {publishedCount > 0 && ` · ${publishedCount} ${t('stories.statusPublished').toLowerCase()}`}
+            </p>
+          </div>
+          <button type="button" onClick={handleAddChapter} className="sv21__add-btn">
+            <Plus size={14} aria-hidden />
+            {t('manuscript.addChapter')}
+          </button>
+        </div>
+
+        {apiChapters.length === 0 ? (
+          <div className="sv21__empty">
+            <BookOpen size={26} aria-hidden />
+            <p>{t('manuscript.emptyBookshelfHint')}</p>
+          </div>
+        ) : (
+          <div className="sv21__chapter-list">
+            {apiChapters.map((ch) => (
+              <ChapterRowV21
+                key={ch.chapter_number}
+                storyId={storyId}
+                chNum={ch.chapter_number}
+                title={ch.title || `Chapter ${ch.chapter_number}`}
+                words={ch.word_count || 0}
+                scenes={ch.scene_count || 1}
+                status={ch.status}
+                editorLink={chapterEditorPath(storyId, ch.chapter_number, {
+                  contentType: storyMeta?.content_type,
+                  language: storyMeta?.language,
+                })}
+                onRefresh={loadProdChapters}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -468,6 +548,182 @@ export function StorySeasons() {
           </>
         )}
       </div>
+      </div>
+    </div>
+  );
+}
+
+function defaultScheduleLocal() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(8, 0, 0, 0);
+  const offset = d.getTimezoneOffset();
+  return new Date(d.getTime() - offset * 60_000).toISOString().slice(0, 16);
+}
+
+function ChapterRowV21({
+  storyId,
+  chNum,
+  title,
+  words,
+  scenes,
+  editorLink,
+  status,
+  onRefresh,
+}: {
+  storyId: string;
+  chNum: number;
+  title: string;
+  words: number;
+  scenes: number;
+  editorLink: string;
+  status?: string;
+  onRefresh: () => void;
+}) {
+  const { t, locale } = useLocale();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(title);
+  const [busy, setBusy] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState(defaultScheduleLocal);
+  const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
+
+  const isDraft = !status || status === 'draft';
+  const isPublished = status === 'published';
+  const canSchedule = status !== 'published' && status !== 'pending_review';
+  const displayWords = words > 0 ? `${words.toLocaleString('en-IN')} words` : '';
+  const displayScenes = scenes > 0 ? `${scenes} scenes` : '';
+  const meta = [displayWords, displayScenes].filter(Boolean).join(' · ');
+  const te = locale === 'te';
+
+  const handleRename = async () => {
+    setBusy(true);
+    try {
+      await api.renameChapter(storyId, chNum, editTitle.trim() || title);
+      setEditing(false);
+      await onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Delete Chapter ${chNum}? This cannot be undone.`)) return;
+    setBusy(true);
+    try {
+      await api.deleteChapter(storyId, chNum);
+      await onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setBusy(true);
+    try {
+      await api.duplicateChapter(storyId, chNum);
+      await onRefresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSchedule = async () => {
+    if (!scheduleAt) return;
+    setBusy(true);
+    setScheduleMsg(null);
+    try {
+      const iso = new Date(scheduleAt).toISOString();
+      await api.scheduleChapter(storyId, {
+        chapter_number: chNum,
+        scheduled_publish_at: iso,
+      });
+      setScheduleOpen(false);
+      setScheduleMsg(te ? 'షెడ్యూల్ అయింది' : 'Scheduled');
+      await onRefresh();
+    } catch (err) {
+      setScheduleMsg(err instanceof Error ? err.message : 'Schedule failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="sv21__chapter-row">
+      <div className={`sv21__chapter-num${isDraft ? ' sv21__chapter-num--draft' : ''}`}>{chNum}</div>
+      <div className="sv21__chapter-body">
+        {editing ? (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="sv21__input" />
+            <button type="button" className="sv21__cta sv21__cta--sm" onClick={handleRename} disabled={busy}>Save</button>
+            <button type="button" className="sv21__cta sv21__cta--soft sv21__cta--sm" onClick={() => setEditing(false)}>Cancel</button>
+          </div>
+        ) : (
+          <>
+            <div className="sv21__chapter-title-row">
+              <span className="sv21__chapter-title" lang="te">{title}</span>
+              {isPublished && <span className="sv21__chip sv21__chip--published">{t('stories.statusPublished')}</span>}
+              {isDraft && <span className="sv21__chip sv21__chip--draft">{t('stories.draft')}</span>}
+              {status === 'pending_review' && <span className="sv21__chip sv21__chip--draft">{t('stories.statusPendingReview')}</span>}
+              {status === 'scheduled' && <span className="sv21__chip sv21__chip--draft">{te ? 'షెడ్యూల్' : 'Scheduled'}</span>}
+            </div>
+            {meta && <p className="sv21__chapter-meta">{meta}</p>}
+            {scheduleOpen && (
+              <div className="sv21__inline-schedule" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                <input
+                  type="datetime-local"
+                  className="sv21__input"
+                  value={scheduleAt}
+                  onChange={(e) => setScheduleAt(e.target.value)}
+                  aria-label={te ? 'ప్రచురణ సమయం' : 'Publish time'}
+                />
+                <button type="button" className="sv21__cta sv21__cta--sm" onClick={() => void handleSchedule()} disabled={busy}>
+                  {te ? 'నిర్ధారించండి' : 'Confirm'}
+                </button>
+                <button type="button" className="sv21__cta sv21__cta--soft sv21__cta--sm" onClick={() => setScheduleOpen(false)}>
+                  {t('common.cancel')}
+                </button>
+              </div>
+            )}
+            {scheduleMsg && <p className="sv21__chapter-meta" role="status">{scheduleMsg}</p>}
+          </>
+        )}
+      </div>
+      <div className="sv21__chapter-actions">
+        <Link to={editorLink} className="sv21__open-btn" style={{ flex: 'none', padding: '7px 12px' }}>
+          <PenLine size={14} aria-hidden />
+          {t('manuscript.openEditor')}
+        </Link>
+        <div style={{ position: 'relative' }}>
+          <button type="button" className="sv21__icon-btn" aria-label={t('common.more')} onClick={() => setMenuOpen((o) => !o)}>
+            <MoreHorizontal size={16} aria-hidden />
+          </button>
+          {menuOpen && (
+            <div className="sv21__form-card" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, padding: 6, minWidth: 160, zIndex: 10 }}>
+              <button type="button" className="sv21__open-btn" style={{ border: 'none', width: '100%' }} onClick={() => { setEditTitle(title); setEditing(true); setMenuOpen(false); }}>
+                <Pencil size={14} /> Rename
+              </button>
+              {canSchedule && (
+                <button
+                  type="button"
+                  className="sv21__open-btn"
+                  style={{ border: 'none', width: '100%' }}
+                  onClick={() => { setScheduleOpen(true); setMenuOpen(false); setScheduleMsg(null); }}
+                  disabled={busy}
+                >
+                  <CalendarClock size={14} /> {te ? 'రిలీజ్ షెడ్యూల్' : 'Schedule release'}
+                </button>
+              )}
+              <button type="button" className="sv21__open-btn" style={{ border: 'none', width: '100%' }} onClick={() => { void handleDuplicate(); setMenuOpen(false); }} disabled={busy}>
+                <Copy size={14} /> Duplicate
+              </button>
+              <button type="button" className="sv21__open-btn" style={{ border: 'none', width: '100%', color: '#b42318' }} onClick={() => { void handleDelete(); setMenuOpen(false); }} disabled={busy}>
+                <Trash2 size={14} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

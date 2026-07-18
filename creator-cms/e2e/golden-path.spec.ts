@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { enterStudio as enterStudioEnglish } from './helpers/studio';
 
 /**
  * Golden path smoke — DEC-019 / V09-13-D3
@@ -8,14 +9,7 @@ import { test, expect, type Page } from '@playwright/test';
 
 /** Events are core nav — bypass onboarding gate for contest E2E */
 async function enterStudioShell(page: Page, email: string) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: /Continue with email/i }).click();
-  await page.getByLabel(/Email address/i).fill(email);
-  await page.getByRole('button', { name: /Send verification code/i }).click();
-  await page.getByLabel(/6-digit code/i).fill('123456');
-  await page.getByRole('button', { name: /Enter your studio/i }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
-  await page.evaluate(() => localStorage.setItem('katha_onboarding_complete', 'true'));
+  await enterStudioEnglish(page, email);
   await page.goto('/');
   await page.waitForURL((url) => !url.pathname.includes('/onboarding'), { timeout: 15_000 });
 }
@@ -60,6 +54,8 @@ test.describe('Creator Studio golden path', () => {
 
   test('mock email OTP reaches studio shell', async ({ page }) => {
     await page.goto('/login');
+    await page.evaluate(() => localStorage.setItem('katha_studio_locale', 'en'));
+    await page.reload();
 
     await page.getByRole('button', { name: /Continue with email/i }).click();
     await page.getByLabel(/Email address/i).fill('e2e.creator@katha.test');

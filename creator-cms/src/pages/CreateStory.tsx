@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   BookOpen, FileText, Library, Zap, MessageCircle, GitBranch,
-  Sparkles, Cloud, ArrowRight, Check, ImageIcon, ArrowLeft,
+  Sparkles, Cloud, ArrowRight, ArrowLeft, ImageIcon,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { PAYWALL } from '../lib/constants';
 import {
@@ -39,26 +38,24 @@ const CONTENT_TYPE_ICONS: Record<string, typeof BookOpen> = {
 function contentTypeSubtitle(ct: ContentTypeDef, locale: string): string {
   const parts: string[] = [];
   if (ct.minChapters != null) {
-    parts.push(locale === 'te'
-      ? `${ct.minChapters}+ అధ్యాయాలు`
-      : `${ct.minChapters}+ chapters`);
+    parts.push(locale === 'te' ? `${ct.minChapters}+ అధ్యాయాలు` : `${ct.minChapters}+ chapters`);
   }
   if (ct.minWordsPerChapter != null) {
-    parts.push(locale === 'te'
-      ? `${ct.minWordsPerChapter}+ పదాలు`
-      : `${ct.minWordsPerChapter}+ words`);
+    parts.push(locale === 'te' ? `${ct.minWordsPerChapter}+ పదాలు` : `${ct.minWordsPerChapter}+ words`);
   }
   if ('maxWords' in ct && ct.maxWords != null) {
-    parts.push(locale === 'te'
-      ? `గరిష్ఠ ${ct.maxWords} పదాలు`
-      : `max ${ct.maxWords} words`);
+    parts.push(locale === 'te' ? `గరిష్ఠ ${ct.maxWords} పదాలు` : `max ${ct.maxWords} words`);
   }
   return parts.join(' · ');
 }
 
+type WizardStep = 1 | 2 | 3;
+
 export function CreateStory() {
   const navigate = useNavigate();
   const { locale, t } = useLocale();
+  const [step, setStep] = useState<WizardStep>(1);
+  const [showFormatPicker, setShowFormatPicker] = useState(false);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -103,24 +100,11 @@ export function CreateStory() {
 
   const persistDraft = useCallback(() => {
     saveCreateStoryDraft({
-      title,
-      description,
-      contentType,
-      genre,
-      secondaryGenres,
-      ageRating,
-      language,
-      storyStatus,
-      setting,
-      themes,
-      selectedTags,
-      schedule,
+      title, description, contentType, genre, secondaryGenres,
+      ageRating, language, storyStatus, setting, themes, selectedTags, schedule,
     });
     setDraftSavedAt(Date.now());
-  }, [
-    title, description, contentType, genre, secondaryGenres,
-    ageRating, language, storyStatus, setting, themes, selectedTags, schedule,
-  ]);
+  }, [title, description, contentType, genre, secondaryGenres, ageRating, language, storyStatus, setting, themes, selectedTags, schedule]);
 
   useEffect(() => {
     const timer = window.setTimeout(persistDraft, 1200);
@@ -128,15 +112,15 @@ export function CreateStory() {
   }, [persistDraft]);
 
   const tagResults = searchTags(allTags, tagSearch).slice(0, 12);
-
   const selectedContentType = useMemo(
     () => CREATABLE_CONTENT_TYPES.find((ct) => ct.id === contentType),
     [contentType],
   );
-
-  const contentTypeGuide = selectedContentType
-    ? (locale === 'te' ? selectedContentType.guideTelugu : selectedContentType.guideEnglish)
-    : null;
+  const FormatIcon = CONTENT_TYPE_ICONS[contentType] ?? BookOpen;
+  const formatLabel = selectedContentType
+    ? (locale === 'te' ? selectedContentType.labelTelugu : selectedContentType.label)
+    : contentType;
+  const formatSub = selectedContentType ? contentTypeSubtitle(selectedContentType, locale) : '';
 
   const genreLabel = (id: string) => {
     const g = PRD_GENRES.find((item) => item.id === id);
@@ -170,45 +154,12 @@ export function CreateStory() {
     window.setTimeout(() => setDraftFlash(false), 2000);
   };
 
-  const renderContentTypeCard = (ct: ContentTypeDef, isMoat = false) => {
-    const label = locale === 'te' ? ct.labelTelugu : ct.label;
-    const active = contentType === ct.id;
-    const Icon = CONTENT_TYPE_ICONS[ct.id] ?? BookOpen;
-    const subtitle = contentTypeSubtitle(ct, locale);
-    return (
-      <button
-        key={ct.id}
-        type="button"
-        role="radio"
-        aria-checked={active}
-        className={[
-          'cs-v21__type-card',
-          active ? 'cs-v21__type-card--active' : '',
-          isMoat ? 'cs-v21__type-card--moat' : '',
-        ].filter(Boolean).join(' ')}
-        onClick={() => setContentType(ct.id)}
-      >
-        <span className="cs-v21__type-check" aria-hidden>
-          <Check size={12} strokeWidth={3} />
-        </span>
-        <span className="cs-v21__type-icon" aria-hidden>
-          <Icon size={18} />
-        </span>
-        {isMoat && (
-          <span className="cs-v21__type-badge">{t('createStory.formatBadge')}</span>
-        )}
-        <span className="cs-v21__type-label">{label}</span>
-        {subtitle && (
-          <span className="cs-v21__type-sub">{subtitle}</span>
-        )}
-      </button>
-    );
-  };
+  const canAdvanceStep1 = title.trim().length >= 3;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!coverFile) {
       setError(t('createStory.coverRequired'));
+      setStep(2);
       return;
     }
     setSubmitting(true);
@@ -239,36 +190,39 @@ export function CreateStory() {
     }
   };
 
+  const allFormats = [...CORE_CONTENT_TYPES, ...MOAT_CONTENT_TYPES];
+
   return (
-    <div className="cs-v21">
+    <div className="cs-v21 cs-v21--narrow">
       <Link to="/stories" className="cs-v21__back">
         <ArrowLeft size={16} aria-hidden />
         {t('createStory.backToStories')}
       </Link>
+
       <nav className="cs-v21__progress" aria-label={t('createStory.wizardSteps')}>
-        <span className="cs-v21__progress-step cs-v21__progress-step--active">
+        <span className={`cs-v21__progress-step${step === 1 ? ' cs-v21__progress-step--active' : ''}`}>
           <span className="cs-v21__progress-dot">1</span>
           {t('createStory.stepStory')}
         </span>
         <span className="cs-v21__progress-line" aria-hidden />
-        <span className="cs-v21__progress-step">
+        <span className={`cs-v21__progress-step${step === 2 ? ' cs-v21__progress-step--active' : ''}`}>
           <span className="cs-v21__progress-dot">2</span>
           {t('createStory.stepDetails')}
         </span>
         <span className="cs-v21__progress-line" aria-hidden />
-        <span className="cs-v21__progress-step">
+        <span className={`cs-v21__progress-step${step === 3 ? ' cs-v21__progress-step--active' : ''}`}>
           <span className="cs-v21__progress-dot">3</span>
           {t('createStory.stepPublish')}
         </span>
       </nav>
 
-      <header className="cs-v21__hero">
-        <h1>{t('createStory.title')}</h1>
-        <p>{t('createStory.subtitleV21')}</p>
-      </header>
+      {step === 1 && (
+        <>
+          <header className="cs-v21__hero">
+            <h1>{t('createStory.title')}</h1>
+            <p>{t('createStory.step1Subtitle')}</p>
+          </header>
 
-      <form onSubmit={handleSubmit} className="cs-v21__form">
-        <div className="cs-v21__main">
           <div className="cs-v21__field">
             <label htmlFor="story-title">{t('createStory.storyTitle')}</label>
             <input
@@ -285,32 +239,93 @@ export function CreateStory() {
           </div>
 
           <div className="cs-v21__field">
-            <label htmlFor="description">{t('createStory.description')}</label>
+            <label htmlFor="description">
+              {t('createStory.descriptionOneLine')}{' '}
+              <span style={{ fontWeight: 400, color: 'var(--cs-muted)' }}>({t('createStory.optional')})</span>
+            </label>
             <textarea
               id="description"
               className="cs-v21__textarea"
               value={description}
               onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))}
               placeholder={t('createStory.descriptionPlaceholderV21')}
-              rows={4}
+              rows={2}
             />
-            <span className="cs-v21__counter">{description.length} / {PAYWALL.maxStoryDescChars}</span>
           </div>
 
-          <section className="cs-v21__section">
-            <h2>{t('createStory.contentType')}</h2>
-            <div role="radiogroup" aria-label={t('createStory.contentType')}>
-              <p className="cs-v21__section-label">{t('createStory.contentTypeCore')}</p>
-              <div className="cs-v21__type-grid">
-                {CORE_CONTENT_TYPES.map((ct) => renderContentTypeCard(ct))}
-              </div>
-              <p className="cs-v21__section-label cs-v21__section-label--moat">{t('createStory.contentTypeMoat')}</p>
-              <div className="cs-v21__type-grid">
-                {MOAT_CONTENT_TYPES.map((ct) => renderContentTypeCard(ct, true))}
-              </div>
+          <div className="cs-v21__format-pick">
+            <span className="cs-v21__format-pick-icon" aria-hidden>
+              <FormatIcon size={18} />
+            </span>
+            <div className="cs-v21__format-pick-body">
+              <p className="cs-v21__format-pick-label">{formatLabel}</p>
+              {formatSub && <p className="cs-v21__format-pick-sub">{formatSub}</p>}
             </div>
-            {contentTypeGuide && <p className="cs-v21__guide" role="status">{contentTypeGuide}</p>}
-          </section>
+            <button type="button" className="cs-v21__format-pick-change" onClick={() => setShowFormatPicker((o) => !o)}>
+              {t('createStory.changeFormat')}
+            </button>
+          </div>
+
+          {showFormatPicker && (
+            <div className="cs-v21__format-alt">
+              {allFormats.map((ct) => {
+                const label = locale === 'te' ? ct.labelTelugu : ct.label;
+                const sub = contentTypeSubtitle(ct, locale);
+                const isMoat = 'moat' in ct && ct.moat;
+                return (
+                  <button
+                    key={ct.id}
+                    type="button"
+                    className={`cs-v21__format-alt-option${contentType === ct.id ? ' cs-v21__format-alt-option--active' : ''}`}
+                    onClick={() => { setContentType(ct.id); setShowFormatPicker(false); }}
+                  >
+                    <span>
+                      {label}
+                      {isMoat && <span className="cs-v21__type-badge" style={{ marginLeft: 6 }}>{t('createStory.formatBadge')}</span>}
+                    </span>
+                    <span className="sub">{sub || '—'}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="cs-v21__cover-row">
+            <div className="cs-v21__cover-box">
+              {coverPreview ? <img src={coverPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} /> : <ImageIcon size={20} aria-hidden />}
+            </div>
+            <p className="cs-v21__cover-defer">
+              {t('createStory.coverDefer')}{' '}
+              <button type="button" className="cs-v21__cover-defer-link" onClick={() => setStep(2)}>
+                {t('createStory.coverDeferLink')}
+              </button>
+            </p>
+          </div>
+
+          <div className="cs-v21__actions cs-v21__actions--inline">
+            <button type="button" className="cs-v21__draft-btn" onClick={handleSaveDraft}>
+              <Cloud size={16} aria-hidden />
+              {draftFlash ? t('createStory.draftSaved') : t('createStory.saveDraft')}
+            </button>
+            <button
+              type="button"
+              className="cs-v21__continue-btn"
+              disabled={!canAdvanceStep1}
+              onClick={() => { setError(null); setStep(2); }}
+            >
+              {t('createStory.continueToDetails')}
+              <ArrowRight size={16} aria-hidden />
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <header className="cs-v21__hero">
+            <h1>{t('createStory.stepDetails')}</h1>
+            <p>{t('createStory.step2Subtitle')}</p>
+          </header>
 
           <section className="cs-v21__section">
             <div className="cs-v21__meta-grid">
@@ -352,18 +367,29 @@ export function CreateStory() {
             </div>
           </section>
 
+          <section className="cs-v21__section">
+            <h2>{t('createStory.coverImage')}</h2>
+            <label className="cs-v21__cover cs-v21__cover--inline" aria-label={t('createStory.coverUpload')}>
+              {coverPreview ? (
+                <img src={coverPreview} alt="" />
+              ) : (
+                <>
+                  <ImageIcon size={28} strokeWidth={1.5} aria-hidden />
+                  <span>{t('createStory.coverDragHint')}</span>
+                  <span className="cs-v21__cover-meta">{t('createStory.coverPlaceholder')}</span>
+                </>
+              )}
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleCoverUpload} className="cs-v21__cover-input" />
+            </label>
+          </section>
+
           <details className="cs-v21__advanced">
             <summary>{t('createStory.advancedDetails')} <Sparkles size={16} aria-hidden /></summary>
             <div className="cs-v21__advanced-body">
               <h3>{t('createStory.secondaryGenres')}</h3>
               <div className="cs-v21__chips">
                 {PRD_GENRES.filter((g) => g.id !== genre).map((g) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    className={`cs-v21__chip${secondaryGenres.includes(g.id) ? ' cs-v21__chip--active' : ''}`}
-                    onClick={() => toggleSecondaryGenre(g.id)}
-                  >
+                  <button key={g.id} type="button" className={`cs-v21__chip${secondaryGenres.includes(g.id) ? ' cs-v21__chip--active' : ''}`} onClick={() => toggleSecondaryGenre(g.id)}>
                     {genreLabel(g.id)}
                   </button>
                 ))}
@@ -383,12 +409,7 @@ export function CreateStory() {
                 <input id="tag-search" value={tagSearch} onChange={(e) => setTagSearch(e.target.value)} placeholder={t('createStory.tagSearchPlaceholder')} />
                 <div className="cs-v21__chips">
                   {tagResults.map((tag) => (
-                    <button
-                      key={tag.slug}
-                      type="button"
-                      className={`cs-v21__chip${selectedTags.includes(tag.slug) ? ' cs-v21__chip--active' : ''}`}
-                      onClick={() => toggleTag(tag.slug)}
-                    >
+                    <button key={tag.slug} type="button" className={`cs-v21__chip${selectedTags.includes(tag.slug) ? ' cs-v21__chip--active' : ''}`} onClick={() => toggleTag(tag.slug)}>
                       #{tag.slug}
                     </button>
                   ))}
@@ -397,52 +418,72 @@ export function CreateStory() {
             </div>
           </details>
 
-          <p className="cs-v21__note">{t('createStory.changeNote')}</p>
           {error && <p className="cs-v21__error">{error}</p>}
-        </div>
 
-        <aside className="cs-v21__side">
-          <div className="cs-v21__card">
-            <h3>{t('createStory.coverImage')}</h3>
-            <label className="cs-v21__cover" aria-label={t('createStory.coverUpload')}>
-              {coverPreview ? (
-                <img src={coverPreview} alt="" />
-              ) : (
-                <>
-                  <ImageIcon size={32} strokeWidth={1.5} aria-hidden />
-                  <span>{t('createStory.coverDragHint')}</span>
-                  <span className="cs-v21__cover-meta">{t('createStory.coverPlaceholder')}</span>
-                  <span className="cs-v21__cover-meta">PNG, JPG, WEBP · 5MB</span>
-                </>
-              )}
-              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleCoverUpload} className="cs-v21__cover-input" />
-            </label>
+          <div className="cs-v21__actions cs-v21__actions--inline">
+            <button type="button" className="cs-v21__draft-btn" onClick={() => setStep(1)}>
+              <ArrowLeft size={16} aria-hidden />
+              {t('createStory.backToStory')}
+            </button>
+            <button type="button" className="cs-v21__continue-btn" onClick={() => { setError(null); setStep(3); }}>
+              {t('createStory.continueToPublish')}
+              <ArrowRight size={16} aria-hidden />
+            </button>
           </div>
-          <div className="cs-v21__card">
-            <h3>{t('createStory.writingTips')}</h3>
-            <ul className="cs-v21__tips">
-              <li>{t('createStory.tipCover')}</li>
-              <li>{t('createStory.tipTitle')}</li>
-              <li>{t('createStory.tipHook')}</li>
-            </ul>
+        </>
+      )}
+
+      {step === 3 && (
+        <>
+          <header className="cs-v21__hero">
+            <h1>{t('createStory.stepPublish')}</h1>
+            <p>{t('createStory.step3Subtitle')}</p>
+          </header>
+
+          <div className="cs-v21__review">
+            <div className="cs-v21__review-row">
+              <span className="cs-v21__review-label">{t('createStory.storyTitle')}</span>
+              <span className="cs-v21__review-value" lang="te">{title}</span>
+            </div>
+            {description && (
+              <div className="cs-v21__review-row">
+                <span className="cs-v21__review-label">{t('createStory.description')}</span>
+                <span className="cs-v21__review-value">{description}</span>
+              </div>
+            )}
+            <div className="cs-v21__review-row">
+              <span className="cs-v21__review-label">{t('createStory.contentType')}</span>
+              <span className="cs-v21__review-value">{formatLabel}</span>
+            </div>
+            <div className="cs-v21__review-row">
+              <span className="cs-v21__review-label">{t('createStory.primaryGenre')}</span>
+              <span className="cs-v21__review-value">{genreLabel(genre)}</span>
+            </div>
+            <div className="cs-v21__review-row">
+              <span className="cs-v21__review-label">{t('createStory.coverImage')}</span>
+              <span className="cs-v21__review-value">{coverFile ? coverFile.name : t('createStory.coverMissing')}</span>
+            </div>
           </div>
+
           <p className="cs-v21__autosave" role="status">
             <span className="cs-v21__autosave-dot" aria-hidden />
             {draftFlash ? t('createStory.draftSaved') : draftSavedAt ? t('createStory.autoSaved') : t('createStory.autoSaving')}
           </p>
-        </aside>
 
-        <div className="cs-v21__actions">
-          <button type="button" className="cs-v21__draft-btn" onClick={handleSaveDraft}>
-            <Cloud size={16} aria-hidden />
-            {t('createStory.saveDraft')}
-          </button>
-          <button type="submit" className="cs-v21__continue-btn" disabled={submitting}>
-            {submitting ? t('createStory.submitting') : t('createStory.continue')}
-            {!submitting && <ArrowRight size={16} aria-hidden />}
-          </button>
-        </div>
-      </form>
+          {error && <p className="cs-v21__error">{error}</p>}
+
+          <div className="cs-v21__actions cs-v21__actions--inline">
+            <button type="button" className="cs-v21__draft-btn" onClick={() => setStep(2)}>
+              <ArrowLeft size={16} aria-hidden />
+              {t('createStory.backToDetails')}
+            </button>
+            <button type="button" className="cs-v21__continue-btn" disabled={submitting} onClick={() => { void handleSubmit(); }}>
+              {submitting ? t('createStory.submitting') : t('createStory.createAndWrite')}
+              {!submitting && <ArrowRight size={16} aria-hidden />}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

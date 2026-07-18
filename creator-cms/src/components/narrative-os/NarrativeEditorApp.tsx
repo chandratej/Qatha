@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChapterFindBar } from '../Editor/ChapterFindBar';
 import {
-  Focus, Sun, Moon, Bold, Italic, MessageCircle, Sparkles, PenLine,
+  Focus, Sun, Moon, Bold, Italic, MessageCircle,
   ArrowLeft, Cloud, Rocket, History, Eye, Loader2,
 } from 'lucide-react';
 import type { SceneBlock } from '../Editor/SceneSidebar';
@@ -41,7 +41,7 @@ export interface NarrativeEditorAppProps {
   activeSceneId: string;
   activeSceneIndex: number;
   narrativeFormat: NarrativeFormat;
-  onNarrativeFormatChange: (format: NarrativeFormat) => void;
+  onNarrativeFormatChange?: (format: NarrativeFormat) => void;
   phase: WritingPhase;
   onPhaseChange: (phase: WritingPhase) => void;
   explorerPanel: ReactNode;
@@ -115,7 +115,7 @@ export function NarrativeEditorApp({
   activeSceneId,
   activeSceneIndex,
   narrativeFormat,
-  onNarrativeFormatChange,
+  onNarrativeFormatChange: _onNarrativeFormatChange,
   phase,
   onPhaseChange,
   explorerPanel,
@@ -188,7 +188,7 @@ export function NarrativeEditorApp({
   const internalStageRef = useRef<HTMLDivElement>(null);
   const stageRef = stageRefProp ?? internalStageRef;
   const [arrivalDismissed, setArrivalDismissed] = useState(() => {
-    try { return !!sessionStorage.getItem('katha-narrative-os-arrival-dismissed'); } catch { return true; }
+    try { return sessionStorage.getItem('katha-narrative-os-arrival-dismissed') !== '0'; } catch { return true; }
   });
 
   const arrivalVisible = showArrival && !arrivalDismissed;
@@ -220,15 +220,12 @@ export function NarrativeEditorApp({
     else if (phase === 'write') closePanels();
   }, [phase, closePanels]);
 
-  const showFormatBadge = useCallback(() => {
+  // Format is locked at story creation (MVP1) — badge only on initial render if needed
+  useEffect(() => {
     setFormatBadgeVisible(true);
-    window.setTimeout(() => setFormatBadgeVisible(false), 2200);
-  }, []);
-
-  const handleFormatSwitch = useCallback((f: NarrativeFormat) => {
-    onNarrativeFormatChange(f);
-    showFormatBadge();
-  }, [onNarrativeFormatChange, showFormatBadge]);
+    const id = window.setTimeout(() => setFormatBadgeVisible(false), 1800);
+    return () => window.clearTimeout(id);
+  }, [narrativeFormat]);
 
   const closeCmdPalette = useCallback(() => {
     const wasSlash = slashCmdOpen;
@@ -241,14 +238,28 @@ export function NarrativeEditorApp({
     onInsertDialogue,
     onInsertNote,
     onInsertSceneBreak,
-    onAiContinue: () => enterPhase('think'),
-    onFormatSwitch: handleFormatSwitch,
+    onOpenNotes: () => {
+      enterPhase('think');
+    },
+    // MVP1: format locked at story creation — no in-editor mode switch
+    formatLocked: true,
     onOpenExplorer: () => enterPhase('structure'),
     onOpenInspector: () => { setInspectorOpen(true); setExplorerOpen(false); },
     onOpenTimeline,
     onOpenFind: () => onRequestFind?.(),
     onOpenPreview: () => onOpenRefine?.(),
-  }), [onInsertDialogue, onInsertNote, onInsertSceneBreak, onOpenTimeline, handleFormatSwitch, onRequestFind, onOpenRefine]);
+    onSaveDraft: onSaveDraft,
+    onOpenPublish: () => enterPhase('publish'),
+  }), [
+    onInsertDialogue,
+    onInsertNote,
+    onInsertSceneBreak,
+    onOpenTimeline,
+    onRequestFind,
+    onOpenRefine,
+    onSaveDraft,
+    enterPhase,
+  ]);
 
   const cmdOpen = slashCmdOpen || globalCmdOpen;
   const activeScene = scenes.find((s) => s.id === activeSceneId);
@@ -470,15 +481,9 @@ export function NarrativeEditorApp({
           <button type="button" title="Bold" aria-label="Bold" onClick={onFormatBold}><Bold size={14} /></button>
           <button type="button" title="Italic" aria-label="Italic" onClick={onFormatItalic}><Italic size={14} /></button>
           <button type="button" title="Add note" aria-label="Add note" onClick={() => { onOpenInspectorNotes?.(); onClearSelection(); }}><MessageCircle size={14} /></button>
-          <button type="button" title="Ask AI" aria-label="Ask AI" onClick={() => { enterPhase('think'); onClearSelection(); }}><Sparkles size={14} /></button>
         </div>
       )}
 
-      {isWritePhase && (
-        <button type="button" className="companion" onClick={() => enterPhase('think')} aria-label="Writing companion">
-          <PenLine size={16} />
-        </button>
-      )}
       <NarrativeCommandPalette
         open={cmdOpen}
         onClose={closeCmdPalette}

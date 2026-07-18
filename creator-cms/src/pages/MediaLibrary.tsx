@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Image, Loader2, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, CloudUpload, Image, ImagePlus, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { api } from '../lib/api';
-import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { MEDIA_ASSET_TYPES, type MediaAsset } from '../../../packages/shared/media';
 import { useLocale } from '../context/LocaleContext';
+import { friendlyFeatureError, isSchemaTableMissingMessage, SCHEMA_FEATURE_PENDING } from '../lib/errors';
 
 export function MediaLibrary() {
   const { t } = useLocale();
@@ -14,6 +14,7 @@ export function MediaLibrary() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [schemaPending, setSchemaPending] = useState(false);
   const [attribution, setAttribution] = useState('');
   const [license, setLicense] = useState('');
   const [assetType, setAssetType] = useState<string>('illustration');
@@ -23,16 +24,23 @@ export function MediaLibrary() {
     if (!storyId) return;
     setLoading(true);
     setError(null);
+    setSchemaPending(false);
     try {
       const [mediaRes, storiesRes] = await Promise.all([
         api.getStoryMedia(storyId),
         api.getCreatorStories().catch(() => ({ stories: [] })),
       ]);
-      setAssets(mediaRes.assets);
+      setAssets(mediaRes.assets ?? []);
       const story = storiesRes.stories?.find((s) => s.id === storyId);
       if (story?.title) setStoryTitle(story.title);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not load media library');
+      const msg = e instanceof Error ? e.message : 'Could not load media library';
+      if (isSchemaTableMissingMessage(msg)) {
+        setAssets([]);
+        setSchemaPending(true);
+      } else {
+        setError(friendlyFeatureError(msg));
+      }
     } finally {
       setLoading(false);
     }
@@ -59,92 +67,115 @@ export function MediaLibrary() {
       setLicense('');
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Upload failed');
+      setError(friendlyFeatureError(e instanceof Error ? e.message : 'Upload failed'));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <div className="cms-page studio-page media-library-page media-library-page--premium wc-page-enter">
-      <StudioPageHeader
-        variant="hero"
-        eyebrow={t('media.eyebrow')}
-        eyebrowIcon={Image}
-        title={storyTitle}
-        subtitle={t('media.subtitle')}
-        actions={(
-          <Link to={`/stories/${storyId}`} className="katha-cta katha-cta--soft">
-            {t('storyBible.backToChapters')}
-          </Link>
-        )}
-      />
+    <div className="sv21 sv21--medium">
+      <Link to={`/stories/${storyId}`} className="sv21__back">
+        <ArrowLeft size={14} aria-hidden />
+        {t('storyBible.backToChapters')}
+      </Link>
 
-      <section className="cms-panel story-bible-section">
-        <h2 className="dashboard-panel__title"><Upload size={16} aria-hidden /> {t('media.uploadAsset')}</h2>
-        <div className="story-bible-form media-library-upload">
-          <select className="cms-input" value={assetType} onChange={(e) => setAssetType(e.target.value)}>
+      <div className="sv21__header-row" style={{ marginBottom: '1.75rem' }}>
+        <p className="sv21__eyebrow">
+          <Image size={14} aria-hidden />
+          {t('media.eyebrow')}
+        </p>
+        <h1 className="sv21__title sv21__title--sm" lang="te">{storyTitle}</h1>
+        <p className="sv21__subtitle">{t('media.subtitle')}</p>
+      </div>
+
+      <div className="sv21__form-card">
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <Upload size={16} aria-hidden />
+          {t('media.uploadAsset')}
+        </h3>
+        <div className="sv21__upload-row">
+          <select className="sv21__input" style={{ width: 'auto' }} value={assetType} onChange={(e) => setAssetType(e.target.value)}>
             {MEDIA_ASSET_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
           </select>
-          <input className="cms-input" placeholder={t('media.attribution')} value={attribution} onChange={(e) => setAttribution(e.target.value)} />
-          <input className="cms-input" placeholder={t('media.license')} value={license} onChange={(e) => setLicense(e.target.value)} />
+          <input className="sv21__input" placeholder={t('media.attribution')} value={attribution} onChange={(e) => setAttribution(e.target.value)} />
+          <input className="sv21__input" placeholder={t('media.license')} value={license} onChange={(e) => setLicense(e.target.value)} />
+        </div>
+        <label className="sv21__dropzone">
+          <CloudUpload size={20} aria-hidden />
+          <span>{t('media.dropzoneHint')}</span>
+          <span>JPG, PNG, WEBP</span>
           <input
             ref={fileRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) void handleUpload(file);
               e.target.value = '';
             }}
           />
-          <button
-            type="button"
-            className="katha-cta katha-cta--maroon"
-            disabled={busy}
-            onClick={() => fileRef.current?.click()}
-          >
-            {busy ? <Loader2 size={16} className="cms-loading__spin" /> : <Plus size={16} />}
-            {t('media.uploadImage')}
-          </button>
-        </div>
-        {error && <p className="cms-error-text" role="alert">{error}</p>}
-      </section>
+        </label>
+        <button
+          type="button"
+          className="sv21__add-btn"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+        >
+          {busy ? <Loader2 size={16} className="cms-loading__spin" /> : <Plus size={16} />}
+          {t('media.uploadImage')}
+        </button>
+      </div>
 
-      {loading && <p className="cms-loading cms-loading--inline">{t('media.loading')}</p>}
+      {schemaPending && (
+        <p className="sv21__compliance" role="status">
+          <ImagePlus size={15} aria-hidden />
+          <span>{SCHEMA_FEATURE_PENDING}</span>
+        </p>
+      )}
+      {error && <p className="sv21__error" role="alert">{error}</p>}
+      {loading && <p className="sv21__loading">{t('media.loading')}</p>}
 
-      <div className="wc-stagger-children">
       {!loading && (
-        <section className="cms-panel story-bible-section">
-          <h2 className="dashboard-panel__title">{t('media.assets')} ({assets.length})</h2>
+        <>
+          <div className="sv21__section-head">
+            <h3>{t('media.assets')}</h3>
+            <span className="sv21__count">{assets.length}</span>
+          </div>
+
           {assets.length === 0 ? (
-            <p className="input-hint">{t('media.empty')}</p>
+            <div className="sv21__empty">
+              <ImagePlus size={26} aria-hidden />
+              <p>{t('media.emptyV21')}</p>
+            </div>
           ) : (
-            <ul className="media-library-grid">
+            <div className="sv21__asset-grid">
               {assets.map((a) => (
-                <li key={a.id} className="media-library-card">
-                  <img src={a.url} alt={a.filename || a.asset_type} className="media-library-card__img" />
-                  <div className="media-library-card__meta">
-                    <span className="story-bible-card__tag">{a.asset_type}</span>
-                    {a.attribution && <p className="input-hint">{a.attribution}</p>}
-                    {a.license && <p className="input-hint">{a.license}</p>}
+                <div key={a.id} className="sv21__asset-tile">
+                  <div className="sv21__asset-thumb">
+                    <img src={a.url} alt={a.filename || a.asset_type} />
+                  </div>
+                  <span className="sv21__asset-tag">{a.asset_type}</span>
+                  <div className="sv21__asset-info">
+                    <p className="sv21__asset-name">{a.filename || a.asset_type}</p>
+                    {a.attribution && <p className="sv21__asset-credit">{a.attribution}</p>}
+                    {a.license && <p className="sv21__asset-credit">{a.license}</p>}
                   </div>
                   <button
                     type="button"
-                    className="btn btn-ghost"
+                    className="sv21__icon-btn"
+                    style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(255,255,255,0.9)' }}
                     aria-label={t('media.deleteAsset')}
                     onClick={() => { void api.deleteStoryMedia(storyId, a.id).then(reload); }}
                   >
                     <Trash2 size={14} />
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
-        </section>
+        </>
       )}
-      </div>
     </div>
   );
 }

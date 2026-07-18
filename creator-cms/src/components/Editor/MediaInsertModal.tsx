@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image, Loader2, X } from 'lucide-react';
 import { api } from '../../lib/api';
+import { isSchemaTableMissingMessage } from '../../lib/errors';
 import type { MediaAsset } from '../../../../packages/shared/media';
 
 interface MediaInsertModalProps {
@@ -20,8 +21,16 @@ export function MediaInsertModal({ storyId, open, onClose, onInsert }: MediaInse
     setLoading(true);
     setError(null);
     api.getStoryMedia(storyId)
-      .then((r) => setAssets(r.assets))
-      .catch((e) => setError(e instanceof Error ? e.message : 'Could not load media'))
+      .then((r) => setAssets(r.assets ?? []))
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : 'Could not load media';
+        if (isSchemaTableMissingMessage(msg)) {
+          setAssets([]);
+          setError(null);
+        } else {
+          setError(msg);
+        }
+      })
       .finally(() => setLoading(false));
   }, [open, storyId]);
 

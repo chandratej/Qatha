@@ -27,7 +27,8 @@ import {
 import { parseSlashLine } from '../../lib/slashCommand';
 import { useLocale } from '../../context/LocaleContext';
 
-const PHONETIC_DEBOUNCE_MS = 48;
+/** Slightly longer debounce reduces main-thread thrash on chat/letter skins. */
+const PHONETIC_DEBOUNCE_MS = 120;
 
 export interface NarrativeManuscriptEditorProps {
   activeScene: SceneBlock;
@@ -96,6 +97,8 @@ export function NarrativeManuscriptEditor({
   const activeSceneIdRef = useRef(activeScene.id);
   const phoneticLiveRef = useRef(phoneticLive);
   const slashTriggerIndexRef = useRef<number | null>(null);
+  /** Survives blur when author clicks "Anchor to selection" / Think pad. */
+  const lastSelectionRef = useRef<EditorSelectionAnchor | null>(null);
 
   useEffect(() => { activeSceneIdRef.current = activeScene.id; }, [activeScene.id]);
   useEffect(() => { phoneticLiveRef.current = phoneticLive; }, [phoneticLive]);
@@ -105,6 +108,12 @@ export function NarrativeManuscriptEditor({
   const focusEditor = useCallback(() => {
     getEditor()?.focus();
   }, []);
+
+  useEffect(() => {
+    if (readOnly || slashCmdOpen) return;
+    const timer = window.setTimeout(() => focusEditor(), 120);
+    return () => window.clearTimeout(timer);
+  }, [activeScene.id, readOnly, slashCmdOpen, focusEditor]);
 
   const updateSuggestionPosition = useCallback(() => {
     const editor = getEditor();
@@ -238,23 +247,24 @@ export function NarrativeManuscriptEditor({
       index: Math.max(0, editor.getLength() - 1),
       length: 0,
     };
-    const lineStart = editor.getText(0, range.index).lastIndexOf('\n') + 1;
-    const lineText = editor.getText(lineStart, range.index - lineStart);
+    const docLen = Math.max(0, editor.getLength() - 1);
+    const prefix = editor.getText(0, Math.min(range.index, docLen));
+    const lineStart = prefix.lastIndexOf('\n') + 1;
+    const lineText = editor.getText(lineStart, Math.max(0, range.index - lineStart));
     const parsed = parseSlashLine(lineText);
     if (parsed.match) {
       const slashIndex = lineStart + (lineText.search('/') >= 0 ? lineText.search('/') : 0);
       slashTriggerIndexRef.current = slashIndex;
-      const bounds = editor.getBounds(range.index, 0);
-      if (bounds) {
-        const rootRect = editor.root.getBoundingClientRect();
-        onSlashCommandRequest({
-          anchor: {
-            top: rootRect.top + bounds.top - 8,
-            left: rootRect.left + bounds.left,
-          },
-          filter: parsed.filter,
-        });
-      }
+      const rootRect = editor.root.getBoundingClientRect();
+      const bounds = editor.getBounds(range.index, 0)
+        ?? editor.getBounds(Math.max(0, range.index - 1), 0);
+      onSlashCommandRequest({
+        anchor: {
+          top: rootRect.top + (bounds?.top ?? rootRect.height * 0.35) - 8,
+          left: rootRect.left + (bounds?.left ?? 24),
+        },
+        filter: parsed.filter,
+      });
     } else if (slashCmdOpen) {
       slashTriggerIndexRef.current = null;
       onSlashCommandDismiss?.();
@@ -313,14 +323,28 @@ export function NarrativeManuscriptEditor({
   useEffect(() => {
     const editor = getEditor();
     if (!editor || readOnly || !onSlashCommandRequest) return;
-    const onTextChange = () => {
-      queueMicrotask(() => detectSlashCommand(editor));
+    const scheduleDetect = () => queueMicrotask(() => detectSlashCommand(editor));
+    const onTextChange = () => scheduleDetect();
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === '/') {
+        editor.focus();
+        queueMicrotask(() => {
+          if (!editor.getSelection()) {
+            editor.setSelection(Math.max(0, editor.getLength() - 1), 0, 'silent');
+          }
+          detectSlashCommand(editor);
+        });
+        return;
+      }
+      if (e.key === 'Backspace' || e.key === 'Delete') scheduleDetect();
     };
     editor.on('text-change', onTextChange);
-    editor.on('selection-change', onTextChange);
+    editor.on('selection-change', scheduleDetect);
+    editor.root.addEventListener('keyup', onKeyUp);
     return () => {
       editor.off('text-change', onTextChange);
-      editor.off('selection-change', onTextChange);
+      editor.off('selection-change', scheduleDetect);
+      editor.root.removeEventListener('keyup', onKeyUp);
     };
   }, [activeScene.id, readOnly, onSlashCommandRequest, detectSlashCommand]);
 
@@ -347,15 +371,39 @@ export function NarrativeManuscriptEditor({
     if (!selectionCaptureRef) return;
     selectionCaptureRef.current = () => {
       const editor = getEditor();
-      if (!editor) return null;
-      const range = editor.getSelection();
-      if (!range?.length) return null;
-      const text = editor.getText(range.index, range.length).trim();
-      if (!text) return null;
-      return { text, start_offset: range.index, end_offset: range.index + range.length };
+      if (editor) {
+        const range = editor.getSelection();
+        if (range?.length) {
+          const text = editor.getText(range.index, range.length).trim();
+          if (text) {
+            const anchor = { text, start_offset: range.index, end_offset: range.index + range.length };
+            lastSelectionRef.current = anchor;
+            return anchor;
+          }
+        }
+      }
+      // Fall back to last non-empty selection (button click blurs Quill)
+      return lastSelectionRef.current;
     };
     return () => { selectionCaptureRef.current = null; };
   }, [selectionCaptureRef, activeScene.id]);
+
+  useEffect(() => {
+    const editor = getEditor();
+    if (!editor) return;
+    const onSel = (range: { index: number; length: number } | null) => {
+      if (!range?.length) return;
+      const text = editor.getText(range.index, range.length).trim();
+      if (!text) return;
+      lastSelectionRef.current = {
+        text,
+        start_offset: range.index,
+        end_offset: range.index + range.length,
+      };
+    };
+    editor.on('selection-change', onSel);
+    return () => { editor.off('selection-change', onSel); };
+  }, [activeScene.id]);
 
   useEffect(() => {
     const editor = getEditor();

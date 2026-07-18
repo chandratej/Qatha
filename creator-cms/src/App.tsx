@@ -76,6 +76,10 @@ import './styles/cohesion-wave26.css';
 import './styles/cohesion-wave27.css';
 import './styles/cohesion-wave28.css';
 import './styles/cohesion-wave29.css';
+import './styles/cohesion-wave30.css';
+import './styles/katha-ops-v2.css';
+import './styles/katha-community-v2.css';
+import './styles/studio-v21.css';
 
 const ChapterEditor = lazy(() => import('./pages/ChapterEditor').then((m) => ({ default: m.ChapterEditor })));
 const ReviewWorkspace = lazy(() => import('./pages/ReviewWorkspace').then((m) => ({ default: m.ReviewWorkspace })));

@@ -1,18 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Loader2, Pencil, Trash2, BookOpen } from 'lucide-react';
-import { StudioPageHeader } from '../components/studio/StudioPageHeader';
-import { StudioEmptyState } from '../components/studio/StudioEmptyState';
-import { api, type ScheduledPublishItem, type StoryData } from '../lib/api';
+import {
+  BookOpen, Calendar, CalendarClock, ChevronLeft, ChevronRight, Clock, Loader2, Pencil, X,
+} from 'lucide-react';
+import { api, type ScheduledPublishItem } from '../lib/api';
 import { useApi } from '../hooks/useApi';
 import { useLocale } from '../context/LocaleContext';
-import type { StudioStringKey } from '../lib/studioLocale';
 
-function formatScheduleDate(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: 'short',
-    month: 'short',
+function formatUpcomingMeta(iso: string, locale: string) {
+  return new Date(iso).toLocaleString(locale === 'te' ? 'te-IN' : undefined, {
     day: 'numeric',
+    month: 'short',
     hour: 'numeric',
     minute: '2-digit',
   });
@@ -38,27 +36,20 @@ function minScheduleInputValue() {
   return local.toISOString().slice(0, 16);
 }
 
-const WEEKDAY_KEYS: StudioStringKey[] = [
-  'schedule.weekdaySun',
-  'schedule.weekdayMon',
-  'schedule.weekdayTue',
-  'schedule.weekdayWed',
-  'schedule.weekdayThu',
-  'schedule.weekdayFri',
-  'schedule.weekdaySat',
-];
+const TE_WEEKDAYS = ['ఆ', 'సో', 'మం', 'బు', 'గు', 'శు', 'శ'];
+const EN_WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-function ScheduleCalendar({
+function OpsCalendar({
   items,
   month,
   onMonthChange,
+  te,
 }: {
   items: ScheduledPublishItem[];
   month: Date;
   onMonthChange: (next: Date) => void;
+  te: boolean;
 }) {
-  const { t } = useLocale();
-
   const scheduledDays = useMemo(() => {
     const map = new Map<number, ScheduledPublishItem[]>();
     for (const item of items) {
@@ -85,58 +76,52 @@ function ScheduleCalendar({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  const monthLabel = month.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+  const monthLabel = month.toLocaleString(te ? 'en-IN' : undefined, { month: 'long', year: 'numeric' });
+  const weekdays = te ? TE_WEEKDAYS : EN_WEEKDAYS;
 
   return (
-    <div className="schedule-calendar schedule-calendar--v2">
-      <div className="schedule-calendar__head">
-        <button
-          type="button"
-          className="schedule-calendar__nav"
-          onClick={() => onMonthChange(new Date(year, monthIndex - 1, 1))}
-          aria-label={t('schedule.prevMonth')}
-        >
-          <ChevronLeft size={16} aria-hidden />
-        </button>
-        <h3 className="schedule-calendar__month">{monthLabel}</h3>
-        <button
-          type="button"
-          className="schedule-calendar__nav"
-          onClick={() => onMonthChange(new Date(year, monthIndex + 1, 1))}
-          aria-label={t('schedule.nextMonth')}
-        >
-          <ChevronRight size={16} aria-hidden />
-        </button>
+    <div className="ops-calendar-panel">
+      <div className="ops-cal-head">
+        <div className="ops-cal-nav">
+          <button
+            type="button"
+            onClick={() => onMonthChange(new Date(year, monthIndex - 1, 1))}
+            aria-label={te ? 'మునుపటి నెల' : 'Previous month'}
+          >
+            <ChevronLeft size={16} aria-hidden />
+          </button>
+          <span className="ops-cal-month">{monthLabel}</span>
+          <button
+            type="button"
+            onClick={() => onMonthChange(new Date(year, monthIndex + 1, 1))}
+            aria-label={te ? 'తదుపరి నెల' : 'Next month'}
+          >
+            <ChevronRight size={16} aria-hidden />
+          </button>
+        </div>
       </div>
-      <div className="schedule-calendar__weekdays" aria-hidden>
-        {WEEKDAY_KEYS.map((key) => (
-          <span key={key} className="schedule-calendar__weekday">{t(key)}</span>
+      <div className="ops-cal-grid" role="grid" aria-label={te ? 'క్యాలెండర్' : 'Calendar'}>
+        {weekdays.map((w) => (
+          <span key={w} className="ops-cal-weekday">{w}</span>
         ))}
-      </div>
-      <div className="schedule-calendar__grid" role="grid" aria-label={t('schedule.calendar')}>
         {cells.map((day, idx) => {
           if (day == null) {
-            return <span key={`empty-${idx}`} className="schedule-calendar__cell schedule-calendar__cell--empty" />;
+            return <span key={`e-${idx}`} className="ops-cal-cell ops-cal-cell--empty" />;
           }
           const dayItems = scheduledDays.get(day) ?? [];
+          const classes = [
+            'ops-cal-cell',
+            isToday(day) ? 'ops-cal-cell--today' : '',
+            dayItems.length > 0 ? 'ops-cal-cell--has-release' : '',
+          ].filter(Boolean).join(' ');
           return (
             <div
               key={day}
-              className={`schedule-calendar__cell${isToday(day) ? ' schedule-calendar__cell--today' : ''}${dayItems.length > 0 ? ' schedule-calendar__cell--has-release' : ''}`}
+              className={classes}
               role="gridcell"
-              title={dayItems.map((i) => i.story_title || t('schedule.story')).join(', ')}
+              title={dayItems.map((i) => i.story_title || '').filter(Boolean).join(', ')}
             >
-              <span className="schedule-calendar__day">{day}</span>
-              {dayItems.length > 0 && (
-                <>
-                  <span className="schedule-calendar__release-count" aria-hidden>{dayItems.length}</span>
-                  <span className="schedule-calendar__dots" aria-hidden>
-                    {dayItems.slice(0, 3).map((item) => (
-                      <span key={item.id} className="schedule-calendar__dot" />
-                    ))}
-                  </span>
-                </>
-              )}
+              {day}
             </div>
           );
         })}
@@ -145,21 +130,16 @@ function ScheduleCalendar({
   );
 }
 
+/**
+ * Release Calendar — review/overview only (katha_calendar_v2.html parity).
+ * New schedules originate from the chapter editor Publish step.
+ */
 export function Schedule() {
-  const { t } = useLocale();
-  const { data: storiesData, loading: storiesLoading } = useApi(() => api.getCreatorStories());
-  const { data: scheduledData, loading: scheduledLoading, error, reload } = useApi(() => api.getScheduledPublishes());
-
-  const stories = storiesData?.stories ?? [];
+  const { t, locale } = useLocale();
+  const te = locale === 'te';
+  const { data: scheduledData, loading, error, reload } = useApi(() => api.getScheduledPublishes());
   const scheduledItems = scheduledData?.items ?? [];
 
-  const [selectedStoryId, setSelectedStoryId] = useState('');
-  const [selectedChapter, setSelectedChapter] = useState('');
-  const [publishAt, setPublishAt] = useState(() => toLocalInputValue());
-  const [chapters, setChapters] = useState<Array<{ chapter_number: number; title?: string; status?: string }>>([]);
-  const [chaptersLoading, setChaptersLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTime, setEditTime] = useState('');
   const [actionId, setActionId] = useState<string | null>(null);
@@ -168,65 +148,6 @@ export function Schedule() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
 
-  useEffect(() => {
-    if (!selectedStoryId && stories.length > 0) {
-      setSelectedStoryId(stories[0].id);
-    }
-  }, [stories, selectedStoryId]);
-
-  const loadChapters = useCallback(async (storyId: string) => {
-    if (!storyId) return;
-    setChaptersLoading(true);
-    try {
-      const { chapters: list } = await api.getStoryChapters(storyId);
-      const schedulable = (list ?? []).filter(
-        (ch) => ch.status !== 'published' && ch.status !== 'pending_review',
-      );
-      setChapters(schedulable);
-      if (schedulable.length > 0) {
-        setSelectedChapter(String(schedulable[0].chapter_number));
-      } else {
-        setSelectedChapter('');
-      }
-    } catch {
-      setChapters([]);
-      setSelectedChapter('');
-    } finally {
-      setChaptersLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedStoryId) loadChapters(selectedStoryId);
-  }, [selectedStoryId, loadChapters]);
-
-  const selectedStory = useMemo(
-    () => stories.find((s: StoryData) => s.id === selectedStoryId),
-    [stories, selectedStoryId],
-  );
-
-  const handleSchedule = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedStoryId || !selectedChapter || !publishAt) return;
-
-    setSubmitting(true);
-    setFormError(null);
-    try {
-      const iso = new Date(publishAt).toISOString();
-      await api.scheduleChapter(selectedStoryId, {
-        chapter_number: Number(selectedChapter),
-        scheduled_publish_at: iso,
-      });
-      setPublishAt(toLocalInputValue());
-      await reload();
-      await loadChapters(selectedStoryId);
-    } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Could not schedule publish');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleCancel = async (item: ScheduledPublishItem) => {
     const chapterLabel = item.chapter_title || `${t('schedule.chapter')} ${item.chapter_number}`;
     if (!confirm(`${t('schedule.cancelConfirm')} "${chapterLabel}"?`)) return;
@@ -234,7 +155,6 @@ export function Schedule() {
     try {
       await api.cancelScheduledPublish(item.story_id, item.chapter_number);
       await reload();
-      if (selectedStoryId === item.story_id) await loadChapters(item.story_id);
     } finally {
       setActionId(null);
     }
@@ -252,249 +172,135 @@ export function Schedule() {
     }
   };
 
-  const loading = storiesLoading || scheduledLoading;
+  const subtitle = te
+    ? 'అన్ని కథలలో షెడ్యూల్ చేసిన ప్రచురణలు ఇక్కడ కనిపిస్తాయి. కొత్త షెడ్యూల్ ఎడిటర్‌లో "ప్రచురించు" దశలో సెట్ చేయండి.'
+    : 'Scheduled releases across all your stories appear here. Create new schedules from a chapter Publish step in the editor.';
+
+  const emptyText = te
+    ? 'ఇప్పుడు షెడ్యూల్ చేసిన విడుదలలు లేవు. ఒక అధ్యాయాన్ని ప్రచురించేటప్పుడు, "ఇప్పుడు" లేదా "షెడ్యూల్ చేయండి" ఎంచుకోవచ్చు — అది ఇక్కడ కనిపిస్తుంది.'
+    : 'No scheduled releases yet. When publishing a chapter, choose Publish now or Schedule — it will show up here.';
 
   return (
-    <div className="cms-page studio-page schedule-studio-page schedule-studio-page--premium schedule-studio-page--wave23 schedule-studio-page--wave26 studio-page--calm26 wc-page-enter">
-      <StudioPageHeader
-        variant="hero"
-        eyebrow={t('schedule.eyebrow')}
-        eyebrowIcon={Calendar}
-        title={t('schedule.title')}
-        subtitle={t('schedule.subtitle')}
-      />
-
-      <div className="schedule-layout schedule-layout--calendar wc-stagger-children">
-        <section className="cms-panel schedule-form-panel schedule-form-panel--pro">
-          <div className="schedule-form-panel__intro">
-            <div className="schedule-form-panel__icon" aria-hidden>
-              <Calendar size={22} />
-            </div>
-            <div>
-              <h2 className="cms-panel__title">{t('schedule.formTitle')}</h2>
-              <p className="schedule-form-panel__lead">{t('schedule.formLead')}</p>
-            </div>
+    <div className="cms-page katha-ops-v2-page">
+      <div className="katha-ops-v2 katha-ops-v2--calendar">
+        <header className="ops-page-head">
+          <div>
+            <p className="ops-eyebrow" lang={te ? 'te' : 'en'}>
+              <Calendar size={14} aria-hidden />
+              {te ? 'ప్రచురణ క్యాలెండర్' : 'Publishing calendar'}
+            </p>
+            <h1 className="ops-title" lang={te ? 'te' : 'en'}>
+              {te ? 'రిలీజ్ క్యాలెండర్' : 'Release calendar'}
+            </h1>
+            <p className="ops-subtitle" lang={te ? 'te' : 'en'}>{subtitle}</p>
           </div>
+          <Link to="/stories" className="ops-cta ops-cta--ghost">
+            <BookOpen size={16} aria-hidden />
+            {te ? 'కథలకు వెళ్ళండి' : 'Go to stories'}
+          </Link>
+        </header>
 
-          {storiesLoading && (
-            <div className="cms-loading">
-              <Loader2 size={18} className="cms-loading__spin" />
-              {t('common.loading')}
-            </div>
-          )}
+        {!loading && scheduledItems.length === 0 && (
+          <div className="ops-empty-state" lang={te ? 'te' : 'en'}>
+            <CalendarClock size={28} aria-hidden />
+            <p>{emptyText}</p>
+            <Link to="/stories" className="ops-cta ops-cta--ghost">
+              <Pencil size={16} aria-hidden />
+              {te ? 'మాన్యుస్క్రిప్ట్‌కు వెళ్ళండి' : 'Go to manuscripts'}
+            </Link>
+          </div>
+        )}
 
-          {!storiesLoading && stories.length === 0 && (
-            <StudioEmptyState
-              className="schedule-empty-state"
-              icon={BookOpen}
-              title={t('schedule.noScheduled')}
-              text={t('schedule.emptyStories')}
-            >
-              <Link to="/stories/new" className="katha-cta katha-cta--maroon">{t('stories.newStory')}</Link>
-            </StudioEmptyState>
-          )}
+        <OpsCalendar
+          items={scheduledItems}
+          month={calendarMonth}
+          onMonthChange={setCalendarMonth}
+          te={te}
+        />
 
-          {stories.length > 0 && (
-            <form className="schedule-form schedule-form--pro" onSubmit={handleSchedule}>
-              <label className="schedule-field schedule-field--pro">
-                <span className="schedule-field__label">{t('schedule.story')}</span>
-                <select
-                  className="cms-select"
-                  value={selectedStoryId}
-                  onChange={(e) => setSelectedStoryId(e.target.value)}
-                  aria-label={t('schedule.story')}
-                >
-                  {stories.map((s) => (
-                    <option key={s.id} value={s.id}>{s.title}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="schedule-field schedule-field--pro">
-                <span className="schedule-field__label">{t('schedule.chapter')}</span>
-                {chaptersLoading ? (
-                  <div className="schedule-field__hint">
-                    <Loader2 size={14} className="cms-loading__spin" />
-                    {t('common.loading')}
-                  </div>
-                ) : chapters.length === 0 ? (
-                  <div className="schedule-field__hint">
-                    {t('schedule.addChapter')}{' '}
-                    {selectedStoryId && (
-                      <Link to={`/stories/${selectedStoryId}/chapters/1`}>{t('stories.write')}</Link>
-                    )}
-                  </div>
-                ) : (
-                  <select
-                    className="cms-select"
-                    value={selectedChapter}
-                    onChange={(e) => setSelectedChapter(e.target.value)}
-                    aria-label={t('schedule.chapter')}
-                  >
-                    {chapters.map((ch) => (
-                      <option key={ch.chapter_number} value={ch.chapter_number}>
-                        {ch.title || `${t('schedule.chapter')} ${ch.chapter_number}`}
-                        {ch.status === 'scheduled' ? ` (${t('schedule.alreadyScheduled')})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </label>
-
-              <label className="schedule-field schedule-field--pro">
-                <span className="schedule-field__label">{t('schedule.publishAt')}</span>
-                <input
-                  type="datetime-local"
-                  className="cms-input"
-                  value={publishAt}
-                  min={minScheduleInputValue()}
-                  onChange={(e) => setPublishAt(e.target.value)}
-                  required
-                  aria-label={t('schedule.publishAt')}
-                />
-              </label>
-
-              {formError && <p className="cms-error-text">{formError}</p>}
-
-              <button
-                type="submit"
-                className="katha-cta katha-cta--maroon schedule-form__submit"
-                disabled={submitting || chapters.length === 0 || !selectedChapter}
-              >
-                {submitting ? <Loader2 size={16} className="cms-loading__spin" /> : <Clock size={16} />}
-                {submitting ? t('schedule.confirming') : t('schedule.confirm')}
-              </button>
-
-              {selectedStory && (
-                <p className="schedule-form__note">{t('schedule.formNote')}</p>
-              )}
-            </form>
-          )}
-        </section>
-
-        <div className="schedule-calendar-column">
-          <section className="cms-panel schedule-calendar-panel">
-            <div className="cms-panel__head">
-              <h2 className="cms-panel__title">{t('schedule.calendar')}</h2>
-              <span className="schedule-count">{scheduledItems.length}</span>
-            </div>
-            <ScheduleCalendar
-              items={scheduledItems}
-              month={calendarMonth}
-              onMonthChange={setCalendarMonth}
-            />
-          </section>
-
-          <section className="cms-panel schedule-list-panel schedule-list-panel--v2">
-            <div className="cms-panel__head">
-              <h2 className="cms-panel__title">{t('schedule.upcoming')}</h2>
-              {!loading && scheduledItems.length > 0 && (
-                <span className="schedule-list-count" aria-label={t('schedule.upcoming')}>
-                  {scheduledItems.length}
-                </span>
-              )}
-            </div>
-
-            {loading && (
-              <div className="cms-loading">
-                <Loader2 size={18} className="cms-loading__spin" />
-                {t('common.loading')}
-              </div>
-            )}
-
-            {error && <p className="cms-error-text">{error}</p>}
-
-            {!loading && scheduledItems.length === 0 && (
-              <StudioEmptyState
-                variant="inline"
-                icon={Clock}
-                iconSize={22}
-                title={t('schedule.noScheduled')}
-                text={t('schedule.emptyStories')}
-              />
-            )}
-
-            {!loading && scheduledItems.length > 0 && (
-              <ul className="schedule-list schedule-list--dense">
-                {scheduledItems.map((item) => (
-                  <li key={item.id} className="schedule-item schedule-item--dense">
-                    <div className="schedule-item__main">
-                      <span className="schedule-item__story">{item.story_title}</span>
-                      <span className="schedule-item__chapter">
-                        {item.chapter_title || `${t('schedule.chapter')} ${item.chapter_number}`}
-                      </span>
-                      {editingId === item.id ? (
-                        <div className="schedule-item__edit">
-                          <input
-                            type="datetime-local"
-                            className="cms-input"
-                            value={editTime}
-                            min={minScheduleInputValue()}
-                            onChange={(e) => setEditTime(e.target.value)}
-                            aria-label={t('schedule.newPublishTime')}
-                          />
-                          <button
-                            type="button"
-                            className="schedule-item__btn schedule-item__btn--primary"
-                            onClick={() => handleReschedule(item)}
-                            disabled={actionId === item.id}
-                          >
-                            {t('common.save')}
-                          </button>
-                          <button
-                            type="button"
-                            className="schedule-item__btn"
-                            onClick={() => setEditingId(null)}
-                          >
-                            {t('common.cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="schedule-item__time-pill">
-                          <Clock size={14} aria-hidden />
-                          {formatScheduleDate(item.scheduled_publish_at)}
-                        </span>
-                      )}
-                    </div>
-                    {editingId !== item.id && (
-                      <div className="schedule-item__actions">
-                        <Link
-                          to={`/stories/${item.story_id}/chapters/${item.chapter_number}`}
-                          className="schedule-item__btn"
-                          title={t('common.edit')}
-                        >
-                          <Pencil size={15} aria-hidden />
-                        </Link>
-                        <button
-                          type="button"
-                          className="schedule-item__btn"
-                          title={t('schedule.title')}
-                          onClick={() => {
-                            setEditingId(item.id);
-                            setEditTime(toLocalInputValue(item.scheduled_publish_at));
-                          }}
-                        >
-                          <Calendar size={15} aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          className="schedule-item__btn schedule-item__btn--danger"
-                          title={t('common.cancel')}
-                          onClick={() => handleCancel(item)}
-                          disabled={actionId === item.id}
-                        >
-                          {actionId === item.id
-                            ? <Loader2 size={15} className="cms-loading__spin" />
-                            : <Trash2 size={15} aria-hidden />}
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+        <div className="ops-section-head">
+          <h3 className="ops-h3-sm" lang={te ? 'te' : 'en'}>
+            {te ? 'రాబోయే విడుదలలు' : 'Upcoming releases'}
+          </h3>
         </div>
+
+        {loading && (
+          <p className="ops-loading">
+            <Loader2 size={16} className="cms-loading__spin" aria-hidden />
+            {t('common.loading')}
+          </p>
+        )}
+
+        {error && <p className="ops-error">{error}</p>}
+
+        {!loading && scheduledItems.length > 0 && (
+          <ul className="ops-upcoming-list">
+            {scheduledItems.map((item) => (
+              <li key={item.id} className="ops-upcoming-row">
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p className="ops-upcoming-title" lang="te">
+                    {item.chapter_title
+                      ? `${item.chapter_title} — ${item.story_title || ''}`
+                      : `Chapter ${item.chapter_number} — ${item.story_title || ''}`}
+                  </p>
+                  {editingId === item.id ? (
+                    <div className="ops-reschedule-row">
+                      <input
+                        type="datetime-local"
+                        value={editTime}
+                        min={minScheduleInputValue()}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        aria-label={t('schedule.newPublishTime')}
+                      />
+                      <button
+                        type="button"
+                        className="ops-primary"
+                        onClick={() => void handleReschedule(item)}
+                        disabled={actionId === item.id}
+                      >
+                        {t('common.save')}
+                      </button>
+                      <button type="button" onClick={() => setEditingId(null)}>
+                        {t('common.cancel')}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="ops-upcoming-meta">
+                      <Clock size={12} aria-hidden style={{ verticalAlign: 'middle', marginRight: 4 }} />
+                      {formatUpcomingMeta(item.scheduled_publish_at, locale)}
+                    </p>
+                  )}
+                </div>
+                {editingId !== item.id && (
+                  <div className="ops-upcoming-actions">
+                    <button
+                      type="button"
+                      className="ops-icon-btn"
+                      title={te ? 'రీషెడ్యూల్' : 'Reschedule'}
+                      onClick={() => {
+                        setEditingId(item.id);
+                        setEditTime(toLocalInputValue(item.scheduled_publish_at));
+                      }}
+                    >
+                      <CalendarClock size={15} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      className="ops-icon-btn"
+                      title={te ? 'రద్దు చేయండి' : 'Cancel'}
+                      onClick={() => void handleCancel(item)}
+                      disabled={actionId === item.id}
+                    >
+                      {actionId === item.id
+                        ? <Loader2 size={15} className="cms-loading__spin" aria-hidden />
+                        : <X size={15} aria-hidden />}
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,26 @@ export const SESSION_EXPIRED_ERROR =
 
 export const GENERIC_ERROR = 'Something went wrong. Please try again in a moment.';
 
+export const SCHEMA_FEATURE_PENDING =
+  'This feature is being set up on the server. You can keep writing — your work is safe.';
+
+/** Raw API / Postgres messages when migrations have not been applied yet. */
+export function isSchemaTableMissingMessage(message: string | null | undefined): boolean {
+  if (!message) return false;
+  const msg = message.toLowerCase();
+  return (
+    msg.includes('could not find the table') ||
+    msg.includes('does not exist') ||
+    msg.includes('schema cache') ||
+    msg.includes('being set up on the server')
+  );
+}
+
+export function friendlyFeatureError(message: string): string {
+  if (isSchemaTableMissingMessage(message)) return SCHEMA_FEATURE_PENDING;
+  return message;
+}
+
 export function mapApiError(payload: {
   code?: string;
   user_message?: string;
@@ -24,6 +44,10 @@ export function mapApiError(payload: {
   }
   if (/start the backend|npm run dev|cd backend/i.test(raw)) {
     return CONNECTION_ERROR;
+  }
+
+  if (isSchemaTableMissingMessage(raw)) {
+    return SCHEMA_FEATURE_PENDING;
   }
 
   return raw || GENERIC_ERROR;

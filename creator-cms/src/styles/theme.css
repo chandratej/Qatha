@@ -240,7 +240,8 @@ label, .sidebar {
 
 .app-viewport > .app-shell,
 .app-viewport > .cms-auth-page,
-.app-viewport > .katha-proto-layout {
+.app-viewport > .katha-proto-layout,
+.app-viewport .narrative-os-app {
   flex: 1;
   min-height: 0;
   height: auto;

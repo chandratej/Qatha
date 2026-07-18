@@ -42,8 +42,9 @@ describe('eventRegistration', () => {
   });
 
   it('labels free vs paid CTAs', () => {
-    expect(registrationCtaLabel({ ...base, entry_fee_inr: 0 })).toMatch(/free/i);
-    expect(registrationCtaLabel(base)).toContain('99');
+    expect(registrationCtaLabel({ ...base, entry_fee_inr: 0 })).toBe('Join');
+    expect(registrationCtaLabel(base)).toBe('Join · ₹99');
+    expect(registrationCtaLabel({ ...base, entry_fee_inr: 0 }, 'te')).toBe('పాల్గొనండి');
   });
 
   it('flags acquisition events', () => {

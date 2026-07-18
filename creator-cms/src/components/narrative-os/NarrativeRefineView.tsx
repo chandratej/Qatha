@@ -4,16 +4,19 @@ import {
 } from 'lucide-react';
 import type { SceneBlock } from '../Editor/SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
+import type { NarrativeFormat } from '../../lib/narrativeOsTypes';
 import { sceneHasContent } from '../../lib/sceneContent';
 import { sanitizeHtml } from '../../lib/sanitizeHtml';
 import { refineEncouragement } from '../../lib/refineEncouragement';
 import { useLocale } from '../../context/LocaleContext';
 import { NarrativeRefineFindOverlay } from './NarrativeRefineFindOverlay';
+import { stripHtml } from '../../lib/chapterFind';
 
 interface NarrativeRefineViewProps {
   chapterTitle: string;
   chapterNum: number;
   scenes: SceneBlock[];
+  narrativeFormat?: NarrativeFormat;
   device: PreviewDevice;
   theme: PreviewTheme;
   onDeviceChange: (d: PreviewDevice) => void;
@@ -53,10 +56,47 @@ const THEMES: { id: PreviewTheme; Icon: typeof Sun; labelKey: 'refineThemeLight'
   { id: 'dark', Icon: Moon, labelKey: 'refineThemeDark' },
 ];
 
+function renderSceneBody(scene: SceneBlock, format: NarrativeFormat) {
+  if (!sceneHasContent(scene.content)) return null;
+  const html = sanitizeHtml(scene.content);
+  if (format === 'chat') {
+    const plain = stripHtml(scene.content);
+    const lines = plain.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length === 0) {
+      return <div className="nos-refine-reader__prose nos-refine-reader__prose--chat" dangerouslySetInnerHTML={{ __html: html }} />;
+    }
+    return (
+      <div className="nos-refine-chat">
+        {lines.map((line, i) => (
+          <div key={`${scene.id}-b${i}`} className={`nos-refine-chat__bubble${i % 2 === 1 ? ' nos-refine-chat__bubble--alt' : ''}`}>
+            {line}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (format === 'letter') {
+    return <div className="nos-refine-reader__prose nos-refine-reader__prose--letter" dangerouslySetInnerHTML={{ __html: html }} />;
+  }
+  if (format === 'choice') {
+    return (
+      <div className="nos-refine-choice">
+        <div className="nos-refine-reader__prose" dangerouslySetInnerHTML={{ __html: html }} />
+        <div className="nos-refine-choice__forks" aria-hidden>
+          <span className="nos-refine-choice__fork">A · …</span>
+          <span className="nos-refine-choice__fork">B · …</span>
+        </div>
+      </div>
+    );
+  }
+  return <div className="nos-refine-reader__prose" dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export function NarrativeRefineView({
   chapterTitle,
   chapterNum,
   scenes,
+  narrativeFormat = 'novel',
   device,
   theme,
   onDeviceChange,
@@ -89,7 +129,6 @@ export function NarrativeRefineView({
   const resolvedTheme = theme === 'high-contrast' ? 'sepia' : theme;
   const filledScenes = scenes.filter((s) => sceneHasContent(s.content)).length;
   const encouragement = refineEncouragement(totalWords, wordGoal, locale);
-  const goalPct = Math.min(100, Math.round((totalWords / wordGoal) * 100));
 
   return (
     <div className="nos-refine-theater">
@@ -115,11 +154,14 @@ export function NarrativeRefineView({
       <header className="nos-refine-theater__header">
         <button type="button" className="nos-refine-theater__back" onClick={onBackToWrite}>
           <ArrowLeft size={15} aria-hidden />
-          {t('narrativeOs.backToWrite')}
+          {locale === 'te' ? 'ప్రివ్యూ మూసివేయండి' : t('narrativeOs.backToWrite')}
         </button>
 
         <div className="nos-refine-theater__intro">
-          <p className="nos-refine-theater__eyebrow">{t('narrativeOs.refineEyebrow')}</p>
+          <p className="nos-refine-theater__eyebrow">
+            <span className="nos-refine-theater__dot" aria-hidden />
+            {locale === 'te' ? 'పాఠకుల ప్రివ్యూ — ఇది మీ పాఠకులు చూసేది' : t('narrativeOs.refineEyebrow')}
+          </p>
           <p className="nos-refine-theater__tagline">{t('narrativeOs.refineTagline')}</p>
         </div>
 
@@ -169,17 +211,20 @@ export function NarrativeRefineView({
             </button>
           </div>
         ) : (
-          <div className={`nos-refine-frame nos-refine-frame--${device}`}>
+          <div className={`nos-refine-frame nos-refine-frame--${device} nos-refine-frame--format-${narrativeFormat}`}>
             {device !== 'desktop' && <div className="nos-refine-frame__bezel" aria-hidden />}
             <article
-              className="nos-refine-frame__screen"
+              className={`nos-refine-frame__screen nos-refine-frame__screen--${narrativeFormat}`}
               data-preview-theme={resolvedTheme}
+              data-narrative-format={narrativeFormat}
               style={previewComfortStyle}
             >
-              <p className="nos-refine-reader__chapter">
+              <p className="nos-refine-reader__chapter nos-refine-reader__eyebrow">
                 {locale === 'te' ? `అధ్యాయం ${chapterNum}` : `Chapter ${chapterNum}`}
               </p>
-              <h1 className="nos-refine-reader__title">{chapterTitle || t('narrativeOs.refineUntitled')}</h1>
+              <h1 className="nos-refine-reader__title" lang={locale === 'te' ? 'te' : 'en'}>
+                {chapterTitle || t('narrativeOs.refineUntitled')}
+              </h1>
               <div className="nos-refine-reader__divider" aria-hidden />
               {scenes.map((scene, index) => (
                 <section
@@ -188,11 +233,11 @@ export function NarrativeRefineView({
                   data-scene-id={scene.id}
                 >
                   {scene.title && scene.title !== 'New Scene' && scene.title !== `Scene ${index + 1}` && (
-                    <h2 className="nos-refine-reader__scene-title">{scene.title}</h2>
+                    <h2 className="nos-refine-reader__scene-title" lang={locale === 'te' ? 'te' : 'en'}>
+                      {scene.title}
+                    </h2>
                   )}
-                  {sceneHasContent(scene.content) ? (
-                    <div className="nos-refine-reader__prose" dangerouslySetInnerHTML={{ __html: sanitizeHtml(scene.content) }} />
-                  ) : null}
+                  {renderSceneBody(scene, narrativeFormat)}
                 </section>
               ))}
             </article>
@@ -200,12 +245,16 @@ export function NarrativeRefineView({
         )}
       </div>
 
-      <footer className="nos-refine-theater__motivation">
+      <footer className="nos-refine-theater__motivation nos-refine-theater__bottom">
         <div className="nos-refine-momentum">
           <div className="nos-refine-momentum__copy">
             <Feather size={15} aria-hidden />
             <div>
-              <p className="nos-refine-momentum__headline">{encouragement.headline}</p>
+              <p className="nos-refine-momentum__headline">
+                {locale === 'te'
+                  ? 'ప్రతి గొప్ప కథ ఒక వాక్యంతో మొదలవుతుంది. మీరు ఇప్పటికే ప్రారంభించారు.'
+                  : encouragement.headline}
+              </p>
               <p className="nos-refine-momentum__sub">{encouragement.subline}</p>
             </div>
           </div>
@@ -213,18 +262,15 @@ export function NarrativeRefineView({
             <div className="nos-refine-momentum__stats" aria-label={t('narrativeOs.refineStatsLabel')}>
               <span>{totalWords.toLocaleString()} {t('narrativeOs.refineWords')}</span>
               <span className="nos-refine-momentum__dot" aria-hidden>·</span>
-              <span>{readMins} {t('narrativeOs.refineMinRead')}</span>
+              <span>{readMins < 1 ? '<1' : readMins} {t('narrativeOs.refineMinRead')}</span>
               <span className="nos-refine-momentum__dot" aria-hidden>·</span>
               <span>{filledScenes}/{scenes.length} {t('narrativeOs.refineScenes')}</span>
             </div>
           )}
-          <div className="nos-refine-momentum__progress" role="progressbar" aria-valuenow={goalPct} aria-valuemin={0} aria-valuemax={100}>
-            <span className="nos-refine-momentum__fill" style={{ width: `${goalPct}%` }} />
-          </div>
         </div>
         <button type="button" className="nos-refine-theater__write-cta" onClick={onContinueWriting}>
           <PenLine size={15} aria-hidden />
-          {t('narrativeOs.refineKeepWriting')}
+          {locale === 'te' ? 'రాయడం కొనసాగించండి' : t('narrativeOs.refineKeepWriting')}
         </button>
       </footer>
     </div>

@@ -13,10 +13,9 @@ import { NarrativeRefineView } from './NarrativeRefineView';
 import { NarrativeThinkView } from './NarrativeThinkView';
 import { NarrativePublishView } from './NarrativePublishView';
 
-import { AiNotesPanel } from '../Editor/AiNotesPanel';
-import { InkProgress } from '../studio/InkProgress';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
 import { useLocale } from '../../context/LocaleContext';
+import { ThinkIdeasPanel } from './ThinkIdeasPanel';
 
 export interface NarrativeChapterWorkspaceProps {
   storyId: string;
@@ -98,6 +97,10 @@ export interface NarrativeChapterWorkspaceProps {
   onBack: () => void;
   onSaveDraft: () => void;
   onPublish: () => void;
+  onSchedulePublish: (isoDatetime: string) => void | Promise<void>;
+  scheduling?: boolean;
+  scheduleError?: string | null;
+  scheduleSuccess?: string | null;
   onHistory: () => void;
   onOpenTimeline: () => void;
   publishLabel: string;
@@ -111,10 +114,15 @@ export interface NarrativeChapterWorkspaceProps {
   onPreviewDeviceChange: (d: PreviewDevice) => void;
   onPreviewThemeChange: (t: PreviewTheme) => void;
   showArrival: boolean;
+  chapterOptions?: Array<{ chapterNumber: number; title: string }>;
+  onSwitchChapter?: (chapterNumber: number) => void;
+  /** Story-level content type — format is locked in MVP1. */
+  storyContentType?: string | null;
+  formatLocked?: boolean;
 }
 
 export function NarrativeChapterWorkspace({
-  storyId,
+  storyId: _storyId,
   storyTitle,
   chapterNum,
   chapterTitle,
@@ -148,7 +156,7 @@ export function NarrativeChapterWorkspace({
   onFontScaleChange,
   editorComfortStyle,
   isChapterImmutable,
-  isDemo,
+  isDemo: _isDemo,
   arrivalMomentum,
   selectionRect,
   onSelectionRectChange,
@@ -185,6 +193,10 @@ export function NarrativeChapterWorkspace({
   onBack,
   onSaveDraft,
   onPublish,
+  onSchedulePublish,
+  scheduling = false,
+  scheduleError = null,
+  scheduleSuccess = null,
   onHistory,
   onOpenTimeline,
   publishLabel,
@@ -198,6 +210,10 @@ export function NarrativeChapterWorkspace({
   onPreviewDeviceChange,
   onPreviewThemeChange,
   showArrival,
+  chapterOptions,
+  onSwitchChapter,
+  storyContentType = null,
+  formatLocked = true,
 }: NarrativeChapterWorkspaceProps) {
   const { t, locale } = useLocale();
   const stageRef = useRef<HTMLDivElement>(null);
@@ -294,9 +310,13 @@ export function NarrativeChapterWorkspace({
       publishDisabled={publishDisabled}
       statusContent={statusContent}
       wordGoalSlot={phase === 'write' ? (
-        <div className="nos-word-goal">
-          <InkProgress wordsToday={wordCount} dailyGoal={wordGoal} label={t('editor.chapterWordGoal')} />
-        </div>
+        <span
+          className="nos-word-goal-compact"
+          title={t('editor.chapterWordGoal')}
+          aria-label={`${wordCount} / ${wordGoal} words`}
+        >
+          {wordCount.toLocaleString()}/{wordGoal.toLocaleString()}
+        </span>
       ) : null}
       explorerPanel={(
         <NarrativeExplorerPanel
@@ -309,10 +329,13 @@ export function NarrativeChapterWorkspace({
           onReorderScenes={readOnly ? noop : onReorderScenes}
           onDeleteScene={readOnly ? noop : onDeleteScene}
           onDuplicateScene={readOnly ? noop : onDuplicateScene}
+          onRenameScene={readOnly ? undefined : updateSceneTitle}
           onUpdateBeatName={readOnly ? noop : onUpdateBeatName}
           phoneticLive={phoneticLive}
           chapterTitle={chapterTitle}
           chapterNum={chapterNum}
+          chapterOptions={chapterOptions}
+          onSwitchChapter={onSwitchChapter}
           readOnly={readOnly}
           locale={locale}
         />
@@ -321,7 +344,7 @@ export function NarrativeChapterWorkspace({
         <NarrativeInspectorPanel
           activeScene={activeScene}
           narrativeFormat={narrativeFormat}
-          onNarrativeFormatChange={readOnly ? noop : onNarrativeFormatChange}
+          onNarrativeFormatChange={readOnly || formatLocked ? noop : onNarrativeFormatChange}
           wordCount={wordCount}
           charCount={charCount}
           charLimit={charLimit}
@@ -332,13 +355,30 @@ export function NarrativeChapterWorkspace({
           peopleSlot={peopleSlot}
           notesSlot={notesSlot}
           readOnly={readOnly}
+          formatLocked={formatLocked}
+          storyContentType={storyContentType}
           activeTab={inspectorTab}
           onTabChange={setInspectorTab}
         />
       )}
       thinkView={(
         <NarrativeThinkView onBackToWrite={backToWrite}>
-          {!isDemo && <AiNotesPanel storyId={storyId} chapterNum={chapterNum} />}
+          <ThinkIdeasPanel
+            storyId={_storyId}
+            chapterNum={chapterNum}
+            onRequestSelection={() => {
+              const anchor = selectionCaptureRef.current?.();
+              return anchor?.text ?? null;
+            }}
+          />
+          {notesSlot && (
+            <div className="think-ideas-panel__notes-slot">
+              <h4 className="think-ideas-panel__notes-title">
+                {locale === 'te' ? 'సీన్ నోట్స్' : 'Scene notes'}
+              </h4>
+              {notesSlot}
+            </div>
+          )}
         </NarrativeThinkView>
       )}
       refineView={(
@@ -346,6 +386,7 @@ export function NarrativeChapterWorkspace({
           chapterTitle={chapterTitle}
           chapterNum={chapterNum}
           scenes={scenes}
+          narrativeFormat={narrativeFormat}
           device={previewDevice}
           theme={previewTheme}
           onDeviceChange={onPreviewDeviceChange}
@@ -377,10 +418,15 @@ export function NarrativeChapterWorkspace({
         <NarrativePublishView
           wordCount={wordCount}
           sceneCount={scenes.length}
+          chapterNum={chapterNum}
           publishLabel={publishLabel}
           publishing={publishing}
           publishDisabled={publishDisabled}
           onPublish={onPublish}
+          onSchedule={onSchedulePublish}
+          scheduling={scheduling}
+          scheduleError={scheduleError}
+          scheduleSuccess={scheduleSuccess}
           onBackToWrite={backToWrite}
         />
       )}

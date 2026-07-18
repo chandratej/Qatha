@@ -25,31 +25,49 @@ export function buildNarrativeCommands(opts: {
   onInsertDialogue: () => void;
   onInsertNote: () => void;
   onInsertSceneBreak: () => void;
-  onAiContinue: () => void;
-  onFormatSwitch: (f: NarrativeFormat) => void;
+  /** Optional non-generative notes workspace (MVP1: no AI continue). */
+  onOpenNotes?: () => void;
+  onFormatSwitch?: (f: NarrativeFormat) => void;
+  /** When true (MVP1 default), omit format-switch commands. */
+  formatLocked?: boolean;
   onOpenExplorer: () => void;
   onOpenInspector: () => void;
   onOpenTimeline: () => void;
   onOpenFind?: () => void;
   onOpenPreview?: () => void;
+  onSaveDraft?: () => void;
+  onOpenPublish?: () => void;
 }): NarrativeCommand[] {
+  const formatLocked = opts.formatLocked !== false;
   return [
-    { id: 'continue', group: 'Write', label: 'Continue writing', desc: 'Open Think workspace', icon: '✎', run: opts.onAiContinue, keywords: ['ai', 'think'] },
-    { id: 'dialogue', group: 'Write', label: 'Add dialogue', icon: '"', run: opts.onInsertDialogue },
-    { id: 'note', group: 'Write', label: 'Add note', icon: '◈', run: opts.onInsertNote },
-    { id: 'break', group: 'Write', label: 'Scene break', icon: '—', run: opts.onInsertSceneBreak },
-    { id: 'novel', group: 'Switch narrative mode', label: 'Novel', desc: '/novel', icon: '📖', run: () => opts.onFormatSwitch('novel') },
-    { id: 'chat', group: 'Switch narrative mode', label: 'Chat Fiction', desc: '/chat', icon: '💬', run: () => opts.onFormatSwitch('chat') },
-    { id: 'letter', group: 'Switch narrative mode', label: 'Epistolary', desc: '/letter', icon: '✉', run: () => opts.onFormatSwitch('letter') },
+    { id: 'dialogue', group: 'Write', label: 'Add dialogue', desc: '/dialogue', icon: '"', run: opts.onInsertDialogue, keywords: ['quote', 'speech'] },
+    { id: 'note', group: 'Write', label: 'Add note', desc: '/note', icon: '◈', run: opts.onInsertNote, keywords: ['comment'] },
+    { id: 'break', group: 'Write', label: 'Scene break', desc: '/break', icon: '—', run: opts.onInsertSceneBreak, keywords: ['divider', 'hr'] },
+    ...(opts.onOpenNotes
+      ? [{ id: 'notes', group: 'Write', label: 'Open notes', desc: 'Author notes / ideas', icon: '✎', run: opts.onOpenNotes, keywords: ['think', 'ideas'] } as NarrativeCommand]
+      : []),
+    ...(!formatLocked && opts.onFormatSwitch
+      ? [
+          { id: 'novel', group: 'Switch narrative mode', label: 'Novel', desc: '/novel', icon: '📖', run: () => opts.onFormatSwitch!('novel'), keywords: ['prose', 'format', 'mode'] } as NarrativeCommand,
+          { id: 'chat', group: 'Switch narrative mode', label: 'Chat Fiction', desc: '/chat', icon: '💬', run: () => opts.onFormatSwitch!('chat'), keywords: ['format', 'mode', 'messaging'] } as NarrativeCommand,
+          { id: 'letter', group: 'Switch narrative mode', label: 'Epistolary', desc: '/letter', icon: '✉', run: () => opts.onFormatSwitch!('letter'), keywords: ['format', 'mode', 'epistle'] } as NarrativeCommand,
+        ]
+      : []),
 
-    { id: 'explorer', group: 'Navigate', label: 'Open Explorer', icon: '◎', run: opts.onOpenExplorer },
-    { id: 'inspector', group: 'Navigate', label: 'Open Inspector', icon: '◉', run: opts.onOpenInspector },
+    { id: 'explorer', group: 'Navigate', label: 'Open Explorer', icon: '◎', run: opts.onOpenExplorer, keywords: ['scenes', 'structure'] },
+    { id: 'inspector', group: 'Navigate', label: 'Open Inspector', icon: '◉', run: opts.onOpenInspector, keywords: ['characters', 'settings'] },
     { id: 'timeline', group: 'Navigate', label: 'Open timeline', icon: '⏱', run: opts.onOpenTimeline },
     ...(opts.onOpenFind
       ? [{ id: 'find', group: 'Navigate', label: 'Find in chapter', icon: '⌕', run: opts.onOpenFind, keywords: ['search'] } as NarrativeCommand]
       : []),
     ...(opts.onOpenPreview
-      ? [{ id: 'preview', group: 'Navigate', label: 'Reader preview', icon: '◉', run: opts.onOpenPreview } as NarrativeCommand]
+      ? [{ id: 'preview', group: 'Navigate', label: 'Reader preview', icon: '👁', run: opts.onOpenPreview, keywords: ['refine', 'reader'] } as NarrativeCommand]
+      : []),
+    ...(opts.onSaveDraft
+      ? [{ id: 'save', group: 'Actions', label: 'Save draft', icon: '☁', run: opts.onSaveDraft, keywords: ['draft'] } as NarrativeCommand]
+      : []),
+    ...(opts.onOpenPublish
+      ? [{ id: 'publish', group: 'Actions', label: 'Publish / schedule', icon: '🚀', run: opts.onOpenPublish, keywords: ['release', 'schedule'] } as NarrativeCommand]
       : []),
   ];
 }

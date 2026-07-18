@@ -5,6 +5,7 @@
 import { randomUUID } from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
+import { isTableMissingError, SCHEMA_FEATURE_PENDING_MESSAGE } from '../lib/schemaHealth.js';
 
 /** @type {Map<string, object[]>} */
 const charactersDb = new Map();
@@ -31,7 +32,10 @@ export async function listCharacters(storyId) {
     .select('*')
     .eq('story_id', storyId)
     .order('sort_order', { ascending: true });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) return [];
+    throw new Error(error.message);
+  }
   return data || [];
 }
 
@@ -61,7 +65,10 @@ export async function createCharacter(storyId, body) {
   }
 
   const { data, error } = await supabase.from('story_characters').insert(row).select('*').single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return data;
 }
 
@@ -89,7 +96,10 @@ export async function updateCharacter(storyId, characterId, body) {
     .eq('story_id', storyId)
     .select('*')
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return data;
 }
 
@@ -102,7 +112,10 @@ export async function deleteCharacter(storyId, characterId) {
     return { deleted: true };
   }
   const { error } = await supabase.from('story_characters').delete().eq('id', characterId).eq('story_id', storyId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return { deleted: true };
 }
 
@@ -115,7 +128,10 @@ export async function listLoreEntries(storyId) {
     .select('*')
     .eq('story_id', storyId)
     .order('sort_order', { ascending: true });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) return [];
+    throw new Error(error.message);
+  }
   return data || [];
 }
 
@@ -146,7 +162,10 @@ export async function createLoreEntry(storyId, body) {
   }
 
   const { data, error } = await supabase.from('story_lore_entries').insert(row).select('*').single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return data;
 }
 
@@ -174,7 +193,10 @@ export async function updateLoreEntry(storyId, entryId, body) {
     .eq('story_id', storyId)
     .select('*')
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return data;
 }
 
@@ -187,7 +209,10 @@ export async function deleteLoreEntry(storyId, entryId) {
     return { deleted: true };
   }
   const { error } = await supabase.from('story_lore_entries').delete().eq('id', entryId).eq('story_id', storyId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return { deleted: true };
 }
 

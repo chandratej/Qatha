@@ -1,4 +1,4 @@
-import { Sparkles, X } from 'lucide-react';
+import { StickyNote, X } from 'lucide-react';
 import { useLocale } from '../../context/LocaleContext';
 
 interface NarrativeThinkViewProps {
@@ -6,6 +6,7 @@ interface NarrativeThinkViewProps {
   children?: React.ReactNode;
 }
 
+/** Planning / notes phase — no generative AI in MVP1. */
 export function NarrativeThinkView({ onBackToWrite, children }: NarrativeThinkViewProps) {
   const { t } = useLocale();
 
@@ -14,7 +15,7 @@ export function NarrativeThinkView({ onBackToWrite, children }: NarrativeThinkVi
       <header className="nos-mode-header">
         <div className="nos-mode-header__left">
           <h2>
-            <Sparkles size={16} aria-hidden />
+            <StickyNote size={16} aria-hidden />
             {t('narrativeOs.phaseThink')}
           </h2>
           <p>{t('narrativeOs.phaseThinkHint')}</p>

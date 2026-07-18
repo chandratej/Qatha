@@ -5,6 +5,7 @@
 import { randomUUID } from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
+import { isTableMissingError, SCHEMA_FEATURE_PENDING_MESSAGE } from '../lib/schemaHealth.js';
 
 const ASSET_TYPES = new Set(['cover', 'illustration', 'reference', 'other']);
 
@@ -24,7 +25,10 @@ export async function listMediaAssets(storyId) {
     .select('*')
     .eq('story_id', storyId)
     .order('sort_order', { ascending: true });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) return [];
+    throw new Error(error.message);
+  }
   return data || [];
 }
 
@@ -59,7 +63,10 @@ export async function createMediaAsset(storyId, userId, body) {
   }
 
   const { data, error } = await supabase.from('media_assets').insert(row).select('*').single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return data;
 }
 
@@ -72,6 +79,9 @@ export async function deleteMediaAsset(storyId, assetId) {
     return { deleted: true };
   }
   const { error } = await supabase.from('media_assets').delete().eq('id', assetId).eq('story_id', storyId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw new Error(error.message);
+  }
   return { deleted: true };
 }

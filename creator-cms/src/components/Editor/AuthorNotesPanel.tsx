@@ -29,6 +29,7 @@ export function AuthorNotesPanel({
   const [draft, setDraft] = useState('');
   const [anchor, setAnchor] = useState<EditorSelectionAnchor | null>(null);
   const [busy, setBusy] = useState(false);
+  const [anchorHint, setAnchorHint] = useState<string | null>(null);
 
   const sceneComments = comments.filter((c) => c.scene_id === sceneId);
 
@@ -73,11 +74,19 @@ export function AuthorNotesPanel({
             disabled={disabled || busy}
             onClick={() => {
               const captured = onCaptureAnchor();
-              if (captured) setAnchor(captured);
+              if (captured) {
+                setAnchor(captured);
+                setAnchorHint(null);
+              } else {
+                setAnchorHint('Select text in the manuscript first, then click again.');
+              }
             }}
           >
             <Link2 size={14} aria-hidden /> Anchor to selection
           </button>
+        )}
+        {anchorHint && !anchor && (
+          <p className="author-notes-panel__hint" role="status">{anchorHint}</p>
         )}
         <button
           type="button"

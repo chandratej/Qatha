@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
+import { PhoneticTextInput } from './PhoneticTextInput';
 
 interface ChapterFindBarProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface ChapterFindBarProps {
   matchCount: number;
   /** Changes when find results update; used to reclaim focus if the editor stole it. */
   focusRestoreKey?: string;
+  phoneticLive?: boolean;
   onQueryChange: (value: string) => void;
   onReplaceTextChange: (value: string) => void;
   onToggleReplace: () => void;
@@ -30,6 +32,7 @@ export function ChapterFindBar({
   matchIndex,
   matchCount,
   focusRestoreKey,
+  phoneticLive = true,
   onQueryChange,
   onReplaceTextChange,
   onToggleReplace,
@@ -84,15 +87,16 @@ export function ChapterFindBar({
       <div className="katha-chapter-find__row">
         <label className="katha-chapter-find__field">
           <span className="katha-chapter-find__label">Find</span>
-          <input
+          <PhoneticTextInput
             ref={findRef}
             type="search"
             className="katha-chapter-find__input"
             value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Telugu or English phonetics…"
+            onChange={onQueryChange}
+            phoneticLive={phoneticLive}
+            enableSuggestions={false}
+            placeholder="Telugu phonetics or English…"
             aria-label="Find in chapter"
-            lang="te"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -158,14 +162,15 @@ export function ChapterFindBar({
         <div className="katha-chapter-find__row katha-chapter-find__row--replace">
           <label className="katha-chapter-find__field">
             <span className="katha-chapter-find__label">Replace</span>
-            <input
+            <PhoneticTextInput
               type="text"
               className="katha-chapter-find__input"
               value={replaceText}
-              onChange={(e) => onReplaceTextChange(e.target.value)}
-              placeholder="Replacement text"
+              onChange={onReplaceTextChange}
+              phoneticLive={phoneticLive}
+              enableSuggestions={false}
+              placeholder="Replacement text (phonetic OK)"
               aria-label="Replace with"
-              lang="te"
             />
           </label>
           <div className="katha-chapter-find__replace-actions">
