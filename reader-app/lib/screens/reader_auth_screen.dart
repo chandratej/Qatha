@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/providers/auth_state.dart' show AuthState, AuthUser;
 import '../core/services/auth_service.dart';
 import '../core/theme/katha_theme.dart';
+import '../core/utils/motion.dart';
 
 /// Cascading Auth Gate for readers: Google (primary) → email magic link (fallback).
 /// Phone OTP is not offered here — reserved for Creator CMS payout/KYC verification.
@@ -230,12 +231,12 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
                       colors: [KathaColors.gold, KathaColors.ember],
                     ).createShader(const Rect.fromLTWH(0, 0, 80, 40)),
                 ),
-              ).animate().fadeIn(),
+              ).withEntrance(context, (w) => w.animate().fadeIn()),
               const SizedBox(height: 8),
               Text(
                 'Sign in to continue reading',
                 style: Theme.of(context).textTheme.bodyMedium,
-              ).animate().fadeIn(delay: 80.ms),
+              ).withEntrance(context, (w) => w.animate().fadeIn(delay: 80.ms)),
               const SizedBox(height: 36),
               if (_emailStep) _buildEmailFallback() else _buildGooglePrimary(),
               if (_error != null) ...[

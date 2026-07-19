@@ -17,4 +17,4 @@ creator-cms/dist/
 
 # IDE / local session artifacts
 terminals/
-.ai/
+.ai/creator-cms/test-results/

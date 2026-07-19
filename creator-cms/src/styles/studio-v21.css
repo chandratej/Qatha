@@ -754,7 +754,27 @@
 
 /* Loading / error */
 .sv21__loading { font-size: 13px; color: var(--sv21-ink-soft); padding: 1rem 0; }
-.sv21__error { font-size: 13px; color: #b42318; padding: 0.5rem 0; }
+.sv21__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0.75rem 0 1rem;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #8a3238;
+  background: rgba(154, 74, 82, 0.08);
+  border: 1px solid rgba(154, 74, 82, 0.22);
+  border-left: 3px solid #9a4a52;
+  border-radius: 10px;
+}
+
+[data-theme='dark'] .sv21__error {
+  color: #e0a8ae;
+  background: rgba(176, 117, 126, 0.12);
+  border-color: rgba(176, 117, 126, 0.3);
+  border-left-color: #b0757e;
+}
 
 /* Demo banner quiet */
 .sv21__demo { font-size: 12px; color: var(--sv21-ink-muted); margin-bottom: 1rem; }

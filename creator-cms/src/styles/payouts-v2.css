@@ -201,6 +201,57 @@
   margin-bottom: 1rem;
 }
 
+/* Pre-revenue: the path to first earnings, not a dead end */
+.payv2-empty-stories--path {
+  border-style: solid;
+  border-color: var(--pay-border, #e5dfd0);
+  text-align: left;
+  color: var(--pay-text-2);
+}
+
+.payv2-path-title {
+  margin: 0 0 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--pay-text);
+}
+
+.payv2-path-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.payv2-path-steps li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.payv2-path-step-num {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pay-maroon, #7a2e2e);
+  background: color-mix(in srgb, var(--pay-gold, #b8863b) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pay-gold, #b8863b) 34%, transparent);
+}
+
+.payv2-path-hint {
+  margin: 14px 0 0;
+  font-size: 0.8125rem;
+  color: var(--pay-text-3);
+}
+
 /* Next payout callout */
 .payv2-next {
   display: flex;

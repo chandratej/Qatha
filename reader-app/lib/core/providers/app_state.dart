@@ -13,6 +13,8 @@ class AppState extends ChangeNotifier {
   static const _prefNotifyChapters = 'katha_notify_chapters';
   static const _prefNotifySub = 'katha_notify_sub';
   static const _prefNotifyTrend = 'katha_notify_trend';
+  static const _prefCalmMotion = 'katha_calm_motion';
+  static const _prefHighContrast = 'katha_high_contrast';
 
   ThemeMode _themeMode = ThemeMode.system;
   int _fontScale = 2; // 1-5 per world-class standards
@@ -25,6 +27,8 @@ class AppState extends ChangeNotifier {
   bool _notifyNewChapters = true;
   bool _notifySubscription = true;
   bool _notifyTrending = true;
+  bool _calmMotion = false;
+  bool _highContrast = false;
   bool _hydrated = false;
 
   ThemeMode get themeMode => _themeMode;
@@ -40,14 +44,32 @@ class AppState extends ChangeNotifier {
   bool get notifyNewChapters => _notifyNewChapters;
   bool get notifySubscription => _notifySubscription;
   bool get notifyTrending => _notifyTrending;
+
+  /// Suppress decorative animation app-wide, independent of the OS setting.
+  bool get calmMotion => _calmMotion;
+
+  /// Stronger text and border contrast for tired eyes / bright light.
+  bool get highContrast => _highContrast;
   bool get isHydrated => _hydrated;
+
+  static const _prefThemeMode = 'katha_theme_mode';
 
   Future<void> hydrate() async {
     final prefs = await SharedPreferences.getInstance();
-    final isDark = prefs.getBool(_prefTheme);
-    _themeMode = isDark == null
-        ? ThemeMode.system
-        : (isDark ? ThemeMode.dark : ThemeMode.light);
+    // Tri-state ('system'|'light'|'dark'); falls back to the legacy bool key.
+    final mode = prefs.getString(_prefThemeMode);
+    if (mode != null) {
+      _themeMode = switch (mode) {
+        'dark' => ThemeMode.dark,
+        'light' => ThemeMode.light,
+        _ => ThemeMode.system,
+      };
+    } else {
+      final isDark = prefs.getBool(_prefTheme);
+      _themeMode = isDark == null
+          ? ThemeMode.system
+          : (isDark ? ThemeMode.dark : ThemeMode.light);
+    }
     _fontScale = prefs.getInt(_prefFont) ?? 2;
     _lineHeightScale = prefs.getInt(_prefLineHeight) ?? 2;
     _textAlign = prefs.getString(_prefAlign) ?? 'left';
@@ -58,6 +80,8 @@ class AppState extends ChangeNotifier {
     _notifyNewChapters = prefs.getBool(_prefNotifyChapters) ?? true;
     _notifySubscription = prefs.getBool(_prefNotifySub) ?? true;
     _notifyTrending = prefs.getBool(_prefNotifyTrend) ?? true;
+    _calmMotion = prefs.getBool(_prefCalmMotion) ?? false;
+    _highContrast = prefs.getBool(_prefHighContrast) ?? false;
     _hydrated = true;
     notifyListeners();
   }
@@ -65,6 +89,14 @@ class AppState extends ChangeNotifier {
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefTheme, _themeMode == ThemeMode.dark);
+    await prefs.setString(
+      _prefThemeMode,
+      switch (_themeMode) {
+        ThemeMode.dark => 'dark',
+        ThemeMode.light => 'light',
+        ThemeMode.system => 'system',
+      },
+    );
     await prefs.setInt(_prefFont, _fontScale);
     await prefs.setInt(_prefLineHeight, _lineHeightScale);
     await prefs.setString(_prefAlign, _textAlign);
@@ -77,6 +109,8 @@ class AppState extends ChangeNotifier {
     await prefs.setBool(_prefNotifyChapters, _notifyNewChapters);
     await prefs.setBool(_prefNotifySub, _notifySubscription);
     await prefs.setBool(_prefNotifyTrend, _notifyTrending);
+    await prefs.setBool(_prefCalmMotion, _calmMotion);
+    await prefs.setBool(_prefHighContrast, _highContrast);
   }
 
   void setThemeMode(ThemeMode mode) {
@@ -152,6 +186,18 @@ class AppState extends ChangeNotifier {
 
   void setNotifyTrending(bool v) {
     _notifyTrending = v;
+    _persist();
+    notifyListeners();
+  }
+
+  void setCalmMotion(bool v) {
+    _calmMotion = v;
+    _persist();
+    notifyListeners();
+  }
+
+  void setHighContrast(bool v) {
+    _highContrast = v;
     _persist();
     notifyListeners();
   }

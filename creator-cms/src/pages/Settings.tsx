@@ -10,12 +10,15 @@ import {
   lineHeightLabel,
   breakReminderLabel,
   editorFontSizePx,
+  uiScaleLabel,
   type FontScale,
   type LineHeightScale,
   type BreakReminderMinutes,
+  type UiScale,
 } from '../lib/comfortPrefs';
 import { useAuth } from '../context/AuthContext';
-import { ThemeToggle } from '../components/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
+import type { CmsThemePref } from '../lib/themePrefs';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { clearDraftCache } from '../lib/draftCache';
 import { BRAND } from '../lib/constants';
@@ -31,6 +34,7 @@ import { useLocale } from '../context/LocaleContext';
 export function Settings() {
   const { t } = useLocale();
   const { user, logout, isMockMode } = useAuth();
+  const { themePref, setTheme } = useTheme();
   const navigate = useNavigate();
   const supabaseDirect = useSupabaseDirect();
   const [clearOnLogout, setClearOnLogout] = useState(
@@ -261,9 +265,50 @@ export function Settings() {
             <h3>Appearance</h3>
           </div>
           <div className="studio-settings-section__body">
-            <div className="studio-settings-row">
-              <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>Theme (sepia / night)</span>
-              <ThemeToggle compact />
+            <div style={{ display: 'grid', gap: 16 }}>
+              <label className="studio-settings-field">
+                <span>Theme</span>
+                <select
+                  className="cms-input"
+                  value={themePref}
+                  onChange={(e) => setTheme(e.target.value as CmsThemePref)}
+                  aria-label="Theme preference"
+                >
+                  <option value="system">Match system — follows your device day/night schedule</option>
+                  <option value="light">Sepia (light)</option>
+                  <option value="dark">Night (dark)</option>
+                </select>
+              </label>
+              <label className="studio-settings-field">
+                <span>Interface text size — {uiScaleLabel(comfort.uiScale)}</span>
+                <select
+                  className="cms-input"
+                  value={comfort.uiScale}
+                  onChange={(e) => updateComfort({ uiScale: Number(e.target.value) as UiScale })}
+                  aria-label="Interface text size"
+                >
+                  <option value={1}>Compact</option>
+                  <option value={2}>Default</option>
+                  <option value={3}>Comfort — recommended for long sessions</option>
+                  <option value={4}>Large</option>
+                </select>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={comfort.calmMotion}
+                  onChange={(e) => updateComfort({ calmMotion: e.target.checked })}
+                />
+                <span>Calm motion — reduce animation across the studio</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={comfort.highContrast}
+                  onChange={(e) => updateComfort({ highContrast: e.target.checked })}
+                />
+                <span>High contrast — stronger text and panel borders</span>
+              </label>
             </div>
           </div>
         </section>

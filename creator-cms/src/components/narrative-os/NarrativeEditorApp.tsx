@@ -11,6 +11,7 @@ import { InlineChapterTitle } from '../Editor/InlineChapterTitle';
 import { useLocale } from '../../context/LocaleContext';
 import { useTheme } from '../../context/ThemeContext';
 import { NarrativeArrivalScreen } from './NarrativeArrivalScreen';
+import { BrandMark } from '../studio/BrandMark';
 import {
   NarrativeCommandPalette,
   buildNarrativeCommands,
@@ -336,10 +337,8 @@ export function NarrativeEditorApp({
             </button>
           )}
           <div className="brand">
-            <svg className="mark" viewBox="0 0 40 40" fill="none" aria-hidden>
-              <path d="M20 4C14 4 9 8 9 14c0 4 3 6 6 8-3 2-6 4-6 8 0 6 5 10 11 10s11-4 11-10c0-4-3-6-6-8 3-2 6-4 6-8 0-6-5-10-11-10z" stroke="#7A3B36" strokeWidth="1.4" />
-            </svg>
-            <span className="name">KATHA</span>
+            <BrandMark size="sm" />
+            <span className="name" lang="te">కథ</span>
           </div>
           {!isWritePhase && (
             <span className="nos-phase-pill">{t(PHASE_LABEL_KEYS[phase])}</span>

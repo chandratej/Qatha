@@ -130,9 +130,11 @@ body.narrative-os-body {
 }
 
 .narrative-os-app .brand .name {
-  font-family: 'Fraunces', var(--katha-font-reading), serif;
+  /* Same lockup as the studio shell: Telugu wordmark in the reading serif */
+  font-family: var(--katha-font-reading), 'Fraunces', serif;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
+  color: var(--nos-ink, inherit);
 }
 
 .narrative-os-app .brand .sub {

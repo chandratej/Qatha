@@ -14,7 +14,10 @@ async function loginMock(page: Page) {
   await page.getByLabel(/6-digit code/i).fill('123456');
   await page.getByRole('button', { name: /Enter your studio/i }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
-  await page.evaluate(() => localStorage.setItem('katha_onboarding_complete', 'true'));
+  await page.evaluate(() => {
+    localStorage.setItem('katha_onboarding_complete', 'true');
+    localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
+  });
 }
 
 async function promoteToAdmin(page: Page) {

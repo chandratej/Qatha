@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/models/story.dart';
 import '../core/theme/katha_theme.dart';
+import '../core/utils/motion.dart';
+import 'story_cover_art.dart';
 
 class StoryCard extends StatelessWidget {
   final Story story;
@@ -61,11 +63,11 @@ class StoryCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: coverWidth,
                         height: cardHeight,
-                        placeholder: (context, url) => _coverPlaceholder(isDark),
+                        placeholder: (context, url) => _generatedCover(),
                         errorWidget: (context, url, error) =>
-                            _coverPlaceholder(isDark),
+                            _generatedCover(),
                       )
-                    : _coverPlaceholder(isDark),
+                    : _generatedCover(),
               ),
               Expanded(
                 child: Padding(
@@ -139,33 +141,12 @@ class StoryCard extends StatelessWidget {
     );
 
     // Opacity-only animation avoids slide transforms that break web layout.
+    if (reduceMotion(context)) return card;
     return card.animate().fadeIn(duration: 400.ms, delay: (index * 80).ms);
   }
 
-  Widget _coverPlaceholder(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  KathaColors.darkElevated,
-                  KathaColors.ember.withValues(alpha: 0.3),
-                ]
-              : [
-                  KathaColors.paperWarm,
-                  KathaColors.goldLight.withValues(alpha: 0.5),
-                ],
-        ),
-      ),
-      child: const Center(
-        child: Text(
-          'కథ',
-          style: TextStyle(fontSize: 28, color: KathaColors.gold),
-        ),
-      ),
-    );
+  Widget _generatedCover() {
+    return StoryCoverArt(title: story.title, seed: story.id);
   }
 
   Widget _chip(BuildContext context, String label) {

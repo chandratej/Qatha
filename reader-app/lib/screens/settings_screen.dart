@@ -76,11 +76,34 @@ class SettingsScreen extends StatelessWidget {
               onSelected: appState.setTextAlign,
             ),
           ),
-          _NavCard(
+          _SettingCard(
             icon: isDark ? Icons.dark_mode : Icons.light_mode,
             title: 'Theme',
-            subtitle: isDark ? 'Dark' : 'Light',
-            onTap: () => appState.toggleTheme(),
+            subtitle: appState.themeMode == ThemeMode.system
+                ? 'Match system — follows your device day/night schedule'
+                : (isDark ? 'Dark' : 'Light'),
+            child: _SegmentRow<ThemeMode>(
+              values: const [ThemeMode.system, ThemeMode.light, ThemeMode.dark],
+              labels: const ['System', 'Light', 'Dark'],
+              selected: appState.themeMode,
+              onSelected: appState.setThemeMode,
+            ),
+          ),
+          const SizedBox(height: 24),
+          const _SectionTitle('Comfort'),
+          _SwitchCard(
+            icon: Icons.motion_photos_off_outlined,
+            title: 'Calm motion',
+            subtitle: 'Reduce animation across the app',
+            value: appState.calmMotion,
+            onChanged: appState.setCalmMotion,
+          ),
+          _SwitchCard(
+            icon: Icons.contrast,
+            title: 'High contrast',
+            subtitle: 'Stronger text and borders for tired eyes',
+            value: appState.highContrast,
+            onChanged: appState.setHighContrast,
           ),
           const SizedBox(height: 24),
           const _SectionTitle('Account'),

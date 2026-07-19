@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  applyGlobalComfort,
   loadComfortPrefs,
   saveComfortPrefs,
   editorFontSizePx,
@@ -18,7 +19,45 @@ describe('comfortPrefs', () => {
       fontScale: 2,
       lineHeightScale: 2,
       breakReminderMinutes: 90,
+      uiScale: 2,
+      calmMotion: false,
+      highContrast: false,
     });
+  });
+
+  it('persists platform-wide comfort prefs and clamps UI scale', () => {
+    saveComfortPrefs({ uiScale: 4, calmMotion: true, highContrast: true });
+    const prefs = loadComfortPrefs();
+    expect(prefs.uiScale).toBe(4);
+    expect(prefs.calmMotion).toBe(true);
+    expect(prefs.highContrast).toBe(true);
+    saveComfortPrefs({ uiScale: 99 as never });
+    expect(loadComfortPrefs().uiScale).toBe(4);
+  });
+
+  it('reflects comfort prefs as html attributes', () => {
+    applyGlobalComfort({
+      fontScale: 2,
+      lineHeightScale: 2,
+      breakReminderMinutes: 90,
+      uiScale: 3,
+      calmMotion: true,
+      highContrast: false,
+    });
+    const root = document.documentElement;
+    expect(root.getAttribute('data-ui-scale')).toBe('3');
+    expect(root.getAttribute('data-motion')).toBe('calm');
+    expect(root.hasAttribute('data-contrast')).toBe(false);
+    applyGlobalComfort({
+      fontScale: 2,
+      lineHeightScale: 2,
+      breakReminderMinutes: 90,
+      uiScale: 2,
+      calmMotion: false,
+      highContrast: true,
+    });
+    expect(root.hasAttribute('data-motion')).toBe(false);
+    expect(root.getAttribute('data-contrast')).toBe('high');
   });
 
   it('persists and clamps font scale', () => {

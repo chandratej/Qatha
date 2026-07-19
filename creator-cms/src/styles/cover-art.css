@@ -1,0 +1,79 @@
+/**
+ * Generated typographic story covers — StoryCoverArt.tsx.
+ * Deterministic brand-palette covers for stories without uploaded art.
+ */
+
+.story-cover-art {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 16px 40px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.story-cover-art__motif {
+  position: absolute;
+  inset: 0;
+  background-size: 56px 28px;
+  background-repeat: repeat;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.story-cover-art__frame {
+  position: absolute;
+  inset: 10px;
+  border: 1px solid;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.story-cover-art__title {
+  position: relative;
+  font-family: var(--katha-font-reading, 'Noto Serif Telugu', Georgia, serif);
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.story-cover-art__colophon {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.story-cover-art__rule {
+  width: 22px;
+  height: 1px;
+  opacity: 0.9;
+}
+
+.story-cover-art__mark {
+  font-family: var(--katha-font-reading, 'Noto Serif Telugu', serif);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Library card host: placeholder used to be a centered icon box */
+.sv21__card-cover .story-cover-art {
+  position: absolute;
+  inset: 0;
+}

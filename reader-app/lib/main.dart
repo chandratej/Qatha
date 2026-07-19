@@ -13,6 +13,7 @@ import 'core/services/offline_cache.dart';
 import 'core/theme/katha_theme.dart';
 import 'screens/app_shell.dart';
 import 'screens/onboarding_screen.dart';
+import 'core/utils/motion.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,21 +109,24 @@ class _KathaAppState extends State<KathaApp> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                      'కథ',
-                      style: TextStyle(
-                        fontSize: 56,
-                        fontWeight: FontWeight.bold,
-                        foreground: Paint()
-                          ..shader = const LinearGradient(
-                            colors: [KathaColors.gold, KathaColors.ember],
-                          ).createShader(const Rect.fromLTWH(0, 0, 100, 60)),
+                  'కథ',
+                  style: TextStyle(
+                    fontSize: 56,
+                    fontWeight: FontWeight.bold,
+                    foreground: Paint()
+                      ..shader = const LinearGradient(
+                        colors: [KathaColors.gold, KathaColors.ember],
+                      ).createShader(const Rect.fromLTWH(0, 0, 100, 60)),
+                  ),
+                ).withEntrance(
+                  context,
+                  (w) => w
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .shimmer(
+                        duration: 1800.ms,
+                        color: KathaColors.goldLight.withValues(alpha: 0.4),
                       ),
-                    )
-                    .animate(onPlay: (c) => c.repeat(reverse: true))
-                    .shimmer(
-                      duration: 1800.ms,
-                      color: KathaColors.goldLight.withValues(alpha: 0.4),
-                    ),
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'తెలుగు కథలు',
@@ -131,7 +135,7 @@ class _KathaAppState extends State<KathaApp> {
                     color: KathaColors.inkMuted.withValues(alpha: 0.8),
                     letterSpacing: 0.5,
                   ),
-                ).animate().fadeIn(delay: 400.ms),
+                ).withEntrance(context, (w) => w.animate().fadeIn(delay: 400.ms)),
               ],
             ),
           ),
@@ -142,8 +146,16 @@ class _KathaAppState extends State<KathaApp> {
     return MaterialApp(
       title: 'Katha — కథ',
       debugShowCheckedModeBanner: false,
-      theme: KathaTheme.light(fontScale: appState.fontScale),
-      darkTheme: KathaTheme.dark(fontScale: appState.fontScale),
+      theme: KathaTheme.light(
+        fontScale: appState.fontScale,
+        highContrast: appState.highContrast,
+        calmMotion: appState.calmMotion,
+      ),
+      darkTheme: KathaTheme.dark(
+        fontScale: appState.fontScale,
+        highContrast: appState.highContrast,
+        calmMotion: appState.calmMotion,
+      ),
       themeMode: appState.themeMode,
       home: _showOnboarding ? const OnboardingScreen() : const AppShell(),
     );

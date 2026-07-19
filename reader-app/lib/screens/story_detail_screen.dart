@@ -9,6 +9,7 @@ import '../core/services/offline_cache.dart';
 import '../core/theme/katha_theme.dart';
 import '../widgets/error_state.dart';
 import 'reader_screen.dart';
+import '../core/utils/motion.dart';
 
 class StoryDetailScreen extends StatefulWidget {
   final String storyId;
@@ -186,7 +187,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                         ),
                       ],
                     ),
-                  ).animate().fadeIn(delay: 100.ms),
+                  ).withEntrance(context, (w) => w.animate().fadeIn(delay: 100.ms)),
                   if (story.description != null) ...[
                     const SizedBox(height: 20),
                     Text(

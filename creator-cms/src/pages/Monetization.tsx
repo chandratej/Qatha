@@ -113,10 +113,37 @@ export function Monetization() {
       )}
 
       {!loading && rows.length === 0 && (
-        <div className="payv2-empty-stories" lang={te ? 'te' : undefined}>
-          {te
-            ? 'ఇంకా ప్రచురిత కథలు లేవు — కథను ప్రచురించిన తర్వాత ఆదాయం ఇక్కడ కనిపిస్తుంది.'
-            : 'No published stories yet — earnings will appear here after you publish.'}
+        <div className="payv2-empty-stories payv2-empty-stories--path" lang={te ? 'te' : undefined}>
+          <p className="payv2-path-title">
+            {te ? 'మీ మొదటి ఆదాయానికి మార్గం' : 'Your path to first earnings'}
+          </p>
+          <ol className="payv2-path-steps">
+            <li>
+              <span className="payv2-path-step-num" aria-hidden>1</span>
+              <span>{te ? 'కథను ప్రచురించండి' : 'Publish a story'}</span>
+            </li>
+            <li>
+              <span className="payv2-path-step-num" aria-hidden>2</span>
+              <span>
+                {te
+                  ? 'పాఠకుల నమ్మకంతో "Performing" స్థాయికి చేరండి'
+                  : 'Reach the Performing trust tier with readers'}
+              </span>
+            </li>
+            <li>
+              <span className="payv2-path-step-num" aria-hidden>3</span>
+              <span>
+                {te
+                  ? `ప్రతి క్వార్టర్ ${BASE_CREATOR_SHARE_PCT}% వాటా — Apex వద్ద 60% వరకు`
+                  : `Earn ${BASE_CREATOR_SHARE_PCT}% each quarter — rising to 60% at Apex`}
+              </span>
+            </li>
+          </ol>
+          <p className="payv2-path-hint">
+            {te
+              ? 'పూర్తి వాటా నిచ్చెన క్రింద ఉంది — ప్రతి స్థాయి పారదర్శకం.'
+              : 'The full share ladder is below — every tier is transparent.'}
+          </p>
         </div>
       )}
 

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { BookOpen, Feather, Loader2, MoreHorizontal, PenLine } from 'lucide-react';
+import { BookOpen, Loader2, MoreHorizontal, PenLine } from 'lucide-react';
 import type { StudioStringKey } from '../../lib/studioLocale';
 import type { StoryData } from '../../types/database';
 import { useLocale } from '../../context/LocaleContext';
+import { StoryCoverArt } from './StoryCoverArt';
 
 function statusStamp(story: StoryData, t: (k: StudioStringKey) => string) {
   const s = story.moderation_status || 'draft';
@@ -198,9 +199,7 @@ export function StoryCardV21({ story, onEdit, onDelete, onShare, deleting }: Sto
         {story.cover_url ? (
           <img src={story.cover_url} alt="" />
         ) : (
-          <div className="sv21__card-cover-placeholder">
-            <Feather size={28} aria-hidden />
-          </div>
+          <StoryCoverArt title={story.title} seed={story.id} />
         )}
         <span className={stamp.className}>{stamp.label}</span>
       </Link>

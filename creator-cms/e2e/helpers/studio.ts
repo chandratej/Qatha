@@ -6,6 +6,8 @@ export async function enterStudio(page: Page, email = 'writer@katha.test') {
   await page.evaluate(() => {
     localStorage.setItem('katha_studio_locale', 'en');
     localStorage.setItem('katha_onboarding_complete', 'true');
+    // Legal Wave 0 — pre-accept DPDP + Creator Agreement (versions from packages/shared/creatorAgreement)
+    localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
     sessionStorage.setItem('katha-narrative-os-arrival-dismissed', '1');
   });
   await page.reload();

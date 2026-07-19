@@ -5,7 +5,10 @@ import { loadPersonalCorrections } from './lib/phonetic';
 import { loadPhoneConfig } from './lib/phoneConfig';
 import { bindPublishQueueFlush } from './lib/publishQueue';
 import { initObservability } from './lib/observability';
+import { applyGlobalComfort } from './lib/comfortPrefs';
 
+// Comfort attributes (UI scale / calm motion / high contrast) before first paint
+applyGlobalComfort();
 loadPersonalCorrections();
 loadPhoneConfig().catch(() => {});
 // DEC-023: flush offline publish jobs when connectivity returns

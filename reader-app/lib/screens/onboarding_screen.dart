@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/app_config.dart';
 import '../core/theme/katha_theme.dart';
 import 'app_shell.dart';
+import '../core/utils/motion.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -142,7 +143,7 @@ class _OnboardPage extends StatelessWidget {
               ),
             ),
             child: Icon(icon, size: 64, color: KathaColors.gold),
-          ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
+          ).withEntrance(context, (w) => w.animate().scale(duration: 600.ms, curve: Curves.easeOutBack)),
           const SizedBox(height: 40),
           Text(
             AppConfig.brandNameTelugu,

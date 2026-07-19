@@ -5,11 +5,18 @@ import type { ManuscriptScript } from './manuscriptTypography';
 export type FontScale = 1 | 2 | 3 | 4 | 5;
 export type LineHeightScale = 1 | 2 | 3;
 export type BreakReminderMinutes = 0 | 90 | 120;
+/** Whole-CMS interface text size (dashboard, panels, nav) — not just the manuscript. */
+export type UiScale = 1 | 2 | 3 | 4;
 
 export interface ComfortPrefs {
   fontScale: FontScale;
   lineHeightScale: LineHeightScale;
   breakReminderMinutes: BreakReminderMinutes;
+  uiScale: UiScale;
+  /** Suppress non-essential animation platform-wide, independent of the OS setting. */
+  calmMotion: boolean;
+  /** Stronger borders and text contrast for tired eyes / bright rooms. */
+  highContrast: boolean;
 }
 
 const STORAGE_KEY = 'katha_comfort_prefs';
@@ -18,6 +25,9 @@ const DEFAULTS: ComfortPrefs = {
   fontScale: 2,
   lineHeightScale: 2,
   breakReminderMinutes: 90,
+  uiScale: 2,
+  calmMotion: false,
+  highContrast: false,
 };
 
 const FONT_SCALE_LABELS: Record<FontScale, string> = {
@@ -36,6 +46,10 @@ const LINE_HEIGHT_LABELS: Record<LineHeightScale, string> = {
 
 function clampFontScale(value: number): FontScale {
   return Math.min(5, Math.max(1, Math.round(value))) as FontScale;
+}
+
+function clampUiScale(value: number): UiScale {
+  return Math.min(4, Math.max(1, Math.round(value))) as UiScale;
 }
 
 function clampLineHeightScale(value: number): LineHeightScale {
@@ -58,6 +72,9 @@ export function loadComfortPrefs(): ComfortPrefs {
       fontScale: clampFontScale(parsed.fontScale ?? DEFAULTS.fontScale),
       lineHeightScale: clampLineHeightScale(parsed.lineHeightScale ?? DEFAULTS.lineHeightScale),
       breakReminderMinutes: parseBreakMinutes(parsed.breakReminderMinutes ?? DEFAULTS.breakReminderMinutes),
+      uiScale: clampUiScale(parsed.uiScale ?? DEFAULTS.uiScale),
+      calmMotion: parsed.calmMotion === true,
+      highContrast: parsed.highContrast === true,
     };
   } catch {
     return { ...DEFAULTS };
@@ -76,10 +93,28 @@ export function saveComfortPrefs(prefs: Partial<ComfortPrefs>): ComfortPrefs {
       prefs.breakReminderMinutes !== undefined
         ? parseBreakMinutes(prefs.breakReminderMinutes)
         : current.breakReminderMinutes,
+    uiScale: prefs.uiScale !== undefined ? clampUiScale(prefs.uiScale) : current.uiScale,
+    calmMotion: prefs.calmMotion !== undefined ? prefs.calmMotion === true : current.calmMotion,
+    highContrast:
+      prefs.highContrast !== undefined ? prefs.highContrast === true : current.highContrast,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  applyGlobalComfort(next);
   window.dispatchEvent(new CustomEvent('katha-comfort-prefs-updated'));
   return next;
+}
+
+/**
+ * Reflect platform-wide comfort prefs as <html> attributes consumed by
+ * styles/comfort-system.css. Call once at boot and after every save.
+ */
+export function applyGlobalComfort(prefs: ComfortPrefs = loadComfortPrefs()) {
+  const root = document.documentElement;
+  root.setAttribute('data-ui-scale', String(prefs.uiScale));
+  if (prefs.calmMotion) root.setAttribute('data-motion', 'calm');
+  else root.removeAttribute('data-motion');
+  if (prefs.highContrast) root.setAttribute('data-contrast', 'high');
+  else root.removeAttribute('data-contrast');
 }
 
 /** Newsreader at scale 2 ≈ 19px — targets ~65–70 Latin chars in the manuscript column. */
@@ -122,6 +157,17 @@ export function lineHeightLabel(scale: LineHeightScale): string {
 export function breakReminderLabel(minutes: BreakReminderMinutes): string {
   if (minutes === 0) return 'Off';
   return `Every ${minutes} min`;
+}
+
+const UI_SCALE_LABELS: Record<UiScale, string> = {
+  1: 'Compact',
+  2: 'Default',
+  3: 'Comfort',
+  4: 'Large',
+};
+
+export function uiScaleLabel(scale: UiScale): string {
+  return UI_SCALE_LABELS[scale];
 }
 
 export const BREAK_SNOOZE_MS = 30 * 60 * 1000;

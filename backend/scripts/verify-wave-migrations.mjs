@@ -13,6 +13,13 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
+// supabase-js requires a WebSocket global (native in Node >= 22).
+// Polyfill from "ws" so the gate also runs on Node 20 machines.
+if (typeof globalThis.WebSocket === 'undefined') {
+  const { WebSocket } = await import('ws');
+  globalThis.WebSocket = WebSocket;
+}
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, '../.env') });
 
@@ -30,7 +37,8 @@ const REQUIRED_TABLES = [
   'webhook_logs',
   // Story Trust SPI (015)
   // Reviewer / collab waves 030–037
-  'review_drafts',
+  // NOTE: migration 030 adds draft columns to peer_review_assignments —
+  // there is no review_drafts table; checked via column probe below.
   'review_annotations',
   'annotation_threads',
   'reputation_events',
@@ -70,7 +78,9 @@ async function columnExists(supabase, table, column) {
   const { error } = await supabase.from(table).select(column).limit(0);
   if (!error) return true;
   const msg = error.message || '';
-  if (msg.includes(column) && (msg.includes('does not exist') || msg.includes('Could not find'))) {
+  // Missing column OR whole table missing — either way, it's a gap, not a
+  // fatal error: keep scanning so one run reports the complete gap list.
+  if (msg.includes('does not exist') || msg.includes('Could not find')) {
     return false;
   }
   throw new Error(`Check ${table}.${column}: ${msg}`);
@@ -96,6 +106,13 @@ async function main() {
     const ok = await columnExists(supabase, 'peer_review_requests', col);
     if (!ok) gaps.push(`column:peer_review_requests.${col}`);
     else console.log(`[verify-wave-migrations] OK column peer_review_requests.${col}`);
+  }
+
+  // Migration 030 — review-draft columns on peer_review_assignments
+  for (const col of ['draft_payload', 'draft_saved_at']) {
+    const ok = await columnExists(supabase, 'peer_review_assignments', col);
+    if (!ok) gaps.push(`column:peer_review_assignments.${col}`);
+    else console.log(`[verify-wave-migrations] OK column peer_review_assignments.${col}`);
   }
 
   for (const col of REQUIRED_PROFILE_COLUMNS) {

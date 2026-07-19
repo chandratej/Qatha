@@ -3,8 +3,7 @@
 export const CONNECTION_ERROR =
   "We couldn't connect to Katha right now. Check your internet connection and try again.";
 
-export const SESSION_EXPIRED_ERROR =
-  'Your session has expired. Please sign in again with your phone number.';
+export const SESSION_EXPIRED_ERROR = 'Your session has expired. Please sign in again to continue.';
 
 export const GENERIC_ERROR = 'Something went wrong. Please try again in a moment.';
 

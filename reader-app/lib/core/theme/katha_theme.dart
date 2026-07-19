@@ -20,21 +20,39 @@ class KathaColors {
 }
 
 class KathaTheme {
-  static ThemeData light({int fontScale = 2}) {
+  /// Instant route transitions for the calm-motion comfort setting.
+  static const _instantTransitions = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _NoTransitionsBuilder(),
+      TargetPlatform.iOS: _NoTransitionsBuilder(),
+      TargetPlatform.windows: _NoTransitionsBuilder(),
+      TargetPlatform.macOS: _NoTransitionsBuilder(),
+      TargetPlatform.linux: _NoTransitionsBuilder(),
+    },
+  );
+
+  static ThemeData light({
+    int fontScale = 2,
+    bool highContrast = false,
+    bool calmMotion = false,
+  }) {
     final baseSize = 16.0 + (fontScale - 2) * 2;
+    final ink = highContrast ? const Color(0xFF0F0E0C) : KathaColors.ink;
+    final borderAlpha = highContrast ? 0.22 : 0.08;
     // Follows 04_JUL_Visual_UX_Framework_Selection_Katha.md
     // Material Design 3 + Custom Minimalist Layer for Katha
     return ThemeData(
       useMaterial3: true, // MD3 enabled
       brightness: Brightness.light,
       scaffoldBackgroundColor: KathaColors.paper,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: KathaColors.gold,
         secondary: KathaColors.ember,
         surface: Colors.white,
-        onSurface: KathaColors.ink,
+        onSurface: ink,
       ),
-      textTheme: _textTheme(KathaColors.ink, baseSize),
+      textTheme: _textTheme(ink, baseSize, highContrast: highContrast),
+      pageTransitionsTheme: calmMotion ? _instantTransitions : null,
       appBarTheme: AppBarTheme(
         backgroundColor: KathaColors.paper,
         elevation: 0,
@@ -42,39 +60,47 @@ class KathaTheme {
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: KathaColors.ink,
+          color: ink,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 1, // MD3 elevation
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12), // MD3 rounded
-          side: BorderSide(color: KathaColors.ink.withValues(alpha: 0.08)),
+          side: BorderSide(color: ink.withValues(alpha: borderAlpha)),
         ),
       ),
     );
   }
 
-  static ThemeData dark({int fontScale = 2}) {
+  static ThemeData dark({
+    int fontScale = 2,
+    bool highContrast = false,
+    bool calmMotion = false,
+  }) {
     final baseSize = 16.0 + (fontScale - 2) * 2;
+    final ink =
+        highContrast ? const Color(0xFFF5F3F0) : const Color(0xFFE8E6E3);
+    final borderAlpha = highContrast ? 0.26 : 0.08;
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: KathaColors.darkBg,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme.dark(
         primary: KathaColors.gold,
         secondary: KathaColors.ember,
         surface: KathaColors.darkSurface,
-        onSurface: Color(0xFFE8E6E3),
+        onSurface: ink,
       ),
-      textTheme: _textTheme(const Color(0xFFE8E6E3), baseSize),
+      textTheme: _textTheme(ink, baseSize, highContrast: highContrast),
+      pageTransitionsTheme: calmMotion ? _instantTransitions : null,
       appBarTheme: AppBarTheme(
         backgroundColor: KathaColors.darkBg,
         elevation: 0,
         titleTextStyle: GoogleFonts.outfit(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFFE8E6E3),
+          color: ink,
         ),
       ),
       cardTheme: CardThemeData(
@@ -82,13 +108,14 @@ class KathaTheme {
         color: KathaColors.darkSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          side: BorderSide(color: Colors.white.withValues(alpha: borderAlpha)),
         ),
       ),
     );
   }
 
-  static TextTheme _textTheme(Color color, double baseSize) {
+  static TextTheme _textTheme(Color color, double baseSize,
+      {bool highContrast = false}) {
     return TextTheme(
       displayLarge: GoogleFonts.notoSansTelugu(
         fontSize: baseSize + 12,
@@ -114,11 +141,11 @@ class KathaTheme {
       ),
       bodyMedium: GoogleFonts.outfit(
         fontSize: baseSize,
-        color: color.withValues(alpha: 0.8),
+        color: color.withValues(alpha: highContrast ? 1.0 : 0.8),
       ),
       labelMedium: GoogleFonts.outfit(
         fontSize: baseSize - 2,
-        color: color.withValues(alpha: 0.6),
+        color: color.withValues(alpha: highContrast ? 0.9 : 0.6),
         fontWeight: FontWeight.w500,
       ),
     );
@@ -142,4 +169,19 @@ class KathaTheme {
 
   // Helper for paragraph container alignment + max width (line length ~45-55 chars mobile)
   static TextAlign getTextAlign(String pref) => pref == 'justify' ? TextAlign.justify : TextAlign.left;
+}
+
+class _NoTransitionsBuilder extends PageTransitionsBuilder {
+  const _NoTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return child;
+  }
 }

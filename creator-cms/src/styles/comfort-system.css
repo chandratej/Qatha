@@ -1,0 +1,292 @@
+/**
+ * Comfort System — platform-wide ergonomics layer for 8-hour sessions.
+ * Consumes <html> attributes set by lib/comfortPrefs.ts (applyGlobalComfort):
+ *   data-ui-scale   1–4  → whole-interface text size (rem root scaling)
+ *   data-motion     calm → suppress non-essential animation in-app
+ *   data-contrast   high → stronger ink/border contrast
+ * Also completes OS-level prefers-reduced-motion / prefers-contrast coverage.
+ * Import LAST in App.tsx — this layer must win the cascade.
+ */
+
+/* ── Interface text size ─────────────────────────────────────────────
+   The CMS sizes text in rem, so scaling the root cascades everywhere.
+   Manuscript type in the editor keeps its own px-based comfort scale. */
+html[data-ui-scale='1'] { font-size: 15px; }
+html[data-ui-scale='2'] { font-size: 16px; }
+html[data-ui-scale='3'] { font-size: 17px; }
+html[data-ui-scale='4'] { font-size: 18px; }
+
+/* ── Calm motion (in-app toggle) ─────────────────────────────────────
+   For creators sensitive to movement whose OS setting is untouched.
+   Near-zero rather than zero duration so transitionend still fires. */
+html[data-motion='calm'] *,
+html[data-motion='calm'] *::before,
+html[data-motion='calm'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── OS reduced-motion: complete the partial coverage in theme.css.
+   Keyframe animations with hardcoded durations (shimmer, glowPulse,
+   diyaFlicker…) ignored the token zeroing — kill them all here. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── High contrast (in-app toggle + OS preference parity) ────────────
+   Muted ink (#8a847c ≈ 3.4:1 on white) is below AA for body text; the
+   faint tier is decorative-only. Both lift to AA+ here, and hairline
+   borders thicken so panel boundaries stay findable under glare. */
+html[data-contrast='high'] {
+  --ink-soft: #38342e;
+  --ink-muted: #5a554c;
+  --ink-faint: #7a746a;
+  --border: rgba(26, 24, 20, 0.22);
+  --border-subtle: rgba(26, 24, 20, 0.16);
+  --border-faint: rgba(26, 24, 20, 0.12);
+  --border-medium: rgba(26, 24, 20, 0.3);
+  --katha-mode-border: rgba(26, 24, 20, 0.22);
+  --katha-mode-border-strong: rgba(26, 24, 20, 0.3);
+  --focus-ring: rgba(122, 99, 64, 0.45);
+}
+
+html[data-contrast='high'][data-theme='dark'] {
+  --ink: #f2ede2;
+  --ink-soft: #ddd5c4;
+  --ink-muted: #b5ab98;
+  --ink-faint: #948a78;
+  --border: rgba(229, 220, 200, 0.28);
+  --border-subtle: rgba(229, 220, 200, 0.2);
+  --border-faint: rgba(229, 220, 200, 0.14);
+  --border-medium: rgba(229, 220, 200, 0.34);
+  --katha-mode-border: rgba(229, 220, 200, 0.28);
+  --katha-mode-border-strong: rgba(229, 220, 200, 0.34);
+  --focus-ring: rgba(196, 160, 96, 0.5);
+}
+
+html[data-contrast='high'] :focus-visible {
+  outline-width: 3px;
+}
+
+@media (prefers-contrast: more) {
+  html:not([data-contrast]) {
+    --ink-soft: #38342e;
+    --ink-muted: #5a554c;
+    --ink-faint: #7a746a;
+    --border: rgba(26, 24, 20, 0.22);
+    --border-subtle: rgba(26, 24, 20, 0.16);
+    --border-medium: rgba(26, 24, 20, 0.3);
+    --katha-mode-border: rgba(26, 24, 20, 0.22);
+    --katha-mode-border-strong: rgba(26, 24, 20, 0.3);
+  }
+
+  html:not([data-contrast])[data-theme='dark'] {
+    --ink: #f2ede2;
+    --ink-soft: #ddd5c4;
+    --ink-muted: #b5ab98;
+    --border: rgba(229, 220, 200, 0.28);
+    --border-subtle: rgba(229, 220, 200, 0.2);
+    --border-medium: rgba(229, 220, 200, 0.34);
+    --katha-mode-border: rgba(229, 220, 200, 0.28);
+    --katha-mode-border-strong: rgba(229, 220, 200, 0.34);
+  }
+}
+
+/* ── Dark-theme mode-variable fix (root cause) ───────────────────────
+   brand-tokens.css scopes its dark override as
+   [data-theme='dark'][data-katha-mode='…'] — same-element match. But
+   data-theme lives on <html> while data-katha-mode lives on the shell
+   div, so the override never fires and the shell re-anchors LIGHT
+   tokens for its whole subtree. Descendant-combinator variants: */
+/* One dark, not two: management dark previously used a cool blue-black
+   (#0d0d0f/#1a1a1e) while creation/editor dark used the warm sepia
+   night (#1c1814/#2e2820) — Profile/Settings/Payouts read as a
+   different product from Stories/editor. Unified on the WARM night
+   palette per the brand's low-glare philosophy. */
+[data-theme='dark'] [data-katha-mode='management'] {
+  --katha-mode-bg: #1c1814;
+  --katha-mode-bg-warm: #252019;
+  --katha-mode-surface: #2e2820;
+  --katha-mode-surface-raised: #363024;
+  --katha-mode-border: rgba(229, 220, 200, 0.12);
+  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
+  --katha-mode-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.22);
+  --katha-mode-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --katha-mode-shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.38);
+  --katha-mode-accent: #c4a060;
+}
+
+/* Same warm remap at the root so pages outside the shell (auth) and
+   html-level fallbacks agree. */
+[data-theme='dark']:root {
+  --katha-mode-bg: #1c1814;
+  --katha-mode-bg-warm: #252019;
+  --katha-mode-surface: #2e2820;
+  --katha-mode-surface-raised: #363024;
+  --katha-mode-border: rgba(229, 220, 200, 0.12);
+  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
+}
+
+/* premium-shell's cool-dark hardcodes → warm night */
+[data-theme='dark'] {
+  --premium-surface: #2e2820;
+  --premium-surface-soft: rgba(37, 32, 25, 0.88);
+  --premium-border: rgba(229, 220, 200, 0.1);
+}
+
+[data-theme='dark'] .app-shell[data-katha-mode='management'] {
+  background-color: #1c1814;
+}
+
+[data-theme='dark'] .cms-auth-page {
+  background-color: #1c1814;
+}
+
+[data-theme='dark'] [data-katha-mode='creation'] {
+  --katha-mode-bg: #1c1814;
+  --katha-mode-bg-warm: #252019;
+  --katha-mode-surface: #2e2820;
+  --katha-mode-surface-raised: #363024;
+  --katha-mode-canvas: #2a241e;
+  --katha-mode-border: rgba(229, 220, 200, 0.12);
+  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
+  --katha-mode-accent: #c4a060;
+  --katha-mode-ink: #e5dcc8;
+  --katha-mode-ink-soft: #c9bda8;
+  --katha-mode-ink-muted: #9a8f7e;
+}
+
+/* ── Dark-theme parity for page-scoped v2 stylesheets ────────────────
+   studio-v21 / katha-ops-v2 / katha-community-v2 / reviewer-pool-v2
+   hardcode cream palettes with no dark variant, leaving whole pages
+   light inside a dark shell. Remap their scoped vars to night tokens. */
+[data-theme='dark'] .sv21,
+[data-theme='dark'] .katha-ops-v2,
+[data-theme='dark'] .katha-cv2,
+[data-theme='dark'] .rpv2 {
+  --sv21-bg: #1c1814; --ops-bg: #1c1814; --cv2-bg: #1c1814; --rpv2-bg: #1c1814;
+  --sv21-surface: #2e2820; --ops-surface: #2e2820; --cv2-surface: #2e2820; --rpv2-surface: #2e2820;
+  --sv21-surface-1: #363024; --ops-surface-1: #363024; --cv2-surface-1: #363024; --rpv2-surface-1: #363024;
+  --sv21-border: rgba(229, 220, 200, 0.14); --ops-border: rgba(229, 220, 200, 0.14);
+  --cv2-border: rgba(229, 220, 200, 0.14); --rpv2-border: rgba(229, 220, 200, 0.14);
+  --sv21-border-strong: rgba(229, 220, 200, 0.22); --ops-border-strong: rgba(229, 220, 200, 0.22);
+  --cv2-border-strong: rgba(229, 220, 200, 0.22); --rpv2-border-strong: rgba(229, 220, 200, 0.22);
+  --sv21-ink: #e5dcc8; --ops-text: #e5dcc8; --cv2-text: #e5dcc8; --rpv2-text: #e5dcc8;
+  --sv21-ink-soft: #c9bda8; --ops-text-2: #c9bda8; --cv2-text-2: #c9bda8; --rpv2-text-2: #c9bda8;
+  --sv21-ink-muted: #9a8f7e; --ops-text-3: #9a8f7e; --cv2-text-3: #9a8f7e; --rpv2-text-3: #9a8f7e;
+  --sv21-maroon: #b0757e; --ops-maroon: #b0757e; --cv2-maroon: #b0757e; --rpv2-maroon: #b0757e;
+  --sv21-maroon-dark: #c48f98; --ops-maroon-dark: #c48f98; --cv2-maroon-dark: #c48f98; --rpv2-maroon-dark: #c48f98;
+  --sv21-gold: #c4a060; --ops-gold: #c4a060; --cv2-gold: #c4a060; --rpv2-gold: #c4a060;
+  --sv21-gold-light: rgba(196, 160, 96, 0.2); --cv2-gold-light: rgba(196, 160, 96, 0.2);
+  --rpv2-gold-light: rgba(196, 160, 96, 0.2);
+  --sv21-success-bg: rgba(122, 154, 128, 0.18); --rpv2-success-bg: rgba(122, 154, 128, 0.18);
+  --sv21-success-text: #9dc2a4; --rpv2-success-text: #9dc2a4;
+  --sv21-draft-bg: rgba(229, 220, 200, 0.1);
+  --sv21-draft-text: #c9bda8;
+  --rpv2-amber-bg: rgba(196, 160, 96, 0.16);
+  --rpv2-amber-text: #d7bd7e;
+}
+
+[data-theme='dark'] .cms-page.katha-ops-v2-page,
+[data-theme='dark'] .cms-page.katha-cv2-page,
+[data-theme='dark'] .cms-page:has(> .katha-ops-v2),
+[data-theme='dark'] .premium-main:has(.sv21) {
+  background: var(--paper);
+}
+
+/* ── One header pattern ───────────────────────────────────────────────
+   Stories/Earn use a compact editorial header (~22px title), while the
+   11 StudioPageHeader pages rendered display-scale type (34–46px) and
+   the hero variant added a gradient panel with gradient-clipped text —
+   reading as a different product. Unified on the compact scale; the
+   hero panel chrome is neutralized. */
+.studio-page-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--premium-border, var(--border));
+}
+
+.studio-page-header .studio-page-header__title {
+  font-family: var(--katha-font-display), var(--font-reading);
+  font-size: clamp(1.375rem, 2.5vw, 1.625rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.studio-page-header .studio-page-header__subtitle {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  max-width: 46rem;
+}
+
+.studio-page-header .studio-page-header__eyebrow {
+  margin-bottom: 8px;
+}
+
+/* Stories (sv21) was the one sans-serif title left — same serif family
+   and scale as every other page header. */
+.sv21__title {
+  font-family: var(--katha-font-display), var(--font-reading);
+  font-size: clamp(1.375rem, 2.5vw, 1.625rem);
+  letter-spacing: -0.02em;
+}
+
+.studio-page-header.studio-page-header--hero {
+  padding: 0 0 20px;
+  border: none;
+  border-bottom: 1px solid var(--premium-border, var(--border));
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.studio-page-header--hero .studio-page-header__title,
+[data-theme='dark'] .studio-page-header--hero .studio-page-header__title {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: currentcolor;
+  color: var(--ink);
+}
+
+/* ── Native form controls should carry the brand, not browser gray ── */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--katha-maroon, #6b2338);
+}
+
+[data-theme='dark'] input[type='checkbox'],
+[data-theme='dark'] input[type='radio'] {
+  accent-color: #c4a060;
+}
+
+.legal-consent-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* ── Windows High Contrast / forced-colors hygiene ───────────────────
+   Let the system palette through; keep focus perceivable. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid CanvasText;
+    box-shadow: none;
+  }
+
+  .katha-token-badge,
+  .katha-token-phase {
+    border: 1px solid CanvasText;
+  }
+}

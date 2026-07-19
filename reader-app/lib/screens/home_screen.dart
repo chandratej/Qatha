@@ -13,6 +13,7 @@ import '../widgets/story_card_shimmer.dart';
 import '../core/providers/auth_state.dart';
 import 'reader_screen.dart';
 import 'story_detail_screen.dart';
+import '../core/utils/motion.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -210,11 +211,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       const Rect.fromLTWH(0, 0, 80, 40),
                                     ),
                                 ),
-                      ).animate().fadeIn(duration: 600.ms),
+                      ).withEntrance(context, (w) => w.animate().fadeIn(duration: 600.ms)),
                       Text(
                         'తెలుగు కథలు · Telugu stories',
                         style: Theme.of(context).textTheme.labelMedium,
-                      ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
+                      ).withEntrance(context, (w) => w.animate().fadeIn(duration: 600.ms, delay: 100.ms)),
                     ],
                   ),
                 ),
@@ -410,6 +411,6 @@ class _ContinueReadingCard extends StatelessWidget {
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 500.ms);
+    ).withEntrance(context, (w) => w.animate().fadeIn(duration: 500.ms));
   }
 }

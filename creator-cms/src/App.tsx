@@ -84,6 +84,9 @@ import './styles/katha-ops-v2.css';
 import './styles/katha-community-v2.css';
 import './styles/studio-v21.css';
 import './styles/nav-v2.css';
+import './styles/cover-art.css';
+/* Ergonomics layer — must stay the LAST style import to win the cascade */
+import './styles/comfort-system.css';
 
 const ChapterEditor = lazy(() => import('./pages/ChapterEditor').then((m) => ({ default: m.ChapterEditor })));
 const ReviewWorkspace = lazy(() => import('./pages/ReviewWorkspace').then((m) => ({ default: m.ReviewWorkspace })));
