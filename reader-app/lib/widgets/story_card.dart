@@ -18,8 +18,9 @@ class StoryCard extends StatelessWidget {
     this.index = 0,
   });
 
-  /// Fixed height that fits title (2 lines) + author + genre chip + readers
-  /// under real content lengths without RenderFlex overflow banners.
+  /// Minimum card height — the card grows with content instead of
+  /// overflowing: larger font-scale settings and tall Telugu conjunct
+  /// stacks were pushing past a fixed height by a few pixels.
   static const double cardHeight = 148;
   static const double coverWidth = 100;
 
@@ -33,7 +34,7 @@ class StoryCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          height: cardHeight,
+          constraints: const BoxConstraints(minHeight: cardHeight),
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: isDark ? KathaColors.darkSurface : Colors.white,
@@ -52,89 +53,90 @@ class StoryCard extends StatelessWidget {
             ],
           ),
           clipBehavior: Clip.antiAlias,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(
-                width: coverWidth,
-                child: story.coverUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: story.coverUrl!,
-                        fit: BoxFit.cover,
-                        width: coverWidth,
-                        height: cardHeight,
-                        placeholder: (context, url) => _generatedCover(),
-                        errorWidget: (context, url, error) =>
-                            _generatedCover(),
-                      )
-                    : _generatedCover(),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      Flexible(
-                        child: Text(
+          // IntrinsicHeight lets the cover stretch to whatever height the
+          // text column needs — content drives height, never overflow.
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: coverWidth,
+                  child: story.coverUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: story.coverUrl!,
+                          fit: BoxFit.cover,
+                          width: coverWidth,
+                          placeholder: (context, url) => _generatedCover(),
+                          errorWidget: (context, url, error) =>
+                              _generatedCover(),
+                        )
+                      : _generatedCover(),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
                           story.title,
                           style: Theme.of(context).textTheme.titleLarge,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        story.authorName,
-                        style: Theme.of(context).textTheme.labelMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Flexible(child: _chip(context, story.genreLabel)),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${story.chapterCount} ch',
-                            style: Theme.of(context).textTheme.labelMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 13,
-                            color: KathaColors.gold.withValues(alpha: 0.8),
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              story.readersLabel,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
-                                  ?.copyWith(
-                                    color: KathaColors.goldDark,
-                                    fontSize: 11,
-                                  ),
+                        const SizedBox(height: 2),
+                        Text(
+                          story.authorName,
+                          style: Theme.of(context).textTheme.labelMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Flexible(child: _chip(context, story.genreLabel)),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${story.chapterCount} ch',
+                              style: Theme.of(context).textTheme.labelMedium,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.people_outline,
+                              size: 13,
+                              color: KathaColors.gold.withValues(alpha: 0.8),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                story.readersLabel,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(
+                                      color: KathaColors.goldDark,
+                                      fontSize: 11,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
