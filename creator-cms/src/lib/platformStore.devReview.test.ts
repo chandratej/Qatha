@@ -38,8 +38,8 @@ describe('platformStore dev review requests', () => {
 
     const { request } = requestPeerReview({
       authorId: 'author-dev',
-      storyId: 'demo-rrr',
-      storyTitle: 'RRR Demo',
+      storyId: 'demo-valley-te',
+      storyTitle: 'Before the Monsoon Demo',
       mode: 'volunteer',
       packageFeeInr: 0,
       storyGenre: 'mythology',

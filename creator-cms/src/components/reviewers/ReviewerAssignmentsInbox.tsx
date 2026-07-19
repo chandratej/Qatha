@@ -1,26 +1,39 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, ChevronDown, Inbox, PenLine } from 'lucide-react';
+import { EyeOff } from 'lucide-react';
 import { platformApi } from '../../lib/platformApi';
 import type { ReviewerAssignment } from '../../types/platform';
 import { useAuth } from '../../context/AuthContext';
 import { PROFESSIONAL_REVIEW_ROLES, GENRE_SPECIALIZATIONS } from '../../lib/platformConstants';
+import { useLocale } from '../../context/LocaleContext';
 
-function statusLabel(s: string) {
-  return s.replace(/_/g, ' ');
+function statusLabel(s: string, te?: boolean) {
+  if (!te) return s.replace(/_/g, ' ');
+  const map: Record<string, string> = {
+    invited: 'ఆహ్వానం',
+    accepted: 'అంగీకరించారు',
+    in_review: 'సమీక్షలో',
+    submitted: 'సమర్పించారు',
+    validated: 'ధృవీకరించారు',
+    paid_out: 'చెల్లించారు',
+    declined: 'తిరస్కరించారు',
+  };
+  return map[s] ?? s.replace(/_/g, ' ');
 }
 
 interface Props {
   onAction: () => void;
 }
 
+/** Inbox cards — matches katha_reviewer_pool_v2.html inbox section */
 export function ReviewerAssignmentsInbox({ onAction }: Props) {
   const { user } = useAuth();
+  const { locale } = useLocale();
+  const te = locale === 'te';
   const [slot, setSlot] = useState('slot-1');
   const [assignments, setAssignments] = useState<ReviewerAssignment[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const reload = useCallback(() => {
     platformApi.getReviewerAssignments(slot).then((r) => setAssignments(r.assignments));
@@ -32,12 +45,7 @@ export function ReviewerAssignmentsInbox({ onAction }: Props) {
 
   useEffect(() => {
     reload();
-  }, [reload]);
-
-  const handleSlotChange = (next: string) => {
-    setSlot(next);
-    platformApi.setLinkedReviewerSlot(next);
-  };
+  }, [reload, onAction]);
 
   const handleDecline = async (assignment: ReviewerAssignment) => {
     setBusyId(assignment.id);
@@ -72,138 +80,92 @@ export function ReviewerAssignmentsInbox({ onAction }: Props) {
   const pending = assignments.filter((a) => a.status === 'invited');
   const active = assignments.filter((a) => ['accepted', 'in_review'].includes(a.status));
   const done = assignments.filter((a) => ['submitted', 'validated', 'paid_out'].includes(a.status));
+  const all = [...pending, ...active, ...done];
 
   return (
-    <section className="reviewer-inbox reviewer-inbox--calm" aria-labelledby="reviewer-inbox-title">
-      <div className="reviewer-inbox__head">
-        <Inbox size={20} aria-hidden />
-        <div>
-          <h3 id="reviewer-inbox-title" className="reviewer-inbox__title">Your review inbox</h3>
-          <p className="reviewer-inbox__subtitle">Double-blind · author identity protected</p>
-        </div>
+    <section className="rpv2-inbox" aria-labelledby="reviewer-inbox-title">
+      <div className="rpv2-section-head">
+        <h3 id="reviewer-inbox-title" lang={te ? 'te' : undefined}>
+          {te ? 'మీ సమీక్ష ఇన్‌బాక్స్' : 'Your review inbox'}
+        </h3>
       </div>
-
-      <button
-        type="button"
-        className="reviewer-inbox__settings"
-        onClick={() => setSettingsOpen((v) => !v)}
-        aria-expanded={settingsOpen}
-      >
-        Council slot: {slot.replace('slot-', '#')}
-        <ChevronDown size={14} className={`reviewer-inbox__settings-chevron${settingsOpen ? ' reviewer-inbox__settings-chevron--open' : ''}`} aria-hidden />
-      </button>
-      {settingsOpen && (
-        <div className="reviewer-inbox__settings-body">
-          <label htmlFor="reviewer-slot" className="sr-only">Council slot</label>
-          <select
-            id="reviewer-slot"
-            className="cms-select"
-            value={slot}
-            onChange={(e) => handleSlotChange(e.target.value)}
-          >
-            {Array.from({ length: 10 }, (_, i) => (
-              <option key={i + 1} value={`slot-${i + 1}`}>Council slot {i + 1}</option>
-            ))}
-          </select>
-          <span className="input-hint">Switch slot to see different reviewer invitations (demo).</span>
-        </div>
-      )}
+      <p className="rpv2-double-blind" lang={te ? 'te' : undefined}>
+        <EyeOff size={14} aria-hidden />
+        {te ? 'డబుల్-బ్లైండ్ — రచయిత గుర్తింపు రక్షించబడింది' : 'Double-blind — author identity protected'}
+      </p>
 
       {error && <p className="cms-error-text" role="alert">{error}</p>}
 
-      {assignments.length === 0 ? (
-        <div className="reviewer-inbox__empty">
-          <p>No invitations for {slot} yet.</p>
-          <p className="input-hint">Request a community review as an author, or load the dev demo scenario.</p>
-        </div>
+      {all.length === 0 ? (
+        <p className="rpv2-waiting-hint" lang={te ? 'te' : undefined}>
+          {te
+            ? 'ఇంకా ఆహ్వానాలు లేవు. రచయితగా సమీక్ష అభ్యర్థించండి లేదా డెమో సీడ్ లోడ్ చేయండి.'
+            : 'No invitations yet. Request a review as an author, or load the dev demo scenario.'}
+        </p>
       ) : (
-        <>
-          {pending.length > 0 && (
-            <div className="reviewer-inbox__group">
-              <h4 className="reviewer-inbox__section">Invitations</h4>
-              <ul className="reviewer-inbox__list">
-                {pending.map((a) => (
-                  <AssignmentCard
-                    key={a.id}
-                    assignment={a}
-                    variant="invite"
-                    action={(
-                      <div className="reviewer-inbox__action-row">
-                        <button
-                          type="button"
-                          className="katha-cta katha-cta--maroon reviewer-inbox__primary-cta"
-                          disabled={busyId === a.id}
-                          onClick={() => { void handleAccept(a); }}
-                        >
-                          {busyId === a.id ? 'Accepting…' : 'Accept & begin'}
-                        </button>
-                        <button
-                          type="button"
-                          className="reviewer-inbox__secondary-cta"
-                          disabled={busyId === a.id}
-                          onClick={() => { void handleDecline(a); }}
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    )}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {active.length > 0 && (
-            <div className="reviewer-inbox__group">
-              <h4 className="reviewer-inbox__section">In progress</h4>
-              <ul className="reviewer-inbox__list">
-                {active.map((a) => (
-                  <AssignmentCard
-                    key={a.id}
-                    assignment={a}
-                    variant="active"
-                    action={(
-                      <div className="reviewer-inbox__action-row">
-                        <Link
-                          to={`/reviewers/assignments/${a.id}`}
-                          className="katha-cta katha-cta--maroon reviewer-inbox__primary-cta"
-                          onClick={() => platformApi.setLinkedReviewerSlot(a.reviewer_slot)}
-                        >
-                          <PenLine size={14} aria-hidden /> Open review workspace
-                        </Link>
-                      </div>
-                    )}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {done.length > 0 && (
-            <div className="reviewer-inbox__group">
-              <h4 className="reviewer-inbox__section">Completed</h4>
-              <ul className="reviewer-inbox__list">
-                {done.map((a) => (
-                  <AssignmentCard
-                    key={a.id}
-                    assignment={a}
-                    variant="done"
-                    action={(
-                      <div className="reviewer-inbox__action-row">
-                        <Link to={`/reviewers/assignments/${a.id}`} className="reviewer-inbox__secondary-cta">
-                          View review
-                        </Link>
-                        <span className="reviewer-inbox__done">
-                          <CheckCircle2 size={14} aria-hidden /> {statusLabel(a.status)}
-                        </span>
-                      </div>
-                    )}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
-        </>
+        <ul className="rpv2-inbox-list">
+          {pending.map((a) => (
+            <AssignmentCard
+              key={a.id}
+              assignment={a}
+              te={te}
+              statusClass="invite"
+              priceLabel={a.mode === 'paid' ? `₹${Math.round(a.payout_inr)}` : (te ? 'స్వచ్ఛంద' : 'Volunteer')}
+              action={(
+                <div className="rpv2-inbox-actions">
+                  <button
+                    type="button"
+                    className="rpv2-queue-cta"
+                    disabled={busyId === a.id}
+                    onClick={() => { void handleAccept(a); }}
+                  >
+                    {busyId === a.id ? (te ? '…' : '…') : (te ? 'అంగీకరించి ప్రారంభించండి' : 'Accept & begin')}
+                  </button>
+                  <button
+                    type="button"
+                    className="rpv2-chip"
+                    disabled={busyId === a.id}
+                    onClick={() => { void handleDecline(a); }}
+                  >
+                    {te ? 'తిరస్కరించు' : 'Decline'}
+                  </button>
+                </div>
+              )}
+            />
+          ))}
+          {active.map((a) => (
+            <AssignmentCard
+              key={a.id}
+              assignment={a}
+              te={te}
+              statusClass="review"
+              priceLabel={a.mode === 'paid' ? `₹${Math.round(a.payout_inr)}` : (te ? 'స్వచ్ఛంద' : 'Volunteer')}
+              action={(
+                <Link
+                  to={`/reviewers/assignments/${a.id}`}
+                  className="rpv2-inbox-action"
+                  onClick={() => platformApi.setLinkedReviewerSlot(a.reviewer_slot)}
+                >
+                  {te ? 'సమీక్ష వర్క్‌స్పేస్ తెరవండి →' : 'Open review workspace →'}
+                </Link>
+              )}
+            />
+          ))}
+          {done.map((a) => (
+            <AssignmentCard
+              key={a.id}
+              assignment={a}
+              te={te}
+              statusClass="done"
+              priceLabel={a.mode === 'paid' ? `₹${Math.round(a.payout_inr)}` : (te ? 'స్వచ్ఛంద' : 'Volunteer')}
+              action={(
+                <Link to={`/reviewers/assignments/${a.id}`} className="rpv2-inbox-action">
+                  {te ? 'సమీక్ష చూడండి →' : 'View review →'}
+                </Link>
+              )}
+            />
+          ))}
+        </ul>
       )}
     </section>
   );
@@ -211,36 +173,39 @@ export function ReviewerAssignmentsInbox({ onAction }: Props) {
 
 function AssignmentCard({
   assignment: a,
-  variant,
+  te,
+  statusClass,
+  priceLabel,
   action,
 }: {
   assignment: ReviewerAssignment;
-  variant: 'invite' | 'active' | 'done';
+  te: boolean;
+  statusClass: 'invite' | 'review' | 'done';
+  priceLabel: string;
   action: ReactNode;
 }) {
   const role = PROFESSIONAL_REVIEW_ROLES.find((r) => r.id === a.professional_role)?.label ?? a.professional_role;
   const genre = GENRE_SPECIALIZATIONS.find((g) => g.id === a.story_genre)?.label ?? a.story_genre;
-  const due = a.due_at
-    ? (() => {
-      const hours = Math.round((new Date(a.due_at).getTime() - Date.now()) / 3600000);
-      if (hours < 0) return `${Math.abs(hours)}h overdue`;
-      if (hours < 48) return `${hours}h left`;
-      return `${Math.round(hours / 24)}d left`;
-    })()
-    : null;
 
   return (
-    <li className={`reviewer-inbox__card reviewer-inbox__card--${variant}`}>
-      <div className="reviewer-inbox__card-body">
-        <h5 className="reviewer-inbox__card-title">{a.manuscript_label}</h5>
-        <p className="reviewer-inbox__card-meta">
-          {role} · {genre} · {a.matching_score}% match
-          {a.mode === 'paid' ? ` · ₹${a.payout_inr}` : ' · volunteer'}
-          {due ? ` · ${due}` : ''}
-        </p>
-        <span className={`review-status review-status--${a.status}`}>{statusLabel(a.status)}</span>
+    <li className="rpv2-inbox-card">
+      <div className="rpv2-inbox-top">
+        <div>
+          <p className="rpv2-inbox-title">{a.manuscript_label}</p>
+          <p className="rpv2-inbox-meta">
+            {role} · {genre} · {a.matching_score}% {te ? 'సరిపోలిక' : 'match'}
+          </p>
+        </div>
+        <div>
+          <span className={`rpv2-status rpv2-status--${statusClass}`}>
+            {statusLabel(a.status, te)}
+          </span>
+          <p className={`rpv2-inbox-price${a.mode !== 'paid' ? ' rpv2-inbox-price--volunteer' : ''}`}>
+            {priceLabel}
+          </p>
+        </div>
       </div>
-      <div className="reviewer-inbox__card-actions">{action}</div>
+      {action}
     </li>
   );
 }

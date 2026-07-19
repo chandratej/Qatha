@@ -1,4 +1,4 @@
-import type { PeerReviewRequest, ReviewerAssignment } from '../types/platform';
+import type { PeerReviewRequest, ReviewerAssignment, StructuredReviewComment } from '../types/platform';
 import { REVIEW_PACKAGE } from '../../../packages/shared/reviewer-marketplace';
 import { computeStoryQualityIndex, demoSqiFromTrust } from '../business/storyQualityIndex';
 import {
@@ -6,6 +6,8 @@ import {
   DEV_SANDBOX_RQI,
   markDevSeedApplied,
 } from './reviewDevSandbox';
+import { DEMO_REVIEW_MANUSCRIPT_TE } from './reviewManuscriptOptions';
+import { roundRqi } from './reviewerReputation';
 
 const PEER_REVIEWS_KEY = 'katha_peer_review_requests';
 const REVIEWER_ASSIGNMENTS_KEY = 'katha_reviewer_assignments';
@@ -23,6 +25,58 @@ function blindLabel(requestId: string): string {
   return `Manuscript #${requestId.slice(-6).toUpperCase()}`;
 }
 
+/** Exemplary Telugu + English passage notes — production quality, original fiction only */
+function buildExemplaryComments(): StructuredReviewComment[] {
+  return [
+    {
+      id: 'seed-cmt-1',
+      chapter_ref: 'Chapter 1',
+      scene_ref: 'Scene 1',
+      paragraph_ref: '¶2',
+      passage_ref: 'ఆమె తలుపు చట్రంపై చేతులు అదిమి, పాత టేకు మొక్క యొక్క గీతలను అనుభవించింది.',
+      category: 'description',
+      priority: 'medium',
+      reason:
+        'టేకు చట్రం అనుభూతి బలంగా ఉంది — ఇంటి జ్ఞాపకాన్ని శరీరం ద్వారా చూపించడం మంచి ఎంపిక. ఒక చిన్న స్పర్శ వివరం (ఉదా: పెయింట్ పొర విరిగి ఉండటం) ఈ గ్రామం యొక్క వయస్సును మరింత స్పష్టం చేస్తుంది.',
+      recommendation: 'చట్రంపై ఒక తాకిడి గుర్తు లేదా పాత రంగు పొరను ఒక వాక్యంలో చేర్చండి.',
+      expected_impact: 'పాఠకులు ఇంటిని వెంటనే గుర్తుంచుకుంటారు — తర్వాతి ఘర్షణలో ఈ స్థలం భారం పెరుగుతుంది.',
+      reviewer_confidence: 82,
+      author_resolution: 'pending',
+    },
+    {
+      id: 'seed-cmt-2',
+      chapter_ref: 'Chapter 1',
+      scene_ref: 'Scene 2',
+      paragraph_ref: '¶1',
+      passage_ref: '"You cannot ask me to forget," he said, not raising his voice.',
+      category: 'dialogue',
+      priority: 'high',
+      reason:
+        'The restraint in his voice is excellent craft — conflict without shouting. The line still rests on a general idea of memory; a concrete personal detail would make the refusal land harder.',
+      recommendation:
+        'Anchor the refusal to one shared memory (a festival night, a river crossing) so the reader feels the history between them.',
+      expected_impact: 'Raises emotional stakes without adding length; improves re-read value of the scene.',
+      reviewer_confidence: 88,
+      author_resolution: 'pending',
+    },
+    {
+      id: 'seed-cmt-3',
+      chapter_ref: 'Chapter 1',
+      scene_ref: 'Scene 3',
+      paragraph_ref: '¶2',
+      passage_ref: 'She folded the letter once, then twice, as if compressing the choice into something small enough to carry.',
+      category: 'plot',
+      priority: 'medium',
+      reason:
+        'Beautiful physical metaphor for decision-making. Consider whether the letter\'s contents have been shown clearly enough before this gesture — readers may not yet know what choice is being folded away.',
+      recommendation: 'One short clause naming the choice (stay / leave / warn the village) before or after the fold.',
+      expected_impact: 'Keeps the image while removing ambiguity about the story engine of chapter 1.',
+      reviewer_confidence: 79,
+      author_resolution: 'pending',
+    },
+  ];
+}
+
 function boostReviewerPool(): void {
   try {
     const raw = localStorage.getItem(REVIEWER_POOL_KEY);
@@ -31,18 +85,19 @@ function boostReviewerPool(): void {
     const boosted = pool.map((m, i) => {
       const slot = String(m.pool_slot ?? `slot-${i + 1}`);
       if (slot === 'slot-1') {
+        // Modest, earned-looking track record — not a fake master with 48 reviews.
         return {
           ...m,
-          rqi: DEV_SANDBOX_RQI,
-          council_level: 'master_reviewer',
-          reputation_tier: 'master',
-          review_experience_count: 48,
-          conduct_score: 96,
-          agreement_score: 91,
+          rqi: roundRqi(DEV_SANDBOX_RQI),
+          council_level: 'certified_reviewer',
+          reputation_tier: 'silver',
+          review_experience_count: 4,
+          conduct_score: 88,
+          agreement_score: 84,
           is_available: true,
         };
       }
-      return { ...m, is_available: true };
+      return { ...m, is_available: true, rqi: roundRqi(Number(m.rqi) || 0) };
     });
     localStorage.setItem(REVIEWER_POOL_KEY, JSON.stringify(boosted));
   } catch { /* ignore */ }
@@ -58,12 +113,13 @@ export function seedReviewDevScenario(authorId = 'dev-author'): ReviewDevSeedRes
   localStorage.setItem(REVIEWER_SLOT_KEY, 'slot-1');
 
   const sqiBefore = computeStoryQualityIndex(demoSqiFromTrust(5200));
+  const exemplary = buildExemplaryComments();
 
   const request: PeerReviewRequest = {
     id: requestId,
     author_id: authorId,
-    story_id: 'demo-rrr',
-    story_title: 'RRR - రాజమౌళి (Dev Review Demo)',
+    story_id: DEMO_REVIEW_MANUSCRIPT_TE.id,
+    story_title: DEMO_REVIEW_MANUSCRIPT_TE.title,
     package_fee_inr: 0,
     mode: 'volunteer',
     status: 'in_review',
@@ -80,6 +136,9 @@ export function seedReviewDevScenario(authorId = 'dev-author'): ReviewDevSeedRes
     created_at: now,
     audit_status: 'pending',
     fraud_risk_score: 8,
+    // Pre-seeded author-facing sample when demo is fully played through;
+    // empty while assignment is in progress so inbox doesn't double-count.
+    structured_comments: [],
   };
 
   const manuscriptLabel = blindLabel(requestId);
@@ -129,6 +188,15 @@ export function seedReviewDevScenario(authorId = 'dev-author'): ReviewDevSeedRes
     payout_inr: 0,
     invited_at: now,
   };
+
+  // Store exemplary notes under a companion key for demo author feedback path
+  // without duplicating into live structured_comments until submit merges them.
+  try {
+    localStorage.setItem(
+      `katha_demo_exemplary_comments_${requestId}`,
+      JSON.stringify(exemplary),
+    );
+  } catch { /* ignore */ }
 
   localStorage.setItem(PEER_REVIEWS_KEY, JSON.stringify([request]));
   localStorage.setItem(

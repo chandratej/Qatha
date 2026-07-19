@@ -75,7 +75,7 @@ export function ReviewWorkspace() {
     return (
       <div className="rw-shell rw-shell--premium rw-shell--error" data-katha-mode="creation">
         <p className="cms-error-text">{loadError ?? t('reviewWorkspace.assignmentNotFound')}</p>
-        <Link to="/reviewers" className="katha-cta katha-cta--soft">{t('reviewWorkspace.backToInbox')}</Link>
+        <Link to="/earn/reviews" className="katha-cta katha-cta--soft">{t('reviewWorkspace.backToInbox')}</Link>
       </div>
     );
   }
@@ -199,7 +199,7 @@ function ReviewWorkspaceLoaded({
         },
       });
       clearReviewDraft(assignmentId);
-      navigate('/reviewers', { state: { message: 'Review submitted to the Reviewer Pool.' } });
+      navigate('/earn/reviews', { state: { message: 'Review submitted to the Reviewer Pool.' } });
     } catch (e) {
       ws.setError(e instanceof Error ? e.message : t('reviewWorkspace.submitFailed'));
       ws.updatePrefs({ bottomPanelCollapsed: false, focusMode: false });
@@ -262,6 +262,7 @@ function ReviewWorkspaceLoaded({
       <ReviewWorkspaceChrome
         manuscriptLabel={assignment.manuscript_label}
         chapterLabel={ws.currentChapter?.label ?? 'Chapter'}
+        genreLabel={ws.manuscript.genre}
         chapterIndex={chapterIndex < 0 ? 0 : chapterIndex}
         chapterCount={chapters.length}
         observationCount={ws.draft.comments.length}

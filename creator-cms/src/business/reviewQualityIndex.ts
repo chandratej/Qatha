@@ -18,5 +18,6 @@ export function computeReviewQualityIndex(inputs: RqiInputs): number {
     + inputs.editorialAgreementPct * (w.editorialAgreementPct / 100)
     + inputs.authorSatisfactionPct * (w.authorSatisfactionPct / 100)
     + inputs.professionalConductPct * (w.professionalConductPct / 100);
-  return Math.round(Math.min(100, Math.max(0, raw)) * 10) / 10;
+  // Whole-number RQI only — never leak raw floats into reputation UI.
+  return Math.round(Math.min(100, Math.max(0, raw)));
 }

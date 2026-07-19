@@ -84,7 +84,7 @@ const PLATFORM_CATEGORIES: PlatformCategory[] = [
     sections: [
       { prdId: 'Vol_07-01', title: 'Reader systems', items: READER_SYSTEMS.map((s) => `${s.label} — ${s.status}`), status: 'partial', link: '/community' },
       { prdId: 'Vol_08_02', title: 'Recommendation signals (rule-based, no AI)', items: RECOMMENDATION_SIGNALS.map((s) => `${s.id} (${s.status})`), status: 'partial' },
-      { prdId: 'Vol_05-Reviewer_Studio', title: 'Reviewer marketplace', items: ['Anonymous 3-reviewer matching', 'Majority decision', '₹149–199 packages', 'Beta readers volunteer/paid', 'Reputation Bronze → Editorial Council'], status: 'partial', link: '/reviewers' },
+      { prdId: 'Vol_05-Reviewer_Studio', title: 'Reviewer marketplace', items: ['Anonymous 3-reviewer matching', 'Majority decision', '₹149–199 packages', 'Beta readers volunteer/paid', 'Reputation Bronze → Editorial Council'], status: 'partial', link: '/earn/reviews' },
       { prdId: 'Vol_09-09', title: 'Community governance', items: [...REPORT_CATEGORIES.map((c) => c.label), 'Threshold triage', 'Appeals', 'Audit logs'], status: 'partial', link: '/moderation' },
     ],
   },

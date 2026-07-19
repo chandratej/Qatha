@@ -13,7 +13,7 @@ import {
 } from './localVersionStorage';
 
 function isDemoStory(storyId: string) {
-  return !storyId || storyId === 'demo-rrr';
+  return !storyId || storyId === 'demo-rrr' || storyId === 'demo-valley-te' || storyId === 'demo-valley-en';
 }
 
 export async function createVersion(opts: {

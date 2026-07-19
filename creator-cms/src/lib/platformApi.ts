@@ -270,11 +270,21 @@ export const platformApi = {
     withPlatformFallback(
       async () => {
         const { stats } = await platformBackend.getReviewerDashboardStats(reviewerSlot);
-        if (stats.draftCount === 0) {
-          const local = getReviewerDashboardStats(reviewerSlot);
-          return { stats: { ...stats, draftCount: local.draftCount } };
-        }
-        return { stats };
+        const local = getReviewerDashboardStats(reviewerSlot);
+        // Normalize legacy string[] badges → earned/locked catalog
+        const badges = Array.isArray(stats.badges) && stats.badges.length > 0 && typeof stats.badges[0] === 'object'
+          ? stats.badges
+          : local.badges;
+        return {
+          stats: {
+            ...local,
+            ...stats,
+            rqi: Math.round(Number(stats.rqi) || 0),
+            badges,
+            reviewExperienceCount: stats.reviewExperienceCount ?? local.reviewExperienceCount,
+            draftCount: stats.draftCount === 0 ? local.draftCount : stats.draftCount,
+          },
+        };
       },
       () => ({ stats: getReviewerDashboardStats(reviewerSlot) }),
     ),

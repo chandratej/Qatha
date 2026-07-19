@@ -115,16 +115,17 @@ function getPlainCharCountFromScenes(scenes: SceneBlock[]): number {
   }, 0);
 }
 
+/** Original demo fiction only — no real film/character IP */
 const PROTOTYPE_CH1_SCENES: SceneBlock[] = [
   {
     id: 'scene-1',
-    title: 'The Oppressed Village',
-    content: '<p>ఒక చిన్న గిరిజన గ్రామం. అక్కడ ప్రజలు బ్రిటిష్ వారి అత్యాచారాలకు బలి అవుతున్నారు. అడవిలో నివసించే బీమ్ తన తల్లి మరియు సోదరి కోసం పోరాడుతున్నాడు.</p>',
+    title: 'Drums Beyond the Ridge',
+    content: '<p>గ్రామం మేఘాలతో గాయపడిన ఆకాశం కింద నిద్రపోయింది. కొండ వెనుక ఎక్కడో డ్రమ్ములు మోగాయి — ఉత్సవం కాదు, హెచ్చరిక. ఆమె తలుపు చట్రంపై చేతులు అదిమి, పాత టేకు మొక్క యొక్క గీతలను అనుభవించింది.</p>',
   },
   {
     id: 'scene-2',
-    title: 'The Spark of Revolt',
-    content: '<p>అదే గ్రామంలో రామారాజు తన సైన్యంతో కలిసి బ్రిటిష్ వారికి వ్యతిరేకంగా పోరాటం ప్రారంభిస్తాడు. ప్రజల హృదయాల్లో విప్లవ మంట మొలకెత్తుతుంది.</p>',
+    title: 'The Unspoken Past',
+    content: '<p>"నన్ను మరచిపోమని అడగవద్దు," అతను గొంతు పెంచకుండా అన్నాడు. "జ్ఞాపకం మాకు ఇచ్చిన ఏకైక ఆయుధం." లేఖ ముద్ర లేకుండా వచ్చింది — రాసినవారు విస్మరించబడటం కంటే గుర్తించబడటానికి భయపడ్డారు.</p>',
   },
 ];
 
@@ -140,9 +141,9 @@ export function ChapterEditor() {
   const { t, locale } = useLocale();
   const navigate = useNavigate();
   const { user, refreshUser } = useAuth();
-  const { storyId = 'demo-rrr', chapterNum } = useParams();
+  const { storyId = 'demo-valley-te', chapterNum } = useParams();
 
-  const isDemo = storyId === 'demo-rrr';
+  const isDemo = storyId === 'demo-valley-te' || storyId === 'demo-valley-en' || storyId === 'demo-rrr';
   const chapterNumber = Number(chapterNum) || 1;
   const chapterKey = `${storyId}-${chapterNumber}`;
 
@@ -368,7 +369,13 @@ export function ChapterEditor() {
     async function loadChapter() {
       if (isDemo) {
         const demoData = getOrInitDemoData(storyId);
-        setStoryDisplayTitle(storyId === 'demo-rrr' ? 'RRR: The Legend' : 'Your Story');
+        setStoryDisplayTitle(
+          storyId === 'demo-valley-en'
+            ? 'Before the Monsoon'
+            : (storyId === 'demo-valley-te' || storyId === 'demo-rrr')
+              ? 'వర్షం వచ్చే ముందు'
+              : 'Your Story',
+        );
         let chapterScenes = demoData.chapterScenes?.[chapterNumber] || [];
         if (chapterScenes.length === 0 && chapterNumber === 1) {
           chapterScenes = PROTOTYPE_CH1_SCENES;

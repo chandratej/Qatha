@@ -36,6 +36,7 @@ import { EventCreate } from './pages/EventCreate';
 import { ReviewerMarketplace } from './pages/ReviewerMarketplace';
 import { TagsModeration } from './pages/TagsModeration';
 import { Monetization } from './pages/Monetization';
+import { Earn } from './pages/Earn';
 import { PlatformMap } from './pages/PlatformMap';
 import { MagazineEdition } from './pages/MagazineEdition';
 import './styles/theme.css';
@@ -80,6 +81,7 @@ import './styles/cohesion-wave30.css';
 import './styles/katha-ops-v2.css';
 import './styles/katha-community-v2.css';
 import './styles/studio-v21.css';
+import './styles/nav-v2.css';
 
 const ChapterEditor = lazy(() => import('./pages/ChapterEditor').then((m) => ({ default: m.ChapterEditor })));
 const ReviewWorkspace = lazy(() => import('./pages/ReviewWorkspace').then((m) => ({ default: m.ReviewWorkspace })));
@@ -126,13 +128,19 @@ function App() {
                   <Route path="/events/new" element={<EventCreate />} />
                   <Route path="/events/:eventId" element={<EventDetail />} />
                   <Route path="/magazine" element={<MagazineEdition />} />
-                  {/* Literary Council is core trust infrastructure — not Labs-gated (DEC-007 revision) */}
-                  <Route path="/reviewers" element={<ReviewerMarketplace />} />
+                  {/* Earn hub: Reviewer Pool + Monetization as sub-tabs (nav redesign v2) */}
+                  <Route path="/earn" element={<Earn />}>
+                    <Route index element={<Navigate to="reviews" replace />} />
+                    <Route path="reviews" element={<ReviewerMarketplace />} />
+                    <Route path="payouts" element={<Monetization />} />
+                  </Route>
+                  {/* Legacy routes → Earn hub tabs (assignments stay under /reviewers) */}
+                  <Route path="/reviewers" element={<Navigate to="/earn/reviews" replace />} />
+                  <Route path="/monetization" element={<Navigate to="/earn/payouts" replace />} />
                   <Route element={<LabsRoute />}>
                     <Route path="/tags" element={<TagsModeration />} />
                     <Route path="/platform" element={<PlatformMap />} />
                   </Route>
-                  <Route path="/monetization" element={<Monetization />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/notifications" element={<Notifications />} />
                 </Route>

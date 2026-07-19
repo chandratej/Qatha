@@ -79,14 +79,19 @@ export function useReviewWorkspace({ assignment, request, reviewerSlot }: UseRev
     const baseRqi = isReviewDevSandbox() && reviewerSlot === 'slot-1'
       ? DEV_SANDBOX_RQI
       : (member?.rqi ?? 62);
+    const reviewCount = member?.review_experience_count ?? 0;
+    const rqi = Math.round(baseRqi);
     return {
-      rqi: baseRqi,
-      potentialRqi: Math.min(100, baseRqi + predictRqiGain(draft.comments)),
-      councilLevel: member?.council_level ?? 'certified_reviewer',
+      rqi,
+      potentialRqi: Math.min(100, Math.round(rqi + predictRqiGain(draft.comments))),
+      councilLevel: member?.council_level ?? 'candidate',
       expertise: member?.genre_expertise ?? [assignment.story_genre],
-      acceptanceRate: 84,
-      reviewStreak: 7,
-      badges: ['Plot Analyst', 'Dialogue Craft'],
+      acceptanceRate: reviewCount > 0 ? 84 : 0,
+      reviewStreak: Math.min(reviewCount, 7),
+      // Earned labels only — no default max-reputation for new reviewers
+      badges: reviewCount >= 5
+        ? ['Plot Analyst'].concat(reviewCount >= 8 ? ['Dialogue Craft'] : [])
+        : (reviewCount >= 1 ? ['First Review'] : []),
     };
   }, [reviewerSlot, assignment.story_genre, draft.comments]);
 

@@ -26,7 +26,7 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
             <StudioGlyph id="trophy" variant="soft" size={16} />
             {t('dashboard.quickEvents')}
           </Link>
-          <Link to="/reviewers" className="quick-actions-bar__action">
+          <Link to="/earn/reviews" className="quick-actions-bar__action">
             <StudioGlyph id="book" variant="soft" size={16} />
             {t('dashboard.quickReviews')}
           </Link>
@@ -63,7 +63,7 @@ export function QuickActionsPanel({ layout = 'stack' }: Props) {
           <StudioGlyph id="trophy" variant="tile" size={17} />
           <span>{t('dashboard.quickEvents')}</span>
         </Link>
-        <Link to="/reviewers" className="quick-action-btn quick-action-btn--tile">
+        <Link to="/earn/reviews" className="quick-action-btn quick-action-btn--tile">
           <StudioGlyph id="book" variant="tile" size={17} />
           <span>{t('dashboard.quickReviews')}</span>
         </Link>

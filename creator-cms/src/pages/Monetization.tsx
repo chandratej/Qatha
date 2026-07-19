@@ -1,253 +1,294 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Award, BookOpen, Crown, IndianRupee, Shield, Sparkles } from 'lucide-react';
-import { platformApi } from '../lib/platformApi';
-import { StudioPageHeader } from '../components/studio/StudioPageHeader';
-import { StoryTrustLadder } from '../components/studio/StoryTrustLadder';
-import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
-import { BRAND, BRAND_COPY } from '../lib/constants';
-import {
-  SPI_WEIGHTS,
-  PATRON_TIERS,
-  BRAND_VOCABULARY,
-  QUARTERLY_PAYOUTS,
-  SHORT_STORY_ECONOMY,
-  FIRST_STORY_LAUNCH_FLOW,
-  STABILITY_WINDOW_DAYS,
-  BASE_CREATOR_SHARE_PCT,
-  BRAND_IDENTITY,
-  trustLevelForReaders,
-} from '../lib/platformConstants';
-import { monetizationEligibilityChecklist } from '../business/monetizationEligibility';
+import { useMemo, useState } from 'react';
+import { CalendarClock, ChevronDown, IndianRupee } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
+import { formatInr } from '../lib/dashboardFormat';
+import {
+  STORY_TRUST_LEVELS,
+  BASE_CREATOR_SHARE_PCT,
+  type StoryTrustLevelId,
+} from '../../../packages/shared/story-trust';
+import {
+  anyStoryMonetizationEligible,
+  buildStoryEarningsRows,
+  formatPayoutDate,
+  formatPayoutDateLong,
+  loadPayoutHistory,
+  nextQuarterlyPayoutDate,
+  sumLifetimePayouts,
+  sumQuarterEarnings,
+} from '../lib/payouts';
+import '../styles/payouts-v2.css';
 
-type MonetizationItem = { id: string; label: string; status: string };
-
+/**
+ * Earn → Payouts tab (`/earn/payouts`).
+ * Prototype: katha_payouts_v2.html — real earnings view, not brand charter.
+ * Reviews tab is untouched (separate route under Earn hub).
+ */
 export function Monetization() {
-  const { t } = useLocale();
-  const [reader, setReader] = useState<MonetizationItem[]>([]);
-  const [creator, setCreator] = useState<MonetizationItem[]>([]);
-  const [platform, setPlatform] = useState<MonetizationItem[]>([]);
-  const { data: dash } = useApi(() => api.getDashboard().catch(() => null));
+  const { locale } = useLocale();
+  const te = locale === 'te';
+  const { data, loading, error } = useApi(() => api.getCreatorStories().catch(() => ({ stories: [] })));
+  const [howOpen, setHowOpen] = useState(false);
 
-  useEffect(() => {
-    platformApi.getMonetization().then((r) => {
-      setReader([...r.reader]);
-      setCreator([...r.creator]);
-      setPlatform([...r.platform]);
-    });
-  }, []);
-
-  const charter = useMemo(() => BRAND_IDENTITY.charter ?? [], []);
-
-  const eligibility = useMemo(() => {
-    const totalReaders = (dash?.stories ?? []).reduce((s, x) => s + x.total_readers, 0);
-    const publishedChapters = (dash?.stories ?? []).reduce((s, x) => s + (x.chapter_count ?? 0), 0);
-    const trust = trustLevelForReaders(totalReaders);
-    return monetizationEligibilityChecklist({
-      trustLevel: trust,
-      publishedChapterCount: publishedChapters,
-      freeChapterCount: Math.min(publishedChapters, 3),
-      qualityChecksPassed: publishedChapters > 0,
-      hasReaderEngagement: totalReaders > 0,
-      stabilityWindowMet: trust !== 'incubation',
-    });
-  }, [dash]);
+  const stories = data?.stories ?? [];
+  const rows = useMemo(() => buildStoryEarningsRows(stories), [stories]);
+  const history = useMemo(() => loadPayoutHistory(), []);
+  const nextPayout = useMemo(() => nextQuarterlyPayoutDate(), []);
+  const quarterTotal = sumQuarterEarnings(rows);
+  const lifetimePaid = sumLifetimePayouts(history);
+  const eligible = anyStoryMonetizationEligible(rows);
+  const authorTopTier = useMemo(() => highestTrust(rows.map((r) => r.trustLevel)), [rows]);
 
   return (
-    <div className="cms-page studio-page monetization-studio monetization-studio--premium monetization-studio--streamlined wc-page-enter">
-      <StudioPageHeader
-        variant="hero"
-        eyebrow={t('monetization.eyebrow')}
-        eyebrowIcon={IndianRupee}
-        title={t('monetization.title')}
-        subtitle={t('monetization.subtitle')}
-      />
+    <div className="payv2 wc-page-enter">
+      <header className="payv2-hero">
+        <p className="payv2-eyebrow">
+          <IndianRupee size={14} aria-hidden />
+          {te ? 'సంపాదన' : 'Earn'}
+        </p>
+        <h1 className="payv2-title" lang={te ? 'te' : undefined}>
+          {te ? 'పేమెంట్లు' : 'Payouts'}
+        </h1>
+        <p className="payv2-subtitle" lang={te ? 'te' : undefined}>
+          {te
+            ? 'మీ కథల ఆదాయం, తదుపరి చెల్లింపు, పేమెంట్ చరిత్ర.'
+            : 'Story earnings, next payout, and payment history.'}
+        </p>
+      </header>
 
-      <div className="wc-stagger-children">
-      <section className="cms-panel monetization-charter" aria-labelledby="brand-charter-title">
-        <div className="monetization-charter__header">
-          <Sparkles size={20} aria-hidden />
-          <h2 id="brand-charter-title" className="dashboard-panel__title">{t('monetization.charter')}</h2>
-        </div>
-        <p className="monetization-charter__te" lang="te">కథ — గౌరవనీయ సాహిత్య సృష్టికర్తల యొక్క ఇల్లు</p>
-        <ul className="monetization-charter__list">
-          {charter.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
+      {error && (
+        <p className="payv2-history-empty" role="alert" style={{ color: '#a13b34' }}>
+          {error}
+        </p>
+      )}
 
-      <div className="monetization-hero-grid">
-        <section className="cms-panel monetization-trust-panel" aria-labelledby="story-trust-title">
-          <h2 id="story-trust-title" className="dashboard-panel__title">{t('monetization.trustLadder')}</h2>
-          <p className="monetization-panel__lead">
-            {t('monetization.trustLead')}
-            Promotions require a {STABILITY_WINDOW_DAYS}-day stability window; demotions need sustained decline.
+      <div className="payv2-summary" aria-label={te ? 'సారాంశం' : 'Summary'}>
+        <div className="payv2-summary-card">
+          <p className="payv2-summary-label" lang={te ? 'te' : undefined}>
+            {te ? 'ఈ క్వార్టర్ ఆదాయం' : 'This quarter'}
           </p>
-          <StoryTrustLadder highlightMonetizationGate />
-          <div
-            className={`monetization-eligibility${eligibility.eligible ? ' monetization-eligibility--open' : ''}`}
-            aria-labelledby="eligibility-title"
-          >
-            <h3 id="eligibility-title" className="monetization-eligibility__title">
-              {eligibility.eligible ? t('monetization.eligible') : t('monetization.path')}
-            </h3>
-            <p className="monetization-panel__lead">
-              {BRAND_COPY.monetizationGate} Base share {BASE_CREATOR_SHARE_PCT}% · up to 60% at Apex.
-            </p>
-            <ul className="monetization-eligibility__list">
-              {eligibility.criteria.map((c) => (
-                <li
-                  key={c.id}
-                  className={`monetization-eligibility__item${c.met ? ' monetization-eligibility__item--met' : ''}`}
-                >
-                  <span className="monetization-eligibility__mark" aria-hidden>
-                    {c.met ? '✓' : '○'}
+          <p className="payv2-summary-value">{formatInr(quarterTotal)}</p>
+          <p className="payv2-summary-hint" lang={te ? 'te' : undefined}>
+            {quarterTotal === 0
+              ? (te
+                ? 'పాఠకుల సంపాదన మొదలైతే ఇక్కడ కనిపిస్తుంది'
+                : 'Appears here once reader revenue starts')
+              : (te ? 'అన్ని కథలు కలిపి' : 'Across all stories')}
+          </p>
+        </div>
+        <div className="payv2-summary-card">
+          <p className="payv2-summary-label" lang={te ? 'te' : undefined}>
+            {te ? 'మొత్తం చెల్లించినది' : 'Lifetime paid out'}
+          </p>
+          <p className="payv2-summary-value">{formatInr(lifetimePaid)}</p>
+          <p className="payv2-summary-hint" lang={te ? 'te' : undefined}>
+            {te ? 'జీవితకాల చెల్లింపులు' : 'All-time completed payouts'}
+          </p>
+        </div>
+        <div className="payv2-summary-card">
+          <p className="payv2-summary-label" lang={te ? 'te' : undefined}>
+            {te ? 'తదుపరి చెల్లింపు తేదీ' : 'Next payout date'}
+          </p>
+          <p className="payv2-summary-value payv2-summary-value--date">
+            {formatPayoutDate(nextPayout, te ? 'te' : 'en')}
+          </p>
+          <p className="payv2-summary-hint" lang={te ? 'te' : undefined}>
+            {te ? 'త్రైమాసిక చెల్లింపులు' : 'Quarterly cadence'}
+          </p>
+        </div>
+      </div>
+
+      <div className="payv2-section-head">
+        <h2 lang={te ? 'te' : undefined}>
+          {te ? 'కథల వారీగా ఆదాయం' : 'Earnings by story'}
+        </h2>
+      </div>
+
+      {loading && (
+        <p className="payv2-history-empty" role="status">
+          {te ? 'లోడ్ అవుతోంది…' : 'Loading…'}
+        </p>
+      )}
+
+      {!loading && rows.length === 0 && (
+        <div className="payv2-empty-stories" lang={te ? 'te' : undefined}>
+          {te
+            ? 'ఇంకా ప్రచురిత కథలు లేవు — కథను ప్రచురించిన తర్వాత ఆదాయం ఇక్కడ కనిపిస్తుంది.'
+            : 'No published stories yet — earnings will appear here after you publish.'}
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && (
+        <ul className="payv2-story-list">
+          {rows.map((row) => {
+            const trust = STORY_TRUST_LEVELS.find((l) => l.id === row.trustLevel)!;
+            return (
+              <li key={row.id} className="payv2-story-row">
+                <div>
+                  <p className="payv2-story-name" lang={te ? 'te' : undefined}>{row.title}</p>
+                  <p className="payv2-story-meta" lang={te ? 'te' : undefined}>
+                    <span>
+                      {row.chapterCount}{' '}
+                      {te
+                        ? (row.chapterCount === 1 ? 'అధ్యాయం ప్రచురించారు' : 'అధ్యాయాలు ప్రచురించారు')
+                        : (row.chapterCount === 1 ? 'chapter published' : 'chapters published')}
+                    </span>
+                    <span className="payv2-trust-tag">
+                      <span aria-hidden>{trust.glyph}</span>
+                      {trust.label}
+                    </span>
+                  </p>
+                </div>
+                <div className="payv2-story-earn">
+                  <p className="payv2-story-earn-value">{formatInr(row.quarterEarningsInr)}</p>
+                  <p className="payv2-story-earn-label" lang={te ? 'te' : undefined}>
+                    {te ? 'ఈ క్వార్టర్' : 'This quarter'}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="payv2-next" role="status">
+        <CalendarClock size={20} aria-hidden />
+        <div>
+          <p className="payv2-next-title" lang={te ? 'te' : undefined}>
+            {te
+              ? `తదుపరి చెల్లింపు: ${formatPayoutDateLong(nextPayout, 'te')}`
+              : `Next payout: ${formatPayoutDateLong(nextPayout, 'en')}`}
+          </p>
+          <p className="payv2-next-sub" lang={te ? 'te' : undefined}>
+            {eligible
+              ? (te
+                ? 'మీ కథల్లో కనీసం ఒకటి Performing లేదా అంతకంటే పైన ఉంది — అర్హత ఉన్న ఆదాయం త్రైమాసికంగా చెల్లుతుంది.'
+                : 'At least one story is at Performing or above — eligible revenue pays out quarterly.')
+              : (te
+                ? 'మానిటైజేషన్ కోసం, మీ కథలు కనీసం "Performing" Story Trust స్థాయికి చేరాలి.'
+                : 'To monetize, stories must reach at least Performing Story Trust tier.')}
+          </p>
+        </div>
+      </div>
+
+      <div className="payv2-section-head">
+        <h2 lang={te ? 'te' : undefined}>
+          {te ? 'చెల్లింపు చరిత్ర' : 'Payment history'}
+        </h2>
+      </div>
+      <div className="payv2-history">
+        {history.length === 0 ? (
+          <p className="payv2-history-empty" lang={te ? 'te' : undefined}>
+            {te
+              ? 'ఇంకా చెల్లింపులు లేవు — మీ మొదటి చెల్లింపు ఇక్కడ కనిపిస్తుంది.'
+              : 'No payments yet — your first payout will appear here.'}
+          </p>
+        ) : (
+          <ul className="payv2-history-list">
+            {[...history]
+              .sort((a, b) => b.paidAt.localeCompare(a.paidAt))
+              .map((h) => (
+                <li key={h.id} className="payv2-history-row">
+                  <span className="payv2-history-date">
+                    {formatPayoutDate(new Date(h.paidAt), te ? 'te' : 'en')}
+                    {h.coveringQuarter ? ` · ${h.coveringQuarter}` : ''}
                   </span>
-                  <span>{c.label}</span>
+                  <span className="payv2-history-amount">{formatInr(h.amountInr)}</span>
+                  <span className={`payv2-history-status payv2-history-status--${h.status}`}>
+                    {statusLabel(h.status, te)}
+                  </span>
                 </li>
               ))}
-            </ul>
-          </div>
-        </section>
+          </ul>
+        )}
+      </div>
 
-        <section className="cms-panel monetization-spi-panel" aria-labelledby="spi-title">
-          <h2 id="spi-title" className="dashboard-panel__title">{t('monetization.spi')}</h2>
-          <p className="monetization-panel__lead">{t('monetization.spiLead')}</p>
-          <ul className="monetization-spi-list">
-            {SPI_WEIGHTS.map((w) => (
-              <li key={w.id} className="monetization-spi-item">
-                <span className="monetization-spi-item__label">{w.label}</span>
-                <div className="monetization-spi-item__bar-wrap">
-                  <div className="monetization-spi-item__bar" style={{ width: `${w.weightPct}%` }} />
+      <div className="payv2-how">
+        <button
+          type="button"
+          className="payv2-how-toggle"
+          aria-expanded={howOpen}
+          aria-controls="payv2-how-body"
+          id="payv2-how-toggle"
+          onClick={() => setHowOpen((v) => !v)}
+          lang={te ? 'te' : undefined}
+        >
+          <span>{te ? 'ఇది ఎలా లెక్కించబడుతుంది?' : 'How is this calculated?'}</span>
+          <ChevronDown size={16} aria-hidden />
+        </button>
+        {howOpen && (
+          <div
+            className="payv2-how-body"
+            id="payv2-how-body"
+            role="region"
+            aria-labelledby="payv2-how-toggle"
+            lang={te ? 'te' : undefined}
+          >
+            <p className="payv2-how-lead">
+              {te
+                ? 'మీ ఆదాయ వాటా మీ కథ యొక్క Story Trust స్థాయిపై ఆధారపడి పెరుగుతుంది — పాఠక విలువ ద్వారా సంపాదించినది.'
+                : 'Your revenue share grows with each story’s Story Trust level — earned through reader value, not publishing alone.'}
+            </p>
+            {STORY_TRUST_LEVELS.map((level) => {
+              const isCurrent = level.id === authorTopTier;
+              const isGate = level.id === 'performing';
+              return (
+                <div
+                  key={level.id}
+                  className={`payv2-ladder-row${isCurrent ? ' payv2-ladder-row--current' : ''}`}
+                >
+                  <span className="payv2-ladder-glyph" aria-hidden>{level.glyph}</span>
+                  <span className="payv2-ladder-name">
+                    {level.label}
+                    {isGate && (
+                      <span className="payv2-ladder-gate">
+                        {te ? '(మానిటైజేషన్ మొదలు)' : '(monetization starts)'}
+                      </span>
+                    )}
+                    {isCurrent && (
+                      <span className="payv2-ladder-gate">
+                        {te ? ' · మీ స్థాయి' : ' · you'}
+                      </span>
+                    )}
+                  </span>
+                  <span className="payv2-ladder-share">
+                    {level.monetizationEligible ? `${level.revenueSharePct}%` : '—'}
+                  </span>
                 </div>
-                <span className="monetization-spi-item__pct">{w.weightPct}%</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <section className="cms-panel monetization-revenue-panel" aria-labelledby="revenue-model-title">
-        <h2 id="revenue-model-title" className="dashboard-panel__title">{t('monetization.revenue')}</h2>
-        <div className="monetization-revenue-flow">
-          <span className="monetization-revenue-step">Quarterly Story Revenue</span>
-          <span className="monetization-revenue-arrow" aria-hidden>→</span>
-          <span className="monetization-revenue-step">Base Author Share ({BASE_CREATOR_SHARE_PCT}%)</span>
-          <span className="monetization-revenue-arrow" aria-hidden>→</span>
-          <span className="monetization-revenue-step">Story Trust Multiplier</span>
-          <span className="monetization-revenue-arrow" aria-hidden>→</span>
-          <span className="monetization-revenue-step monetization-revenue-step--final">Final Author Payout</span>
-        </div>
-        <div className="monetization-share-examples">
-          <StoryTrustBadge level="performing" showShare />
-          <StoryTrustBadge level="catalyst" showShare />
-          <StoryTrustBadge level="anchor" showShare />
-          <StoryTrustBadge level="apex" showShare />
-        </div>
-        <p className="monetization-panel__note">{BRAND_COPY.quarterlyPayoutNote}</p>
-      </section>
-
-      <div className="monetization-secondary-grid">
-        <section className="cms-panel" aria-labelledby="patronage-title">
-          <div className="dashboard-panel__head">
-            <h2 id="patronage-title" className="dashboard-panel__title">
-              <Crown size={18} aria-hidden /> {t('monetization.patronage')}
-            </h2>
+              );
+            })}
+            <p className="payv2-how-foot">
+              {te
+                ? `బేస్ రచయిత వాటా ${BASE_CREATOR_SHARE_PCT}% × Story Trust గుణకం · త్రైమాసిక చెల్లింపులు మాత్రమే`
+                : `Base author share ${BASE_CREATOR_SHARE_PCT}% × Story Trust multiplier · quarterly payouts only`}
+            </p>
           </div>
-          <p className="monetization-panel__lead">{BRAND_COPY.patronageSubtitle}</p>
-          <ul className="monetization-patron-tiers">
-            {PATRON_TIERS.map((tier) => (
-              <li key={tier.id} className="monetization-patron-tier">{tier.label}</li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="cms-panel" aria-labelledby="launch-flow-title">
-          <div className="dashboard-panel__head">
-            <h2 id="launch-flow-title" className="dashboard-panel__title">
-              <BookOpen size={18} aria-hidden /> {t('monetization.launchFlow')}
-            </h2>
-          </div>
-          <p className="monetization-panel__lead">No payouts simply for publishing.</p>
-          <ol className="monetization-launch-flow">
-            {FIRST_STORY_LAUNCH_FLOW.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="cms-panel" aria-labelledby="short-story-title">
-          <div className="dashboard-panel__head">
-            <h2 id="short-story-title" className="dashboard-panel__title">
-              <Award size={18} aria-hidden /> {t('monetization.shortStory')}
-            </h2>
-          </div>
-          <p className="monetization-panel__lead">Short stories monetize through curated collections — not standalone chapter unlocks.</p>
-          <ul className="platform-monetization-list">
-            {SHORT_STORY_ECONOMY.surfaces.map((s) => (
-              <li key={s.id} className="platform-monetization-item">
-                <span>{s.label}</span>
-                <span className="platform-monetization-item__status">planned</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-
-      <section className="cms-panel monetization-vocabulary" aria-labelledby="vocabulary-title">
-        <div className="dashboard-panel__head">
-          <h2 id="vocabulary-title" className="dashboard-panel__title">
-            <Shield size={18} aria-hidden /> {t('monetization.vocabulary')}
-          </h2>
-        </div>
-        <div className="monetization-vocab-grid">
-          <div>
-            <h3 className="monetization-vocab-heading">{t('monetization.avoid')}</h3>
-            <ul className="monetization-vocab-list monetization-vocab-list--avoid">
-              {BRAND_VOCABULARY.avoid.map((term) => <li key={term}>{term}</li>)}
-            </ul>
-          </div>
-          <div>
-            <h3 className="monetization-vocab-heading">{t('monetization.preferred')}</h3>
-            <ul className="monetization-vocab-list monetization-vocab-list--preferred">
-              {BRAND_VOCABULARY.preferred.map((term) => <li key={term}>{term}</li>)}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="cms-panel" aria-labelledby="surfaces-title">
-        <h2 id="surfaces-title" className="dashboard-panel__title">{t('monetization.surfaces')}</h2>
-        <p className="monetization-panel__lead">
-          Today: {BRAND.creatorSharePct}% base author share on subscriptions, scaled by Story Trust.
-          {' '}{QUARTERLY_PAYOUTS.cadence} payouts with fraud detection, refund handling, and appeals.
-        </p>
-        <div className="platform-detail-grid">
-          <MonetizationSection title="Readers" items={reader} />
-          <MonetizationSection title="Authors" items={creator} />
-          <MonetizationSection title="Platform" items={platform} />
-        </div>
-      </section>
+        )}
       </div>
     </div>
   );
 }
 
-function MonetizationSection({ title, items }: { title: string; items: MonetizationItem[] }) {
-  return (
-    <section className="cms-panel cms-panel--nested">
-      <h3 className="dashboard-panel__title">{title}</h3>
-      <ul className="platform-monetization-list">
-        {items.map((item) => (
-          <li key={item.id} className={`platform-monetization-item platform-monetization-item--${item.status}`}>
-            <span>{item.label}</span>
-            <span className="platform-monetization-item__status">{item.status}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+function highestTrust(levels: StoryTrustLevelId[]): StoryTrustLevelId {
+  if (levels.length === 0) return 'incubation';
+  let best: StoryTrustLevelId = 'incubation';
+  let bestOrder = -1;
+  for (const id of levels) {
+    const order = STORY_TRUST_LEVELS.find((l) => l.id === id)?.order ?? -1;
+    if (order > bestOrder) {
+      bestOrder = order;
+      best = id;
+    }
+  }
+  return best;
 }
+
+function statusLabel(status: string, te: boolean): string {
+  if (status === 'paid') return te ? 'చెల్లించారు' : 'Paid';
+  if (status === 'processing') return te ? 'ప్రాసెస్‌లో' : 'Processing';
+  if (status === 'failed') return te ? 'విఫలం' : 'Failed';
+  return status;
+}
+

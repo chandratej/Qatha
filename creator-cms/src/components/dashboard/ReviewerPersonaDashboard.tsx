@@ -22,7 +22,7 @@ export function ReviewerPersonaDashboard({ displayName }: Props) {
           Your assignments, council standing, and review queue — everything you need to serve authors well.
         </p>
         <div className="reviewer-persona-dashboard__actions">
-          <button type="button" className="katha-cta katha-cta--maroon" onClick={() => navigate('/reviewers')}>
+          <button type="button" className="katha-cta katha-cta--maroon" onClick={() => navigate('/earn/reviews')}>
             <Inbox size={16} aria-hidden /> Open Reviewer Pool
           </button>
           <button type="button" className="katha-cta katha-cta--soft" onClick={() => navigate('/stories')}>

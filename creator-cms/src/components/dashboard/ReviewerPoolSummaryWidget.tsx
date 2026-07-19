@@ -26,7 +26,7 @@ export function ReviewerPoolSummaryWidget() {
       ) : (
         <p className="input-hint">Loading pool status…</p>
       )}
-      <Link to="/reviewers" className="katha-cta katha-cta--soft katha-cta--compact">
+      <Link to="/earn/reviews" className="katha-cta katha-cta--soft katha-cta--compact">
         Open Reviewer Pool
       </Link>
     </section>

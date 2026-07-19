@@ -44,7 +44,12 @@ import type { ReviewDecisionId } from '../../../packages/shared/reviewer-marketp
 import { computeReviewConsensus } from '../business/reviewConsensus';
 import { isReviewDevSandbox } from './reviewDevSandbox';
 import { REVIEW_SLA_DAYS, REVIEWERS_REQUIRED } from './reviewerPoolConstants';
-import { applyReputationToPoolMember, badgesForReviewer, reputationGainFromReview } from './reviewerReputation';
+import {
+  applyReputationToPoolMember,
+  badgeStatusesForReviewer,
+  reputationGainFromReview,
+  roundRqi,
+} from './reviewerReputation';
 
 const EVENTS_KEY = 'katha_platform_events';
 const REGS_KEY = 'katha_event_registrations';
@@ -773,14 +778,36 @@ function activeAssignmentsForRequest(rows: ReviewerAssignment[], requestId: stri
   return rows.filter((a) => a.request_id === requestId && ACTIVE_ASSIGNMENT_STATUSES.has(a.status)).length;
 }
 
+/**
+ * Tag comments with stable ids and dedupe by id.
+ * Prevents passage notes rendering twice (resolved + pending) after re-submit merges.
+ */
 function tagStructuredComments(
   comments: PeerReviewRequest['structured_comments'],
 ): StructuredReviewComment[] {
-  return (comments ?? []).map((c, i) => ({
-    ...c,
-    id: c.id ?? `cmt-${Date.now()}-${i}`,
-    author_resolution: c.author_resolution ?? 'pending',
-  }));
+  const seen = new Set<string>();
+  const out: StructuredReviewComment[] = [];
+  for (let i = 0; i < (comments ?? []).length; i++) {
+    const c = comments![i]!;
+    const id = c.id ?? `cmt-${c.chapter_ref ?? 'x'}-${c.paragraph_ref ?? i}-${c.category}-${i}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    // Secondary dedupe: same location + reason + category (legacy rows without stable ids)
+    const fingerprint = [
+      c.chapter_ref ?? '',
+      c.paragraph_ref ?? '',
+      c.category,
+      (c.reason ?? '').trim().slice(0, 80),
+    ].join('|');
+    if (seen.has(`fp:${fingerprint}`)) continue;
+    seen.add(`fp:${fingerprint}`);
+    out.push({
+      ...c,
+      id,
+      author_resolution: c.author_resolution ?? 'pending',
+    });
+  }
+  return out;
 }
 
 function computeFraudRiskScore(request: PeerReviewRequest): number {
@@ -1044,20 +1071,23 @@ export function getReviewerDashboardStats(reviewerSlot: string): ReviewerDashboa
     ? Math.round(turnaroundSamples.reduce((s, h) => s + h, 0) / turnaroundSamples.length)
     : 0;
 
-  const rqi = member?.rqi ?? 62;
-  const reviewCount = member?.review_experience_count ?? 0;
+  // Prefer assignment-based completion when pool count is inflated by seed defaults.
+  const poolCount = member?.review_experience_count ?? 0;
+  const reviewCount = Math.max(poolCount, completed.length);
+  const rqi = roundRqi(member?.rqi ?? 0);
 
   return {
     slot: reviewerSlot,
     rqi,
-    councilLevel: member?.council_level ?? 'certified_reviewer',
+    councilLevel: member?.council_level ?? 'candidate',
     reputationTier: member?.reputation_tier ?? 'bronze',
     reviewsCompleted: completed.length,
     reviewsInProgress: inProgress.length,
     invitationsPending: pending.length,
     avgTurnaroundHours,
     acceptanceRate,
-    badges: badgesForReviewer(reviewCount, rqi),
+    badges: badgeStatusesForReviewer(reviewCount, rqi),
+    reviewExperienceCount: reviewCount,
     draftCount,
     overdueCount: overdue.length,
     isAvailable: member?.is_available !== false,

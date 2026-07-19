@@ -7,6 +7,8 @@ import { useLocale } from '../../../context/LocaleContext';
 interface Props {
   manuscriptLabel: string;
   chapterLabel: string;
+  /** Small unobtrusive genre tag for tone calibration (not full dashboard metadata) */
+  genreLabel?: string;
   chapterIndex: number;
   chapterCount: number;
   observationCount: number;
@@ -23,6 +25,7 @@ interface Props {
 export function ReviewWorkspaceChrome({
   manuscriptLabel,
   chapterLabel,
+  genreLabel,
   chapterIndex,
   chapterCount,
   observationCount,
@@ -42,13 +45,20 @@ export function ReviewWorkspaceChrome({
   return (
     <header className="rw-chrome rw-chrome--immersive">
       <div className="rw-chrome__cluster">
-        <Link to="/reviewers" className="rw-chrome__back" aria-label={t('reviewWorkspace.back')}>
+        <Link to="/earn/reviews" className="rw-chrome__back" aria-label={t('reviewWorkspace.back')}>
           <ArrowLeft size={17} aria-hidden />
         </Link>
         <div className="rw-chrome__title-block">
           <span className="rw-chrome__kicker">{t('reviewWorkspace.eyebrow')}</span>
           <h1>{manuscriptLabel}</h1>
-          <p className="rw-chrome__chapter">{chapterLabel}</p>
+          <p className="rw-chrome__chapter">
+            {chapterLabel}
+            {genreLabel ? (
+              <span className="rw-chrome__genre" title="Genre">
+                {' · '}{genreLabel}
+              </span>
+            ) : null}
+          </p>
         </div>
       </div>
 

@@ -80,9 +80,9 @@ export function Stories() {
   }, []);
 
   const demoStory: StoryData = {
-    id: 'demo-rrr',
-    title: 'RRR - రాజమౌళి (Demo)',
-    description: 'Story → Seasons → Chapters → Editor with scenes.',
+    id: 'demo-valley-te',
+    title: 'వర్షం వచ్చే ముందు (Demo)',
+    description: 'Story → Seasons → Chapters → Editor with scenes. Original demo fiction.',
     genre: 'family_drama',
     chapter_count: 24,
     total_readers: 0,

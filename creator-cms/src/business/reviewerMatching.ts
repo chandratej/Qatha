@@ -60,15 +60,16 @@ const TRUST_LEVELS: StoryTrustLevelId[] = [
 /** Seed Literary Council reviewer pool — anonymous slots with RQI + genre expertise */
 export function seedReviewerPool(): ReviewerCandidate[] {
   return GENRE_ROTATION.map((genres, i) => {
-    const rqi = computeReviewQualityIndex({
+    const rqi = Math.round(computeReviewQualityIndex({
       acceptedSuggestionsPct: 58 + (i * 4) % 38,
       storyImprovementScore: 55 + (i * 5) % 40,
       readerRetentionImprovementPct: 50 + (i * 3) % 45,
       editorialAgreementPct: 60 + (i * 2) % 35,
       authorSatisfactionPct: 65 + (i * 3) % 30,
       professionalConductPct: 75 + (i % 20),
-    });
-    const reviewCount = 2 + (i % 15);
+    }));
+    // Varied earned track records — not every slot at master by default
+    const reviewCount = i === 0 ? 1 : 2 + (i % 12);
     return {
       id: `rev-pool-${i + 1}`,
       specializations: ROLE_IDS.slice(i % 5, (i % 5) + 2) as string[],

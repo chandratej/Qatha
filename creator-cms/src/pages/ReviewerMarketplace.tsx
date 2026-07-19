@@ -23,11 +23,19 @@ import { LiteraryCouncilPhilosophy } from '../components/reviewers/LiteraryCounc
 import { useAuth } from '../context/AuthContext';
 import { devSeedApplied, isReviewDevSandbox } from '../lib/reviewDevSandbox';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
+import { useLocale } from '../context/LocaleContext';
+import '../styles/reviewer-pool-v2.css';
 
 type PoolView = 'author' | 'reviewer' | 'pool' | 'admin';
 
+/**
+ * Reviewer Pool shell — layout matches katha_reviewer_pool_v2 /
+ * katha_review_feedback_v2 / katha_reviewer_pool_join_v2 prototypes.
+ */
 export function ReviewerMarketplace() {
   const { user } = useAuth();
+  const { locale } = useLocale();
+  const te = locale === 'te';
   const authorId = user?.id || 'anonymous-creator';
   const isAdmin = user?.role === 'admin' || user?.role === 'moderator';
 
@@ -71,46 +79,51 @@ export function ReviewerMarketplace() {
   ).length;
 
   return (
-    <div className="literary-council-sanctuary literary-council-sanctuary--premium wc-page-enter">
-      <CouncilHero
-        inboxCount={inboxCount}
-        activeRequests={activeRequests.length}
-        feedbackReadyCount={feedbackReadyCount}
-        activeView={view}
-        isAdmin={isAdmin}
-        onAuthorView={() => setView('author')}
-        onReviewerView={() => setView('reviewer')}
-        onPoolView={() => setView('pool')}
-        onAdminView={() => setView('admin')}
-      />
+    <div className="literary-council-sanctuary literary-council-sanctuary--rpv2 wc-page-enter">
+      <div className={`rpv2${view === 'pool' ? ' rpv2--wide' : ''}`}>
+        <CouncilHero
+          inboxCount={inboxCount}
+          activeRequests={activeRequests.length}
+          feedbackReadyCount={feedbackReadyCount}
+          activeView={view}
+          isAdmin={isAdmin}
+          onAuthorView={() => setView('author')}
+          onReviewerView={() => setView('reviewer')}
+          onPoolView={() => setView('pool')}
+          onAdminView={() => setView('admin')}
+        />
 
-      <div className={`literary-council-sanctuary__content${view === 'pool' ? ' literary-council-sanctuary__content--wide' : ''}`}>
         {view === 'author' && (
-          <div className="council-author-flow">
+          <div className="rpv2-author-flow">
             <AuthorFeedbackInbox bundles={feedbackBundles} onResolve={reload} />
             <ReviewRequestPanel onRequested={reload} />
             <button
               type="button"
-              className="council-learn-more"
+              className="rpv2-inbox-action"
               onClick={() => setShowDetails((v) => !v)}
               aria-expanded={showDetails}
+              style={{ marginTop: '1rem' }}
             >
-              {showDetails ? 'Hide' : 'Learn about'} the Reviewer Pool
+              {showDetails
+                ? (te ? 'దాచు' : 'Hide')
+                : (te ? 'రివ్యూయర్ పూల్ గురించి తెలుసుకోండి' : 'Learn about the Reviewer Pool')}
             </button>
             {showDetails && <LiteraryCouncilPhilosophy />}
           </div>
         )}
 
         {view === 'reviewer' && (
-          <div className="reviewer-pool-workspace">
+          <div className="rpv2-reviewer-flow">
             <ReviewerDashboard onAction={reload} />
-            <ReviewerFeedbackInbox bundles={reviewerFeedbackBundles} onReply={reload} />
             <ReviewerAssignmentsInbox onAction={reload} />
+            {reviewerFeedbackBundles.length > 0 && (
+              <ReviewerFeedbackInbox bundles={reviewerFeedbackBundles} onReply={reload} />
+            )}
           </div>
         )}
 
         {view === 'pool' && (
-          <div className="reviewer-pool-discover">
+          <div className="rpv2-pool-flow">
             <ReviewerOnboardingPanel />
             <ReviewerPoolBrowse />
           </div>
@@ -127,9 +140,9 @@ export function ReviewerMarketplace() {
             <CouncilAdminQueue onAction={reload} />
           </div>
         )}
-      </div>
 
-      <ReviewDevSandboxPanel authorId={authorId} onSeeded={reload} />
+        <ReviewDevSandboxPanel authorId={authorId} onSeeded={reload} />
+      </div>
     </div>
   );
 }

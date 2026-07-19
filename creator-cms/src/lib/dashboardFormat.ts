@@ -1,5 +1,12 @@
+/** Clean rupee display — never show raw floats like ₹39.73 */
 export function formatInr(n: number) {
-  return `₹${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+  const whole = Math.round(Number.isFinite(n) ? n : 0);
+  return `₹${whole.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+}
+
+/** Whole-number RQI for display */
+export function formatRqi(n: number) {
+  return String(Math.round(Number.isFinite(n) ? n : 0));
 }
 
 export function formatCompact(n: number) {

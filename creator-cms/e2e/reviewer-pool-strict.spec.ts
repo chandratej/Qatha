@@ -80,7 +80,7 @@ test.describe('Reviewer Pool strict platform path', () => {
           priority: 'actionable',
           title: 'Reviewer Pool application approved',
           body: 'Welcome to the Reviewer Pool.',
-          action_url: '/reviewers',
+          action_url: '/earn/reviews',
           read_at: null,
           created_at: new Date().toISOString(),
         });
@@ -122,7 +122,7 @@ test.describe('Reviewer Pool strict platform path', () => {
           priority: 'actionable',
           title: 'New review invitation',
           body: 'Council reviewer accepted your manuscript.',
-          action_url: '/reviewers',
+          action_url: '/earn/reviews',
           read_at: null,
           created_at: new Date().toISOString(),
         });
@@ -200,7 +200,7 @@ test.describe('Reviewer Pool strict platform path', () => {
   test('moderator approve surfaces in-app notification', async ({ page }) => {
     await promoteToAdmin(page);
     await page.reload();
-    await page.goto('/reviewers');
+    await page.goto('/earn/reviews');
 
     await page.getByRole('navigation', { name: 'Reviewer Pool' }).getByRole('button', { name: /Admin/i }).click();
     await expect(page.getByText(/pending moderation/i)).toBeVisible({ timeout: 10_000 });
@@ -212,7 +212,7 @@ test.describe('Reviewer Pool strict platform path', () => {
   });
 
   test('reviewer accepts invitation via platform API', async ({ page }) => {
-    await page.goto('/reviewers');
+    await page.goto('/earn/reviews');
     await page.getByRole('navigation', { name: 'Reviewer Pool' }).getByRole('button', { name: /Review/i }).click();
     await expect(page.getByRole('heading', { name: /Your review inbox/i })).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: /Accept & begin/i }).click();

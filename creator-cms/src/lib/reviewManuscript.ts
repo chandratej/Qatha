@@ -9,7 +9,14 @@ import { getOrInitDemoData, loadChapterScenes } from './demoStorage';
 import { PROFESSIONAL_REVIEW_ROLES, GENRE_SPECIALIZATIONS } from './platformConstants';
 import { computeStoryQualityIndex, demoSqiFromTrust } from '../business/storyQualityIndex';
 
-const FALLBACK_SCENES: Array<{ id: string; title: string; paragraphs: string[] }> = [
+/**
+ * Review Studio language decision (do not silently reverse):
+ * Katha supports BOTH Telugu and English manuscripts. The review-language
+ * selector controls note-writing language independently. Demo seeds ship as
+ * bilingual pair (demo-valley-te + demo-valley-en) so TE UI + EN manuscript
+ * is intentional, not a bug. Genre tag in chrome calibrates feedback tone.
+ */
+const FALLBACK_SCENES_EN: Array<{ id: string; title: string; paragraphs: string[] }> = [
   {
     id: 'scene-opening',
     title: 'Scene 1 — Monsoon Warning',
@@ -32,6 +39,33 @@ const FALLBACK_SCENES: Array<{ id: string; title: string; paragraphs: string[] }
     paragraphs: [
       'By dawn the river would rise. They had until first light to decide whether courage was a virtue or a luxury.',
       'She folded the letter once, then twice, as if compressing the choice into something small enough to carry.',
+    ],
+  },
+];
+
+const FALLBACK_SCENES_TE: Array<{ id: string; title: string; paragraphs: string[] }> = [
+  {
+    id: 'scene-opening',
+    title: 'దృశ్యం 1 — వర్షపు హెచ్చరిక',
+    paragraphs: [
+      'గ్రామం మేఘాలతో గాయపడిన ఆకాశం కింద నిద్రపోయింది. కొండ వెనుక ఎక్కడో డ్రమ్ములు మోగాయి — ఉత్సవం కాదు, హెచ్చరిక.',
+      'ఆమె తలుపు చట్రంపై చేతులు అదిమి, పాత టేకు మొక్క యొక్క గీతలను అనుభవించింది. లోయలోని ప్రతి ఇల్లు అదే చేతులతో కట్టబడింది — ఇప్పుడు ఆ చేతులు ముష్టులుగా మారాయి.',
+    ],
+  },
+  {
+    id: 'scene-confrontation',
+    title: 'దృశ్యం 2 — చెప్పని గతం',
+    paragraphs: [
+      '"నన్ను మరచిపోమని అడగవద్దు," అతను గొంతు పెంచకుండా అన్నాడు. "జ్ఞాపకం మాకు ఇచ్చిన ఏకైక ఆయుధం."',
+      'లేఖ ముద్ర లేకుండా వచ్చింది. అది చాలు: రాసినవారు విస్మరించబడటం కంటే గుర్తించబడటానికి భయపడ్డారు.',
+    ],
+  },
+  {
+    id: 'scene-decision',
+    title: 'దృశ్యం 3 — మొదటి వెలుగు',
+    paragraphs: [
+      'తెల్లవారే సరికి నది పొంగుతుంది. ధైర్యం గుణమా విలాసమా అని నిర్ణయించుకోవడానికి వారికి మొదటి వెలుగు వరకే సమయం.',
+      'ఆమె లేఖను ఒకసారి మడిచింది, మళ్లీ ఒకసారి — ఎంపికను మోయగలిగేంత చిన్నదిగా చేసినట్లు.',
     ],
   },
 ];
@@ -112,10 +146,11 @@ function buildScenesFromEditor(
   return built;
 }
 
-function fallbackScenes(): BlindManuscriptScene[] {
+function fallbackScenes(language: 'te' | 'en' = 'en'): BlindManuscriptScene[] {
+  const source = language === 'te' ? FALLBACK_SCENES_TE : FALLBACK_SCENES_EN;
   let paragraphIndex = 0;
   const built: BlindManuscriptScene[] = [];
-  FALLBACK_SCENES.forEach((scene, sceneIndex) => {
+  source.forEach((scene, sceneIndex) => {
     const { scene: builtScene, nextIndex } = buildSceneFromChunks(
       { id: scene.id, title: scene.title, chunks: scene.paragraphs },
       sceneIndex,
@@ -131,18 +166,27 @@ function flattenParagraphs(scenes: BlindManuscriptScene[]): BlindManuscriptParag
   return scenes.flatMap((s) => s.paragraphs);
 }
 
+function demoLanguageForStory(storyId: string): 'te' | 'en' {
+  if (storyId === 'demo-valley-te') return 'te';
+  if (storyId.includes('-te') || /[\u0C00-\u0C7F]/.test(storyId)) return 'te';
+  return 'en';
+}
+
 function buildChapter(
   num: number,
   storyId: string,
   fallbackWords: number,
+  language: 'te' | 'en',
 ): BlindManuscriptChapter {
   const editorScenes = loadChapterScenes(storyId, num);
-  const scenes = editorScenes?.length ? buildScenesFromEditor(editorScenes) : fallbackScenes();
+  const scenes = editorScenes?.length
+    ? buildScenesFromEditor(editorScenes)
+    : fallbackScenes(language);
   const paragraphs = flattenParagraphs(scenes);
   const wordCount = paragraphs.reduce((s, p) => s + countWords(p.plainText), 0) || fallbackWords;
   return {
     num,
-    label: `Chapter ${num}`,
+    label: language === 'te' ? `అధ్యాయం ${num}` : `Chapter ${num}`,
     scenes,
     paragraphs,
     wordCount,
@@ -154,14 +198,17 @@ export function loadBlindManuscript(
   request: PeerReviewRequest,
   assignment: ReviewerAssignment,
 ): BlindManuscript {
-  const storyId = request.story_id || 'demo-rrr';
+  // Prefer original demo ids; map legacy IP id to bilingual valley demo.
+  const rawId = request.story_id || 'demo-valley-te';
+  const storyId = rawId === 'demo-rrr' ? 'demo-valley-en' : rawId;
+  const language = demoLanguageForStory(storyId);
   const demo = getOrInitDemoData(storyId);
   const chapterNums = demo.seasons.flatMap((s) => s.chapterNums).slice(0, 6);
   const nums = chapterNums.length ? chapterNums : [1, 2, 3];
 
   const chapters = nums.map((n) => {
     const stats = demo.chapterWordCounts[n] || 800;
-    return buildChapter(n, storyId, stats);
+    return buildChapter(n, storyId, stats, language);
   });
 
   const wordCount = chapters.reduce((s, c) => s + c.wordCount, 0);

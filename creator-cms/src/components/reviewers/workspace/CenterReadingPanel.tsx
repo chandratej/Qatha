@@ -179,13 +179,33 @@ function renderScenes(
                   activeCommentId,
                 );
 
+                const hasNotes = paraComments.length > 0;
+                const isActiveRow = Boolean(activeCommentId && paraComments.some((c) => c.id === activeCommentId));
+                const isHigh = paraComments.some((c) => c.priority === 'critical' || c.priority === 'high');
+
                 return (
                   <div
                     key={para.id}
-                    className={`rw-annotated-row${activeCommentId && paraComments.some((c) => c.id === activeCommentId) ? ' rw-annotated-row--active' : ''}`}
+                    className={`rw-annotated-row${isActiveRow ? ' rw-annotated-row--active' : ''}${hasNotes ? ' rw-annotated-row--has-notes' : ''}`}
                     data-paragraph-index={para.index}
                     data-scene-id={scene.id}
+                    data-note-count={paraComments.length}
                   >
+                    {/* Left gutter: always-visible note marker (Review Studio fix #1) */}
+                    <div className="rw-annotated-row__gutter" aria-hidden={!hasNotes}>
+                      {hasNotes && (
+                        <button
+                          type="button"
+                          className={`rw-gutter-marker${isActiveRow ? ' rw-gutter-marker--active' : ''}${isHigh ? ' rw-gutter-marker--high' : ''}`}
+                          onClick={() => onCommentMarkerClick(paraComments[0]!.id)}
+                          title={`${paraComments.length} note${paraComments.length > 1 ? 's' : ''}: ${paraComments[0]!.reason.slice(0, 80)}`}
+                          aria-label={`${paraComments.length} observation${paraComments.length > 1 ? 's' : ''} on this paragraph — open`}
+                        >
+                          {paraComments.length}
+                        </button>
+                      )}
+                    </div>
+
                     <div className="rw-annotated-row__text">
                       <div
                         className="rw-paragraph__text"

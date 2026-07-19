@@ -12,7 +12,7 @@ test.describe('Chapter editor (Narrative OS)', () => {
 
   test('command palette opens via keyboard shortcut', async ({ page }) => {
     await enterStudio(page);
-    await page.goto('/stories/demo-rrr/chapters/99');
+    await page.goto('/stories/demo-valley-te/chapters/99');
     await expect(page.locator('.narrative-os-app')).toBeVisible({ timeout: 20_000 });
     await page.locator('.narrative-os-app .ql-editor').first().click();
     await page.keyboard.press('Control+k');
@@ -21,7 +21,7 @@ test.describe('Chapter editor (Narrative OS)', () => {
 
   test('slash trigger types into the manuscript', async ({ page }) => {
     await enterStudio(page);
-    await page.goto('/stories/demo-rrr/chapters/99');
+    await page.goto('/stories/demo-valley-te/chapters/99');
     await expect(page.locator('.narrative-os-app')).toBeVisible({ timeout: 20_000 });
     const editor = page.locator('.narrative-os-app .ql-editor').first();
     await editor.click();
@@ -31,7 +31,7 @@ test.describe('Chapter editor (Narrative OS)', () => {
 
   test('empty demo chapter is immediately writable', async ({ page }) => {
     await enterStudio(page);
-    await page.goto('/stories/demo-rrr/chapters/99');
+    await page.goto('/stories/demo-valley-te/chapters/99');
     await expect(page.locator('.narrative-os-app')).toBeVisible({ timeout: 20_000 });
     const editor = page.locator('.narrative-os-app .ql-editor').first();
     await expect(editor).toBeVisible();

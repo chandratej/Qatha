@@ -311,7 +311,7 @@ export function Dashboard() {
             <span>{t('dashboard.requestReview')}</span>
           </div>
           <p className="sv21__panel-body">{t('dashboard.requestReviewHint')}</p>
-          <Link to="/reviewers" className="sv21__cta sv21__cta--soft sv21__cta--sm">
+          <Link to="/earn/reviews" className="sv21__cta sv21__cta--soft sv21__cta--sm">
             {t('dashboard.requestReviewCta')}
           </Link>
         </div>

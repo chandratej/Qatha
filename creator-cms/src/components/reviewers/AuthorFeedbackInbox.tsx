@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  BookOpen, ChevronDown, Gavel, MessageSquareQuote, ScrollText, Sparkles,
+  BookOpen, Gavel, Hourglass, MessageSquareQuote, ScrollText, Sparkles,
 } from 'lucide-react';
 import { platformApi } from '../../lib/platformApi';
 import type { AuthorReviewFeedbackBundle } from '../../lib/platformStore';
@@ -9,10 +9,7 @@ import type { AuthorCommentResolution, ReviewSubmissionSummary, StructuredReview
 import { GENRE_SPECIALIZATIONS, REVIEW_DECISIONS } from '../../lib/platformConstants';
 import { THREAD_MENTION_REVIEWER } from '../../../../packages/shared/reviewThreads';
 import { isAcceptDecision, isRevisionDecision, MAX_REVISION_ROUNDS } from '../../../../packages/shared/peerReviewRevision';
-
-function statusLabel(s: string) {
-  return s.replace(/_/g, ' ');
-}
+import { useLocale } from '../../context/LocaleContext';
 
 function decisionLabel(id?: string) {
   if (!id) return null;
@@ -43,7 +40,10 @@ interface Props {
   onResolve?: () => void;
 }
 
+/** Author feedback — matches katha_review_feedback_v2.html */
 export function AuthorFeedbackInbox({ bundles, onResolve }: Props) {
+  const { locale } = useLocale();
+  const te = locale === 'te';
   const [expandedId, setExpandedId] = useState<string | null>(() => {
     const ready = bundles.find((b) => hasReadableFeedback(b));
     return ready?.request.id ?? null;
@@ -57,92 +57,115 @@ export function AuthorFeedbackInbox({ bundles, onResolve }: Props) {
 
   if (bundles.length === 0) {
     return (
-      <section className="author-feedback author-feedback--calm" aria-labelledby="author-feedback-title">
-        <div className="author-feedback__head">
-          <ScrollText size={20} aria-hidden />
+      <section aria-labelledby="author-feedback-title">
+        <div className="rpv2-section-head--left">
+          <ScrollText size={18} aria-hidden />
           <div>
-            <h3 id="author-feedback-title" className="author-feedback__title">Your council feedback</h3>
-            <p className="author-feedback__subtitle">Passage-level notes and council decisions appear here after reviewers submit.</p>
+            <h3 id="author-feedback-title" lang={te ? 'te' : undefined}>
+              {te ? 'మీ మండలి అభిప్రాయం' : 'Your council feedback'}
+            </h3>
+            <p className="rpv2-section-sub" lang={te ? 'te' : undefined}>
+              {te
+                ? 'సమీక్షకులు సమర్పించిన తర్వాత పేరా నోట్స్ ఇక్కడ కనిపిస్తాయి.'
+                : 'Passage-level notes appear here after reviewers submit.'}
+            </p>
           </div>
         </div>
-        <div className="author-feedback__empty">
-          <p>No review requests yet.</p>
-          <p className="input-hint">Request a community review below to invite Reviewer Pool readers.</p>
+        <div className="rpv2-empty" lang={te ? 'te' : undefined}>
+          <p>{te ? 'ఇంకా సమీక్ష అభ్యర్థనలు లేవు.' : 'No review requests yet.'}</p>
+          <p className="rpv2-waiting-hint">
+            {te ? 'క్రింద కమ్యూనిటీ సమీక్ష అభ్యర్థించండి.' : 'Request a community review below.'}
+          </p>
         </div>
       </section>
     );
   }
 
   return (
-    <section className="author-feedback author-feedback--calm" aria-labelledby="author-feedback-title">
-      <div className="author-feedback__head">
-        <ScrollText size={20} aria-hidden />
+    <section aria-labelledby="author-feedback-title">
+      <div className="rpv2-section-head--left">
+        <ScrollText size={18} aria-hidden />
         <div>
-          <h3 id="author-feedback-title" className="author-feedback__title">Your council feedback</h3>
-          <p className="author-feedback__subtitle">
-            Double-blind · reviewer identities hidden until all reviews are in
+          <h3 id="author-feedback-title" lang={te ? 'te' : undefined}>
+            {te ? 'మీ మండలి అభిప్రాయం' : 'Your council feedback'}
+          </h3>
+          <p className="rpv2-section-sub" lang={te ? 'te' : undefined}>
+            {te
+              ? 'డబుల్-బ్లైండ్ · అన్ని సమీక్షలు వచ్చేవరకు సమీక్షకుల గుర్తింపు రహస్యం'
+              : 'Double-blind · reviewer identities hidden until all reviews are in'}
           </p>
         </div>
       </div>
 
       {ready.length > 0 && (
-        <div className="author-feedback__group">
-          <h4 className="author-feedback__section">Ready to read</h4>
-          <ul className="author-feedback__list">
-            {ready.map((bundle) => (
-              <FeedbackCard
-                key={bundle.request.id}
-                bundle={bundle}
-                expanded={expandedId === bundle.request.id}
-                onToggle={() => setExpandedId((id) => (id === bundle.request.id ? null : bundle.request.id))}
-                onResolve={onResolve}
-              />
-            ))}
-          </ul>
+        <div>
+          {ready.map((bundle) => (
+            <FeedbackCard
+              key={bundle.request.id}
+              bundle={bundle}
+              te={te}
+              expanded={expandedId === bundle.request.id || ready.length === 1}
+              onToggle={() => setExpandedId((id) => (id === bundle.request.id ? null : bundle.request.id))}
+              onResolve={onResolve}
+            />
+          ))}
         </div>
       )}
 
       {waiting.length > 0 && (
-        <div className="author-feedback__group">
-          <h4 className="author-feedback__section">Awaiting reviewers</h4>
-          <ul className="author-feedback__list">
-            {waiting.map((bundle) => (
-              <WaitingCard key={bundle.request.id} bundle={bundle} />
-            ))}
-          </ul>
+        <div>
+          <div className="rpv2-section-head--left">
+            <Hourglass size={18} aria-hidden />
+            <h3 lang={te ? 'te' : undefined}>{te ? 'సమీక్షకుల కోసం వేచి ఉన్నవి' : 'Awaiting reviewers'}</h3>
+          </div>
+          {waiting.map((bundle) => (
+            <WaitingCard key={bundle.request.id} bundle={bundle} te={te} />
+          ))}
         </div>
       )}
     </section>
   );
 }
 
-function WaitingCard({ bundle }: { bundle: AuthorReviewFeedbackBundle }) {
+function WaitingCard({ bundle, te }: { bundle: AuthorReviewFeedbackBundle; te: boolean }) {
   const { request } = bundle;
   const pct = Math.round((request.reviews_received / Math.max(1, request.reviewers_matched)) * 100);
   const genre = GENRE_SPECIALIZATIONS.find((g) => g.id === request.story_genre)?.label ?? request.story_genre;
 
   return (
-    <li className="author-feedback__card author-feedback__card--waiting">
-      <div className="author-feedback__card-head">
-        <h5 className="author-feedback__card-title">{request.story_title}</h5>
-        <span className={`review-status review-status--${request.status}`}>{statusLabel(request.status)}</span>
+    <div className="rpv2-card">
+      <div className="rpv2-card-top">
+        <div>
+          <p className="rpv2-card-title" lang={te ? 'te' : undefined}>{request.story_title}</p>
+          <p className="rpv2-card-meta" lang={te ? 'te' : undefined}>
+            {genre} · {request.reviews_received}/{request.reviewers_matched} {te ? 'సమీక్షలు వచ్చాయి' : 'reviews in'}
+          </p>
+        </div>
+        <span className="rpv2-status rpv2-status--review" lang={te ? 'te' : undefined}>
+          {te ? 'సమీక్షలో' : 'In review'}
+        </span>
       </div>
-      <p className="author-feedback__card-meta">{genre} · {request.reviews_received}/{request.reviewers_matched} reviews in</p>
-      <div className="review-progress-bar" aria-hidden>
-        <span className="review-progress-bar__fill" style={{ width: `${pct}%` }} />
+      <div className="rpv2-progress" aria-hidden>
+        <div className="rpv2-progress__fill" style={{ width: `${pct}%` }} />
       </div>
-      <p className="input-hint">Reviewers are reading your manuscript. Feedback will appear here as they submit.</p>
-    </li>
+      <p className="rpv2-waiting-hint" lang={te ? 'te' : undefined}>
+        {te
+          ? 'సమీక్షకులు మీ మాన్యుస్క్రిప్ట్ చదువుతున్నారు. వారు సమర్పించిన వెంటనే అభిప్రాయం ఇక్కడ కనిపిస్తుంది.'
+          : 'Reviewers are reading your manuscript. Feedback will appear here as they submit.'}
+      </p>
+    </div>
   );
 }
 
 function FeedbackCard({
   bundle,
+  te,
   expanded,
   onToggle,
   onResolve,
 }: {
   bundle: AuthorReviewFeedbackBundle;
+  te: boolean;
   expanded: boolean;
   onToggle: () => void;
   onResolve?: () => void;
@@ -189,178 +212,135 @@ function FeedbackCard({
     && (request.revision_round ?? 0) < MAX_REVISION_ROUNDS;
   const canAppeal = showLifecycle && request.audit_status !== 'appealed';
   const appealPending = request.audit_status === 'appealed';
-
-  const acknowledgeDecision = async () => {
-    setLifecycleBusy(true);
-    try {
-      await platformApi.acknowledgePeerReview(request.id, satisfactionRating ?? undefined);
-      setSatisfactionRating(null);
-      onResolve?.();
-    } finally {
-      setLifecycleBusy(false);
-    }
-  };
-
-  const resubmitForRevision = async () => {
-    setLifecycleBusy(true);
-    try {
-      await platformApi.resubmitPeerReview(request.id, revisionNotes.trim() || undefined);
-      setRevisionNotes('');
-      onResolve?.();
-    } finally {
-      setLifecycleBusy(false);
-    }
-  };
-
-  const submitAppeal = async () => {
-    const reason = appealReason.trim();
-    if (reason.length < 10) return;
-    setLifecycleBusy(true);
-    try {
-      await platformApi.submitPeerReviewAppeal(request.id, reason);
-      setAppealReason('');
-      onResolve?.();
-    } finally {
-      setLifecycleBusy(false);
-    }
-  };
+  const isDemo = request.story_id?.startsWith('demo-') ?? false;
 
   return (
-    <li className={`author-feedback__card${expanded ? ' author-feedback__card--open' : ''}`}>
-      <button type="button" className="author-feedback__card-toggle" onClick={onToggle} aria-expanded={expanded}>
-        <div className="author-feedback__card-head">
-          <h5 className="author-feedback__card-title">{request.story_title}</h5>
-          <span className={`review-status review-status--${request.status}`}>{statusLabel(request.status)}</span>
+    <div className="rpv2-card">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        style={{
+          width: '100%', background: 'none', border: 'none', padding: 0,
+          textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', color: 'inherit',
+        }}
+      >
+        <div className="rpv2-card-top">
+          <div>
+            <p className="rpv2-card-title" lang={te ? 'te' : undefined}>
+              {request.story_title}
+              {isDemo && <span className="rpv2-demo-tag">Demo</span>}
+            </p>
+            <p className="rpv2-card-meta" lang={te ? 'te' : undefined}>
+              {genre} · {request.reviews_received}/{request.reviewers_matched}{' '}
+              {te ? 'సమీక్షలు వచ్చాయి' : 'reviews'}
+            </p>
+          </div>
+          <span className="rpv2-status rpv2-status--review" lang={te ? 'te' : undefined}>
+            {te ? 'సమీక్షలో' : statusLabel(request.status)}
+          </span>
         </div>
-        <p className="author-feedback__card-meta">
-          {genre} · {request.reviews_received}/{request.reviewers_matched} reviews
-          {decision ? ` · Council: ${decision}` : ''}
-        </p>
-        <div className="review-progress-bar" aria-hidden>
-          <span className="review-progress-bar__fill" style={{ width: `${pct}%` }} />
+        <div className="rpv2-progress" aria-hidden>
+          <div className="rpv2-progress__fill" style={{ width: `${pct}%` }} />
         </div>
-        <ChevronDown
-          size={16}
-          aria-hidden
-          className={`author-feedback__chevron${expanded ? ' author-feedback__chevron--open' : ''}`}
-        />
       </button>
 
       {expanded && (
-        <div className="author-feedback__body">
+        <div>
           {decision && (
-            <div className="author-feedback__decision">
+            <div className="rpv2-decision" lang={te ? 'te' : undefined}>
               <Sparkles size={16} aria-hidden />
-              <div>
-                <span className="author-feedback__decision-label">Council decision</span>
-                <strong>{decision}</strong>
-                {request.consensus_pct != null && (
-                  <span className="input-hint"> · {request.consensus_pct}% consensus</span>
-                )}
-              </div>
+              {te ? 'మండలి నిర్ణయం:' : 'Council decision:'} <b>{decision}</b>
+              {request.consensus_pct != null && (
+                <span> · {request.consensus_pct}% {te ? 'ఏకాభిప్రాయం' : 'consensus'}</span>
+              )}
             </div>
           )}
 
           {submissions.map((sub) => (
-            <ReviewerSummaryBlock key={sub.id} slot={sub.reviewer_slot} summary={sub.review_summary} />
+            <ReviewerSummaryBlock key={sub.id} slot={sub.reviewer_slot} summary={sub.review_summary} te={te} />
           ))}
 
           {comments.length > 0 && (
-            <div className="author-feedback__notes">
-              <h6 className="author-feedback__notes-title">
-                <MessageSquareQuote size={15} aria-hidden /> Passage notes ({comments.length})
-              </h6>
-              <ul className="author-feedback__notes-list">
+            <div>
+              <p className="rpv2-notes-title" lang={te ? 'te' : undefined}>
+                <MessageSquareQuote size={15} aria-hidden />
+                {te ? `పేరా నోట్స్ (${comments.length})` : `Passage notes (${comments.length})`}
+              </p>
+              <ul className="rpv2-notes-list">
                 {comments.map((c, idx) => (
-                  <li key={`${c.chapter_ref}-${c.paragraph_ref}-${idx}`} className="author-feedback__note">
-                    <div className="author-feedback__note-head">
-                      <span className="author-feedback__note-cat">{categoryLabel(c.category)}</span>
-                      <span className={`author-feedback__note-priority author-feedback__note-priority--${c.priority}`}>
-                        {c.priority}
+                  <li key={c.id ?? `note-${idx}`} className="rpv2-note">
+                    <div className="rpv2-note-head">
+                      <span className="rpv2-note-cat">{categoryLabel(c.category)}</span>
+                      <span className={`rpv2-note-priority rpv2-note-priority--${c.priority}`}>
+                        {c.priority === 'high' ? (te ? 'అధిక' : 'high')
+                          : c.priority === 'medium' ? (te ? 'మధ్యమ' : 'medium')
+                            : (te ? 'తక్కువ' : 'low')}
                       </span>
                       {commentLocation(c) && (
-                        <span className="author-feedback__note-loc">{commentLocation(c)}</span>
+                        <span className="rpv2-note-loc">{commentLocation(c)}</span>
                       )}
                     </div>
                     {c.passage_ref && (
-                      <blockquote className="author-feedback__note-passage">"{c.passage_ref}"</blockquote>
+                      <blockquote className="rpv2-note-passage">"{c.passage_ref}"</blockquote>
                     )}
-                    <p className="author-feedback__note-reason">{c.reason}</p>
+                    <p className="rpv2-note-reason">{c.reason}</p>
                     {c.recommendation && (
-                      <p className="author-feedback__note-rec">
-                        <strong>Suggestion:</strong> {c.recommendation}
+                      <p className="rpv2-note-reason">
+                        <strong>{te ? 'సూచన:' : 'Suggestion:'}</strong> {c.recommendation}
                       </p>
-                    )}
-                    {c.expected_impact && (
-                      <p className="author-feedback__note-impact">
-                        <strong>Impact:</strong> {c.expected_impact}
-                      </p>
-                    )}
-                    {c.threads && c.threads.length > 0 && (
-                      <ul className="author-feedback__threads">
-                        {c.threads.map((t) => (
-                          <li key={t.id} className={`author-feedback__thread author-feedback__thread--${t.role}`}>
-                            <span className="author-feedback__thread-role">{t.role}</span>
-                            <p>{t.body}</p>
-                          </li>
-                        ))}
-                      </ul>
                     )}
                     {c.id && (
-                      <div className="author-feedback__note-actions">
-                        {c.author_resolution && c.author_resolution !== 'pending' ? (
-                          <span className={`author-feedback__resolution author-feedback__resolution--${c.author_resolution}`}>
-                            {c.author_resolution}
+                      <>
+                        <div className="rpv2-note-actions">
+                          {c.author_resolution && c.author_resolution !== 'pending' ? (
+                            <span className={`rpv2-resolution rpv2-resolution--${c.author_resolution === 'rejected' ? 'rejected' : c.author_resolution}`}>
+                              {c.author_resolution === 'accepted' ? (te ? 'అంగీకరించారు' : 'Accepted')
+                                : c.author_resolution === 'deferred' ? (te ? 'తర్వాత' : 'Deferred')
+                                  : (te ? 'వద్దు' : 'Declined')}
+                            </span>
+                          ) : (
+                            <>
+                              <button type="button" className="rpv2-chip" disabled={busyComment === c.id}
+                                onClick={() => { void resolveComment(c.id!, 'accepted'); }}>
+                                {te ? 'అంగీకరించు' : 'Accept'}
+                              </button>
+                              <button type="button" className="rpv2-chip" disabled={busyComment === c.id}
+                                onClick={() => { void resolveComment(c.id!, 'deferred'); }}>
+                                {te ? 'తర్వాత' : 'Defer'}
+                              </button>
+                              <button type="button" className="rpv2-chip" disabled={busyComment === c.id}
+                                onClick={() => { void resolveComment(c.id!, 'rejected'); }}>
+                                {te ? 'వద్దు' : 'Decline'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        <span className="rpv2-reply-hint" lang={te ? 'te' : undefined}>
+                          {te ? 'సమీక్షకుడికి రిప్లై చేయండి' : `Reply to reviewer · ${THREAD_MENTION_REVIEWER}`}
+                        </span>
+                        <textarea
+                          className="rpv2-reply-box"
+                          rows={2}
+                          value={replyDrafts[c.id] || ''}
+                          onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [c.id!]: e.target.value }))}
+                          placeholder={te ? 'మీ సవరణ ప్రణాళికను వివరించండి…' : 'Clarify your revision plan…'}
+                          lang={te ? 'te' : undefined}
+                        />
+                        <button
+                          type="button"
+                          className="rpv2-reply-send"
+                          disabled={busyComment === c.id || !(replyDrafts[c.id] || '').trim()}
+                          onClick={() => { void sendReply(c.id!); }}
+                        >
+                          {te ? 'పంపండి' : 'Send'}
+                        </button>
+                        {!(replyDrafts[c.id] || '').trim() && (
+                          <span className="rpv2-reply-hint">
+                            {te ? 'పంపడానికి రిప్లై రాయండి' : 'Write a reply to enable Send'}
                           </span>
-                        ) : (
-                          <>
-                            <button
-                              type="button"
-                              className="studio-chip"
-                              disabled={busyComment === c.id}
-                              onClick={() => { void resolveComment(c.id!, 'accepted'); }}
-                            >
-                              Accept suggestion
-                            </button>
-                            <button
-                              type="button"
-                              className="studio-chip"
-                              disabled={busyComment === c.id}
-                              onClick={() => { void resolveComment(c.id!, 'deferred'); }}
-                            >
-                              Defer
-                            </button>
-                            <button
-                              type="button"
-                              className="studio-chip"
-                              disabled={busyComment === c.id}
-                              onClick={() => { void resolveComment(c.id!, 'rejected'); }}
-                            >
-                              Decline
-                            </button>
-                          </>
                         )}
-                        <label className="author-feedback__reply">
-                          <span className="input-hint">
-                            Reply to reviewer · use {THREAD_MENTION_REVIEWER} to notify
-                          </span>
-                          <textarea
-                            className="rw-textarea"
-                            rows={2}
-                            value={replyDrafts[c.id] || ''}
-                            onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [c.id!]: e.target.value }))}
-                            placeholder={`Clarify your revision plan or ask a question… (${THREAD_MENTION_REVIEWER})`}
-                          />
-                          <button
-                            type="button"
-                            className="katha-cta katha-cta--soft katha-cta--compact"
-                            disabled={busyComment === c.id || !(replyDrafts[c.id] || '').trim()}
-                            onClick={() => { void sendReply(c.id!); }}
-                          >
-                            Send reply
-                          </button>
-                        </label>
-                      </div>
+                      </>
                     )}
                   </li>
                 ))}
@@ -369,49 +349,53 @@ function FeedbackCard({
           )}
 
           {appealPending && (
-            <p className="author-feedback__appeal-pending input-hint">
-              <Gavel size={14} aria-hidden /> Your appeal is under independent review. You will be notified when a decision is posted.
+            <p className="rpv2-waiting-hint">
+              <Gavel size={14} aria-hidden /> {te ? 'మీ అప్పీల్ పరిశీలనలో ఉంది.' : 'Your appeal is under review.'}
             </p>
           )}
 
           {canAppeal && (
-            <div className="author-feedback__appeal">
-              <label className="input-hint">
-                File an appeal if you believe the council decision had a procedural issue
-                <textarea
-                  className="rw-textarea"
-                  rows={2}
-                  value={appealReason}
-                  onChange={(e) => setAppealReason(e.target.value)}
-                  placeholder="Describe the procedural concern (10+ characters)…"
-                />
-              </label>
+            <div style={{ marginTop: 12 }}>
+              <textarea
+                className="rpv2-reply-box"
+                rows={2}
+                value={appealReason}
+                onChange={(e) => setAppealReason(e.target.value)}
+                placeholder={te ? 'ప్రక్రియ సమస్యను వివరించండి (10+ అక్షరాలు)…' : 'Describe the procedural concern (10+ characters)…'}
+              />
               <button
                 type="button"
-                className="katha-cta katha-cta--soft katha-cta--compact"
+                className="rpv2-reply-send"
                 disabled={lifecycleBusy || appealReason.trim().length < 10}
-                onClick={() => { void submitAppeal(); }}
+                onClick={async () => {
+                  if (appealReason.trim().length < 10) return;
+                  setLifecycleBusy(true);
+                  try {
+                    await platformApi.submitPeerReviewAppeal(request.id, appealReason.trim());
+                    setAppealReason('');
+                    onResolve?.();
+                  } finally {
+                    setLifecycleBusy(false);
+                  }
+                }}
               >
-                <Gavel size={14} aria-hidden /> Submit appeal
+                <Gavel size={12} aria-hidden /> {te ? 'అప్పీల్ సమర్పించండి' : 'Submit appeal'}
               </button>
             </div>
           )}
 
           {showLifecycle && (canAcknowledge || canResubmit) && (
-            <div className="author-feedback__lifecycle">
+            <div style={{ marginTop: 14 }}>
               {canAcknowledge && (
-                <div className="author-feedback__satisfaction">
-                  <p className="input-hint" id={`satisfaction-label-${request.id}`}>
-                    How helpful was this council review? (optional)
-                  </p>
-                  <div className="author-feedback__stars" role="group" aria-labelledby={`satisfaction-label-${request.id}`}>
+                <div>
+                  <p className="rpv2-reply-hint">{te ? 'ఈ సమీక్ష ఎంత ఉపయోగపడింది?' : 'How helpful was this review?'}</p>
+                  <div style={{ display: 'flex', gap: 6, margin: '6px 0' }}>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
                         key={n}
                         type="button"
-                        className={`author-feedback__star${satisfactionRating === n ? ' author-feedback__star--on' : ''}`}
+                        className="rpv2-chip"
                         aria-pressed={satisfactionRating === n}
-                        aria-label={`${n} out of 5`}
                         onClick={() => setSatisfactionRating(n)}
                       >
                         {n}
@@ -420,59 +404,84 @@ function FeedbackCard({
                   </div>
                   <button
                     type="button"
-                    className="katha-cta katha-cta--maroon katha-cta--compact"
+                    className="rpv2-queue-cta"
                     disabled={lifecycleBusy}
-                    onClick={() => { void acknowledgeDecision(); }}
+                    onClick={async () => {
+                      setLifecycleBusy(true);
+                      try {
+                        await platformApi.acknowledgePeerReview(request.id, satisfactionRating ?? undefined);
+                        setSatisfactionRating(null);
+                        onResolve?.();
+                      } finally {
+                        setLifecycleBusy(false);
+                      }
+                    }}
                   >
-                    Mark review complete
+                    {te ? 'సమీక్ష పూర్తి' : 'Mark review complete'}
                   </button>
                 </div>
               )}
               {canResubmit && (
-                <div className="author-feedback__resubmit">
-                  <label className="input-hint">
-                    Resubmit for council re-review (round {(request.revision_round ?? 0) + 1}/{MAX_REVISION_ROUNDS})
-                  </label>
+                <div style={{ marginTop: 10 }}>
                   <textarea
-                    className="rw-textarea"
+                    className="rpv2-reply-box"
                     rows={2}
                     value={revisionNotes}
                     onChange={(e) => setRevisionNotes(e.target.value)}
-                    placeholder="Summarize what you changed since the last round…"
+                    placeholder={te ? 'మీరు మార్చినవి సంక్షిప్తంగా…' : 'Summarize what you changed…'}
                   />
                   <button
                     type="button"
-                    className="katha-cta katha-cta--soft katha-cta--compact"
+                    className="rpv2-reply-send"
                     disabled={lifecycleBusy}
-                    onClick={() => { void resubmitForRevision(); }}
+                    onClick={async () => {
+                      setLifecycleBusy(true);
+                      try {
+                        await platformApi.resubmitPeerReview(request.id, revisionNotes.trim() || undefined);
+                        setRevisionNotes('');
+                        onResolve?.();
+                      } finally {
+                        setLifecycleBusy(false);
+                      }
+                    }}
                   >
-                    Resubmit for re-review
+                    {te ? `మళ్లీ సమర్పించండి (${(request.revision_round ?? 0) + 1}/${MAX_REVISION_ROUNDS})` : `Resubmit (${(request.revision_round ?? 0) + 1}/${MAX_REVISION_ROUNDS})`}
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {request.story_id && !request.story_id.startsWith('demo-') && (
-            <Link to={`/stories/${request.story_id}`} className="katha-cta katha-cta--soft author-feedback__revise-cta">
-              <BookOpen size={14} aria-hidden /> Open manuscript to revise
+          {request.story_id && !isDemo && (
+            <Link to={`/stories/${request.story_id}`} className="rpv2-inbox-action" style={{ marginTop: 12 }}>
+              <BookOpen size={14} aria-hidden /> {te ? 'మాన్యుస్క్రిప్ట్ తెరవండి' : 'Open manuscript to revise'}
             </Link>
           )}
-          {(request.story_id?.startsWith('demo-') ?? false) && (
-            <p className="input-hint">Demo manuscript — link your own story when requesting a review to jump into the editor.</p>
+          {isDemo && (
+            <p className="rpv2-demo-note" lang={te ? 'te' : undefined}>
+              {te
+                ? 'నమూనా మాన్యుస్క్రిప్ట్ — మీ సొంత కథను సమీక్షకు అభ్యర్థించినప్పుడు నేరుగా ఎడిటర్‌లోకి వెళ్తారు.'
+                : 'Demo manuscript — link your own story when requesting a review to jump into the editor.'}
+            </p>
           )}
         </div>
       )}
-    </li>
+    </div>
   );
+}
+
+function statusLabel(s: string) {
+  return s.replace(/_/g, ' ');
 }
 
 function ReviewerSummaryBlock({
   slot,
   summary,
+  te,
 }: {
   slot: string;
   summary?: ReviewSubmissionSummary;
+  te: boolean;
 }) {
   if (!summary?.overall_review && !summary?.strengths && !summary?.weaknesses) return null;
 
@@ -480,31 +489,31 @@ function ReviewerSummaryBlock({
   const decision = decisionLabel(summary.majority_decision);
 
   return (
-    <article className="author-feedback__summary" lang={/[\u0C00-\u0C7F]/.test(summary.overall_review) ? 'te' : undefined}>
-      <header className="author-feedback__summary-head">
-        <h6>Council reviewer {slotNum}</h6>
-        {decision && <span className="author-feedback__summary-decision">{decision}</span>}
-      </header>
+    <article className="rpv2-summary" lang={/[\u0C00-\u0C7F]/.test(summary.overall_review || '') ? 'te' : undefined}>
+      <div className="rpv2-summary__head">
+        <h6>{te ? `మండలి సమీక్షకుడు ${slotNum}` : `Council reviewer ${slotNum}`}</h6>
+        {decision && <span className="rpv2-summary__decision">{decision}</span>}
+      </div>
       {summary.overall_review && (
-        <p className="author-feedback__summary-overall">{summary.overall_review}</p>
+        <p className="rpv2-summary__overall">{summary.overall_review}</p>
       )}
-      <div className="author-feedback__summary-grid">
+      <div className="rpv2-summary__grid">
         {summary.strengths && (
           <div>
-            <span className="author-feedback__summary-label">Strengths</span>
+            <span className="rpv2-summary__label">{te ? 'బలాలు' : 'Strengths'}</span>
             <p>{summary.strengths}</p>
           </div>
         )}
         {summary.weaknesses && (
           <div>
-            <span className="author-feedback__summary-label">Areas to refine</span>
+            <span className="rpv2-summary__label">{te ? 'మెరుగుపరచాల్సినవి' : 'Areas to refine'}</span>
             <p>{summary.weaknesses}</p>
           </div>
         )}
       </div>
       {summary.recommendation && (
-        <p className="author-feedback__summary-rec">
-          <strong>Recommendation:</strong> {summary.recommendation}
+        <p className="rpv2-summary__overall">
+          <strong>{te ? 'సూచన:' : 'Recommendation:'}</strong> {summary.recommendation}
         </p>
       )}
     </article>

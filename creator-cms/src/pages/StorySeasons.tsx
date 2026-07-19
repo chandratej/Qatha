@@ -24,16 +24,20 @@ import { CONTENT_TYPES } from '../lib/platformConstants';
 
 export function StorySeasons() {
   const { locale, t } = useLocale();
-  const { storyId = 'demo-rrr' } = useParams();
+  const { storyId = 'demo-valley-te' } = useParams();
   const navigate = useNavigate();
-  const isDemo = storyId === 'demo-rrr';
+  const isDemo = storyId === 'demo-valley-te' || storyId === 'demo-valley-en' || storyId === 'demo-rrr';
 
   const [seasons, setSeasons] = useState<DemoSeason[]>(() => getOrInitDemoData(storyId).seasons);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>(getOrInitDemoData(storyId).seasons[0]?.id || 's1');
   const [newSeasonName, setNewSeasonName] = useState('');
   const [showAddSeason, setShowAddSeason] = useState(false);
 
-  const [storyTitle, setStoryTitle] = useState(isDemo ? 'RRR - రాజమౌళి (Demo - Editor Validated)' : 'My Story');
+  const [storyTitle, setStoryTitle] = useState(
+    isDemo
+      ? (storyId === 'demo-valley-en' ? 'Before the Monsoon (Demo)' : 'వర్షం వచ్చే ముందు (Demo)')
+      : 'My Story',
+  );
   const [storySlug, setStorySlug] = useState<string | null>(null);
   const [storyMeta, setStoryMeta] = useState<{
     id: string;

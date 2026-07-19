@@ -1,0 +1,446 @@
+/**
+ * Navigation redesign v2 — matches katha_navigation_v2.html prototype.
+ * Desktop: 3 primary + More dropdown. Mobile: bottom tabs + sheet.
+ *
+ * Critical: .app-topnav__nav historically used overflow-x:auto which CLIPPED
+ * the More dropdown. v2 forces overflow:visible so the menu is readable.
+ */
+
+/* —— Shell —— */
+.app-topnav--v2 {
+  overflow: visible !important;
+  z-index: 400;
+}
+
+.app-topnav--v2 .app-topnav__primary {
+  overflow: visible !important;
+  height: auto;
+  min-height: 56px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* Override the pill-rail overflow that killed the dropdown */
+.app-topnav--v2 .app-topnav__nav--desktop {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow: visible !important;
+  padding: 4px;
+  background: rgba(26, 24, 20, 0.04);
+  border-radius: 999px;
+  border: 1px solid var(--premium-border, #e5dfd0);
+}
+
+[data-theme='dark'] .app-topnav--v2 .app-topnav__nav--desktop {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.app-topnav--v2 .app-topnav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ink-soft, #6b5f4f);
+  text-decoration: none;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.app-topnav--v2 .app-topnav__link:hover {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--ink, #2b221a);
+}
+
+.app-topnav--v2 .app-topnav__link--active {
+  background: var(--premium-surface, #fff);
+  color: var(--katha-maroon, #7a2e2e);
+  box-shadow: 0 1px 3px rgba(43, 34, 26, 0.08);
+  font-weight: 600;
+}
+
+/* —— More dropdown (prototype: d-more-menu) —— */
+.app-topnav--v2 .app-topnav__more {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.app-topnav--v2 .app-topnav__more-trigger {
+  /* button inherits .app-topnav__link look */
+}
+
+.app-topnav--v2 .app-topnav__more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 500;
+  min-width: 220px;
+  width: max-content;
+  max-width: min(280px, 90vw);
+  padding: 6px;
+  border: 1px solid var(--dash-border, #e5dfd0);
+  border-radius: 16px;
+  background: var(--dash-surface, #ffffff);
+  box-shadow: 0 12px 32px rgba(43, 34, 26, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Portal variant: fixed, body-mounted — always above page content */
+.app-topnav__more-menu--portal {
+  position: fixed;
+  z-index: 10000;
+  min-width: 220px;
+  width: max-content;
+  max-width: min(280px, 90vw);
+  padding: 6px;
+  border: 1px solid var(--dash-border, #e5dfd0);
+  border-radius: 16px;
+  background: var(--dash-surface, #ffffff);
+  box-shadow: 0 12px 32px rgba(43, 34, 26, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-topnav--v2 .app-topnav__more-item,
+.app-topnav__more-menu--portal .app-topnav__more-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--ink-soft, #6b5f4f);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.app-topnav--v2 .app-topnav__more-item:hover,
+.app-topnav--v2 .app-topnav__more-item--active,
+.app-topnav__more-menu--portal .app-topnav__more-item:hover,
+.app-topnav__more-menu--portal .app-topnav__more-item--active {
+  background: var(--surface-1, #f5f0e6);
+  color: var(--katha-maroon, #7a2e2e);
+}
+
+.app-topnav--v2 .app-topnav__more-item span:not(.app-nav-status),
+.app-topnav__more-menu--portal .app-topnav__more-item span:not(.app-nav-status) {
+  flex: 1;
+}
+
+.app-nav-status {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--surface-1, #f5f0e6);
+  color: var(--text-muted, #9c8f7a);
+  white-space: nowrap;
+}
+
+/* Stats ribbon fully retired on v2 */
+.app-topnav--v2 .app-topnav__stats {
+  display: none !important;
+}
+
+/* Keep link labels visible on desktop v2 (old media rule hid them at 900px) */
+@media (max-width: 900px) and (min-width: 769px) {
+  .app-topnav--v2 .app-topnav__link-label {
+    display: inline !important;
+  }
+}
+
+/* Earn hub tabs — underline style matching katha_payouts_v2 prototype */
+.earn-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 0;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.earn-hub__tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--border, #e5dfd0);
+  border-radius: 0;
+  background: transparent;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.earn-hub__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px;
+  margin-right: 22px;
+  border-radius: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary, #6b5f4f);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.earn-hub__tab:hover {
+  background: transparent;
+  color: var(--text-primary, #2b221a);
+}
+
+.earn-hub__tab--active {
+  background: transparent;
+  color: var(--katha-maroon, #7a2e2e);
+  border-bottom-color: var(--katha-maroon, #7a2e2e);
+  font-weight: 500;
+}
+
+.earn-hub__body {
+  min-width: 0;
+}
+
+/* —— Mobile bottom tab bar (prototype m-tabbar) —— */
+.app-mobile-tabbar {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9000;
+  align-items: stretch;
+  border-top: 1px solid var(--border, #e5dfd0);
+  background: var(--surface, #fff);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -4px 20px rgba(43, 34, 26, 0.08);
+}
+
+.app-mobile-tabbar__tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 0 10px;
+  border: none;
+  background: none;
+  color: var(--text-muted, #9c8f7a);
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.app-mobile-tabbar__tab--active {
+  color: var(--katha-maroon, #7a2e2e);
+}
+
+/* Backdrop + sheet only exist when open (mounted) */
+.app-mobile-sheet__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  background: rgba(43, 34, 26, 0.4);
+}
+
+.app-mobile-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9600;
+  background: var(--surface, #fff);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 30px rgba(43, 34, 26, 0.18);
+  padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  animation: app-mobile-sheet-up 0.22s ease;
+}
+
+@keyframes app-mobile-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.app-mobile-sheet__handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border-strong, #d8cfb8);
+  border-radius: 4px;
+  margin: 0 auto 10px;
+}
+
+.app-mobile-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.app-mobile-sheet__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #2b221a);
+}
+
+.app-mobile-sheet__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #6b5f4f);
+  cursor: pointer;
+}
+
+.app-mobile-sheet__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app-mobile-sheet__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 4px;
+  border: none;
+  border-bottom: 1px solid var(--border, #e5dfd0);
+  background: none;
+  font-size: 0.9375rem;
+  color: var(--text-primary, #2b221a);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.app-mobile-sheet__item:last-child {
+  border-bottom: none;
+}
+
+.app-mobile-sheet__item--active {
+  color: var(--katha-maroon, #7a2e2e);
+  font-weight: 600;
+}
+
+.app-mobile-sheet__item span:not(.app-nav-status) {
+  flex: 1;
+}
+
+.app-mobile-sheet__prefs {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #e5dfd0);
+  display: flex;
+  gap: 8px;
+}
+
+.app-mobile-sheet__pref {
+  border: 1px solid var(--border-strong, #d8cfb8);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--surface-1, #f5f0e6);
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #6b5f4f);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Mobile: hide desktop primary rail; show tab bar */
+@media (max-width: 768px) {
+  .app-shell--nav-v2 .app-topnav__nav--desktop {
+    display: none !important;
+  }
+
+  .app-shell--nav-v2 .app-topnav__locale-desktop {
+    display: none;
+  }
+
+  .app-shell--nav-v2 .app-topnav__search-label,
+  .app-shell--nav-v2 .app-topnav__search kbd,
+  .app-shell--nav-v2 .app-topnav__user-name {
+    display: none;
+  }
+
+  .app-mobile-tabbar {
+    display: flex;
+  }
+
+  .app-shell--nav-v2 .premium-main {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0));
+  }
+
+  .earn-hub__tabs {
+    width: 100%;
+  }
+
+  .earn-hub__tab {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-mobile-sheet {
+    animation: none;
+  }
+}
+
+[data-theme='dark'] .app-topnav--v2 .app-topnav__more-menu,
+[data-theme='dark'] .app-topnav__more-menu--portal,
+[data-theme='dark'] .app-mobile-tabbar,
+[data-theme='dark'] .app-mobile-sheet,
+[data-theme='dark'] .earn-hub__tabs {
+  background: var(--dash-surface, #1c1814);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--ink, #f5f0e6);
+}
+
+[data-theme='dark'] .app-topnav--v2 .app-topnav__more-item:hover,
+[data-theme='dark'] .app-topnav__more-menu--portal .app-topnav__more-item:hover,
+[data-theme='dark'] .earn-hub__tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .earn-hub__tab--active {
+  background: rgba(184, 134, 59, 0.22);
+  color: #f3e3c3;
+}
+
+[data-theme='dark'] .app-nav-status {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.55);
+}

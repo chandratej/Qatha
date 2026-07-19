@@ -210,7 +210,7 @@ test.describe('Review Workspace performance', () => {
 
   test('Reviewer dashboard loads within performance budget', async ({ page }) => {
     const start = Date.now();
-    await page.goto('/reviewers');
+    await page.goto('/earn/reviews');
     await expect(page.getByRole('region', { name: /Reviewer dashboard/i })).toBeVisible({ timeout: DASHBOARD_BUDGET_MS });
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(DASHBOARD_BUDGET_MS);

@@ -24,6 +24,12 @@ export type StudioStringKey =
   | 'nav.community'
   | 'nav.reviewers'
   | 'nav.monetization'
+  | 'nav.earn'
+  | 'nav.more'
+  | 'nav.mainNav'
+  | 'nav.mobileNav'
+  | 'nav.communityStatus'
+  | 'nav.openCommandPalette'
   | 'nav.moderation'
   | 'nav.search'
   | 'nav.profile'
@@ -31,6 +37,8 @@ export type StudioStringKey =
   | 'nav.signOut'
   | 'nav.languageToggle'
   | 'nav.languageToggleAria'
+  | 'earn.tabReviews'
+  | 'earn.tabPayouts'
   | 'common.save'
   | 'common.cancel'
   | 'common.share'
@@ -850,6 +858,10 @@ export type StudioStringKey =
   | 'reviewers.active'
   | 'reviewers.getFeedback'
   | 'reviewers.browseJoin'
+  | 'reviewers.heroEyebrow'
+  | 'reviewers.heroTagline'
+  | 'reviewers.heroSubtitle'
+  | 'reviewers.heroAssurance'
   | 'championship.eyebrow'
   | 'championship.title'
   | 'championship.subtitle'
@@ -966,14 +978,20 @@ type StudioStrings = Record<StudioStringKey, string>;
 
 const STRINGS: Record<StudioLocale, StudioStrings> = {
   te: {
-    'nav.dashboard': 'డ్యాష్‌బోర్డ్',
-    'nav.stories': 'గ్రంధాల లైబ్రరీ',
+    'nav.dashboard': 'డాష్‌బోర్డ్',
+    'nav.stories': 'కథలు',
     'nav.events': 'ఈవెంట్లు',
     'nav.publishing': 'ప్రచురణ',
     'nav.schedule': 'షెడ్యూల్',
     'nav.community': 'కమ్యూనిటీ',
     'nav.reviewers': 'రివ్యూయర్ పూల్',
     'nav.monetization': 'సంపాదన',
+    'nav.earn': 'సంపాదన',
+    'nav.more': 'మరిన్ని',
+    'nav.mainNav': 'ప్రధాన నావిగేషన్',
+    'nav.mobileNav': 'మొబైల్ నావిగేషన్',
+    'nav.communityStatus': 'ప్రారంభ దశ',
+    'nav.openCommandPalette': 'కమాండ్ ప్యాలెట్ తెరవండి',
     'nav.moderation': 'మోడరేషన్',
     'nav.search': 'వెతకండి…',
     'nav.profile': 'ప్రొఫైల్',
@@ -981,6 +999,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'nav.signOut': 'సైన్ అవుట్',
     'nav.languageToggle': 'English',
     'nav.languageToggleAria': 'ఇంగ్లీష్‌కి మారండి',
+    'earn.tabReviews': 'రివ్యూలు',
+    'earn.tabPayouts': 'పేమెంట్లు',
     'common.save': 'సేవ్ చేయండి',
     'common.cancel': 'రద్దు',
     'common.share': 'షేర్ చేయండి',
@@ -1800,6 +1820,10 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'reviewers.active': 'యాక్టివ్',
     'reviewers.getFeedback': 'ఫీడ్‌బ్యాక్ తీసుకోండి',
     'reviewers.browseJoin': 'బ్రౌజ్ & చేరండి',
+    'reviewers.heroEyebrow': 'సమీక్షకుల సమూహం',
+    'reviewers.heroTagline': 'నమ్మకమైన సమీక్షకులు. నిర్మాణాత్మక అభిప్రాయం. ఎదిగే కథలు.',
+    'reviewers.heroSubtitle': 'కథ యొక్క ప్రొఫెషనల్ రివ్యూ మార్కెట్‌ప్లేస్ — డబుల్-బ్లైండ్, సాక్ష్యాధార, తెలుగు మరియు ప్రాంతీయ భాషా కళ కోసం.',
+    'reviewers.heroAssurance': 'ప్రొఫెషనల్ సాహిత్య సమీక్ష · మానవ తీర్పు · AI సహాయక ఉత్పాదకత',
     'championship.eyebrow': 'గ్లోబల్ ఛాంపియన్‌షిప్',
     'championship.title': 'కథ గ్లోబల్ ఛాంపియన్‌షిప్',
     'championship.subtitle': 'డెబ్యూ లారియట్‌లు మరియు ప్రీమియర్ లీగ్ విజేతల కోసం — క్రాస్-లీగ్ టూర్నమెంట్.',
@@ -1914,13 +1938,19 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
   },
   en: {
     'nav.dashboard': 'Dashboard',
-    'nav.stories': 'Manuscript library',
+    'nav.stories': 'Stories',
     'nav.events': 'Events',
     'nav.publishing': 'Publishing',
     'nav.schedule': 'Schedule',
     'nav.community': 'Community',
     'nav.reviewers': 'Reviewer Pool',
     'nav.monetization': 'Earn',
+    'nav.earn': 'Earn',
+    'nav.more': 'More',
+    'nav.mainNav': 'Main navigation',
+    'nav.mobileNav': 'Mobile navigation',
+    'nav.communityStatus': 'Early stage',
+    'nav.openCommandPalette': 'Open command palette',
     'nav.moderation': 'Moderation',
     'nav.search': 'Search…',
     'nav.profile': 'Profile',
@@ -1928,6 +1958,8 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'nav.signOut': 'Sign out',
     'nav.languageToggle': 'తెలుగు',
     'nav.languageToggleAria': 'Switch to Telugu',
+    'earn.tabReviews': 'Reviews',
+    'earn.tabPayouts': 'Payouts',
     'common.save': 'Save',
     'common.cancel': 'Cancel',
     'common.share': 'Share',
@@ -2747,6 +2779,10 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'reviewers.active': 'active',
     'reviewers.getFeedback': 'Get feedback',
     'reviewers.browseJoin': 'Browse & join',
+    'reviewers.heroEyebrow': 'Reviewer Pool',
+    'reviewers.heroTagline': 'Trusted reviewers. Structured feedback. Stories that rise.',
+    'reviewers.heroSubtitle': "Katha's professional review marketplace — double-blind, evidence-based, and built for Telugu and regional-language craft.",
+    'reviewers.heroAssurance': 'Professional literary review · human judgment · AI-assisted productivity',
     'championship.eyebrow': 'Global Championship',
     'championship.title': 'Katha Global Championship',
     'championship.subtitle': 'Elite cross-league tournament for Debut Laureates and Premier League winners.',

@@ -5624,6 +5624,23 @@ button.studio-metric:focus-visible {
   line-height: 18px;
 }
 
+.reviewer-badge--locked {
+  opacity: 0.55;
+  border-style: dashed !important;
+  background: transparent !important;
+  gap: 4px;
+}
+
+.reviewer-badge--earned {
+  border-style: solid;
+}
+
+.disabled-action-hint {
+  margin-top: 6px;
+  color: var(--text-secondary, #6b5f4f);
+  font-size: 0.8125rem;
+}
+
 .council-sanctuary__assurance {
   margin: 0;
   display: flex;

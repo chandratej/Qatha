@@ -2273,12 +2273,13 @@
   max-width: 100%;
 }
 
+/* 3-col: left gutter (always-visible markers) · text · right margin notes */
 .rw-annotated-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem);
-  gap: 12px 16px;
+  grid-template-columns: 1.75rem minmax(0, 1fr) minmax(0, 11rem);
+  gap: 8px 12px;
   align-items: start;
-  padding: 4px 0;
+  padding: 6px 0;
   border-radius: 8px;
   transition: background 0.15s;
   min-width: 0;
@@ -2286,7 +2287,53 @@
 }
 
 .rw-annotated-row--active {
-  background: rgba(196, 160, 96, 0.06);
+  background: rgba(196, 160, 96, 0.08);
+}
+
+.rw-annotated-row--has-notes {
+  /* subtle left rail so notes are scannable while scrolling */
+}
+
+.rw-annotated-row__gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0.35em;
+  min-height: 1.5em;
+}
+
+/* Always-visible gutter marker — Review Studio fix #1 */
+.rw-gutter-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 4px;
+  border: none;
+  border-radius: 999px;
+  background: var(--katha-maroon, #6b2d3c);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(255, 252, 246, 0.95), 0 2px 6px rgba(107, 45, 60, 0.25);
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.rw-gutter-marker:hover {
+  transform: scale(1.08);
+}
+
+.rw-gutter-marker--high {
+  background: #8b3a3a;
+}
+
+.rw-gutter-marker--active {
+  box-shadow: 0 0 0 3px rgba(196, 160, 96, 0.65), 0 2px 8px rgba(107, 45, 60, 0.3);
 }
 
 .rw-annotated-row__text {
@@ -2300,7 +2347,13 @@
   padding-top: 2px;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
+}
+
+.rw-chrome__genre {
+  font-weight: 500;
+  color: var(--text-muted, #9a8f7e);
+  font-size: 0.875em;
 }
 
 .rw-text-anchor {
@@ -2509,10 +2562,11 @@
 
 @media (max-width: 1024px) {
   .rw-annotated-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1.75rem minmax(0, 1fr);
   }
 
   .rw-annotated-row__margin {
+    grid-column: 1 / -1;
     flex-direction: row;
     flex-wrap: wrap;
     padding-top: 8px;

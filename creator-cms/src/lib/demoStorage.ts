@@ -1,6 +1,6 @@
 // Simple localStorage-backed demo data for the creator CMS.
 // Allows full persistence of seasons, chapter order, titles, word counts, scene counts across refreshes.
-// Used only for demo stories (e.g. 'demo-rrr').
+// Used only for original demo stories (demo-valley-te / demo-valley-en / legacy demo-rrr alias).
 
 export interface DemoSeason {
   id: string;
@@ -19,6 +19,8 @@ export interface DemoStoryData {
 }
 
 const STORAGE_KEY_PREFIX = 'katha-demo-story-';
+
+const DEMO_STORY_IDS = new Set(['demo-valley-te', 'demo-valley-en', 'demo-rrr', 'demo-manuscript']);
 
 function getKey(storyId: string) {
   return `${STORAGE_KEY_PREFIX}${storyId}`;
@@ -46,8 +48,11 @@ export function clearDemoData(storyId: string) {
   localStorage.removeItem(getKey(storyId));
 }
 
-// Initialize a fresh RRR demo with 2 seasons (supports sequels/prequels model)
-export function initRRRDemoData(): DemoStoryData {
+/**
+ * Original Telugu-first demo arc — wholly original fiction, no film/IP references.
+ * Decision: bilingual demos are intentional (EN + TE), not a language mismatch.
+ */
+export function initValleyDemoData(language: 'te' | 'en' = 'te'): DemoStoryData {
   const season1Chapters = Array.from({ length: 12 }, (_, i) => i + 1);
   const season2Chapters = Array.from({ length: 12 }, (_, i) => i + 13);
 
@@ -55,13 +60,13 @@ export function initRRRDemoData(): DemoStoryData {
     {
       id: 's1',
       num: 1,
-      title: 'Season 1: Rise of the Rebels',
+      title: language === 'te' ? 'సీజన్ 1: వర్షం వచ్చే ముందు' : 'Season 1: Before the Monsoon',
       chapterNums: season1Chapters,
     },
     {
       id: 's2',
       num: 2,
-      title: 'Season 2: The Eternal Flame (Sequel)',
+      title: language === 'te' ? 'సీజన్ 2: నది గుర్తు' : 'Season 2: The River Remembers',
       chapterNums: season2Chapters,
     },
   ];
@@ -70,9 +75,8 @@ export function initRRRDemoData(): DemoStoryData {
   const chapterWordCounts: Record<number, number> = {};
   const chapterSceneCounts: Record<number, number> = {};
 
-  // Seed some plausible titles + counts (real values will be overwritten by editor on load/edit)
   for (let ch = 1; ch <= 24; ch++) {
-    chapterTitles[ch] = getDefaultChapterTitle(ch);
+    chapterTitles[ch] = getDefaultChapterTitle(ch, language);
     chapterWordCounts[ch] = 820 + ((ch % 7) * 95);
     chapterSceneCounts[ch] = 2 + (ch % 3);
   }
@@ -80,40 +84,72 @@ export function initRRRDemoData(): DemoStoryData {
   return {
     seasons,
     chapterTitles,
-    chapterWordCounts: chapterWordCounts as any,
+    chapterWordCounts: chapterWordCounts as Record<number, number>,
     chapterSceneCounts,
     chapterScenes: {},
   };
 }
 
-function getDefaultChapterTitle(ch: number): string {
-  const titles: string[] = [
-    'The Call of the Jungle',
-    'The Hill Rebel',
-    'Escape and First Blood',
-    'Gathering the Warriors',
-    'The Secret Alliance',
+/** @deprecated Use initValleyDemoData — alias retained for call-site migrations */
+export function initRRRDemoData(): DemoStoryData {
+  return initValleyDemoData('en');
+}
+
+function getDefaultChapterTitle(ch: number, language: 'te' | 'en'): string {
+  const en: string[] = [
+    'Drums Beyond the Ridge',
+    'The Teak Doorframe',
+    'Letter Without a Seal',
+    'Gathering at Dusk',
+    'The Unspoken Alliance',
     'Raid on the Outpost',
-    'Sitaramaraju Joins',
+    'A New Voice Joins',
     'Through the Ghats',
     'Village Uprising',
-    'The British Trap',
-    'Bheem\'s Resolve',
+    'The Colonial Trap',
+    'A Sister\'s Resolve',
     'Night March',
     'The Final Stand',
     'Betrayal in the Ranks',
     'Fire in the Forest',
-    'Reunion of Heroes',
+    'Reunion at Dawn',
     'Assault on the Fort',
-    'Last Stand at Dawn',
+    'Last Stand at First Light',
     'The Price of Freedom',
     'Legacy Ignites',
     'Stories Around the Fire',
-    'Children of the Revolution',
-    'Songs of the Martyrs',
-    'The Eternal Flame'
+    'Children of the Valley',
+    'Songs of the Keepers',
+    'The Eternal Flame',
   ];
-  return titles[ch - 1] || `The Continuing Struggle - Part ${ch}`;
+  const te: string[] = [
+    'కొండ వెనుక డ్రమ్ములు',
+    'టేకు తలుపు చట్రం',
+    'ముద్ర లేని లేఖ',
+    'సాయంత్రం సమావేశం',
+    'చెప్పని ఒప్పందం',
+    'కాపలా పై దాడి',
+    'కొత్త గొంతు చేరింది',
+    'కనుమల గుండా',
+    'గ్రామ తిరుగుబాటు',
+    'ఉచ్చు',
+    'సోదరి సంకల్పం',
+    'రాత్రి నడక',
+    'చివరి నిలబడటం',
+    'వరుసలో ద్రోహం',
+    'అడవిలో అగ్ని',
+    'తెల్లవారుజామున కలయిక',
+    'కోటపై దాడి',
+    'మొదటి వెలుగులో చివరి నిలుపు',
+    'స్వేచ్ఛ ధర',
+    'వారసత్వం మండుతుంది',
+    'అగ్ని చుట్టూ కథలు',
+    'లోయ పిల్లలు',
+    'కాపలాదారుల పాటలు',
+    'శాశ్వత జ్వాల',
+  ];
+  const list = language === 'te' ? te : en;
+  return list[ch - 1] || (language === 'te' ? `కథ కొనసాగింపు — ${ch}` : `The Continuing Arc — Part ${ch}`);
 }
 
 // Helper to get or create demo data for a story
@@ -121,8 +157,9 @@ export function getOrInitDemoData(storyId: string): DemoStoryData {
   const existing = loadDemoData(storyId);
   if (existing) return existing;
 
-  if (storyId === 'demo-rrr') {
-    const fresh = initRRRDemoData();
+  if (DEMO_STORY_IDS.has(storyId)) {
+    const language = storyId === 'demo-valley-te' ? 'te' : 'en';
+    const fresh = initValleyDemoData(language);
     saveDemoData(storyId, fresh);
     return fresh;
   }
@@ -142,7 +179,7 @@ export function getOrInitDemoData(storyId: string): DemoStoryData {
 export function updateChapterStats(
   storyId: string,
   chapterNum: number,
-  updates: { title?: string; wordCount?: number; sceneCount?: number }
+  updates: { title?: string; wordCount?: number; sceneCount?: number },
 ) {
   const data = getOrInitDemoData(storyId);
   if (updates.title) data.chapterTitles[chapterNum] = updates.title;
@@ -151,32 +188,36 @@ export function updateChapterStats(
   saveDemoData(storyId, data);
 }
 
-// Save full scenes for a chapter (for cross-page persistence in demo)
-export function saveChapterScenes(storyId: string, chapterNum: number, scenes: Array<{ id: string; title: string; content: string }>) {
+export function loadChapterScenes(
+  storyId: string,
+  chapterNum: number,
+): Array<{ id: string; title: string; content: string }> | null {
+  const data = getOrInitDemoData(storyId);
+  return (data.chapterScenes && data.chapterScenes[chapterNum]) || null;
+}
+
+export function saveChapterScenes(
+  storyId: string,
+  chapterNum: number,
+  scenes: Array<{ id: string; title: string; content: string }>,
+) {
   const data = getOrInitDemoData(storyId);
   if (!data.chapterScenes) data.chapterScenes = {};
   data.chapterScenes[chapterNum] = scenes;
   saveDemoData(storyId, data);
 }
 
-export function loadChapterScenes(storyId: string, chapterNum: number): Array<{ id: string; title: string; content: string }> | null {
-  const data = getOrInitDemoData(storyId);
-  return (data.chapterScenes && data.chapterScenes[chapterNum]) || null;
-}
-
 // Add a new chapter to a specific season
 export function addChapterToSeason(storyId: string, seasonId: string): number {
   const data = getOrInitDemoData(storyId);
-  const season = data.seasons.find(s => s.id === seasonId);
+  const season = data.seasons.find((s) => s.id === seasonId);
   if (!season) return 1;
 
-  // Find next available chapter number (global)
-  const allChapters = data.seasons.flatMap(s => s.chapterNums);
+  const allChapters = data.seasons.flatMap((s) => s.chapterNums);
   const nextNum = allChapters.length > 0 ? Math.max(...allChapters) + 1 : 1;
 
   season.chapterNums.push(nextNum);
 
-  // Seed defaults
   if (!data.chapterTitles[nextNum]) {
     data.chapterTitles[nextNum] = `Chapter ${nextNum}`;
   }
@@ -190,7 +231,7 @@ export function addChapterToSeason(storyId: string, seasonId: string): number {
 // Add a new season (for sequels/prequels)
 export function addSeason(storyId: string, title: string): DemoSeason {
   const data = getOrInitDemoData(storyId);
-  const newNum = Math.max(0, ...data.seasons.map(s => s.num)) + 1;
+  const newNum = Math.max(0, ...data.seasons.map((s) => s.num)) + 1;
   const newSeason: DemoSeason = {
     id: `s${Date.now()}`,
     num: newNum,
@@ -212,7 +253,7 @@ export function reorderSeasons(storyId: string, newSeasons: DemoSeason[]) {
 // Reorder chapters inside one season
 export function reorderChaptersInSeason(storyId: string, seasonId: string, newChapterNums: number[]) {
   const data = getOrInitDemoData(storyId);
-  const season = data.seasons.find(s => s.id === seasonId);
+  const season = data.seasons.find((s) => s.id === seasonId);
   if (season) {
     season.chapterNums = newChapterNums;
     saveDemoData(storyId, data);

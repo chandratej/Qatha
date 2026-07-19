@@ -197,6 +197,14 @@ export interface ReviewerAssignment {
   review_summary?: ReviewSubmissionSummary;
 }
 
+export interface ReviewerBadgeView {
+  id: string;
+  label: string;
+  earned: boolean;
+  unlockHint: string;
+  minReviews: number;
+}
+
 export interface ReviewerDashboardStats {
   slot: string;
   rqi: number;
@@ -207,7 +215,10 @@ export interface ReviewerDashboardStats {
   invitationsPending: number;
   avgTurnaroundHours: number;
   acceptanceRate: number;
-  badges: string[];
+  /** Full catalog with earned/locked — never all-unlocked by default */
+  badges: ReviewerBadgeView[];
+  /** Experience count used for badge unlock (real track record) */
+  reviewExperienceCount: number;
   draftCount: number;
   overdueCount: number;
   isAvailable?: boolean;

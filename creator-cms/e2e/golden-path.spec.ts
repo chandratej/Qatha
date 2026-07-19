@@ -15,7 +15,7 @@ async function enterStudioShell(page: Page, email: string) {
 }
 
 async function openReviewerPool(page: Page) {
-  await page.goto('/reviewers');
+  await page.goto('/earn/reviews');
   await expect(page.getByRole('heading', { name: /Trusted reviewers/i })).toBeVisible({ timeout: 15_000 });
 }
 

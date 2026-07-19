@@ -20,7 +20,7 @@ export async function enterStudio(page: Page, email = 'writer@katha.test') {
 
 export async function openDemoChapter(page: Page, chapterNum = 1) {
   await enterStudio(page);
-  await page.goto(`/stories/demo-rrr/chapters/${chapterNum}`);
+  await page.goto(`/stories/demo-valley-te/chapters/${chapterNum}`);
   await expect(page.locator('.narrative-os-app')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('.narrative-stage-shell .canvas')).toBeVisible();
 }

@@ -11,24 +11,40 @@ import { findPoolMemberBySlot } from './reviewerPoolStore.js';
 import { countDraftsInAssignments } from './reviewDraftStore.js';
 import { getReviewerAvailabilityBySlot } from './reviewerProfileStore.js';
 
-/** Mirrors creator-cms/lib/reviewerPoolConstants.ts REVIEWER_BADGES */
+/** Mirrors creator-cms REVIEWER_BADGES + Master Craft */
 const REVIEWER_BADGES = [
-  { label: 'First Review', minReviews: 1 },
-  { label: 'Plot Specialist', minReviews: 5 },
-  { label: 'Fast Reviewer', minReviews: 3 },
-  { label: 'Mentor', minReviews: 20 },
-  { label: 'Community Champion', minReviews: 30 },
+  { id: 'first_review', label: 'First Review', minReviews: 1 },
+  { id: 'plot_specialist', label: 'Plot Specialist', minReviews: 5 },
+  { id: 'fast_reviewer', label: 'Fast Reviewer', minReviews: 3 },
+  { id: 'mentor', label: 'Mentor', minReviews: 20 },
+  { id: 'community_champion', label: 'Community Champion', minReviews: 30 },
+  { id: 'master_craft', label: 'Master Craft', minReviews: 15, minRqi: 90 },
 ];
 
 const COMPLETED_STATUSES = new Set(['submitted', 'validated', 'paid_out']);
 const IN_PROGRESS_STATUSES = new Set(['accepted', 'in_review']);
 
-function badgesForReviewer(reviewCount, rqi) {
-  const earned = REVIEWER_BADGES
-    .filter((b) => reviewCount >= b.minReviews)
-    .map((b) => b.label);
-  if (rqi >= 90) earned.push('Master Craft');
-  return earned;
+function roundRqi(value) {
+  return Math.round(Math.min(100, Math.max(0, Number(value) || 0)));
+}
+
+/** Full catalog with earned/locked — never all-unlocked by default */
+function badgeStatusesForReviewer(reviewCount, rqi) {
+  const wholeRqi = roundRqi(rqi);
+  return REVIEWER_BADGES.map((b) => {
+    const earned =
+      reviewCount >= b.minReviews
+      && (b.minRqi == null || wholeRqi >= b.minRqi);
+    let unlockHint = `at ${b.minReviews} reviews`;
+    if (b.minRqi != null) unlockHint = `at ${b.minReviews} reviews · RQI ${b.minRqi}+`;
+    return {
+      id: b.id,
+      label: b.label,
+      earned,
+      unlockHint,
+      minReviews: b.minReviews,
+    };
+  });
 }
 
 export async function getReviewerDashboardStats(reviewerSlot) {
@@ -52,20 +68,22 @@ export async function getReviewerDashboardStats(reviewerSlot) {
     ? Math.round(turnaroundSamples.reduce((s, h) => s + h, 0) / turnaroundSamples.length)
     : 0;
 
-  const rqi = member?.rqi ?? 62;
-  const reviewCount = member?.review_experience_count ?? completed.length;
+  const poolCount = member?.review_experience_count ?? 0;
+  const reviewCount = Math.max(poolCount, completed.length);
+  const rqi = roundRqi(member?.rqi ?? 0);
 
   return {
     slot: reviewerSlot,
     rqi,
-    councilLevel: member?.council_level ?? 'certified_reviewer',
+    councilLevel: member?.council_level ?? 'candidate',
     reputationTier: member?.reputation_tier ?? 'bronze',
     reviewsCompleted: completed.length,
     reviewsInProgress: inProgress.length,
     invitationsPending: pending.length,
     avgTurnaroundHours,
     acceptanceRate,
-    badges: badgesForReviewer(reviewCount, rqi),
+    badges: badgeStatusesForReviewer(reviewCount, rqi),
+    reviewExperienceCount: reviewCount,
     draftCount: countDraftsInAssignments(assignments),
     overdueCount: overdue.length,
     isAvailable: availability.is_available,
