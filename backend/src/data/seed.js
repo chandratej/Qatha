@@ -91,29 +91,141 @@ const chapterContent = {
 జీవితం మార్చబడుతోంది. ఒక మాట, ఒక చిరునవ్వు, ఒక చేతి పట్టుకోవడం — ఇవే చాలు కొన్నిసార్లు.`,
 };
 
+function plainFromDelta(content_delta) {
+  if (!content_delta?.scenes?.length) return '';
+  return content_delta.scenes
+    .map((s) => (s.content || '').replace(/<[^>]+>/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+function normalizePublishedMockChapter(entry) {
+  const content = (entry.content && String(entry.content).trim())
+    ? entry.content
+    : plainFromDelta(entry.content_delta);
+  return {
+    id: entry.id || `mock-ch-${entry.story_id}-${entry.chapter_number}`,
+    story_id: entry.story_id,
+    chapter_number: entry.chapter_number,
+    title: entry.title || `Chapter ${entry.chapter_number}`,
+    content: content || '',
+    estimated_read_time_minutes: entry.estimated_read_time_minutes || 12,
+    view_count: entry.view_count || 0,
+    status: 'published',
+    content_hash: entry.content_hash,
+  };
+}
+
+/** Published chapters written via Creator Studio mock publish (mockChapterStore). */
+export function getPublishedMockChapters(storyId) {
+  const out = [];
+  for (const [key, entry] of mockChapterStore.entries()) {
+    if (!key.startsWith(`${storyId}:`)) continue;
+    if (entry.status !== 'published') continue;
+    out.push(normalizePublishedMockChapter({ ...entry, story_id: storyId }));
+  }
+  return out.sort((a, b) => a.chapter_number - b.chapter_number);
+}
+
 export function getSeedChapters(storyId) {
   const story = seedStories.find((s) => s.id === storyId);
-  if (!story) return [];
+  if (story) {
+    return Array.from({ length: story.chapter_count }, (_, i) => {
+      const num = i + 1;
+      const titles = ['ఆరంభం', 'మొదటి నవ్వు', 'రహస్యం', 'ఎదురుచూపు', 'కనుబొల్ల', 'కొత్త ప్రారంభం'];
+      return {
+        id: `${storyId}-ch-${num}`,
+        story_id: storyId,
+        chapter_number: num,
+        title: titles[num - 1] || `అధ్యాయం ${num}`,
+        content: chapterContent[num] || chapterContent[1],
+        estimated_read_time_minutes: 12,
+        view_count: Math.floor(1200 / num),
+        status: 'published',
+      };
+    });
+  }
 
-  return Array.from({ length: story.chapter_count }, (_, i) => {
-    const num = i + 1;
-    const titles = ['ఆరంభం', 'మొదటి నవ్వు', 'రహస్యం', 'ఎదురుచూపు', 'కనుబొల్ల', 'కొత్త ప్రారంభం'];
-    return {
-      id: `${storyId}-ch-${num}`,
-      story_id: storyId,
-      chapter_number: num,
-      title: titles[num - 1] || `అధ్యాయం ${num}`,
-      content: chapterContent[num] || chapterContent[1],
-      estimated_read_time_minutes: 12,
-      view_count: Math.floor(1200 / num),
-      status: 'published',
-    };
-  });
+  // Creator-studio stories (mock mode) — only published chapters
+  return getPublishedMockChapters(storyId);
 }
 
 export function getSeedChapter(storyId, chapterNumber) {
+  // Prefer mock store so newly published chapters from Creator Studio are readable
+  const mockKey = `${storyId}:${chapterNumber}`;
+  const mock = mockChapterStore.get(mockKey);
+  if (mock?.status === 'published') {
+    return normalizePublishedMockChapter({ ...mock, story_id: storyId, chapter_number: chapterNumber });
+  }
+
   const chapters = getSeedChapters(storyId);
   return chapters.find((c) => c.chapter_number === chapterNumber) || null;
+}
+
+/**
+ * Reader-facing catalog in mock mode:
+ * seed demos + creator-studio stories that are published and have ≥1 published chapter.
+ */
+export function getPublicStoriesForReader() {
+  const seed = seedStories.filter((s) => s.is_published !== false);
+
+  const fromStudio = mockCreatorStories
+    .filter((s) => s.is_published !== false)
+    .map((s) => {
+      const publishedChapters = getPublishedMockChapters(s.id);
+      if (publishedChapters.length === 0) return null;
+      return {
+        ...s,
+        chapter_count: publishedChapters.length,
+        total_readers: s.total_readers ?? 0,
+        views_this_week: s.views_this_week ?? 0,
+        created_at: s.created_at || new Date().toISOString(),
+        creators: s.creators || { pen_name: 'Creator', avatar_url: null },
+      };
+    })
+    .filter(Boolean);
+
+  return [...seed, ...fromStudio];
+}
+
+export function getPublicStoryById(storyId) {
+  const fromSeed = seedStories.find((s) => s.id === storyId && s.is_published !== false);
+  if (fromSeed) return fromSeed;
+
+  const fromStudio = mockCreatorStories.find((s) => s.id === storyId && s.is_published !== false);
+  if (!fromStudio) return null;
+
+  const publishedChapters = getPublishedMockChapters(storyId);
+  return {
+    ...fromStudio,
+    chapter_count: publishedChapters.length || fromStudio.chapter_count || 0,
+    total_readers: fromStudio.total_readers ?? 0,
+    views_this_week: fromStudio.views_this_week ?? 0,
+    created_at: fromStudio.created_at || new Date().toISOString(),
+    creators: fromStudio.creators || { pen_name: 'Creator', avatar_url: null },
+  };
+}
+
+/** After mock publish — keep story counters readable in the reader feed. */
+export function markMockStoryChapterPublished(storyId, chapterNumber, { creatorId } = {}) {
+  const story =
+    mockCreatorStories.find((s) => s.id === storyId)
+    || seedStories.find((s) => s.id === storyId);
+  if (!story) return null;
+
+  story.is_published = true;
+  const publishedCount = getPublishedMockChapters(storyId).length;
+  story.chapter_count = Math.max(story.chapter_count || 0, publishedCount, chapterNumber);
+  if (!story.created_at) story.created_at = new Date().toISOString();
+  if (!story.creators) {
+    story.creators = {
+      pen_name: creatorId === DEMO_CREATOR_ID ? 'లక్ష్మీ దేవి' : 'Creator',
+      avatar_url: null,
+    };
+  }
+  if (story.views_this_week == null) story.views_this_week = 0;
+  if (story.total_readers == null) story.total_readers = 0;
+  return story;
 }
 
 /** Mock drafts + published chapters keyed by storyId:chapterNumber */
@@ -168,9 +280,9 @@ export function getCreatorStoryChapters(storyId, creatorId) {
 }
 
 export function getSeedDiscover(genre) {
-  const filtered = seedStories.filter((s) => s.genre === genre);
-  const trending = [...filtered].sort((a, b) => b.views_this_week - a.views_this_week).slice(0, 10);
-  const newReleases = [...filtered].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 10);
+  const filtered = getPublicStoriesForReader().filter((s) => s.genre === genre);
+  const trending = [...filtered].sort((a, b) => (b.views_this_week || 0) - (a.views_this_week || 0)).slice(0, 10);
+  const newReleases = [...filtered].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 10);
   return { genre, trending, new_releases: newReleases };
 }
 

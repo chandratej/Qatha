@@ -56,19 +56,26 @@ export async function moderateChapter(chapterId, content, creatorId) {
     published_at: new Date().toISOString(),
   }).eq('id', chapterId);
 
+  // Keep parent story catalog-visible with accurate chapter_count for the reader app
+  let storyId = null;
   try {
-    const { onChapterPublished } = await import('../debutSeasonStore.js');
     const { data: ch } = await supabase
       .from('chapters')
       .select('story_id, stories(author_id)')
       .eq('id', chapterId)
       .single();
+    storyId = ch?.story_id || null;
+    if (storyId) {
+      const { syncStoryAfterChapterPublish } = await import('../publicCatalog.js');
+      await syncStoryAfterChapterPublish(storyId);
+    }
     const authorId = ch?.stories?.author_id;
-    if (authorId && ch?.story_id) {
-      await onChapterPublished(authorId, ch.story_id);
+    if (authorId && storyId) {
+      const { onChapterPublished } = await import('../debutSeasonStore.js');
+      await onChapterPublished(authorId, storyId);
     }
   } catch (e) {
-    console.warn('[moderateChapter] debut season hook skipped:', e?.message);
+    console.warn('[moderateChapter] post-publish hooks skipped:', e?.message);
   }
 
   return {

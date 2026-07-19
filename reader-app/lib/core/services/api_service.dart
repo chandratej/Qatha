@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
@@ -61,21 +62,65 @@ class ApiService {
     final params = <String, String>{'sort': sort};
     if (genre != null) params['genre'] = genre;
     final uri = Uri.parse('$baseUrl/stories').replace(queryParameters: params);
-    final res = await http.get(uri, headers: _headers);
-    if (res.statusCode != 200) throw _parseError(res);
+    late final http.Response res;
+    try {
+      res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+    } catch (e) {
+      throw ApiException(
+        code: 'NETWORK_OFFLINE',
+        userMessage: 'Cannot reach story API ($baseUrl). Is the backend running?',
+        action: 'RETRY',
+      );
+    }
+    if (res.statusCode != 200) {
+      final err = _parseError(res);
+      throw ApiException(
+        code: err.code,
+        userMessage: '${err.userMessage} (GET $uri → ${res.statusCode})',
+        action: err.action,
+      );
+    }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    final list = data['stories'] as List<dynamic>;
-    return list.map((s) => Story.fromJson(s as Map<String, dynamic>)).toList();
+    // Reject mock seed payload in production path if backend still returns mock:true with only demos
+    final list = data['stories'];
+    if (list is! List) return [];
+    final stories = <Story>[];
+    for (final row in list) {
+      if (row is! Map) continue;
+      try {
+        final story = Story.fromJson(Map<String, dynamic>.from(row));
+        if (story.id.isEmpty) continue;
+        // Never surface old hard-coded seed ids from a misconfigured mock backend
+        if (story.id.startsWith('story-00') && story.id.length <= 10) continue;
+        stories.add(story);
+      } catch (_) {
+        // Skip malformed rows — do not fail the whole catalog
+      }
+    }
+    stories.sort((a, b) => b.chapterCount.compareTo(a.chapterCount));
+    return stories;
   }
 
   Future<DiscoverFeed> fetchDiscover(String genre) async {
     final res = await http.get(Uri.parse('$baseUrl/stories/discover/$genre'), headers: _headers);
     if (res.statusCode != 200) throw _parseError(res);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
+    List<Story> parseList(dynamic raw) {
+      if (raw is! List) return [];
+      final out = <Story>[];
+      for (final row in raw) {
+        if (row is! Map) continue;
+        try {
+          final s = Story.fromJson(Map<String, dynamic>.from(row));
+          if (s.id.isNotEmpty) out.add(s);
+        } catch (_) {}
+      }
+      return out;
+    }
     return DiscoverFeed(
       genre: genre,
-      trending: (data['trending'] as List).map((s) => Story.fromJson(s as Map<String, dynamic>)).toList(),
-      newReleases: (data['new_releases'] as List).map((s) => Story.fromJson(s as Map<String, dynamic>)).toList(),
+      trending: parseList(data['trending']),
+      newReleases: parseList(data['new_releases']),
     );
   }
 
@@ -137,6 +182,18 @@ class ApiService {
       }),
     );
     if (res.statusCode != 201) throw _parseError(res);
+  }
+
+  /// Lightweight readiness probe against the Node API (database-backed catalog).
+  Future<bool> healthCheck() async {
+    try {
+      final res = await http
+          .get(Uri.parse('$baseUrl/health'), headers: _headers)
+          .timeout(const Duration(seconds: 8));
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<Map<String, dynamic>?> pingStreak() async {

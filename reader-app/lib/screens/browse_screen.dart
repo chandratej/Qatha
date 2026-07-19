@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/models/story.dart';
 import '../core/providers/auth_state.dart';
-import '../core/services/api_service.dart';
+import '../core/services/api_service.dart' show ApiService, ApiException, DiscoverFeed;
 import '../core/theme/katha_theme.dart';
 import '../widgets/error_state.dart';
 import '../widgets/story_card.dart';
@@ -38,14 +38,29 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
 
   Future<void> _loadGenre(String genre) async {
     if (_feeds[genre] != null) return;
-    setState(() { _loading[genre] = true; _errors[genre] = null; });
+    setState(() {
+      _loading[genre] = true;
+      _errors[genre] = null;
+    });
     try {
       final auth = context.read<AuthState>();
       final api = ApiService.fromAuth(auth);
       final feed = await api.fetchDiscover(genre);
-      if (mounted) setState(() { _feeds[genre] = feed; _loading[genre] = false; });
-    } catch (_) {
-      if (mounted) setState(() { _errors[genre] = 'Unable to load stories'; _loading[genre] = false; });
+      if (mounted) {
+        setState(() {
+          _feeds[genre] = feed;
+          _loading[genre] = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errors[genre] = e is ApiException
+              ? e.userMessage
+              : 'Cannot reach story API. Is the backend running on port 3001?';
+          _loading[genre] = false;
+        });
+      }
     }
   }
 

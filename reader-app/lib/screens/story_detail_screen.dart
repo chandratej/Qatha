@@ -169,18 +169,20 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                           size: 20,
                         ),
                         const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Next chapter',
-                              style: Theme.of(context).textTheme.labelMedium,
-                            ),
-                            Text(
-                              _releaseLabel(),
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Next chapter',
+                                style: Theme.of(context).textTheme.labelMedium,
+                              ),
+                              Text(
+                                _releaseLabel(),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -209,6 +211,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                   LaunchOfferService.instance.config.subscriptionGateChapter;
               final isFree = ch.chapterNumber <= 3;
               final needsSub = ch.chapterNumber >= gate;
+              // Avoid wide Chip as ListTile.trailing (web layout assert).
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: KathaColors.gold.withValues(alpha: 0.15),
@@ -220,20 +223,27 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                     ),
                   ),
                 ),
-                title: Text(ch.title ?? 'Chapter ${ch.chapterNumber}'),
-                subtitle: Text(
-                  '${ch.viewCount} readers · ${ch.readTimeMinutes} min',
+                title: Text(
+                  ch.title ?? 'Chapter ${ch.chapterNumber}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                trailing: isFree
-                    ? const Chip(
-                        label: Text('Free', style: TextStyle(fontSize: 11)),
-                        backgroundColor: Color(0xFFE8F5E9),
-                      )
-                    : Icon(
-                        needsSub ? Icons.workspace_premium : Icons.lock_outline,
-                        size: 18,
-                        color: KathaColors.inkMuted,
-                      ),
+                subtitle: Text(
+                  isFree
+                      ? 'Free · ${ch.viewCount} readers · ${ch.readTimeMinutes} min'
+                      : '${ch.viewCount} readers · ${ch.readTimeMinutes} min',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Icon(
+                  isFree
+                      ? Icons.lock_open_outlined
+                      : (needsSub
+                          ? Icons.workspace_premium
+                          : Icons.lock_outline),
+                  size: 18,
+                  color: isFree ? KathaColors.gold : KathaColors.inkMuted,
+                ),
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(

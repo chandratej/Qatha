@@ -872,13 +872,29 @@ creatorsRouter.post('/stories', async (req, res, next) => {
     if (isMockMode()) {
       const { slugifyTitle } = await import('../lib/slugify.js');
       const story = {
-        id: `story-${Date.now()}`, author_id: creatorId, title, description, genre,
-        cover_url, release_schedule: release_schedule || 'irregular',
-        release_day_of_week, release_time_of_day, is_published: true,
-        chapter_count: 0, total_readers: 0, views_this_week: 0,
+        id: `story-${Date.now()}`,
+        author_id: creatorId,
+        title,
+        description,
+        genre,
+        cover_url,
+        release_schedule: release_schedule || 'irregular',
+        release_day_of_week,
+        release_time_of_day,
+        // Catalog-visible once ≥1 chapter is published (reader feed filters empty shells)
+        is_published: true,
+        chapter_count: 0,
+        total_readers: 0,
+        views_this_week: 0,
+        created_at: new Date().toISOString(),
         slug: slugifyTitle(title) || `story-${Date.now()}`,
+        creators: { pen_name: 'Creator', avatar_url: null },
       };
       mockCreatorStories.push(story);
+      try {
+        const { invalidatePublicStoryCache } = await import('./stories.js');
+        invalidatePublicStoryCache();
+      } catch { /* ignore */ }
       return res.json({ story, mock: true });
     }
 

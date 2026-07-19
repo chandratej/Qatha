@@ -14,36 +14,77 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
 
+  /// Lazy tabs — only build a tab after it has been visited once.
+  /// Prevents Settings/Browse layout or API errors from breaking Home on start.
+  final Set<int> _visited = {0};
+
   static const _tabs = [
-    _NavTab(icon: Icons.home_rounded, activeIcon: Icons.home, label: 'Home', labelTe: 'హోమ్'),
-    _NavTab(icon: Icons.explore_outlined, activeIcon: Icons.explore, label: 'Browse', labelTe: 'వెతకండి'),
-    _NavTab(icon: Icons.tune_rounded, activeIcon: Icons.tune, label: 'Settings', labelTe: 'సెట్టింగ్స్'),
+    _NavTab(
+      icon: Icons.home_rounded,
+      activeIcon: Icons.home,
+      label: 'Home',
+    ),
+    _NavTab(
+      icon: Icons.explore_outlined,
+      activeIcon: Icons.explore,
+      label: 'Browse',
+    ),
+    _NavTab(
+      icon: Icons.tune_rounded,
+      activeIcon: Icons.tune,
+      label: 'Settings',
+    ),
   ];
+
+  Widget _pageFor(int i) {
+    switch (i) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const BrowseScreen();
+      case 2:
+        return const SettingsScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _index,
-        children: const [
-          HomeScreen(),
-          BrowseScreen(),
-          SettingsScreen(),
-        ],
+        sizing: StackFit.expand,
+        children: List.generate(_tabs.length, (i) {
+          if (!_visited.contains(i)) {
+            return const SizedBox.expand();
+          }
+          return KeyedSubtree(
+            key: ValueKey('tab_$i'),
+            child: _pageFor(i),
+          );
+        }),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: (i) {
+          setState(() {
+            _index = i;
+            _visited.add(i);
+          });
+        },
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? KathaColors.darkSurface
             : Colors.white,
         indicatorColor: KathaColors.gold.withValues(alpha: 0.18),
         destinations: _tabs
-            .map((t) => NavigationDestination(
-                  icon: Icon(t.icon),
-                  selectedIcon: Icon(t.activeIcon, color: KathaColors.gold),
-                  label: t.label,
-                ))
+            .map(
+              (t) => NavigationDestination(
+                icon: Icon(t.icon),
+                selectedIcon: Icon(t.activeIcon, color: KathaColors.gold),
+                label: t.label,
+              ),
+            )
             .toList(),
       ),
     );
@@ -54,12 +95,10 @@ class _NavTab {
   final IconData icon;
   final IconData activeIcon;
   final String label;
-  final String labelTe;
 
   const _NavTab({
     required this.icon,
     required this.activeIcon,
     required this.label,
-    required this.labelTe,
   });
 }

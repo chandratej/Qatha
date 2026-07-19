@@ -7,7 +7,9 @@ import '../core/theme/katha_theme.dart';
 import 'reader_auth_screen.dart';
 
 String _subscriptionLabel(AuthState auth) {
-  if (auth.user?.subscriptionStatus == 'active') return 'Katha Unlimited — Active';
+  if (auth.user?.subscriptionStatus == 'active') {
+    return 'Katha Unlimited — Active';
+  }
   if (auth.isOnLaunchTrial) {
     final days = auth.user?.trialRemaining?.inDays ?? 0;
     return 'Launch trial — $days days of unlimited reading left';
@@ -16,6 +18,9 @@ String _subscriptionLabel(AuthState auth) {
   return 'Free — ₹99/month from Chapter $gate';
 }
 
+/// Settings UI with **zero** ListTile / SwitchListTile.
+/// ListTile.trailing (and Switch as trailing) throws on Flutter web when the
+/// tile is narrower than leading + title + trailing.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -30,112 +35,121 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          _SectionTitle('Reading'),
-          _Tile(
+          const _SectionTitle('Reading'),
+          _SettingCard(
             icon: Icons.text_fields,
             title: 'Font size',
-            subtitle: 'Size ${appState.fontScale} of 5 — tap Aa in reader for live preview',
-            trailing: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 1, label: Text('S')),
-                ButtonSegment(value: 2, label: Text('M')),
-                ButtonSegment(value: 3, label: Text('L')),
-                ButtonSegment(value: 4, label: Text('XL')),
-                ButtonSegment(value: 5, label: Text('XXL')),
-              ],
-              selected: {appState.fontScale},
-              onSelectionChanged: (s) => appState.setFontScale(s.first),
+            subtitle:
+                'Size ${appState.fontScale} of 5 — tap Aa in reader for live preview',
+            child: _SegmentRow<int>(
+              values: const [1, 2, 3, 4, 5],
+              labels: const ['S', 'M', 'L', 'XL', 'XXL'],
+              selected: appState.fontScale,
+              onSelected: appState.setFontScale,
             ),
           ),
-          _Tile(
+          _SettingCard(
             icon: Icons.format_line_spacing,
             title: 'Line spacing',
-            subtitle: appState.lineHeightScale == 1 ? 'Compact' : appState.lineHeightScale == 3 ? 'Spacious (dyslexia friendly)' : 'Comfort (recommended)',
-            trailing: SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 1, label: Text('C')),
-                ButtonSegment(value: 2, label: Text('R')),
-                ButtonSegment(value: 3, label: Text('S')),
-              ],
-              selected: {appState.lineHeightScale},
-              onSelectionChanged: (s) => appState.setLineHeightScale(s.first),
+            subtitle: appState.lineHeightScale == 1
+                ? 'Compact'
+                : appState.lineHeightScale == 3
+                    ? 'Spacious (dyslexia friendly)'
+                    : 'Comfort (recommended)',
+            child: _SegmentRow<int>(
+              values: const [1, 2, 3],
+              labels: const ['C', 'R', 'S'],
+              selected: appState.lineHeightScale,
+              onSelected: appState.setLineHeightScale,
             ),
           ),
-          _Tile(
+          _SettingCard(
             icon: Icons.format_align_left,
             title: 'Text alignment',
-            subtitle: appState.isLeftAlign ? 'Left (recommended for readability)' : 'Justify',
-            trailing: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'left', label: Text('Left')),
-                ButtonSegment(value: 'justify', label: Text('Just')),
-              ],
-              selected: {appState.textAlign},
-              onSelectionChanged: (s) => appState.setTextAlign(s.first),
+            subtitle: appState.isLeftAlign
+                ? 'Left (recommended for readability)'
+                : 'Justify',
+            child: _SegmentRow<String>(
+              values: const ['left', 'justify'],
+              labels: const ['Left', 'Just'],
+              selected: appState.textAlign,
+              onSelected: appState.setTextAlign,
             ),
           ),
-          _Tile(
+          _NavCard(
             icon: isDark ? Icons.dark_mode : Icons.light_mode,
             title: 'Theme',
             subtitle: isDark ? 'Dark' : 'Light',
             onTap: () => appState.toggleTheme(),
           ),
           const SizedBox(height: 24),
-          _SectionTitle('Account'),
-          if (auth.isLoggedIn) ...[
-            _Tile(icon: Icons.person, title: auth.user!.displayName, subtitle: auth.user!.identityLabel),
-            _Tile(
+          const _SectionTitle('Account'),
+          if (auth.isLoggedIn && auth.user != null) ...[
+            _NavCard(
+              icon: Icons.person,
+              title: auth.user!.displayName,
+              subtitle: auth.user!.identityLabel,
+            ),
+            _SettingCard(
               icon: Icons.workspace_premium,
               title: 'Subscription',
               subtitle: _subscriptionLabel(auth),
-              trailing: auth.isSubscribed
-                  ? const Icon(Icons.check_circle, color: KathaColors.gold)
-                  : TextButton(
-                      onPressed: () {
-                        // Deep-link readers to browse → pick a story for paywall context
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Open a locked chapter to subscribe with UPI — ₹99/mo · up to 60% to writers.',
+              child: auth.isSubscribed
+                  ? const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Icon(Icons.check_circle, color: KathaColors.gold),
+                    )
+                  : Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Open a locked chapter to subscribe with UPI — ₹99/mo · up to 60% to writers.',
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                      child: const Text('Subscribe'),
+                          );
+                        },
+                        child: const Text('Subscribe'),
+                      ),
                     ),
             ),
-            _Tile(
+            _NavCard(
               icon: Icons.logout,
               title: 'Sign out',
               onTap: () => auth.logout(),
             ),
           ] else
-            _Tile(
+            _NavCard(
               icon: Icons.login,
               title: 'Sign in',
               subtitle: 'Google or email — required from Chapter 4',
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReaderAuthScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ReaderAuthScreen()),
+              ),
             ),
           const SizedBox(height: 24),
-          _SectionTitle('Notifications'),
-          SwitchListTile(
-            secondary: const Icon(Icons.auto_stories, color: KathaColors.gold),
-            title: const Text('New chapters'),
-            subtitle: const Text('When authors you read publish'),
+          const _SectionTitle('Notifications'),
+          _SwitchCard(
+            icon: Icons.auto_stories,
+            title: 'New chapters',
+            subtitle: 'When authors you read publish',
             value: appState.notifyNewChapters,
             onChanged: appState.setNotifyNewChapters,
           ),
-          SwitchListTile(
-            secondary: const Icon(Icons.schedule, color: KathaColors.gold),
-            title: const Text('Subscription reminders'),
-            subtitle: const Text('3 days before renewal'),
+          _SwitchCard(
+            icon: Icons.schedule,
+            title: 'Subscription reminders',
+            subtitle: '3 days before renewal',
             value: appState.notifySubscription,
             onChanged: appState.setNotifySubscription,
           ),
-          SwitchListTile(
-            secondary: const Icon(Icons.trending_up, color: KathaColors.gold),
-            title: const Text('Weekly trending'),
-            subtitle: const Text('Sunday digest'),
+          _SwitchCard(
+            icon: Icons.trending_up,
+            title: 'Weekly trending',
+            subtitle: 'Sunday digest',
             value: appState.notifyTrending,
             onChanged: appState.setNotifyTrending,
           ),
@@ -153,30 +167,195 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Text(title.toUpperCase(), style: Theme.of(context).textTheme.labelMedium?.copyWith(letterSpacing: 1.2, color: KathaColors.gold)),
+      child: Text(
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              letterSpacing: 1.2,
+              color: KathaColors.gold,
+            ),
+      ),
     );
   }
 }
 
-class _Tile extends StatelessWidget {
+class _SettingCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  final Widget? trailing;
-  final VoidCallback? onTap;
+  final Widget child;
 
-  const _Tile({required this.icon, required this.title, this.subtitle, this.trailing, this.onTap});
+  const _SettingCard({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(icon, color: KathaColors.gold),
-        title: Text(title),
-        subtitle: subtitle != null ? Text(subtitle!) : null,
-        trailing: trailing ?? (onTap != null ? const Icon(Icons.chevron_right) : null),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: KathaColors.gold),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Theme.of(context).textTheme.titleMedium),
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact choice chips — never ListTile / SegmentedButton trailing layout.
+class _SegmentRow<T> extends StatelessWidget {
+  final List<T> values;
+  final List<String> labels;
+  final T selected;
+  final ValueChanged<T> onSelected;
+
+  const _SegmentRow({
+    required this.values,
+    required this.labels,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (var i = 0; i < values.length; i++)
+          ChoiceChip(
+            label: Text(labels[i]),
+            selected: values[i] == selected,
+            onSelected: (_) => onSelected(values[i]),
+            selectedColor: KathaColors.gold.withValues(alpha: 0.25),
+            labelStyle: TextStyle(
+              color: values[i] == selected ? KathaColors.goldDark : null,
+              fontWeight:
+                  values[i] == selected ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _NavCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+
+  const _NavCard({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: KathaColors.gold),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                  ],
+                ),
+              ),
+              if (onTap != null)
+                const Icon(Icons.chevron_right, size: 20, color: KathaColors.inkMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwitchCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, color: KathaColors.gold),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: KathaColors.gold,
+            ),
+          ],
+        ),
       ),
     );
   }

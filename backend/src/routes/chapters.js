@@ -1,7 +1,12 @@
 import { Router } from 'express';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
-import { getSeedChapter, mockChapterStore, countDraftWords } from '../data/seed.js';
+import {
+  getSeedChapter,
+  mockChapterStore,
+  countDraftWords,
+  markMockStoryChapterPublished,
+} from '../data/seed.js';
 import { addToMockQueue } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
@@ -12,9 +17,16 @@ import { notifyNewChapter } from '../services/notifications.js';
 import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
 import { assertChapterEditable } from '../services/chapterImmutability.js';
+import { invalidatePublicStoryCache } from './stories.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
+
+function bustChapterCache(storyId, chapterNumber) {
+  chapterCache.delete(`${storyId}:${chapterNumber}`);
+  // Also clear list caches so the new story appears on Home/Browse
+  invalidatePublicStoryCache();
+}
 
 export const chaptersRouter = Router();
 
@@ -180,6 +192,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
       mockChapterStore.set(`${storyId}:${chapter_number}`, {
         ...chapter,
         creator_id: creatorId,
+        content_delta: content_delta || null,
         last_saved_at: new Date().toISOString(),
       });
 
@@ -191,6 +204,9 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
       if (flagged) addToMockQueue(chapter, 'Creator', queueNote, riskScore);
 
       if (!flagged) {
+        // Promote into public reader catalog (seedStories / mockCreatorStories)
+        markMockStoryChapterPublished(storyId, chapter_number, { creatorId });
+        bustChapterCache(storyId, chapter_number);
         try {
           const { onChapterPublished } = await import('../services/debutSeasonStore.js');
           await onChapterPublished(creatorId, storyId);
@@ -208,7 +224,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
           source: moderation.source,
           note: flagged
             ? 'Queued for manual review — content flagged'
-            : 'Auto-approved',
+            : 'Auto-approved — visible in reader app',
         },
         mock: true,
       });

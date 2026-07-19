@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
@@ -11,20 +12,23 @@ class AnalyticsService {
   void setUserId(String? id) => userId = id;
 
   Future<void> track(String event, [Map<String, dynamic>? properties]) async {
+    // Best-effort only — never block UI or crash when API is offline
     try {
-      await http.post(
-        Uri.parse('${AppConfig.apiBase}/analytics/events'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'event': event,
-          'user_id': userId,
-          'properties': {
-            ...?properties,
-            'platform': 'android',
-            'timestamp': DateTime.now().toIso8601String(),
-          },
-        }),
-      );
+      await http
+          .post(
+            Uri.parse('${AppConfig.apiBase}/analytics/events'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'event': event,
+              'user_id': userId,
+              'properties': {
+                ...?properties,
+                'platform': 'web',
+                'timestamp': DateTime.now().toIso8601String(),
+              },
+            }),
+          )
+          .timeout(const Duration(seconds: 2));
     } catch (_) {}
   }
 

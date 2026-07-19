@@ -18,7 +18,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabasePublishableKey,
+    // supabase_flutter ≥2.8: prefer publishableKey over deprecated anonKey
+    publishableKey: AppConfig.supabasePublishableKey,
   );
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -26,7 +27,14 @@ void main() async {
   );
 
   await OfflineCache.instance.init();
-  await LaunchOfferService.instance.fetch();
+  // Never block app start if API is down — timeout + swallow
+  try {
+    await LaunchOfferService.instance
+        .fetch()
+        .timeout(const Duration(seconds: 2));
+  } catch (_) {
+    // Fallback config already set inside the service
+  }
 
   final authState = AuthState();
   await authState.init();
@@ -35,10 +43,11 @@ void main() async {
   final appState = AppState();
   await appState.hydrate();
 
-  // Eager pre-warm of last read chapter + next ones → "continue reading" feels instant
+  // Eager pre-warm only when online path is likely available
   if (appState.hasContinueReading && appState.continueReadingStoryId != null) {
     final api = ApiService.fromAuth(authState);
-    // Fire and forget - makes the ritual bond instant on next open
+    // Fire-and-forget; ignore network errors
+    // ignore: unawaited_futures
     OfflineCache.instance.prewarmContinueReading(
       storyId: appState.continueReadingStoryId!,
       chapter: appState.continueReadingChapter,
