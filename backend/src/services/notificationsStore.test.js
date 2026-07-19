@@ -71,8 +71,8 @@ describe('notificationsStore', () => {
     );
     const userId = `user-rf-${Date.now()}`;
     const n = await notifyReaderFeedbackReceived(userId, {
-      storyTitle: 'RRR',
-      storyId: 'demo-rrr',
+      storyTitle: 'వర్షం వచ్చే ముందు',
+      storyId: 'demo-valley-te',
       chapterNumber: 2,
       preview: 'Loved the pacing in this chapter.',
     });

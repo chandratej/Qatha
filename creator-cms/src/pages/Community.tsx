@@ -103,35 +103,44 @@ export function Community() {
           </Link>
         </div>
 
-        {discussions.map((d) => (
-          <div key={`${d.story_id}-${d.chapter_number}`} className="cv2-chapter-talk">
-            <div>
-              <p className="cv2-chapter-talk-title" lang="te">
-                Chapter {d.chapter_number} — {d.chapter_title}
-              </p>
-              <p className="cv2-chapter-talk-meta" lang={te ? 'te' : 'en'}>
-                {d.comment_count} {te ? 'వ్యాఖ్యలు' : 'comments'}
-                {' · '}
-                {te ? 'చివరిది' : 'last'} {d.last_activity_label}
-              </p>
-            </div>
-            <Link
-              className="cv2-chapter-talk-link"
-              to={d.story_id ? `/stories/${d.story_id}/chapters/${d.chapter_number}` : '/stories'}
-              lang={te ? 'te' : 'en'}
-            >
-              {te ? 'చదవండి' : 'Read'}
-              <ArrowRight size={14} aria-hidden />
-            </Link>
+        {discussions.length === 0 ? (
+          <div className="cv2-roadmap" role="status" lang={te ? 'te' : 'en'}>
+            <MessageSquare size={16} aria-hidden />
+            <span>
+              {te
+                ? 'అధ్యాయాల చర్చ త్వరలో — మీ కథలు ప్రచురించిన తర్వాత ఇక్కడ కనిపిస్తాయి. ఇప్పుడు కమ్యూనిటీ ఫీడ్‌లో షేర్ చేయండి.'
+                : 'Chapter discussion is early-stage — it will list your published stories here. For now, use the community feed above.'}
+            </span>
           </div>
-        ))}
+        ) : (
+          discussions.map((d) => (
+            <div key={`${d.story_id}-${d.chapter_number}`} className="cv2-chapter-talk">
+              <div>
+                <p className="cv2-chapter-talk-title" lang="te">
+                  Chapter {d.chapter_number} — {d.chapter_title}
+                </p>
+                <p className="cv2-chapter-talk-meta" lang={te ? 'te' : 'en'}>
+                  {te ? 'మీ కథ' : 'Your story'}
+                </p>
+              </div>
+              <Link
+                className="cv2-chapter-talk-link"
+                to={d.story_id ? `/stories/${d.story_id}/chapters/${d.chapter_number}` : '/stories'}
+                lang={te ? 'te' : 'en'}
+              >
+                {te ? 'తెరవండి' : 'Open'}
+                <ArrowRight size={14} aria-hidden />
+              </Link>
+            </div>
+          ))
+        )}
 
         <div className="cv2-roadmap" role="note" lang={te ? 'te' : 'en'}>
           <Wrench size={16} aria-hidden />
           <span>
             {te
-              ? 'వ్యాఖ్యలు, రియాక్షన్లు, మరియు అధ్యాయాల చర్చ ఇక్కడ చూపిస్తున్నవి డిజైన్ దిశ — వీటికి నిజమైన బ్యాకెండ్ (comments, notifications) ఇంకా నిర్మించాల్సి ఉంది. రచయిత సమాధానాలు ఇప్పుడు స్థానికంగా పనిచేస్తాయి.'
-              : 'Comments, reactions, and chapter discussion shown here reflect the design direction — full backend (comments, notifications) is still being built. Author replies work locally so you can practice the warmth loop.'}
+              ? 'కమ్యూనిటీ ఫీడ్ + రచయిత సమాధానాలు స్థానికంగా పనిచేస్తాయి. పూర్తి పాఠక వ్యాఖ్యలు/నోటిఫికేషన్లు తర్వాత.'
+              : 'Community feed and author replies work now. Full reader comments and notifications come later — no empty “coming soon” tiles.'}
           </span>
         </div>
       </div>

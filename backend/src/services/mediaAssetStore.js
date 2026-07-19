@@ -5,7 +5,11 @@
 import { randomUUID } from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
-import { isTableMissingError, SCHEMA_FEATURE_PENDING_MESSAGE } from '../lib/schemaHealth.js';
+import {
+  isTableMissingError,
+  SCHEMA_FEATURE_PENDING_MESSAGE,
+  toSafeStoreError,
+} from '../lib/schemaHealth.js';
 
 const ASSET_TYPES = new Set(['cover', 'illustration', 'reference', 'other']);
 
@@ -26,8 +30,9 @@ export async function listMediaAssets(storyId) {
     .eq('story_id', storyId)
     .order('sort_order', { ascending: true });
   if (error) {
-    if (isTableMissingError(error)) return [];
-    throw new Error(error.message);
+    // Signal schema-not-ready so UI can show honest setup state (not empty success)
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw toSafeStoreError(error, 'Could not load media library');
   }
   return data || [];
 }
@@ -63,10 +68,7 @@ export async function createMediaAsset(storyId, userId, body) {
   }
 
   const { data, error } = await supabase.from('media_assets').insert(row).select('*').single();
-  if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
-  }
+  if (error) throw toSafeStoreError(error, 'Could not save media asset');
   return data;
 }
 
@@ -79,9 +81,6 @@ export async function deleteMediaAsset(storyId, assetId) {
     return { deleted: true };
   }
   const { error } = await supabase.from('media_assets').delete().eq('id', assetId).eq('story_id', storyId);
-  if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
-  }
+  if (error) throw toSafeStoreError(error, 'Could not delete media asset');
   return { deleted: true };
 }

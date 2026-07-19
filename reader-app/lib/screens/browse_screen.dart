@@ -24,6 +24,12 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
   final Map<String, bool> _loading = {};
   final Map<String, String?> _errors = {};
 
+  final _searchController = TextEditingController();
+  List<Story> _searchResults = [];
+  bool _searching = false;
+  String? _searchError;
+  bool _searchActive = false;
+
   @override
   void initState() {
     super.initState();
@@ -64,9 +70,45 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
     }
   }
 
+  Future<void> _runSearch(String raw) async {
+    final q = raw.trim();
+    if (q.isEmpty) {
+      setState(() {
+        _searchActive = false;
+        _searchResults = [];
+        _searchError = null;
+      });
+      return;
+    }
+    setState(() {
+      _searchActive = true;
+      _searching = true;
+      _searchError = null;
+    });
+    try {
+      final auth = context.read<AuthState>();
+      final api = ApiService.fromAuth(auth);
+      final results = await api.searchStories(q);
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _searching = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _searching = false;
+          _searchError = e is ApiException ? e.userMessage : 'Search failed';
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -75,24 +117,101 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
     return Scaffold(
       appBar: AppBar(
         title: const Text('వెతకండి · Browse'),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: KathaColors.gold,
-          unselectedLabelColor: KathaColors.inkMuted,
-          indicatorColor: KathaColors.gold,
-          tabs: _labels.map((l) => Tab(text: l)).toList(),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(104),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _runSearch,
+                  decoration: InputDecoration(
+                    hintText: 'Search Telugu or English titles…',
+                    prefixIcon: const Icon(Icons.search, color: KathaColors.gold),
+                    suffixIcon: _searchActive
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              _runSearch('');
+                            },
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.arrow_forward),
+                            onPressed: () => _runSearch(_searchController.text),
+                          ),
+                    filled: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  ),
+                ),
+              ),
+              if (!_searchActive)
+                TabBar(
+                  controller: _tabController,
+                  labelColor: KathaColors.gold,
+                  unselectedLabelColor: KathaColors.inkMuted,
+                  indicatorColor: KathaColors.gold,
+                  tabs: _labels.map((l) => Tab(text: l)).toList(),
+                ),
+            ],
+          ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _genres.map((g) => _GenreFeed(
-          genre: g,
-          feed: _feeds[g],
-          loading: _loading[g] ?? false,
-          error: _errors[g],
-          onRetry: () { _feeds.remove(g); _loadGenre(g); },
-        )).toList(),
-      ),
+      body: _searchActive
+          ? _buildSearchBody()
+          : TabBarView(
+              controller: _tabController,
+              children: _genres
+                  .map(
+                    (g) => _GenreFeed(
+                      genre: g,
+                      feed: _feeds[g],
+                      loading: _loading[g] ?? false,
+                      error: _errors[g],
+                      onRetry: () {
+                        _feeds.remove(g);
+                        _loadGenre(g);
+                      },
+                    ),
+                  )
+                  .toList(),
+            ),
+    );
+  }
+
+  Widget _buildSearchBody() {
+    if (_searching) {
+      return const Center(child: CircularProgressIndicator(color: KathaColors.gold));
+    }
+    if (_searchError != null) {
+      return ErrorState(
+        message: _searchError!,
+        onRetry: () => _runSearch(_searchController.text),
+      );
+    }
+    if (_searchResults.isEmpty) {
+      return const Center(child: Text('No stories match that search.'));
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(24),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, i) {
+        final story = _searchResults[i];
+        return StoryCard(
+          story: story,
+          index: i,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: story.id)),
+          ),
+        );
+      },
     );
   }
 }
@@ -104,11 +223,19 @@ class _GenreFeed extends StatelessWidget {
   final String? error;
   final VoidCallback onRetry;
 
-  const _GenreFeed({required this.genre, this.feed, required this.loading, this.error, required this.onRetry});
+  const _GenreFeed({
+    required this.genre,
+    this.feed,
+    required this.loading,
+    this.error,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator(color: KathaColors.gold));
+    if (loading) {
+      return const Center(child: CircularProgressIndicator(color: KathaColors.gold));
+    }
     if (error != null) return ErrorState(message: error!, onRetry: onRetry);
     if (feed == null) return const SizedBox();
 
@@ -117,19 +244,32 @@ class _GenreFeed extends StatelessWidget {
       children: [
         _SectionHeader(title: 'Trending this week', icon: Icons.trending_up),
         const SizedBox(height: 12),
-        ...feed!.trending.asMap().entries.map((e) => StoryCard(story: e.value, index: e.key, onTap: () => _open(context, e.value))),
+        ...feed!.trending.asMap().entries.map(
+              (e) => StoryCard(
+                story: e.value,
+                index: e.key,
+                onTap: () => _open(context, e.value),
+              ),
+            ),
         const SizedBox(height: 24),
         _SectionHeader(title: 'New releases', icon: Icons.fiber_new),
         const SizedBox(height: 12),
-        ...feed!.newReleases.asMap().entries.map((e) => StoryCard(story: e.value, index: e.key + 3, onTap: () => _open(context, e.value))),
+        ...feed!.newReleases.asMap().entries.map(
+              (e) => StoryCard(
+                story: e.value,
+                index: e.key + 3,
+                onTap: () => _open(context, e.value),
+              ),
+            ),
       ],
     );
   }
 
   void _open(BuildContext context, Story story) {
-    Navigator.push(context, MaterialPageRoute(
-      builder: (_) => StoryDetailScreen(storyId: story.id),
-    ));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => StoryDetailScreen(storyId: story.id)),
+    );
   }
 }
 

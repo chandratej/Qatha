@@ -46,9 +46,10 @@ export class ErrorBoundary extends Component<Props, State> {
             >
               Reload studio
             </button>
-            {this.state.error?.message && (
-              <pre className="cms-error-boundary__detail">
-                {this.state.error.message}
+            {/* Never show raw PostgREST/stack text to creators — log only */}
+            {import.meta.env.DEV && this.state.error?.message && (
+              <pre className="cms-error-boundary__detail" aria-hidden>
+                {this.state.error.message.slice(0, 200)}
               </pre>
             )}
           </div>

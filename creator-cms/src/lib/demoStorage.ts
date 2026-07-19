@@ -1,6 +1,6 @@
 // Simple localStorage-backed demo data for the creator CMS.
 // Allows full persistence of seasons, chapter order, titles, word counts, scene counts across refreshes.
-// Used only for original demo stories (demo-valley-te / demo-valley-en / legacy demo-rrr alias).
+// Used only for original demo stories (demo-valley-te / demo-valley-en).
 
 export interface DemoSeason {
   id: string;
@@ -20,7 +20,7 @@ export interface DemoStoryData {
 
 const STORAGE_KEY_PREFIX = 'katha-demo-story-';
 
-const DEMO_STORY_IDS = new Set(['demo-valley-te', 'demo-valley-en', 'demo-rrr', 'demo-manuscript']);
+const DEMO_STORY_IDS = new Set(['demo-valley-te', 'demo-valley-en', 'demo-manuscript']);
 
 function getKey(storyId: string) {
   return `${STORAGE_KEY_PREFIX}${storyId}`;
@@ -90,8 +90,8 @@ export function initValleyDemoData(language: 'te' | 'en' = 'te'): DemoStoryData 
   };
 }
 
-/** @deprecated Use initValleyDemoData — alias retained for call-site migrations */
-export function initRRRDemoData(): DemoStoryData {
+/** @deprecated Use initValleyDemoData */
+export function initValleyDemoDataEn(): DemoStoryData {
   return initValleyDemoData('en');
 }
 

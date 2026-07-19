@@ -5,6 +5,10 @@
  */
 
 import { supabase } from '../lib/supabase.js';
+import {
+  sanitizeStoryDescription,
+  estimateReadTimeMinutes,
+} from '../lib/publishContent.js';
 
 const STORY_SELECT = `
   id, title, description, genre, cover_url, chapter_count,
@@ -12,6 +16,14 @@ const STORY_SELECT = `
   release_day_of_week, release_time_of_day, created_at, is_published,
   creators(pen_name, avatar_url)
 `;
+
+function scrubStoryForReader(story) {
+  if (!story) return story;
+  return {
+    ...story,
+    description: sanitizeStoryDescription(story.description),
+  };
+}
 
 /**
  * Count published chapters per story and repair story flags/counters.
@@ -69,14 +81,14 @@ export async function syncStoryAfterChapterPublish(storyId) {
 
 function withAccurateCount(story, counts) {
   const n = counts.get(story.id) || 0;
-  return {
+  return scrubStoryForReader({
     ...story,
     chapter_count: n,
     is_published: n > 0 ? true : story.is_published,
     total_readers: story.total_readers ?? 0,
     views_this_week: story.views_this_week ?? 0,
     creators: story.creators || { pen_name: 'Author', avatar_url: null },
-  };
+  });
 }
 
 /**
@@ -148,15 +160,52 @@ export async function getPublicStoryDetail(storyId) {
 
   const { data: chapters } = await supabase
     .from('chapters')
-    .select('id, chapter_number, title, estimated_read_time_minutes, view_count, status')
+    .select('id, chapter_number, title, estimated_read_time_minutes, view_count, status, content')
     .eq('story_id', storyId)
     .eq('status', 'published')
     .order('chapter_number');
 
+  // Never return body content on the list payload — only use it to correct read-time.
+  const chapterSummaries = (chapters || []).map((c) => {
+    const wordMinutes = estimateReadTimeMinutes(c.content || '');
+    const stored = Number(c.estimated_read_time_minutes) || 0;
+    return {
+      id: c.id,
+      chapter_number: c.chapter_number,
+      title: c.title,
+      estimated_read_time_minutes: Math.max(stored, wordMinutes),
+      view_count: c.view_count,
+      status: c.status,
+    };
+  });
+
   return {
     story: withAccurateCount(story, counts),
-    chapters: chapters || [],
+    chapters: chapterSummaries,
   };
+}
+
+/** Telugu-aware public search via RPC (trigram + ILIKE). */
+export async function searchPublicStories(q, limit = 20) {
+  const { data, error } = await supabase.rpc('search_public_stories', {
+    q,
+    lim: limit,
+  });
+  if (error) {
+    // Fallback: simple ilike on title when RPC not applied yet
+    const { data: rows, error: e2 } = await supabase
+      .from('stories')
+      .select(STORY_SELECT)
+      .eq('is_published', true)
+      .ilike('title', `%${q}%`)
+      .limit(limit);
+    if (e2) throw error;
+    return (rows || []).map((s) => scrubStoryForReader(s));
+  }
+  return (data || []).map((s) => scrubStoryForReader({
+    ...s,
+    creators: { pen_name: 'Author', avatar_url: null },
+  }));
 }
 
 export async function listDiscoverByGenre(genre) {

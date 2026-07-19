@@ -35,6 +35,8 @@ export async function listReaderFeedback(storyId, { status, limit = 50 } = {}) {
 const VALID_TYPES = new Set([
   'written_review', 'inline_chapter', 'reaction', 'content_issue',
   'accessibility', 'translation', 'spoiler_report', 'suggestion',
+  // Pre-publish beta reader structured categories (MVP-1 minimal)
+  'typo', 'pacing', 'confusion', 'praise', 'other',
 ]);
 
 export async function createReaderFeedback(storyId, readerId, body) {

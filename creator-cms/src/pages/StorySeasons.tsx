@@ -26,7 +26,7 @@ export function StorySeasons() {
   const { locale, t } = useLocale();
   const { storyId = 'demo-valley-te' } = useParams();
   const navigate = useNavigate();
-  const isDemo = storyId === 'demo-valley-te' || storyId === 'demo-valley-en' || storyId === 'demo-rrr';
+  const isDemo = storyId === 'demo-valley-te' || storyId === 'demo-valley-en';
 
   const [seasons, setSeasons] = useState<DemoSeason[]>(() => getOrInitDemoData(storyId).seasons);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>(getOrInitDemoData(storyId).seasons[0]?.id || 's1');

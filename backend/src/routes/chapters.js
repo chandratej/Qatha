@@ -18,6 +18,10 @@ import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
 import { assertChapterEditable } from '../services/chapterImmutability.js';
 import { invalidatePublicStoryCache } from './stories.js';
+import {
+  sanitizePublishedContent,
+  estimateReadTimeMinutes,
+} from '../lib/publishContent.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
@@ -75,14 +79,25 @@ chaptersRouter.get('/:storyId/:chapterNumber', requireAuth({ optional: true }), 
       chapterData = data;
     }
 
+    // Sanitize on read so legacy published HTML with editor highlights still renders cleanly.
+    // Recompute read-time from body words so stub "1 min" rows correct themselves without republish.
+    const cleanContent = sanitizePublishedContent(chapterData.content || '');
+    const wordMinutes = estimateReadTimeMinutes(cleanContent);
+    const storedMinutes = Number(chapterData.estimated_read_time_minutes) || 0;
+    const chapterForClient = {
+      ...chapterData,
+      content: cleanContent,
+      estimated_read_time_minutes: Math.max(storedMinutes, wordMinutes),
+    };
+
     // Store in hot cache + strong headers
-    const etag = `"${chapterData.id || chapterData.story_id + chapterData.chapter_number}"`;
-    chapterCache.set(cacheKey, { data: chapterData, ts: Date.now(), etag });
+    const etag = `"${chapterForClient.id || chapterForClient.story_id + chapterForClient.chapter_number}"`;
+    chapterCache.set(cacheKey, { data: chapterForClient, ts: Date.now(), etag });
 
     res.setHeader('Cache-Control', 'private, max-age=180');
     res.setHeader('ETag', etag);
     // Allow CDN/proxies to cache public published content longer in real prod (with auth consideration)
-    res.json({ chapter: chapterData });
+    res.json({ chapter: chapterForClient });
   } catch (err) {
     next(err);
   }
@@ -168,11 +183,15 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
   try {
     const { storyId } = req.params;
     const creatorId = getAuthenticatedUserId(req);
-    const { chapter_number, title, content, content_delta, appeal_note } = req.body;
+    const { chapter_number, title, content: rawContent, content_delta, appeal_note } = req.body;
 
-    if (!content || content.length > 50000) {
+    if (!rawContent || rawContent.length > 50000) {
       throw createAppError('INTERNAL_ERROR', 'Chapter content invalid (max 50,000 chars)', 400);
     }
+
+    // Always strip editor-only formatting before any publish path.
+    const content = sanitizePublishedContent(rawContent);
+    const estimated_read_time_minutes = estimateReadTimeMinutes(content);
 
     if (isMockMode()) {
       const moderation = await moderateContent(content);
@@ -185,6 +204,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
         chapter_number,
         title,
         content,
+        estimated_read_time_minutes,
         status: flagged ? 'pending_review' : 'published',
         moderation_status: flagged ? 'pending' : 'approved',
         moderation_reason: appeal_note || null,
@@ -246,6 +266,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
       title,
       content,
       content_delta,
+      estimated_read_time_minutes,
       status: 'pending_review',
       moderation_reason: appeal_note || null,
     }, { onConflict: 'story_id,chapter_number' }).select().single();

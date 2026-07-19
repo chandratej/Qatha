@@ -101,6 +101,40 @@ class ApiService {
     return stories;
   }
 
+  /// Telugu + English title/description search (pg_trgm / ILIKE on backend).
+  Future<List<Story>> searchStories(String query, {int limit = 20}) async {
+    final q = query.trim();
+    if (q.isEmpty) return [];
+    final uri = Uri.parse('$baseUrl/stories/search').replace(
+      queryParameters: {'q': q, 'limit': '$limit'},
+    );
+    late final http.Response res;
+    try {
+      res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+    } catch (_) {
+      throw ApiException(
+        code: 'NETWORK_OFFLINE',
+        userMessage: 'Cannot reach story API ($baseUrl).',
+        action: 'RETRY',
+      );
+    }
+    if (res.statusCode != 200) {
+      throw _parseError(res);
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final list = data['stories'];
+    if (list is! List) return [];
+    final stories = <Story>[];
+    for (final row in list) {
+      if (row is! Map) continue;
+      try {
+        final story = Story.fromJson(Map<String, dynamic>.from(row));
+        if (story.id.isNotEmpty) stories.add(story);
+      } catch (_) {}
+    }
+    return stories;
+  }
+
   Future<DiscoverFeed> fetchDiscover(String genre) async {
     final res = await http.get(Uri.parse('$baseUrl/stories/discover/$genre'), headers: _headers);
     if (res.statusCode != 200) throw _parseError(res);

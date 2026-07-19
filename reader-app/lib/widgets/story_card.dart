@@ -16,19 +16,22 @@ class StoryCard extends StatelessWidget {
     this.index = 0,
   });
 
+  /// Fixed height that fits title (2 lines) + author + genre chip + readers
+  /// under real content lengths without RenderFlex overflow banners.
+  static const double cardHeight = 148;
+  static const double coverWidth = 100;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Fixed height + width-fill avoids "RenderBox was not laid out" on web
-    // when cards sit in SliverList / ListView under nested shells.
     final card = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          height: 140,
+          height: cardHeight,
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: isDark ? KathaColors.darkSurface : Colors.white,
@@ -51,40 +54,43 @@ class StoryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(
-                width: 100,
+                width: coverWidth,
                 child: story.coverUrl != null
                     ? CachedNetworkImage(
                         imageUrl: story.coverUrl!,
                         fit: BoxFit.cover,
-                        width: 100,
-                        height: 140,
+                        width: coverWidth,
+                        height: cardHeight,
                         placeholder: (context, url) => _coverPlaceholder(isDark),
-                        errorWidget: (context, url, error) => _coverPlaceholder(isDark),
+                        errorWidget: (context, url, error) =>
+                            _coverPlaceholder(isDark),
                       )
                     : _coverPlaceholder(isDark),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      Text(
-                        story.title,
-                        style: Theme.of(context).textTheme.titleLarge,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      Flexible(
+                        child: Text(
+                          story.title,
+                          style: Theme.of(context).textTheme.titleLarge,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         story.authorName,
                         style: Theme.of(context).textTheme.labelMedium,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Flexible(child: _chip(context, story.genreLabel)),
@@ -92,14 +98,16 @@ class StoryCard extends StatelessWidget {
                           Text(
                             '${story.chapterCount} ch',
                             style: Theme.of(context).textTheme.labelMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Row(
                         children: [
                           Icon(
-                            Icons.verified_outlined,
+                            Icons.people_outline,
                             size: 13,
                             color: KathaColors.gold.withValues(alpha: 0.8),
                           ),
@@ -107,7 +115,10 @@ class StoryCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               story.readersLabel,
-                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
                                     color: KathaColors.goldDark,
                                     fontSize: 11,
                                   ),
@@ -128,9 +139,7 @@ class StoryCard extends StatelessWidget {
     );
 
     // Opacity-only animation avoids slide transforms that break web layout.
-    return card
-        .animate()
-        .fadeIn(duration: 400.ms, delay: (index * 80).ms);
+    return card.animate().fadeIn(duration: 400.ms, delay: (index * 80).ms);
   }
 
   Widget _coverPlaceholder(bool isDark) {
@@ -140,25 +149,36 @@ class StoryCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [KathaColors.darkElevated, KathaColors.ember.withValues(alpha: 0.3)]
-              : [KathaColors.paperWarm, KathaColors.goldLight.withValues(alpha: 0.5)],
+              ? [
+                  KathaColors.darkElevated,
+                  KathaColors.ember.withValues(alpha: 0.3),
+                ]
+              : [
+                  KathaColors.paperWarm,
+                  KathaColors.goldLight.withValues(alpha: 0.5),
+                ],
         ),
       ),
       child: const Center(
-        child: Text('కథ', style: TextStyle(fontSize: 28, color: KathaColors.gold)),
+        child: Text(
+          'కథ',
+          style: TextStyle(fontSize: 28, color: KathaColors.gold),
+        ),
       ),
     );
   }
 
   Widget _chip(BuildContext context, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: KathaColors.gold.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: KathaColors.goldDark,
               fontSize: 11,

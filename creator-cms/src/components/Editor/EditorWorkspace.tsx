@@ -585,7 +585,7 @@ export function EditorWorkspace({
             onBlur={flushActiveScene}
             readOnly={readOnly}
             modules={{ toolbar: false, history: { delay: 1000, maxStack: 200, userOnly: true } }}
-            placeholder={readOnly ? 'Published chapter — read only' : 'Begin this scene… Write as your readers will experience it.'}
+            placeholder={readOnly ? 'Published chapter — read only' : 'Begin this scene…'}
           />
           {isBlank && (
             <div className="katha-proto-editor-nudge" aria-hidden>

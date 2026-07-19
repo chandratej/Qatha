@@ -1,6 +1,7 @@
 /**
  * Katha community feed — API-backed with local fallback for offline/dev.
  * Supports author posts, reader replies, reactions, founding readers strip.
+ * Seed content is original fiction only (no film/IP names).
  */
 
 import { api } from './api';
@@ -47,31 +48,45 @@ export interface ChapterDiscussion {
   last_activity_label: string;
 }
 
-const KEY = 'katha_community_posts_v2';
-const REPLIES_KEY = 'katha_community_replies_v2';
+/** Bump key to purge legacy IP/test posts (RRR title, ollama, etc.) from localStorage. */
+const KEY = 'katha_community_posts_v3';
+const REPLIES_KEY = 'katha_community_replies_v3';
 
 const AVATAR_COLORS = ['#7A2E2E', '#B8863B', '#6B8570', '#5C2222', '#4A6741', '#8B5A2B'];
 
+const BLOCKED_BODY =
+  /ollama|Hello How are you|రౌద్రం\s*రణం\s*రుధిరం|రామరాజు|Rajamouli|Allu\s*Arjun|\bRRR\b/i;
+const BLOCKED_TITLE =
+  /రౌద్రం\s*రణం\s*రుధిరం|Rajamouli|Allu\s*Arjun|\bRRR\b|demo-rrr/i;
+
+function isCleanPost(p: CommunityPost): boolean {
+  if (BLOCKED_BODY.test(p.body)) return false;
+  if (p.story_title && BLOCKED_TITLE.test(p.story_title)) return false;
+  return true;
+}
+
+/** Original Telugu demo — valley / monsoon arc (no film IP). */
 function seedPosts(): CommunityPost[] {
   const now = Date.now();
   return [
     {
-      id: 'seed-release-ch8',
+      id: 'seed-release-ch3',
       author_id: 'author',
-      author_name: 'Chandra Tej',
+      author_name: 'లక్ష్మీ దేవి',
       type: 'release',
-      body: 'Chapter 8 రేపు ఉదయం 8 గంటలకు విడుదల అవుతుంది — రామరాజు కథ ముగింపు వైపు అడుగులు వేస్తుంది. మీరంతా ఇక్కడి వరకు నాతో ప్రయాణించినందుకు ధన్యవాదాలు 🙏',
-      story_title: 'రౌద్రం రణం రుధిరం',
-      chapter_number: 8,
+      body:
+        'మూడవ అధ్యాయం రేపు ఉదయం 8 గంటలకు విడుదల — లోయలో వర్షం వచ్చే ముందు రాత్రి. మీరంతా ఇక్కడి వరకు నాతో ప్రయాణించినందుకు ధన్యవాదాలు 🙏',
+      story_title: 'వర్షం వచ్చే ముందు',
+      chapter_number: 3,
       created_at: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
-      reactions: { love: 24, comment: 3 },
+      reactions: { love: 12, comment: 2 },
       viewer_loved: false,
       replies: [
         {
           id: 'r1',
           author_name: 'లావణ్య',
           author_role: 'reader',
-          body: 'చాలా ఎదురుచూస్తున్నా! రామరాజు కథ నన్ను మొదటి అధ్యాయం నుండే కట్టిపడేసింది 💛',
+          body: 'మొదటి అధ్యాయం నుంచీ టేకు తలుపు చట్రం గుర్తు ఉంది — ఎదురుచూస్తున్నా 💛',
           created_at: new Date(now - 90 * 60 * 1000).toISOString(),
           avatar_color: '#7A2E2E',
         },
@@ -79,17 +94,9 @@ function seedPosts(): CommunityPost[] {
           id: 'r2',
           author_name: 'ప్రవీణ్',
           author_role: 'reader',
-          body: 'ఉదయం 8కి అలారం పెట్టేసుకున్నా 😄 ఆల్ ది బెస్ట్!',
+          body: 'ఉదయం 8కి అలారం పెట్టేసుకున్నా 😄',
           created_at: new Date(now - 75 * 60 * 1000).toISOString(),
           avatar_color: '#B8863B',
-        },
-        {
-          id: 'r3',
-          author_name: 'Chandra Tej',
-          author_role: 'author',
-          body: '@ప్రవీణ్ 😄 నీ మద్దతుకి ధన్యవాదాలు — ఈ చాప్టర్ ప్రత్యేకంగా నీలాంటి వారికోసమే రాశాను!',
-          created_at: new Date(now - 60 * 60 * 1000).toISOString(),
-          avatar_color: '#7A2E2E',
         },
       ],
     },
@@ -98,14 +105,20 @@ function seedPosts(): CommunityPost[] {
 
 function loadLocal(): CommunityPost[] {
   try {
+    // Drop legacy v2 keys that may hold film IP / ollama test posts
+    try {
+      localStorage.removeItem('katha_community_posts_v2');
+      localStorage.removeItem('katha_community_replies_v2');
+    } catch { /* ignore */ }
+
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as CommunityPost[];
-      // Drop leftover English "ollama" test posts
-      const cleaned = parsed.filter(
-        (p) => !/ollama/i.test(p.body) && !/Hello How are you/i.test(p.body),
-      );
-      if (cleaned.length > 0) return cleaned;
+      const cleaned = parsed.filter(isCleanPost);
+      if (cleaned.length > 0) {
+        if (cleaned.length !== parsed.length) saveLocal(cleaned);
+        return cleaned;
+      }
     }
   } catch { /* ignore */ }
   const seed = seedPosts();
@@ -127,45 +140,29 @@ export function getFoundingReaders(): FoundingReader[] {
   ];
 }
 
-export function getChapterDiscussions(stories: Array<{ id: string; title: string; chapter_count?: number }>): ChapterDiscussion[] {
-  if (stories.length === 0) {
-    return [
-      {
-        story_id: '',
-        story_title: 'రౌద్రం రణం రుధిరం',
-        chapter_number: 7,
-        chapter_title: 'ముగింపు - రౌద్రం రణం రుధిరం',
-        comment_count: 12,
-        last_activity_label: '3 గంటల క్రితం',
-      },
-      {
-        story_id: '',
-        story_title: 'రౌద్రం రణం రుధిరం',
-        chapter_number: 5,
-        chapter_title: 'గతం - రామరాజు లక్ష్యం',
-        comment_count: 8,
-        last_activity_label: 'నిన్న',
-      },
-    ];
-  }
-  return stories.slice(0, 2).map((s, i) => ({
+/**
+ * Chapter discussion list — only real creator stories.
+ * Empty shelf: honest empty state (no fake film titles).
+ */
+export function getChapterDiscussions(
+  stories: Array<{ id: string; title: string; chapter_count?: number }>,
+): ChapterDiscussion[] {
+  if (stories.length === 0) return [];
+  return stories.slice(0, 3).map((s, i) => ({
     story_id: s.id,
     story_title: s.title,
     chapter_number: Math.max(1, (s.chapter_count ?? 1) - i),
     chapter_title: s.title,
-    comment_count: 4 + i * 4,
-    last_activity_label: i === 0 ? '3 గంటల క్రితం' : 'నిన్న',
+    comment_count: 0,
+    last_activity_label: i === 0 ? '—' : '—',
   }));
 }
 
 export async function listCommunityPosts(): Promise<CommunityPost[]> {
   try {
     const { posts } = await api.getCommunityPosts();
-    const cleaned = (posts as CommunityPost[]).filter(
-      (p) => !/ollama/i.test(p.body) && !/Hello How are you/i.test(p.body),
-    );
+    const cleaned = (posts as CommunityPost[]).filter(isCleanPost);
     if (cleaned.length === 0) return loadLocal();
-    // Merge local replies if API posts lack them
     const local = loadLocal();
     return cleaned.map((p) => {
       const localMatch = local.find((l) => l.id === p.id);

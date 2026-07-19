@@ -32,6 +32,10 @@ import {
   type DraftConflictChoice,
 } from '../lib/draftConflict';
 import { DraftConflictModal } from '../components/Editor/DraftConflictModal';
+import { ShareModal } from '../components/studio/ShareModal';
+import type { StoryData, ChapterListItem } from '../types/database';
+import { buildChapterShareUrl, resolveStorySlug } from '../lib/shareLinks';
+import { buildShareMessage, shareViaWhatsApp } from '../lib/socialShare';
 import { enqueuePublishJob, isLikelyOfflineError } from '../lib/publishQueue';
 import { backupSceneVersionCloud } from '../lib/cloudVersions';
 import { useAutosave } from '../hooks/useAutosave';
@@ -143,7 +147,7 @@ export function ChapterEditor() {
   const { user, refreshUser } = useAuth();
   const { storyId = 'demo-valley-te', chapterNum } = useParams();
 
-  const isDemo = storyId === 'demo-valley-te' || storyId === 'demo-valley-en' || storyId === 'demo-rrr';
+  const isDemo = storyId === 'demo-valley-te' || storyId === 'demo-valley-en';
   const chapterNumber = Number(chapterNum) || 1;
   const chapterKey = `${storyId}-${chapterNumber}`;
 
@@ -231,6 +235,9 @@ export function ChapterEditor() {
   } | null>(null);
   const [draftConflictOpen, setDraftConflictOpen] = useState(false);
   const [draftConflictPrefer, setDraftConflictPrefer] = useState<DraftConflictChoice>('local');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareStory, setShareStory] = useState<StoryData | null>(null);
+  const [shareChapters, setShareChapters] = useState<ChapterListItem[]>([]);
   const [pendingLocalDraft, setPendingLocalDraft] = useState<{
     title: string;
     scenes: SceneBlock[];
@@ -372,7 +379,7 @@ export function ChapterEditor() {
         setStoryDisplayTitle(
           storyId === 'demo-valley-en'
             ? 'Before the Monsoon'
-            : (storyId === 'demo-valley-te' || storyId === 'demo-rrr')
+            : (storyId === 'demo-valley-te')
               ? 'వర్షం వచ్చే ముందు'
               : 'Your Story',
         );
@@ -985,7 +992,9 @@ export function ChapterEditor() {
           const trustNote = result.story_trust?.score != null
             ? ` Story Trust SPI: ${result.story_trust.score}.`
             : '';
-          setPublishSuccess(`Submitted for moderation — typically reviewed within 1–2 hours.${trustNote}`);
+          setPublishSuccess(
+            `Submitted for moderation — typically reviewed within 1–2 hours.${trustNote} Share to WhatsApp when ready.`,
+          );
           void createVersion({
             storyId,
             chapterId: String(chapterNumber),
@@ -993,6 +1002,32 @@ export function ChapterEditor() {
             versionName: 'Published',
             content: buildChapterContent({ title: chapterTitle, scenes }),
           });
+          // One-tap distribution loop (DEC-008) — open share after publish.
+          try {
+            const meta = await api.getStoryChapters(storyId);
+            const storyRow: StoryData = {
+              id: storyId,
+              title: meta.story?.title || storyDisplayTitle || chapterTitle,
+              slug: (meta.story as { slug?: string } | undefined)?.slug,
+              genre: 'general',
+              chapter_count: meta.chapters?.length || chapterNumber,
+              total_readers: 0,
+            } as StoryData;
+            setShareStory(storyRow);
+            setShareChapters(
+              (meta.chapters || []).map((c) => ({
+                chapter_number: c.chapter_number,
+                title: c.title,
+              })) as ChapterListItem[],
+            );
+            // Immediate WhatsApp deep link for founding creators (zero extra steps).
+            const slug = resolveStorySlug(storyRow);
+            const url = buildChapterShareUrl(slug, chapterNumber);
+            shareViaWhatsApp(url, buildShareMessage(storyRow.title, chapterTitle, chapterNumber));
+            setShareOpen(true);
+          } catch {
+            /* non-fatal */
+          }
         } catch (pubErr) {
           if (isLikelyOfflineError(pubErr)) {
             await enqueuePublishJob({
@@ -1199,6 +1234,13 @@ export function ChapterEditor() {
         onRestored={handleRestoreVersionSnapshot}
         readOnly={isChapterImmutable}
       />
+      {shareOpen && shareStory && (
+        <ShareModal
+          story={shareStory}
+          chapters={shareChapters.length ? shareChapters : [{ chapter_number: chapterNumber, title: chapterTitle }]}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
       <DraftConflictModal
         open={draftConflictOpen}
         preferred={draftConflictPrefer}

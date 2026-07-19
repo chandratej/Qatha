@@ -24,4 +24,11 @@ describe('errors', () => {
     expect(friendlyFeatureError("Could not find the table 'public.media_assets'")).toBe(SCHEMA_FEATURE_PENDING);
     expect(friendlyFeatureError('Upload failed')).toBe('Upload failed');
   });
+
+  it('never surfaces raw PostgREST codes', () => {
+    expect(mapApiError({ message: 'PGRST116: JSON object requested, multiple (or no) rows returned' })).not.toMatch(
+      /PGRST/i,
+    );
+    expect(friendlyFeatureError('permission denied for table stories')).not.toMatch(/permission denied/i);
+  });
 });

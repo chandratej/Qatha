@@ -223,15 +223,28 @@ authRouter.get('/me', requireAuth(), async (req, res, next) => {
     const sb = getSupabase();
     let role = req.auth?.role || 'reader';
     let subscription_status = 'free';
+    let dpdp_consent_version = null;
+    let creator_agreement_version = null;
 
     if (sb) {
       const { data: profile } = await sb.from('profiles')
-        .select('role, subscription_status')
+        .select('role, subscription_status, dpdp_consent_version, creator_agreement_version')
         .eq('id', userId)
         .maybeSingle();
       if (profile) {
         role = profile.role || role;
         subscription_status = profile.subscription_status || subscription_status;
+        dpdp_consent_version = profile.dpdp_consent_version || null;
+        creator_agreement_version = profile.creator_agreement_version || null;
+      }
+    } else if (isMockMode()) {
+      const { getMockConsents, DPDP_PRIVACY_VERSION, CREATOR_AGREEMENT_VERSION } = await import('../lib/consent.js');
+      const list = getMockConsents(userId);
+      if (list.some((c) => c.consent_type === 'dpdp_privacy' && c.policy_version === DPDP_PRIVACY_VERSION)) {
+        dpdp_consent_version = DPDP_PRIVACY_VERSION;
+      }
+      if (list.some((c) => c.consent_type === 'creator_agreement' && c.policy_version === CREATOR_AGREEMENT_VERSION)) {
+        creator_agreement_version = CREATOR_AGREEMENT_VERSION;
       }
     }
 
@@ -240,9 +253,118 @@ authRouter.get('/me', requireAuth(), async (req, res, next) => {
         id: userId,
         role,
         subscription_status,
+        dpdp_consent_version,
+        creator_agreement_version,
       },
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * POST /api/auth/consent
+ * Body: { dpdp: true, creator_agreement?: true, user_agent?: string }
+ * Records versioned DPDP (+ optional Creator Agreement) consent.
+ * Degrades if migration 041 is not applied (still returns 200 so Studio is usable).
+ */
+authRouter.post('/consent', requireAuth(), async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    if (!userId) {
+      throw createAppError('OTP_REQUIRED', 'Authentication required', 401);
+    }
+
+    const { dpdp, creator_agreement, user_agent } = req.body || {};
+    // Accept common truthy shapes from clients
+    const dpdpOk = dpdp === true || dpdp === 'true' || dpdp === 1 || dpdp === '1';
+    const agreementOk =
+      creator_agreement === true ||
+      creator_agreement === 'true' ||
+      creator_agreement === 1 ||
+      creator_agreement === '1';
+
+    if (!dpdpOk) {
+      throw createAppError('VALIDATION_ERROR', 'DPDP privacy consent is required', 400);
+    }
+
+    const { persistCreatorConsents, recordMockConsent, DPDP_PRIVACY_VERSION, CREATOR_AGREEMENT_VERSION } =
+      await import('../lib/consent.js');
+
+    const ua = user_agent || req.headers['user-agent'] || null;
+
+    if (isMockMode()) {
+      recordMockConsent(userId, {
+        consent_type: 'dpdp_privacy',
+        policy_version: DPDP_PRIVACY_VERSION,
+        accepted: true,
+        user_agent: ua,
+      });
+      if (agreementOk) {
+        recordMockConsent(userId, {
+          consent_type: 'creator_agreement',
+          policy_version: CREATOR_AGREEMENT_VERSION,
+          accepted: true,
+          user_agent: ua,
+        });
+      }
+      return res.json({
+        ok: true,
+        mock: true,
+        storage: 'memory',
+        dpdp_consent_version: DPDP_PRIVACY_VERSION,
+        creator_agreement_version: agreementOk ? CREATOR_AGREEMENT_VERSION : null,
+      });
+    }
+
+    const sb = getSupabase();
+    const result = await persistCreatorConsents(sb, {
+      userId,
+      creatorAgreement: agreementOk,
+      userAgent: ua,
+    });
+
+    res.json(result);
+  } catch (err) {
+    // Last resort: never leave the legal gate stuck on a 500 for schema lag
+    if (err?.status >= 500 || !err?.status) {
+      console.error('[auth/consent]', err?.message || err);
+      try {
+        const userId = getAuthenticatedUserId(req);
+        const { recordMockConsent, DPDP_PRIVACY_VERSION, CREATOR_AGREEMENT_VERSION } =
+          await import('../lib/consent.js');
+        const { creator_agreement } = req.body || {};
+        const agreementOk =
+          creator_agreement === true ||
+          creator_agreement === 'true' ||
+          creator_agreement === 1 ||
+          creator_agreement === '1';
+        if (userId) {
+          recordMockConsent(userId, {
+            consent_type: 'dpdp_privacy',
+            policy_version: DPDP_PRIVACY_VERSION,
+            accepted: true,
+          });
+          if (agreementOk) {
+            recordMockConsent(userId, {
+              consent_type: 'creator_agreement',
+              policy_version: CREATOR_AGREEMENT_VERSION,
+              accepted: true,
+            });
+          }
+          return res.json({
+            ok: true,
+            storage: 'memory',
+            degraded: true,
+            dpdp_consent_version: DPDP_PRIVACY_VERSION,
+            creator_agreement_version: agreementOk ? CREATOR_AGREEMENT_VERSION : null,
+            warning: err?.message || 'Consent saved in memory after storage error',
+          });
+        }
+      } catch (fallbackErr) {
+        console.error('[auth/consent] fallback failed', fallbackErr?.message);
+      }
+    }
     next(err);
   }
 });

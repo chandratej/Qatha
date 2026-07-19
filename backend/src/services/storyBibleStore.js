@@ -5,7 +5,11 @@
 import { randomUUID } from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
-import { isTableMissingError, SCHEMA_FEATURE_PENDING_MESSAGE } from '../lib/schemaHealth.js';
+import {
+  isTableMissingError,
+  SCHEMA_FEATURE_PENDING_MESSAGE,
+  toSafeStoreError,
+} from '../lib/schemaHealth.js';
 
 /** @type {Map<string, object[]>} */
 const charactersDb = new Map();
@@ -33,8 +37,8 @@ export async function listCharacters(storyId) {
     .eq('story_id', storyId)
     .order('sort_order', { ascending: true });
   if (error) {
-    if (isTableMissingError(error)) return [];
-    throw new Error(error.message);
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw toSafeStoreError(error, 'Could not load characters');
   }
   return data || [];
 }
@@ -65,10 +69,7 @@ export async function createCharacter(storyId, body) {
   }
 
   const { data, error } = await supabase.from('story_characters').insert(row).select('*').single();
-  if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
-  }
+  if (error) throw toSafeStoreError(error, 'Could not add character');
   return data;
 }
 
@@ -97,8 +98,7 @@ export async function updateCharacter(storyId, characterId, body) {
     .select('*')
     .single();
   if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
+    throw toSafeStoreError(error, 'Could not update story bible');
   }
   return data;
 }
@@ -113,8 +113,7 @@ export async function deleteCharacter(storyId, characterId) {
   }
   const { error } = await supabase.from('story_characters').delete().eq('id', characterId).eq('story_id', storyId);
   if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
+    throw toSafeStoreError(error, 'Could not update story bible');
   }
   return { deleted: true };
 }
@@ -129,8 +128,8 @@ export async function listLoreEntries(storyId) {
     .eq('story_id', storyId)
     .order('sort_order', { ascending: true });
   if (error) {
-    if (isTableMissingError(error)) return [];
-    throw new Error(error.message);
+    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
+    throw toSafeStoreError(error, 'Could not load lore entries');
   }
   return data || [];
 }
@@ -163,8 +162,7 @@ export async function createLoreEntry(storyId, body) {
 
   const { data, error } = await supabase.from('story_lore_entries').insert(row).select('*').single();
   if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
+    throw toSafeStoreError(error, 'Could not update story bible');
   }
   return data;
 }
@@ -194,8 +192,7 @@ export async function updateLoreEntry(storyId, entryId, body) {
     .select('*')
     .single();
   if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
+    throw toSafeStoreError(error, 'Could not update story bible');
   }
   return data;
 }
@@ -210,8 +207,7 @@ export async function deleteLoreEntry(storyId, entryId) {
   }
   const { error } = await supabase.from('story_lore_entries').delete().eq('id', entryId).eq('story_id', storyId);
   if (error) {
-    if (isTableMissingError(error)) throw new Error(SCHEMA_FEATURE_PENDING_MESSAGE);
-    throw new Error(error.message);
+    throw toSafeStoreError(error, 'Could not update story bible');
   }
   return { deleted: true };
 }

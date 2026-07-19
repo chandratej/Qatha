@@ -18,7 +18,7 @@ export async function backupSceneVersionCloud(opts: {
   source?: string;
   force?: boolean;
 }): Promise<boolean> {
-  if (!opts.storyId || opts.storyId === 'demo-rrr' || opts.storyId === 'demo-valley-te' || opts.storyId === 'demo-valley-en') return false;
+  if (!opts.storyId || opts.storyId === 'demo-valley-te' || opts.storyId === 'demo-valley-en') return false;
   const key = `${opts.storyId}:${opts.chapterNumber}:${opts.sceneId}`;
   const now = Date.now();
   if (!opts.force) {

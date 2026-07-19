@@ -16,7 +16,7 @@ import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { StudioGlyph } from '../components/studio/StudioGlyph';
 import { useLocale } from '../context/LocaleContext';
 import { useCreatorPersona } from '../hooks/useCreatorPersona';
-import { DEBUT_SEASON_REQUIREMENTS } from '../lib/platformConstants';
+
 
 function statusBadgeClass(status?: string) {
   if (status === 'published') return 'sv21__badge sv21__badge--published';
@@ -285,9 +285,10 @@ export function Dashboard() {
       ) : (
         <div className="sv21__list">
           {sortedStories.map((story, i) => {
-            const debutPct = Math.min(100, Math.round((story.chapter_count / DEBUT_SEASON_REQUIREMENTS.chapterCount) * 100));
-            const meta = story.moderation_status === 'published' && story.chapter_count > 0
-              ? `${story.chapter_count} / ${DEBUT_SEASON_REQUIREMENTS.chapterCount} ${t('stories.chapters')} · ${debutPct}% ${t('stories.debutArc')}`
+            // Chapter count only — debut X/50 strip lives once on Events (avoids 4× repeat)
+            const ch = story.chapter_count ?? 0;
+            const meta = ch > 0
+              ? `${ch} ${t('stories.chapters')}`
               : t('stories.recentlyEdited');
             return (
               <div key={story.id} className="sv21__row" style={i === sortedStories.length - 1 ? { borderBottom: 'none' } : undefined}>

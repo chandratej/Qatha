@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: _SectionHeader(
                                   titleTe: 'కొత్త కథలు',
                                   titleEn: 'New releases',
-                                  subtitle: 'From Creator Studio · live catalog',
+                                  subtitle: 'New releases',
                                   icon: Icons.fiber_new_rounded,
                                 ),
                               ),
@@ -212,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                       ).animate().fadeIn(duration: 600.ms),
                       Text(
-                        'తెలుగు కథలు · live from API',
+                        'తెలుగు కథలు · Telugu stories',
                         style: Theme.of(context).textTheme.labelMedium,
                       ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
                     ],
@@ -280,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const _SectionHeader(
                 titleTe: 'ఇప్పుడు ట్రెండింగ్',
                 titleEn: 'Trending now',
-                subtitle: 'Published stories from the database',
+                subtitle: 'Stories readers are loving right now',
               ),
             if (_trending.isNotEmpty) const SizedBox(height: 12),
           ],

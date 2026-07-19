@@ -5,6 +5,40 @@ import { corsHeaders, handleCorsPreflight } from '../_shared/cors.ts';
 import { getPublishableKey, getSecretKey } from '../_shared/keys.ts';
 import { hasHardBlockViolation, moderateContent, riskScoreFromResult } from '../_shared/moderation.ts';
 
+/** Strip editor-only chrome (highlights, suggestions) before publish. */
+function sanitizePublishedContent(html: string): string {
+  let out = html;
+  for (let i = 0; i < 5; i++) {
+    const next = out.replace(
+      /<span\b[^>]*(?:background(?:-color)?\s*:|style\s*=)[^>]*>([\s\S]*?)<\/span>/gi,
+      (full, inner) => (/background/i.test(full) ? inner : full),
+    );
+    if (next === out) break;
+    out = next;
+  }
+  out = out.replace(
+    /<span\b[^>]*class\s*=\s*[^>]*?(?:ql-suggestion|suggestion|track-change|comment-anchor)[^>]*>([\s\S]*?)<\/span>/gi,
+    '$1',
+  );
+  out = out.replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ');
+  out = out.replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '');
+  out = out.replace(
+    /<hr\b[^>]*(?:scene-break|data-scene-break)[^>]*\/?>/gi,
+    '<hr class="scene-break" data-scene-break="true" />',
+  );
+  return out.trim();
+}
+
+function estimateReadTimeMinutes(content: string): number {
+  const plain = content
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!plain) return 1;
+  const words = plain.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 180));
+}
+
 Deno.serve(async (req) => {
   const preflight = handleCorsPreflight(req);
   if (preflight) return preflight;
@@ -33,14 +67,18 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { story_id, chapter_number, title, content, content_delta, appeal_note } = body;
+    const { story_id, chapter_number, title, content: rawContent, content_delta, appeal_note } = body;
 
-    if (!story_id || !chapter_number || !content || content.length > 50000) {
+    if (!story_id || !chapter_number || !rawContent || rawContent.length > 50000) {
       return new Response(JSON.stringify({ error: 'Invalid chapter payload' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Strip editor-only highlight/suggestion markup before moderation + persist.
+    const content = sanitizePublishedContent(String(rawContent));
+    const estimated_read_time_minutes = estimateReadTimeMinutes(content);
 
     const { data: story } = await supabaseUser.from('stories').select('author_id').eq('id', story_id).single();
     if (!story || story.author_id !== user.id) {
@@ -63,6 +101,7 @@ Deno.serve(async (req) => {
         title,
         content,
         content_delta,
+        estimated_read_time_minutes,
         status: 'unpublished',
         moderation_status: 'rejected_banned',
         moderation_reason: appeal_note || 'Hard block violation',
@@ -86,6 +125,7 @@ Deno.serve(async (req) => {
       title,
       content,
       content_delta,
+      estimated_read_time_minutes,
       status: 'pending_review',
       moderation_status: 'pending',
       moderation_reason: appeal_note || null,

@@ -180,8 +180,20 @@ CREATE TABLE public.earnings_ledger (
 
 CREATE OR REPLACE FUNCTION calculate_read_time()
 RETURNS TRIGGER AS $$
+DECLARE
+  plain text;
+  words int;
 BEGIN
-  NEW.estimated_read_time_minutes := GREATEST(1, ROUND(char_length(NEW.content) / 1000.0));
+  plain := regexp_replace(coalesce(NEW.content, ''), '<[^>]+>', ' ', 'gi');
+  plain := regexp_replace(plain, '&nbsp;', ' ', 'gi');
+  plain := regexp_replace(plain, '\s+', ' ', 'g');
+  plain := btrim(plain);
+  IF plain = '' THEN
+    words := 0;
+  ELSE
+    words := array_length(regexp_split_to_array(plain, '\s+'), 1);
+  END IF;
+  NEW.estimated_read_time_minutes := GREATEST(1, ROUND(words / 180.0));
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;

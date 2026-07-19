@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createBrowserSupabase } from '@/lib/auth';
-import { normalizeChapterHtml, type ChapterTeaserPayload } from '@/lib/chapter';
+import { buildShareUrl, normalizeChapterHtml, type ChapterTeaserPayload } from '@/lib/chapter';
 import { buildReaderAppChapterUrl } from '@/lib/constants';
 import { Paywall } from './Paywall';
 import { ReadingSkeleton } from './ReadingSkeleton';
@@ -73,6 +73,11 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
   const readerAppUrl = buildReaderAppChapterUrl(payload.story.id, chapterNumber);
   const teaserHtml = normalizeChapterHtml(payload.chapter.teaser_text);
   const fullHtml = fullContent ? normalizeChapterHtml(fullContent) : null;
+  const shareUrl = buildShareUrl(slug, chapterNumber);
+  const shareText = encodeURIComponent(
+    `${payload.story.title} · Chapter ${chapterNumber}\n\nమనసులో నిలిచే కథలు · Read on Katha — Telugu stories. No ads. No coins.\n\n${shareUrl}`,
+  );
+  const whatsappShareHref = `https://wa.me/?text=${shareText}`;
 
   if (mode === 'loading') {
     return (
@@ -131,6 +136,14 @@ export function ChapterReader({ slug, chapterNumber, payload, authorId }: Chapte
           <div className="reader-cta__actions">
             <a href={readerAppUrl} className="btn btn-primary">
               Open in Katha
+            </a>
+            <a
+              href={whatsappShareHref}
+              className="btn btn-secondary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Share on WhatsApp
             </a>
           </div>
         </section>

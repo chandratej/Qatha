@@ -578,7 +578,11 @@ export function getAuthorReviewFeedback(authorId?: string): AuthorReviewFeedback
   const requests = getPeerReviewRequests(authorId);
   const assignments = loadReviewerAssignments();
   return requests.map((request) => ({
-    request,
+    // Always dedupe on read so legacy localStorage cannot double-render notes
+    request: {
+      ...request,
+      structured_comments: tagStructuredComments(request.structured_comments),
+    },
     submissions: assignments
       .filter((a) => a.request_id === request.id && SUBMITTED_ASSIGNMENT_STATUSES.has(a.status))
       .sort((a, b) => (a.submitted_at ?? '').localeCompare(b.submitted_at ?? '')),

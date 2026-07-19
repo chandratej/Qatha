@@ -1,6 +1,6 @@
 /** Collaboration entities — Vol_04 co-author invites + author comments */
 
-export const INVITE_ROLES = ['co_author', 'editor', 'proofreader', 'viewer'] as const;
+export const INVITE_ROLES = ['co_author', 'editor', 'proofreader', 'beta_reader', 'viewer'] as const;
 export type InviteRole = (typeof INVITE_ROLES)[number];
 
 export const INVITE_STATUSES = ['pending', 'accepted', 'declined', 'expired'] as const;

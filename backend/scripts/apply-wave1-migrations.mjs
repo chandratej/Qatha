@@ -41,6 +41,10 @@ const MIGRATIONS = [
   '../../supabase/migrations/035_wave8_satisfaction_audit.sql',
   '../../supabase/migrations/036_wave9_debut_season.sql',
   '../../supabase/migrations/037_wave10_community_posts.sql',
+  '../../supabase/migrations/038_interactive_content_types.sql',
+  '../../supabase/migrations/039_story_versions.sql',
+  '../../supabase/migrations/040_reader_content_hygiene.sql',
+  '../../supabase/migrations/041_mvp1_legal_consent_search.sql',
 ];
 
 async function execSql(sql) {

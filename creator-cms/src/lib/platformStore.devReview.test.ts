@@ -34,7 +34,7 @@ describe('platformStore dev review requests', () => {
 
     expect(getReviewerAssignmentsForSlot('slot-1').length).toBeGreaterThan(0);
 
-    prepareReviewRequest('author-dev', 'demo-rrr');
+    prepareReviewRequest('author-dev', 'demo-valley-te');
 
     const { request } = requestPeerReview({
       authorId: 'author-dev',

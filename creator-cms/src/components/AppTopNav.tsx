@@ -16,7 +16,8 @@ import { useLocale } from '../context/LocaleContext';
 import { ThemeToggle } from './ThemeToggle';
 import { NotificationBell } from './NotificationBell';
 import { useCommandPaletteControl } from './dashboard/CommandPalette';
-import { getCreatorBadge } from '../lib/creatorBadge';
+import { getAuthorLevelBadge } from '../lib/creatorBadge';
+import { api } from '../lib/api';
 import { BRAND } from '../lib/constants';
 import { modKeyLabel } from '../lib/device';
 import { BrandMark } from './studio/BrandMark';
@@ -54,7 +55,32 @@ export function AppTopNav() {
 
   const displayName = user?.display_name || 'Creator';
   const isModerator = user?.role === 'admin' || user?.role === 'moderator';
-  const badge = useMemo(() => getCreatorBadge(0), []);
+  // Honest badge: earned from real published stories / readers (not fake “unlocked” tiers)
+  const [storyStats, setStoryStats] = useState({ publishedStories: 0, totalReaders: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    api.getCreatorStories()
+      .then((r) => {
+        if (cancelled) return;
+        const stories = r.stories ?? [];
+        const publishedStories = stories.filter(
+          (s) => s.moderation_status === 'published' || (s.chapter_count ?? 0) > 0,
+        ).length;
+        const totalReaders = stories.reduce((sum, s) => sum + (s.total_readers ?? 0), 0);
+        setStoryStats({ publishedStories, totalReaders });
+      })
+      .catch(() => {
+        if (!cancelled) setStoryStats({ publishedStories: 0, totalReaders: 0 });
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+  const badge = useMemo(
+    () => getAuthorLevelBadge({
+      publishedStories: storyStats.publishedStories,
+      totalReaders: storyStats.totalReaders,
+    }),
+    [storyStats],
+  );
 
   const closeUserMenu = useCallback(() => setUserMenuOpen(false), []);
   const closeMore = useCallback(() => {

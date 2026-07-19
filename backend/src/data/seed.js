@@ -1,5 +1,7 @@
 /** Demo seed data — used when MOCK_MODE=true or Supabase unavailable */
 
+import { sanitizeStoryDescription } from '../lib/publishContent.js';
+
 export const DEMO_CREATOR_ID = 'demo-creator-001';
 export const DEMO_USER_ID = 'demo-reader-001';
 
@@ -99,17 +101,29 @@ function plainFromDelta(content_delta) {
     .join('\n\n');
 }
 
+function estimateMinutesFromContent(content) {
+  const plain = String(content || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!plain) return 1;
+  const words = plain.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 180));
+}
+
 function normalizePublishedMockChapter(entry) {
   const content = (entry.content && String(entry.content).trim())
     ? entry.content
     : plainFromDelta(entry.content_delta);
+  const body = content || '';
   return {
     id: entry.id || `mock-ch-${entry.story_id}-${entry.chapter_number}`,
     story_id: entry.story_id,
     chapter_number: entry.chapter_number,
     title: entry.title || `Chapter ${entry.chapter_number}`,
-    content: content || '',
-    estimated_read_time_minutes: entry.estimated_read_time_minutes || 12,
+    content: body,
+    estimated_read_time_minutes:
+      entry.estimated_read_time_minutes || estimateMinutesFromContent(body),
     view_count: entry.view_count || 0,
     status: 'published',
     content_hash: entry.content_hash,
@@ -139,7 +153,9 @@ export function getSeedChapters(storyId) {
         chapter_number: num,
         title: titles[num - 1] || `అధ్యాయం ${num}`,
         content: chapterContent[num] || chapterContent[1],
-        estimated_read_time_minutes: 12,
+        estimated_read_time_minutes: estimateMinutesFromContent(
+          chapterContent[num] || chapterContent[1],
+        ),
         view_count: Math.floor(1200 / num),
         status: 'published',
       };
@@ -167,43 +183,53 @@ export function getSeedChapter(storyId, chapterNumber) {
  * seed demos + creator-studio stories that are published and have ≥1 published chapter.
  */
 export function getPublicStoriesForReader() {
-  const seed = seedStories.filter((s) => s.is_published !== false);
+  const seed = seedStories
+    .filter((s) => s.is_published !== false)
+    .map(scrubPublicStory);
 
   const fromStudio = mockCreatorStories
     .filter((s) => s.is_published !== false)
     .map((s) => {
       const publishedChapters = getPublishedMockChapters(s.id);
       if (publishedChapters.length === 0) return null;
-      return {
+      return scrubPublicStory({
         ...s,
         chapter_count: publishedChapters.length,
         total_readers: s.total_readers ?? 0,
         views_this_week: s.views_this_week ?? 0,
         created_at: s.created_at || new Date().toISOString(),
         creators: s.creators || { pen_name: 'Creator', avatar_url: null },
-      };
+      });
     })
     .filter(Boolean);
 
   return [...seed, ...fromStudio];
 }
 
+function scrubPublicStory(story) {
+  if (!story) return story;
+  return {
+    ...story,
+    description: sanitizeStoryDescription(story.description),
+  };
+}
+
 export function getPublicStoryById(storyId) {
   const fromSeed = seedStories.find((s) => s.id === storyId && s.is_published !== false);
-  if (fromSeed) return fromSeed;
+  if (fromSeed) return scrubPublicStory(fromSeed);
 
   const fromStudio = mockCreatorStories.find((s) => s.id === storyId && s.is_published !== false);
   if (!fromStudio) return null;
 
   const publishedChapters = getPublishedMockChapters(storyId);
-  return {
+  return scrubPublicStory({
     ...fromStudio,
     chapter_count: publishedChapters.length || fromStudio.chapter_count || 0,
     total_readers: fromStudio.total_readers ?? 0,
     views_this_week: fromStudio.views_this_week ?? 0,
     created_at: fromStudio.created_at || new Date().toISOString(),
     creators: fromStudio.creators || { pen_name: 'Creator', avatar_url: null },
-  };
+  });
 }
 
 /** After mock publish — keep story counters readable in the reader feed. */

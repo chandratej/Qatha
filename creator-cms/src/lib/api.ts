@@ -85,6 +85,18 @@ import type {
 } from '../types/database';
 
 export const api = {
+  /** Legal Wave 0 — DPDP + Creator Agreement consent */
+  recordConsent: (body: { dpdp: boolean; creator_agreement?: boolean; user_agent?: string }) =>
+    request<{
+      ok: boolean;
+      dpdp_consent_version?: string;
+      creator_agreement_version?: string | null;
+    }>('/auth/consent', { method: 'POST', body: JSON.stringify(body) }),
+
+  searchStories: (q: string, limit = 20) =>
+    request<{ stories: StoryData[]; q: string }>(
+      `/stories/search?q=${encodeURIComponent(q)}&limit=${limit}`,
+    ),
   getDashboard: () =>
     useSupabaseDirect() ? sb.sbGetDashboard() : request<DashboardData>('/creators/dashboard'),
   getCreatorStories: () =>
@@ -585,9 +597,15 @@ async function uploadImageViaNode(file: File): Promise<{ url: string }> {
       content_type: file.type || 'image/jpeg',
     }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Upload failed');
-  return data as { url: string };
+  let data: { code?: string; user_message?: string; message?: string; url?: string };
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error(GENERIC_REQUEST_ERROR(res.status));
+  }
+  if (!res.ok) throw new Error(mapApiError(data));
+  if (!data.url) throw new Error('Upload did not return a URL. Please try again.');
+  return { url: data.url };
 }
 
 export async function checkHealth() {

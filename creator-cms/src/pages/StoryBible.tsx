@@ -354,6 +354,12 @@ export function StoryBible() {
               </select>
               <input className="sv21__input" type="number" min={1} placeholder={t('storyBible.chapterOptional')} value={inviteChapter} onChange={(e) => setInviteChapter(e.target.value)} />
             </div>
+            {inviteRole === 'beta_reader' && (
+              <p className="sv21__hint" style={{ fontSize: 13, opacity: 0.8, marginBottom: 8 }}>
+                Beta readers get pre-publish access to the chosen chapter. Ask them for structured
+                feedback (typo / pacing / confusion) via the feedback inbox after they read.
+              </p>
+            )}
             <button type="button" className="sv21__add-btn" disabled={busy} onClick={() => { void sendInvite(); }}>
               {t('storyBible.invite')}
             </button>

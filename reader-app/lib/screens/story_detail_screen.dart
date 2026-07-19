@@ -146,7 +146,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                       ),
                       const SizedBox(width: 8),
                       _InfoChip(
-                        icon: Icons.verified_outlined,
+                        icon: Icons.people_outline,
                         label: story.readersLabel,
                       ),
                     ],
@@ -204,58 +204,87 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
               ),
             ),
           ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              final ch = _detail!.chapters[index];
-              final gate =
-                  LaunchOfferService.instance.config.subscriptionGateChapter;
-              final isFree = ch.chapterNumber <= 3;
-              final needsSub = ch.chapterNumber >= gate;
-              // Avoid wide Chip as ListTile.trailing (web layout assert).
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: KathaColors.gold.withValues(alpha: 0.15),
-                  child: Text(
-                    '${ch.chapterNumber}',
-                    style: const TextStyle(
-                      color: KathaColors.goldDark,
-                      fontWeight: FontWeight.w600,
+          Consumer<AuthState>(
+            builder: (context, auth, _) {
+              final cfg = LaunchOfferService.instance.config;
+              final freeThrough = cfg.freeChapters;
+              final otpGate = cfg.otpGateChapter;
+              final subGate = cfg.subscriptionGateChapter;
+              final signedIn = auth.isLoggedIn;
+              final subscribed = auth.isSubscribed || auth.isOnLaunchTrial;
+
+              return SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final ch = _detail!.chapters[index];
+                  final n = ch.chapterNumber;
+                  final isPreviewFree = n <= freeThrough;
+                  final needsSignIn = n >= otpGate && !signedIn;
+                  final needsSub = n >= subGate && !subscribed;
+
+                  // State the real access condition — never Free + padlock together.
+                  final String accessLabel;
+                  final IconData? trailingIcon;
+                  final Color trailingColor;
+                  if (isPreviewFree) {
+                    accessLabel =
+                        'Free · ${ch.viewCount} readers · ${ch.readTimeMinutes} min';
+                    trailingIcon = null;
+                    trailingColor = KathaColors.gold;
+                  } else if (needsSignIn) {
+                    accessLabel =
+                        'Free · Sign in to read · ${ch.readTimeMinutes} min';
+                    trailingIcon = Icons.lock_outline;
+                    trailingColor = KathaColors.inkMuted;
+                  } else if (needsSub) {
+                    accessLabel =
+                        '${ch.viewCount} readers · ${ch.readTimeMinutes} min · Members';
+                    trailingIcon = Icons.workspace_premium;
+                    trailingColor = KathaColors.inkMuted;
+                  } else {
+                    accessLabel =
+                        '${ch.viewCount} readers · ${ch.readTimeMinutes} min';
+                    trailingIcon = null;
+                    trailingColor = KathaColors.gold;
+                  }
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: KathaColors.gold.withValues(alpha: 0.15),
+                      child: Text(
+                        '$n',
+                        style: const TextStyle(
+                          color: KathaColors.goldDark,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                title: Text(
-                  ch.title ?? 'Chapter ${ch.chapterNumber}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  isFree
-                      ? 'Free · ${ch.viewCount} readers · ${ch.readTimeMinutes} min'
-                      : '${ch.viewCount} readers · ${ch.readTimeMinutes} min',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Icon(
-                  isFree
-                      ? Icons.lock_open_outlined
-                      : (needsSub
-                          ? Icons.workspace_premium
-                          : Icons.lock_outline),
-                  size: 18,
-                  color: isFree ? KathaColors.gold : KathaColors.inkMuted,
-                ),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReaderScreen(
-                      storyId: story.id,
-                      storyTitle: story.title,
-                      chapterNumber: ch.chapterNumber,
+                    title: Text(
+                      ch.title ?? 'Chapter $n',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ),
+                    subtitle: Text(
+                      accessLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: trailingIcon == null
+                        ? null
+                        : Icon(trailingIcon, size: 18, color: trailingColor),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReaderScreen(
+                          storyId: story.id,
+                          storyTitle: story.title,
+                          chapterNumber: ch.chapterNumber,
+                        ),
+                      ),
+                    ),
+                  );
+                }, childCount: _detail!.chapters.length),
               );
-            }, childCount: _detail!.chapters.length),
+            },
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 32)),
         ],

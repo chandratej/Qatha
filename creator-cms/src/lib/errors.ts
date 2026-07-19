@@ -23,9 +23,28 @@ export function isSchemaTableMissingMessage(message: string | null | undefined):
   );
 }
 
+/** Detect raw PostgREST / Postgres internals that must never reach the UI. */
+export function isRawDbErrorMessage(message: string | null | undefined): boolean {
+  if (!message) return false;
+  return (
+    isSchemaTableMissingMessage(message) ||
+    /PGRST\d+/i.test(message) ||
+    /42P01|permission denied|row-level security|violates foreign key|duplicate key value|JWT/i.test(
+      message,
+    ) ||
+    /relation ["']|column ["']|schema cache/i.test(message)
+  );
+}
+
 export function friendlyFeatureError(message: string): string {
   if (isSchemaTableMissingMessage(message)) return SCHEMA_FEATURE_PENDING;
-  return message;
+  if (isRawDbErrorMessage(message)) return GENERIC_ERROR;
+  if (/start the backend|npm run dev|cd backend|ECONNREFUSED/i.test(message)) {
+    return CONNECTION_ERROR;
+  }
+  // Keep short validation messages; strip long stack-like payloads
+  if (message.length > 180) return GENERIC_ERROR;
+  return message || GENERIC_ERROR;
 }
 
 export function mapApiError(payload: {
@@ -34,6 +53,7 @@ export function mapApiError(payload: {
   message?: string;
 }): string {
   const code = payload.code;
+  // Prefer user_message when present, then sanitize either way
   const raw = payload.user_message || payload.message || '';
 
   if (code === 'OTP_REQUIRED' || /continue reading/i.test(raw)) {
@@ -49,8 +69,11 @@ export function mapApiError(payload: {
   if (isSchemaTableMissingMessage(raw)) {
     return SCHEMA_FEATURE_PENDING;
   }
+  if (isRawDbErrorMessage(raw)) {
+    return GENERIC_ERROR;
+  }
 
-  return raw || GENERIC_ERROR;
+  return friendlyFeatureError(raw || GENERIC_ERROR);
 }
 
 export function isSessionError(message: string | null | undefined): boolean {

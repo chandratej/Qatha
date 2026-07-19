@@ -12,6 +12,7 @@ import '../core/config/paywall_copy.dart';
 import '../core/services/razorpay_checkout.dart';
 import '../core/services/subscription_service.dart';
 import '../core/theme/katha_theme.dart';
+import '../widgets/chapter_body.dart';
 import '../widgets/error_state.dart';
 import 'reader_auth_screen.dart';
 
@@ -435,17 +436,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           ),
                         ),
                       const SizedBox(height: 32),
-                      // RepaintBoundary + chunked text = minimal jank on scroll + fast first paint
+                      // HTML or plain — never raw-string Text (would leak <p>/<span>/<hr>).
                       RepaintBoundary(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _buildParagraphs(
-                            chapter.content,
-                            isDark,
-                            appState.fontScale,
-                            lineH: appState.effectiveLineHeight,
-                            alignPref: appState.isLeftAlign ? TextAlign.left : TextAlign.justify,
-                          ),
+                        child: ChapterBody(
+                          content: chapter.content,
+                          isDark: isDark,
+                          fontScale: appState.fontScale,
+                          lineHeight: appState.effectiveLineHeight,
+                          textAlign: appState.isLeftAlign
+                              ? TextAlign.left
+                              : TextAlign.justify,
                         ),
                       ),
                     ],
@@ -493,50 +493,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
         ),
       ),
     );
-  }
-
-  /// Splits chapter into lightweight paragraph widgets.
-  /// Greatly improves first paint and scroll perf vs. one massive Text widget.
-  List<Widget> _buildParagraphs(String content, bool isDark, int fontScale, {required double lineH, required TextAlign alignPref}) {
-    final style = KathaTheme.readingStyle(
-      isDark: isDark,
-      fontScale: fontScale,
-      lineHeight: lineH,
-    );
-    final paras = content
-        .split('\n\n')
-        .where((p) => p.trim().isNotEmpty)
-        .toList();
-
-    return paras.map((p) {
-      final trimmed = p.trim();
-
-      // Scene break markers (normalized by editor to "***") — elegant per decisions, extra breathing
-      if (trimmed == '***' ||
-          RegExp(r'^[\*\-\•\.\s]{2,}$').hasMatch(trimmed)) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 32),
-          key: ValueKey('scene-${trimmed.hashCode}'),
-          child: Center(
-            child: Text(
-              '• • •',
-              style: style.copyWith(
-                color: isDark ? Colors.white30 : Colors.black38,
-                letterSpacing: 12,
-                fontSize: (style.fontSize ?? 16) * 0.82,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        );
-      }
-
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 22), // slightly more generous per decisions
-        key: ValueKey(trimmed.hashCode),
-        child: Text(trimmed, style: style, textAlign: alignPref),
-      );
-    }).toList();
   }
 
   void _showOtpGate() {

@@ -3,7 +3,7 @@ import { buildShareMessage } from './socialShare';
 
 describe('socialShare (DEC-008)', () => {
   it('builds bilingual WhatsApp-ready message with chapter context', () => {
-    const msg = buildShareMessage('రౌద్రం', 'Opening', 1);
+    const msg = buildShareMessage('లోయ కథ', 'Opening', 1);
     expect(msg).toContain('Opening');
     expect(msg).toContain('Chapter 1');
     expect(msg).toContain('Katha');

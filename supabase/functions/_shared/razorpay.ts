@@ -28,9 +28,12 @@ export async function verifyRazorpaySignature(
   return expected === signature;
 }
 
+/** Allow Razorpay retries (was 5m — too aggressive for delayed delivery). */
 export function isRecentWebhook(timestamp: number | string | undefined): boolean {
   if (!timestamp) return true;
   const ts = typeof timestamp === 'string' ? Number(timestamp) : timestamp;
-  const ageMin = (Date.now() - ts * 1000) / 60000;
-  return ageMin < 5;
+  // Razorpay created_at is often unix seconds
+  const ms = ts > 1e12 ? ts : ts * 1000;
+  const ageMin = (Date.now() - ms) / 60000;
+  return ageMin < 60;
 }

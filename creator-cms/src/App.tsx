@@ -27,6 +27,8 @@ import { Community } from './pages/Community';
 import { ModerationRoute } from './components/ModerationRoute';
 import { LabsRoute } from './components/LabsRoute';
 import { OnboardingGate } from './components/OnboardingGate';
+import { LegalConsentGate } from './components/LegalConsentGate';
+import { LegalPage } from './pages/LegalPage';
 import { Settings } from './pages/Settings';
 import { Notifications } from './pages/Notifications';
 import { Schedule } from './pages/Schedule';
@@ -105,7 +107,10 @@ function App() {
               <Suspense fallback={<RouteFallback />}>
               <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/legal" element={<LegalPage />} />
+              <Route path="/transparency" element={<LegalPage />} />
               <Route element={<ProtectedRoute />}>
+                <Route element={<LegalConsentGate />}>
                 <Route element={<OnboardingGate />}>
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route element={<Layout />}>
@@ -151,6 +156,7 @@ function App() {
                 <Route path="/stories/:storyId/read/:format/:chapterNum" element={<AlternateReaderShell />} />
                 <Route path="/stories/:storyId/en/chapters/:chapterNum" element={<EnglishEditor />} />
                 <Route path="/reviewers/assignments/:assignmentId" element={<ReviewWorkspace />} />
+                </Route>
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

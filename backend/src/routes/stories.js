@@ -23,6 +23,34 @@ export function invalidatePublicStoryCache() {
 
 export const storiesRouter = Router();
 
+/** Public search — Telugu + English title/description (pg_trgm / ILIKE). */
+storiesRouter.get('/search', async (req, res, next) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+    if (!q || q.length < 1) {
+      return res.json({ stories: [], q: '' });
+    }
+
+    if (isMockMode()) {
+      const needle = q.toLowerCase();
+      const stories = getPublicStoriesForReader()
+        .filter((s) => {
+          const hay = `${s.title || ''} ${s.description || ''}`.toLowerCase();
+          return hay.includes(needle) || (s.title || '').includes(q);
+        })
+        .slice(0, limit);
+      return res.json({ stories, q, mock: true });
+    }
+
+    const { searchPublicStories } = await import('../services/publicCatalog.js');
+    const stories = await searchPublicStories(q, limit);
+    res.json({ stories, q });
+  } catch (err) {
+    next(err);
+  }
+});
+
 storiesRouter.get('/', async (req, res, next) => {
   try {
     const { genre, sort = 'trending', limit = 20, offset = 0 } = req.query;

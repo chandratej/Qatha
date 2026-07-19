@@ -233,14 +233,9 @@ const wordOverrides: Record<string, string> = {
   kurradu: 'కుర్రాడు',
   kurrada: 'కుర్రాడు',
   kurrad: 'కుర్రాడు',
-  // Extensive RRR overrides for modern Telugu, exhaustive story drafting (frequency + accuracy)
+  // High-frequency modern Telugu name / place overrides for drafting accuracy
   bheem: 'భీమ్',
-  komaram: 'కొమరం',
-  komarambheem: 'కొమరం భీమ్',
-  alluri: 'అల్లూరి',
-  sitaramaraju: 'సీతారామరాజు',
   sitarama: 'సీతారామ',
-  rajamouli: 'రాజమౌళి',
   gond: 'గొండ',
   kutumbam: 'కుటుంబం',
   poor: 'పేద',
@@ -287,7 +282,7 @@ const wordOverrides: Record<string, string> = {
   call: 'పిలుపు',
   okati: 'ఒకటి',
   one: 'ఒకటి',
-  // (RRR terms already covered earlier in this object)
+  // (common Telugu literary names covered earlier in this object)
 };
 
 // Returns true if the char at position is start of a word (for overrides)

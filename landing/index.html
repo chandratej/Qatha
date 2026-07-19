@@ -119,6 +119,19 @@
       color: var(--ink-muted);
       font-size: 0.875rem;
     }
+    footer a { color: var(--gold-dark); text-decoration: none; margin: 0 8px; }
+    footer a:hover { text-decoration: underline; }
+    .legal-block {
+      max-width: 720px;
+      margin: 0 auto 64px;
+      padding: 32px 24px;
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid rgba(26,24,20,0.06);
+      text-align: left;
+    }
+    .legal-block h2 { margin-bottom: 12px; font-size: 1.25rem; }
+    .legal-block p, .legal-block li { color: var(--ink-muted); font-size: 0.9375rem; margin-bottom: 8px; }
     .modal {
       display: none;
       position: fixed;
@@ -299,7 +312,20 @@
     </div>
   </section>
 
-  <footer>© 2026 Katha · Telugu-first · Privacy · Terms</footer>
+  <section class="legal-block" id="transparency" data-reveal>
+    <h2>Transparency · స్పష్టత</h2>
+    <p>Creator share escalates with Story Trust: <strong>40% base at Performing → up to 60% at Apex</strong>. No coins. No ads. No follower gates.</p>
+    <p>SPI (Story Trust score) weights retention 35%, completion 25%, satisfaction 15%, growth 10%, publishing consistency 10%, policy quality 5%.</p>
+    <p>Grievance officer: <a href="mailto:grievance@katha.in">grievance@katha.in</a> (72h acknowledgment target).</p>
+    <p>Full Creator Agreement + Privacy Policy are versioned in product consent (Creator Studio) and <code>PRD/Legal/</code>.</p>
+  </section>
+
+  <footer>
+    © 2026 Katha · Telugu-first
+    <a href="#transparency">Transparency</a>
+    <a href="mailto:grievance@katha.in">Grievance</a>
+    <a href="#transparency">Privacy</a>
+  </footer>
   <script>
     const API = (window.location.port === '3001' || window.location.hostname === 'localhost')
       ? `${window.location.protocol}//${window.location.hostname}:3001/api`

@@ -58,7 +58,7 @@ class SettingsScreen extends StatelessWidget {
                     : 'Comfort (recommended)',
             child: _SegmentRow<int>(
               values: const [1, 2, 3],
-              labels: const ['C', 'R', 'S'],
+              labels: const ['Compact', 'Comfort', 'Spacious'],
               selected: appState.lineHeightScale,
               onSelected: appState.setLineHeightScale,
             ),
@@ -68,10 +68,10 @@ class SettingsScreen extends StatelessWidget {
             title: 'Text alignment',
             subtitle: appState.isLeftAlign
                 ? 'Left (recommended for readability)'
-                : 'Justify',
+                : 'Justified',
             child: _SegmentRow<String>(
               values: const ['left', 'justify'],
-              labels: const ['Left', 'Just'],
+              labels: const ['Left', 'Justified'],
               selected: appState.textAlign,
               onSelected: appState.setTextAlign,
             ),
