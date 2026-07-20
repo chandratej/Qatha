@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Wave 3f — Media library (Vol_03-08) + contributor attribution (Vol_04-CA-D1)
 -- Legal Council: attribution metadata before monetization; DAM for publishing center.
 

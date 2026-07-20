@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Migration 033: Wave 5 — advisory AI suggestions audit trail (LRC-07-D3)
 
 CREATE TABLE IF NOT EXISTS public.ai_review_suggestions (

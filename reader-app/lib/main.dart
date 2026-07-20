@@ -17,11 +17,19 @@ import 'core/utils/motion.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: AppConfig.supabaseUrl,
-    // supabase_flutter ≥2.8: prefer publishableKey over deprecated anonKey
-    publishableKey: AppConfig.supabasePublishableKey,
-  );
+  // Never block app start on Supabase reachability — a cold-start network
+  // blip or bad config would otherwise crash boot before Flutter renders
+  // anything. AuthState/ApiService fall back to cached prefs when
+  // Supabase.instance is unavailable.
+  try {
+    await Supabase.initialize(
+      url: AppConfig.supabaseUrl,
+      // supabase_flutter ≥2.8: prefer publishableKey over deprecated anonKey
+      publishableKey: AppConfig.supabasePublishableKey,
+    );
+  } catch (e) {
+    debugPrint('[main] Supabase.initialize failed, continuing offline: $e');
+  }
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),

@@ -100,8 +100,12 @@ class AuthState extends ChangeNotifier {
   bool get isOnLaunchTrial => _user?.isOnLaunchTrial ?? false;
 
   Future<void> init() async {
-    final auth = AuthService();
     try {
+      // Constructing AuthService reads Supabase.instance, which throws if
+      // Supabase.initialize() failed at boot — keep it inside the try so
+      // that case falls back to the cached prefs session below, same as
+      // any other restoreSession() failure.
+      final auth = AuthService();
       final restored = await auth.restoreSession();
       if (restored != null) {
         _user = restored.user;

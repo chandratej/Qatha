@@ -1,6 +1,12 @@
 -- Migration 014: Product Strategy + Creator Events Platform (Master PRD v0.1)
 -- Content architecture, tags, author levels, events, escrow, reviewer marketplace, governance
 
+-- CLI migration runner resets search_path to `public` for this session, but
+-- uuid-ossp/pg_trgm live in the `extensions` schema on this project — without
+-- this, every uuid_generate_v4() default below fails with "function does not
+-- exist". Session-level SET (not LOCAL) so it holds for the rest of the batch.
+SET search_path TO public, extensions;
+
 -- ── Extend roles ──
 DO $$ BEGIN
   ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'reviewer';

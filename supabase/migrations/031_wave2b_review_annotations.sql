@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Migration 031: Wave 2b — normalized review annotations + threads + trial review (LRC-06-D4, LRC-09-D3, LRC-02-D5)
 -- Literary Council: versioned craft feedback with auditable collaboration threads
 -- Legal & Trust: trial review score visible to moderators before pool access

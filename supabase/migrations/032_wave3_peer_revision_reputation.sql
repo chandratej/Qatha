@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Migration 032: Wave 3 — revision rounds, reputation events, moderation cases
 -- LRC-08-D4, LRC-10-D4, LRC-13-D6, LRC-12-D3
 

@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Wave 4b — Reader feedback inbox (Vol_07-01-D1)
 -- Trust & Safety: separate reader UGC from peer reviewer schema.
 

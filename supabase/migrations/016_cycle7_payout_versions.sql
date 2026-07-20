@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Migration 016: Cycle 7 — payout readiness fields + cloud chapter version snapshots
 
 ALTER TABLE public.creators

@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- 041: MVP-1 legal consent + Telugu-aware public search helpers
 
 -- Creator / reader consent records (DPDP — versioned, timestamped)

@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Migration 017: Wave 1 foundation — lifecycle, story RBAC, peer review assignments
 -- Decisions: V01-03-D1, V01-04-D1, ARC-01 (partial), V09-04-D1 schema support
 

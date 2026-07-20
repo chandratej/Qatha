@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Wave 3d — Scene-character links (Vol_03-05-D2)
 -- Literary Council: continuity tracking increases defensibility for serial fiction.
 

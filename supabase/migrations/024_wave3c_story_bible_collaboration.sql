@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Wave 3c — Story bible (Vol_03-05/06) + async collaboration tasks (Vol_04-CW-D2)
 -- Literary Council: canonical characters + lore increase switching cost and AI RAG readiness.
 

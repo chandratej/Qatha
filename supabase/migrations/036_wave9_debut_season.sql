@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Migration 036: Debut Season backend (Wave 9 — UI/UX PRD)
 -- Tables: debut_seasons, debut_entries, debut_metrics
 

@@ -1,3 +1,6 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
 -- Wave 3e — Co-author invites (Vol_04-CA) + author comments (Vol_04-CS)
 -- Legal & Trust: invites auditable; author comments separate from reviewer schema.
 
