@@ -1,0 +1,14 @@
+import { chromium } from '@playwright/test';
+const OUT = process.env.SHOT_DIR;
+const browser = await chromium.launch({ args: ['--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
+const logs = [];
+page.on('console', (m) => logs.push(`[${m.type()}] ${m.text().slice(0, 300)}`));
+page.on('pageerror', (e) => logs.push('PAGEERROR: ' + String(e).slice(0, 400)));
+page.on('requestfailed', (r) => logs.push(`REQFAIL: ${r.url().slice(0, 120)} — ${r.failure()?.errorText}`));
+await page.goto('http://127.0.0.1:8090/', { waitUntil: 'load' });
+await page.waitForTimeout(25000);
+await page.screenshot({ path: `${OUT}/r2-boot.png` });
+console.log('LOGS:', logs.length);
+for (const l of logs.slice(0, 25)) console.log(l);
+await browser.close();
