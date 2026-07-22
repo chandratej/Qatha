@@ -20,6 +20,7 @@ import { engagementRouter } from './routes/engagement.js';
 import { uploadRouter } from './routes/upload.js';
 import { eventsRouter } from './routes/events.js';
 import { platformRouter } from './routes/platform.js';
+import { shareRouter } from './routes/share.js';
 import { getLaunchOfferConfig } from './services/launchOffer.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requireAuth } from './middleware/authenticate.js';
@@ -157,6 +158,8 @@ app.use('/api/upload', requireAuth(), uploadRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/platform', platformRouter);
 app.use('/api/versions', versionsRouter);
+/** Public, unauthenticated — WhatsApp/Telegram link-preview crawlers hit this directly. */
+app.use('/s', shareRouter);
 
 app.use(express.static(path.join(__dirname, '../../landing')));
 

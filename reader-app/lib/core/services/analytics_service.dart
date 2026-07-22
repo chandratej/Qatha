@@ -41,4 +41,15 @@ class AnalyticsService {
   Future<void> otpGateShown(String storyId) => track('otp_gate_shown', {'story_id': storyId});
   Future<void> paywallShown(String storyId) => track('paywall_shown', {'story_id': storyId});
   Future<void> subscriptionConfirmed() => track('subscription_confirmed');
+
+  Future<void> shareTapped(String storyId, int chapterNumber) =>
+      track('share_tapped', {'story_id': storyId, 'chapter_number': chapterNumber});
+  Future<void> coldLandingView(String storyId, int chapterNumber, {required bool hasAccount}) =>
+      track('cold_landing_view', {
+        'story_id': storyId,
+        'chapter_number': chapterNumber,
+        'has_account': hasAccount,
+      });
+  Future<void> coldLandingToSignupConversion(String storyId) =>
+      track('cold_landing_to_signup_conversion', {'story_id': storyId});
 }

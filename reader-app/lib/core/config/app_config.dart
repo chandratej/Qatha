@@ -48,6 +48,18 @@ class AppConfig {
     defaultValue: 'io.supabase.katha://login-callback',
   );
 
+  /// Public web host that serves the share/OG-preview page at `/s/{storyId}/{chapter}`
+  /// (see backend `src/routes/share.js`) and that the Android App Link intent-filter
+  /// targets. Placeholder until a real domain is live — override at build time.
+  static const webBase = String.fromEnvironment(
+    'WEB_BASE',
+    defaultValue: 'https://katha.app',
+  );
+
+  /// Custom-scheme deep link prefix — works without a verified https domain,
+  /// useful for testing the share flow before App Links verification is set up.
+  static const shareScheme = 'katha';
+
   static const brandName = 'Katha';
   static const brandNameTelugu = 'కథ';
   static const priceMonthly = 99;

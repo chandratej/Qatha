@@ -8,6 +8,7 @@ import '../core/services/api_service.dart';
 import '../core/services/offline_cache.dart';
 import '../core/services/launch_offer_service.dart';
 import '../core/services/reading_progress_service.dart';
+import '../core/services/share_service.dart';
 import '../core/config/paywall_copy.dart';
 import '../core/services/razorpay_checkout.dart';
 import '../core/services/subscription_service.dart';
@@ -342,6 +343,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.share_outlined),
+                    onPressed: () => ShareService.shareChapter(
+                      storyId: widget.storyId,
+                      storyTitle: widget.storyTitle,
+                      chapterNumber: widget.chapterNumber,
+                      chapterTitle: chapter.title,
+                    ),
+                    tooltip: 'Share this chapter',
+                  ),
                   IconButton(
                     icon: const Icon(Icons.rate_review_outlined),
                     onPressed: _showFeedbackSheet,
