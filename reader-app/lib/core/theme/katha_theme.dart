@@ -17,7 +17,18 @@ class KathaColors {
   static const darkBg = Color(0xFF0D0D0F);
   static const darkSurface = Color(0xFF1A1A1E);
   static const darkElevated = Color(0xFF222228);
+  // Reading-canvas sepia — warmer/deeper than paperWarm so it reads as a
+  // deliberate "old manuscript" tone, not a washed-out paper variant.
+  static const sepia = Color(0xFFF1E5C7);
+  static const sepiaSurface = Color(0xFFECDCB4);
+  static const sepiaInk = Color(0xFF4A3624);
+  static const sepiaMuted = Color(0xFF8A7355);
 }
+
+/// The chapter reading canvas's own color mode — deliberately independent of
+/// [ThemeMode]/app brightness, matching the Kindle/Apple Books convention
+/// that a book's page tone is a per-reader choice, not tied to system theme.
+enum ReadingTone { paper, sepia, night }
 
 class KathaTheme {
   /// Instant route transitions for the calm-motion comfort setting.
@@ -79,8 +90,9 @@ class KathaTheme {
     bool calmMotion = false,
   }) {
     final baseSize = 16.0 + (fontScale - 2) * 2;
-    final ink =
-        highContrast ? const Color(0xFFF5F3F0) : const Color(0xFFE8E6E3);
+    final ink = highContrast
+        ? const Color(0xFFF5F3F0)
+        : const Color(0xFFE8E6E3);
     final borderAlpha = highContrast ? 0.26 : 0.08;
     return ThemeData(
       useMaterial3: true,
@@ -114,8 +126,11 @@ class KathaTheme {
     );
   }
 
-  static TextTheme _textTheme(Color color, double baseSize,
-      {bool highContrast = false}) {
+  static TextTheme _textTheme(
+    Color color,
+    double baseSize, {
+    bool highContrast = false,
+  }) {
     return TextTheme(
       displayLarge: GoogleFonts.notoSansTelugu(
         fontSize: baseSize + 12,
@@ -137,7 +152,8 @@ class KathaTheme {
       bodyLarge: GoogleFonts.notoSansTelugu(
         fontSize: baseSize + 2,
         color: color,
-        height: 1.82, // per decisions: generous for long-form Telugu reading comfort
+        height:
+            1.82, // per decisions: generous for long-form Telugu reading comfort
       ),
       bodyMedium: GoogleFonts.outfit(
         fontSize: baseSize,
@@ -152,23 +168,58 @@ class KathaTheme {
   }
 
   static TextStyle readingStyle({
-    required bool isDark,
+    required ReadingTone tone,
     required int fontScale,
-    double lineHeight = 1.82,  // MD3 per 04_JUL_Visual_UX_Framework_Selection_Katha.md
-    TextAlign align = TextAlign.left,
+    double lineHeight =
+        1.82, // MD3 per 04_JUL_Visual_UX_Framework_Selection_Katha.md
   }) {
     // Material Design 3 + Minimalist: generous line height for Telugu long-form comfort
     final size = 18.0 + (fontScale - 2) * 3;
     return GoogleFonts.notoSansTelugu(
       fontSize: size,
       height: lineHeight,
-      color: isDark ? const Color(0xFFE8E6E3) : KathaColors.ink,
+      color: readingInk(tone),
       letterSpacing: 0.15,
     );
   }
 
+  /// Reading-canvas background — the chapter scroll area, app bar, and nav bar.
+  static Color readingBackground(ReadingTone tone) => switch (tone) {
+    ReadingTone.paper => KathaColors.paper,
+    ReadingTone.sepia => KathaColors.sepia,
+    ReadingTone.night => KathaColors.darkBg,
+  };
+
+  /// Reading-canvas elevated surface (nav bar, sheets) — slightly deeper than background.
+  static Color readingSurface(ReadingTone tone) => switch (tone) {
+    ReadingTone.paper => Colors.white,
+    ReadingTone.sepia => KathaColors.sepiaSurface,
+    ReadingTone.night => KathaColors.darkSurface,
+  };
+
+  static Color readingInk(ReadingTone tone) => switch (tone) {
+    ReadingTone.paper => KathaColors.ink,
+    ReadingTone.sepia => KathaColors.sepiaInk,
+    ReadingTone.night => const Color(0xFFE8E6E3),
+  };
+
+  static Color readingMuted(ReadingTone tone) => switch (tone) {
+    ReadingTone.paper => KathaColors.inkMuted,
+    ReadingTone.sepia => KathaColors.sepiaMuted,
+    ReadingTone.night => Colors.white30,
+  };
+
+  static bool isDarkTone(ReadingTone tone) => tone == ReadingTone.night;
+
+  static String readingToneLabel(ReadingTone tone) => switch (tone) {
+    ReadingTone.paper => 'Paper',
+    ReadingTone.sepia => 'Sepia',
+    ReadingTone.night => 'Night',
+  };
+
   // Helper for paragraph container alignment + max width (line length ~45-55 chars mobile)
-  static TextAlign getTextAlign(String pref) => pref == 'justify' ? TextAlign.justify : TextAlign.left;
+  static TextAlign getTextAlign(String pref) =>
+      pref == 'justify' ? TextAlign.justify : TextAlign.left;
 }
 
 class _NoTransitionsBuilder extends PageTransitionsBuilder {

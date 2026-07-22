@@ -5,7 +5,7 @@ import '../core/utils/chapter_html.dart';
 /// Renders published chapter content (HTML or plain) without leaking tags.
 class ChapterBody extends StatelessWidget {
   final String content;
-  final bool isDark;
+  final ReadingTone tone;
   final int fontScale;
   final double lineHeight;
   final TextAlign textAlign;
@@ -13,7 +13,7 @@ class ChapterBody extends StatelessWidget {
   const ChapterBody({
     super.key,
     required this.content,
-    required this.isDark,
+    required this.tone,
     required this.fontScale,
     required this.lineHeight,
     required this.textAlign,
@@ -22,7 +22,7 @@ class ChapterBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = KathaTheme.readingStyle(
-      isDark: isDark,
+      tone: tone,
       fontScale: fontScale,
       lineHeight: lineHeight,
     );
@@ -34,28 +34,24 @@ class ChapterBody extends StatelessWidget {
       children: [
         for (final block in blocks)
           if (block is SceneBreakBlock)
-            _sceneBreak(style, isDark)
+            _sceneBreak(style)
           else if (block is ParagraphBlock)
             Padding(
               padding: const EdgeInsets.only(bottom: 22),
-              child: Text(
-                block.text,
-                style: style,
-                textAlign: textAlign,
-              ),
+              child: Text(block.text, style: style, textAlign: textAlign),
             ),
       ],
     );
   }
 
-  Widget _sceneBreak(TextStyle style, bool isDark) {
+  Widget _sceneBreak(TextStyle style) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Center(
         child: Text(
           '• • •',
           style: style.copyWith(
-            color: isDark ? Colors.white30 : Colors.black38,
+            color: KathaTheme.readingMuted(tone),
             letterSpacing: 12,
             fontSize: (style.fontSize ?? 16) * 0.82,
             fontWeight: FontWeight.w400,
@@ -126,7 +122,10 @@ List<ChapterBlock> _htmlToBlocks(String html) {
             RegExp(r'<hr\b', caseSensitive: false).hasMatch(chunk)) {
       out.add(const SceneBreakBlock());
       // Remainder after self-closing hr (if any text glued on).
-      final after = chunk.replaceFirst(RegExp(r'<hr\b[^>]*/?>', caseSensitive: false), '');
+      final after = chunk.replaceFirst(
+        RegExp(r'<hr\b[^>]*/?>', caseSensitive: false),
+        '',
+      );
       final text = _stripTagsToText(after);
       if (text.isNotEmpty) out.add(ParagraphBlock(text));
       continue;

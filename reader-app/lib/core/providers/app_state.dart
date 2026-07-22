@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/katha_theme.dart';
 
 class AppState extends ChangeNotifier {
   static const _prefTheme = 'katha_theme_dark';
   static const _prefFont = 'katha_font_scale';
   static const _prefLineHeight = 'katha_line_height';
   static const _prefAlign = 'katha_text_align';
+  static const _prefReadingTone = 'katha_reading_tone';
   static const _prefStoryId = 'katha_continue_story_id';
   static const _prefStoryTitle = 'katha_continue_story_title';
   static const _prefChapter = 'katha_continue_chapter';
@@ -19,7 +21,11 @@ class AppState extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
   int _fontScale = 2; // 1-5 per world-class standards
   int _lineHeightScale = 2; // 1=compact 1.6, 2=comfort 1.8, 3=spacious 1.95
-  String _textAlign = 'left'; // left | justify (default left for readability/dyslexia)
+  String _textAlign =
+      'left'; // left | justify (default left for readability/dyslexia)
+  // Reading canvas tone — independent of app-wide themeMode, matching the
+  // Kindle/Apple Books convention that a book's page color is its own choice.
+  ReadingTone _readingTone = ReadingTone.paper;
   String? _continueReadingStoryId;
   String? _continueReadingTitle;
   int _continueReadingChapter = 1;
@@ -36,6 +42,7 @@ class AppState extends ChangeNotifier {
   int get lineHeightScale => _lineHeightScale;
   String get textAlign => _textAlign;
   bool get isLeftAlign => _textAlign == 'left';
+  ReadingTone get readingTone => _readingTone;
   String? get continueReadingStoryId => _continueReadingStoryId;
   String? get continueReadingTitle => _continueReadingTitle;
   int get continueReadingChapter => _continueReadingChapter;
@@ -73,6 +80,11 @@ class AppState extends ChangeNotifier {
     _fontScale = prefs.getInt(_prefFont) ?? 2;
     _lineHeightScale = prefs.getInt(_prefLineHeight) ?? 2;
     _textAlign = prefs.getString(_prefAlign) ?? 'left';
+    _readingTone = switch (prefs.getString(_prefReadingTone)) {
+      'sepia' => ReadingTone.sepia,
+      'night' => ReadingTone.night,
+      _ => ReadingTone.paper,
+    };
     _continueReadingStoryId = prefs.getString(_prefStoryId);
     _continueReadingTitle = prefs.getString(_prefStoryTitle);
     _continueReadingChapter = prefs.getInt(_prefChapter) ?? 1;
@@ -89,17 +101,15 @@ class AppState extends ChangeNotifier {
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_prefTheme, _themeMode == ThemeMode.dark);
-    await prefs.setString(
-      _prefThemeMode,
-      switch (_themeMode) {
-        ThemeMode.dark => 'dark',
-        ThemeMode.light => 'light',
-        ThemeMode.system => 'system',
-      },
-    );
+    await prefs.setString(_prefThemeMode, switch (_themeMode) {
+      ThemeMode.dark => 'dark',
+      ThemeMode.light => 'light',
+      ThemeMode.system => 'system',
+    });
     await prefs.setInt(_prefFont, _fontScale);
     await prefs.setInt(_prefLineHeight, _lineHeightScale);
     await prefs.setString(_prefAlign, _textAlign);
+    await prefs.setString(_prefReadingTone, _readingTone.name);
     if (_continueReadingStoryId != null) {
       await prefs.setString(_prefStoryId, _continueReadingStoryId!);
       await prefs.setString(_prefStoryTitle, _continueReadingTitle ?? '');
@@ -120,13 +130,18 @@ class AppState extends ChangeNotifier {
   }
 
   void toggleTheme() {
-    _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    _themeMode = _themeMode == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
     _persist();
     notifyListeners();
   }
 
   void setFontScale(int scale) {
-    _fontScale = scale.clamp(1, 5); // expanded to 5 levels for world-class comfort
+    _fontScale = scale.clamp(
+      1,
+      5,
+    ); // expanded to 5 levels for world-class comfort
     _persist();
     notifyListeners();
   }
@@ -145,12 +160,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  void setReadingTone(ReadingTone tone) {
+    _readingTone = tone;
+    _persist();
+    notifyListeners();
+  }
+
   double get effectiveLineHeight {
     // Per decisions (Katha UI/UX): generous 1.75–1.95 line height recommended for long-form Telugu reading comfort
     switch (_lineHeightScale) {
-      case 1: return 1.65;
-      case 3: return 1.95;
-      default: return 1.88;  // slightly more generous default for visible improvement
+      case 1:
+        return 1.65;
+      case 3:
+        return 1.95;
+      default:
+        return 1.88; // slightly more generous default for visible improvement
     }
   }
 

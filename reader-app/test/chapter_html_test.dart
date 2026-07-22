@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:katha_reader/core/theme/katha_theme.dart';
 import 'package:katha_reader/core/utils/chapter_html.dart';
 import 'package:katha_reader/widgets/chapter_body.dart';
 
@@ -38,7 +39,10 @@ void main() {
       final blocks = parseChapterBlocks(raw);
       expect(blocks.length, greaterThanOrEqualTo(3));
       expect(blocks.whereType<SceneBreakBlock>(), isNotEmpty);
-      final texts = blocks.whereType<ParagraphBlock>().map((b) => b.text).join(' | ');
+      final texts = blocks
+          .whereType<ParagraphBlock>()
+          .map((b) => b.text)
+          .join(' | ');
       expect(containsRawMarkupLeak(texts), isFalse);
       expect(texts, contains('First paragraph'));
       expect(texts, contains('highlight'));
@@ -65,7 +69,7 @@ void main() {
             body: SingleChildScrollView(
               child: ChapterBody(
                 content: raw,
-                isDark: false,
+                tone: ReadingTone.paper,
                 fontScale: 2,
                 lineHeight: 1.82,
                 textAlign: TextAlign.left,
@@ -81,10 +85,14 @@ void main() {
       expect(find.text('• • •'), findsOneWidget);
 
       // Collect every Text widget's data — none may still show markup.
-      final texts = find.byType(Text).evaluate().map((e) {
-        final w = e.widget as Text;
-        return w.data ?? '';
-      }).join('\n');
+      final texts = find
+          .byType(Text)
+          .evaluate()
+          .map((e) {
+            final w = e.widget as Text;
+            return w.data ?? '';
+          })
+          .join('\n');
 
       expect(texts.contains('<p>'), isFalse);
       expect(texts.contains('<span'), isFalse);

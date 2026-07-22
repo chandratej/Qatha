@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:katha_reader/core/providers/app_state.dart';
+import 'package:katha_reader/core/theme/katha_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -46,5 +47,29 @@ void main() {
     final state = AppState();
     await state.hydrate();
     expect(state.themeMode, ThemeMode.dark);
+  });
+
+  test('reading tone defaults to paper and persists independently of themeMode',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.hydrate();
+    expect(state.readingTone, ReadingTone.paper);
+
+    // Reading tone and app theme are deliberately independent settings.
+    state.setReadingTone(ReadingTone.sepia);
+    state.setThemeMode(ThemeMode.dark);
+    await Future<void>.delayed(Duration.zero);
+
+    final restored = AppState();
+    await restored.hydrate();
+    expect(restored.readingTone, ReadingTone.sepia);
+    expect(restored.themeMode, ThemeMode.dark);
+
+    restored.setReadingTone(ReadingTone.night);
+    await Future<void>.delayed(Duration.zero);
+    final restored2 = AppState();
+    await restored2.hydrate();
+    expect(restored2.readingTone, ReadingTone.night);
   });
 }

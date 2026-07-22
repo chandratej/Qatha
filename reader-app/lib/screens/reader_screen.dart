@@ -255,15 +255,30 @@ class _ReaderScreenState extends State<ReaderScreen> {
               SnackBar(
                 content: Row(
                   children: [
-                    const Icon(Icons.local_fire_department, color: Colors.orange, size: 28),
+                    const Icon(
+                      Icons.local_fire_department,
+                      color: Colors.orange,
+                      size: 28,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Streak Unlocked!', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontSize: 16)),
-                          Text(streakData['message'] ?? 'Keep reading to maintain your streak.', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                          Text(
+                            'Streak Unlocked!',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(color: Colors.white, fontSize: 16),
+                          ),
+                          Text(
+                            streakData['message'] ??
+                                'Keep reading to maintain your streak.',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -271,7 +286,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 ),
                 backgroundColor: KathaColors.inkSoft,
                 behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 duration: const Duration(seconds: 4),
               ),
             );
@@ -290,7 +307,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Reading canvas tone is a per-reader choice, independent of app chrome
+    // brightness — see AppState.readingTone. The app-bar icon below cycles it
+    // directly since that's the control readers actually expect a "mode
+    // button" to drive, rather than the app-wide theme setting in Settings.
+    final tone = appState.readingTone;
+    final ink = KathaTheme.readingInk(tone);
+    final muted = KathaTheme.readingMuted(tone);
 
     if (_loading) {
       return Scaffold(
@@ -327,6 +350,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
     final chapter = _chapter!;
 
     return Scaffold(
+      backgroundColor: KathaTheme.readingBackground(tone),
       body: Stack(
         children: [
           CustomScrollView(
@@ -335,16 +359,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
               SliverAppBar(
                 pinned: true,
                 expandedHeight: 120,
-                backgroundColor: isDark
-                    ? KathaColors.darkBg
-                    : KathaColors.paper,
+                backgroundColor: KathaTheme.readingBackground(tone),
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
+                  icon: Icon(Icons.arrow_back, color: ink),
                   onPressed: () => Navigator.pop(context),
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.share_outlined),
+                    icon: Icon(Icons.share_outlined, color: ink),
                     onPressed: () => ShareService.shareChapter(
                       storyId: widget.storyId,
                       storyTitle: widget.storyTitle,
@@ -354,18 +376,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     tooltip: 'Share this chapter',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.rate_review_outlined),
+                    icon: Icon(Icons.rate_review_outlined, color: ink),
                     onPressed: _showFeedbackSheet,
                     tooltip: 'Send feedback to the author',
                   ),
                   IconButton(
-                    icon: const Icon(Icons.text_fields),
+                    icon: Icon(Icons.text_fields, color: ink),
                     onPressed: _showReadingOptions,
-                    tooltip: 'Reading options (size, spacing, alignment)',
+                    tooltip: 'Reading options (tone, size, spacing, alignment)',
                   ),
                   IconButton(
                     icon: Icon(
-                      appState.fontScale >= 5 ? Icons.text_decrease : Icons.text_increase,
+                      appState.fontScale >= 5
+                          ? Icons.text_decrease
+                          : Icons.text_increase,
+                      color: ink,
                     ),
                     onPressed: () => appState.setFontScale(
                       appState.fontScale >= 5 ? 1 : appState.fontScale + 1,
@@ -373,19 +398,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     tooltip: 'Quick font size',
                   ),
                   IconButton(
-                    icon: Icon(
-                      isDark
-                          ? Icons.light_mode_outlined
-                          : Icons.dark_mode_outlined,
-                    ),
-                    onPressed: () => appState.toggleTheme(),
+                    icon: Icon(_toneIcon(tone), color: ink),
+                    onPressed: () => appState.setReadingTone(_nextTone(tone)),
+                    tooltip:
+                        'Reading tone: ${KathaTheme.readingToneLabel(tone)} (tap to cycle)',
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
                   title: Text(
                     widget.storyTitle,
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, color: ink),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -409,7 +432,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         const SizedBox(height: 4),
                         Text(
                           chapter.title!,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.headlineMedium?.copyWith(color: ink),
                         ),
                       ],
                       const SizedBox(height: 8),
@@ -423,7 +448,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           const SizedBox(width: 4),
                           Text(
                             '${chapter.viewCount} readers · ${chapter.estimatedReadTimeMinutes} min read',
-                            style: Theme.of(context).textTheme.labelMedium,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.labelMedium?.copyWith(color: muted),
                           ),
                         ],
                       ),
@@ -451,7 +478,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       RepaintBoundary(
                         child: ChapterBody(
                           content: chapter.content,
-                          isDark: isDark,
+                          tone: tone,
                           fontScale: appState.fontScale,
                           lineHeight: appState.effectiveLineHeight,
                           textAlign: appState.isLeftAlign
@@ -482,6 +509,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             right: 0,
             child: _ChapterNavBar(
               currentChapter: widget.chapterNumber,
+              tone: tone,
               onPrevious: widget.chapterNumber > 1
                   ? () => _navigateChapter(widget.chapterNumber - 1)
                   : null,
@@ -505,6 +533,18 @@ class _ReaderScreenState extends State<ReaderScreen> {
       ),
     );
   }
+
+  static ReadingTone _nextTone(ReadingTone current) => switch (current) {
+    ReadingTone.paper => ReadingTone.sepia,
+    ReadingTone.sepia => ReadingTone.night,
+    ReadingTone.night => ReadingTone.paper,
+  };
+
+  static IconData _toneIcon(ReadingTone tone) => switch (tone) {
+    ReadingTone.paper => Icons.article_outlined,
+    ReadingTone.sepia => Icons.menu_book_outlined,
+    ReadingTone.night => Icons.dark_mode_outlined,
+  };
 
   void _showOtpGate() {
     showModalBottomSheet(
@@ -579,7 +619,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Feedback for the author', style: Theme.of(ctx).textTheme.titleLarge),
+              Text(
+                'Feedback for the author',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
               const SizedBox(height: 8),
               Text(
                 'Chapter ${widget.chapterNumber} · ${widget.storyTitle}',
@@ -605,7 +648,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           final text = controller.text.trim();
                           if (text.length < 3) {
                             ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(content: Text('Please write at least a few words.')),
+                              const SnackBar(
+                                content: Text(
+                                  'Please write at least a few words.',
+                                ),
+                              ),
                             );
                             return;
                           }
@@ -619,17 +666,27 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             if (!ctx.mounted) return;
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Thank you — your feedback was sent to the author.')),
+                              const SnackBar(
+                                content: Text(
+                                  'Thank you — your feedback was sent to the author.',
+                                ),
+                              ),
                             );
                           } on ApiException catch (e) {
                             setSheetState(() => submitting = false);
                             if (!ctx.mounted) return;
-                            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(e.userMessage)));
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(content: Text(e.userMessage)),
+                            );
                           } catch (_) {
                             setSheetState(() => submitting = false);
                             if (!ctx.mounted) return;
                             ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(content: Text('Could not send feedback. Try again.')),
+                              const SnackBar(
+                                content: Text(
+                                  'Could not send feedback. Try again.',
+                                ),
+                              ),
                             );
                           }
                         },
@@ -637,7 +694,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Send feedback'),
                 ),
@@ -650,56 +710,97 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   void _showReadingOptions() {
-    final appState = context.read<AppState>();
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Reading comfort', style: Theme.of(ctx).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            const Text('Font size', style: TextStyle(fontWeight: FontWeight.w500)),
-            SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 1, label: Text('S')),
-                ButtonSegment(value: 2, label: Text('M')),
-                ButtonSegment(value: 3, label: Text('L')),
-                ButtonSegment(value: 4, label: Text('XL')),
-                ButtonSegment(value: 5, label: Text('XXL')),
-              ],
-              selected: {appState.fontScale},
-              onSelectionChanged: (s) => appState.setFontScale(s.first),
-            ),
-            const SizedBox(height: 16),
-            const Text('Line spacing', style: TextStyle(fontWeight: FontWeight.w500)),
-            SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 1, label: Text('Compact')),
-                ButtonSegment(value: 2, label: Text('Comfort')),
-                ButtonSegment(value: 3, label: Text('Spacious')),
-              ],
-              selected: {appState.lineHeightScale},
-              onSelectionChanged: (s) => appState.setLineHeightScale(s.first),
-            ),
-            const SizedBox(height: 16),
-            const Text('Alignment', style: TextStyle(fontWeight: FontWeight.w500)),
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'left', label: Text('Left (recommended)')),
-                ButtonSegment(value: 'justify', label: Text('Justified')),
-              ],
-              selected: {appState.textAlign},
-              onSelectionChanged: (s) => appState.setTextAlign(s.first),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Changes apply instantly. Left + generous spacing recommended for Telugu long-form reading.',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
-            ),
-          ],
+      // Consumer (not a captured `appState` local) so every segmented control
+      // below actually re-highlights on tap instead of only affecting the
+      // reader screen behind the sheet.
+      builder: (ctx) => Consumer<AppState>(
+        builder: (context, appState, _) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reading comfort',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Reading tone',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<ReadingTone>(
+                segments: [
+                  for (final t in ReadingTone.values)
+                    ButtonSegment(
+                      value: t,
+                      label: Text(KathaTheme.readingToneLabel(t)),
+                      icon: Icon(switch (t) {
+                        ReadingTone.paper => Icons.article_outlined,
+                        ReadingTone.sepia => Icons.menu_book_outlined,
+                        ReadingTone.night => Icons.dark_mode_outlined,
+                      }, size: 16),
+                    ),
+                ],
+                selected: {appState.readingTone},
+                onSelectionChanged: (s) => appState.setReadingTone(s.first),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Font size',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(value: 1, label: Text('S')),
+                  ButtonSegment(value: 2, label: Text('M')),
+                  ButtonSegment(value: 3, label: Text('L')),
+                  ButtonSegment(value: 4, label: Text('XL')),
+                  ButtonSegment(value: 5, label: Text('XXL')),
+                ],
+                selected: {appState.fontScale},
+                onSelectionChanged: (s) => appState.setFontScale(s.first),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Line spacing',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(value: 1, label: Text('Compact')),
+                  ButtonSegment(value: 2, label: Text('Comfort')),
+                  ButtonSegment(value: 3, label: Text('Spacious')),
+                ],
+                selected: {appState.lineHeightScale},
+                onSelectionChanged: (s) => appState.setLineHeightScale(s.first),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Alignment',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'left',
+                    label: Text('Left (recommended)'),
+                  ),
+                  ButtonSegment(value: 'justify', label: Text('Justified')),
+                ],
+                selected: {appState.textAlign},
+                onSelectionChanged: (s) => appState.setTextAlign(s.first),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Changes apply instantly. Left + generous spacing recommended for Telugu long-form reading.',
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -756,7 +857,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
         if (!mounted) return;
         final msg = payment.errorMessage ?? 'Payment cancelled';
         if (!msg.toLowerCase().contains('cancel')) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
         return;
       }
@@ -821,18 +924,20 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
 class _ChapterNavBar extends StatelessWidget {
   final int currentChapter;
+  final ReadingTone tone;
   final VoidCallback? onPrevious;
   final VoidCallback onNext;
 
   const _ChapterNavBar({
     required this.currentChapter,
+    required this.tone,
     this.onPrevious,
     required this.onNext,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ink = KathaTheme.readingInk(tone);
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -841,24 +946,27 @@ class _ChapterNavBar extends StatelessWidget {
         MediaQuery.of(context).padding.bottom + 12,
       ),
       decoration: BoxDecoration(
-        color: isDark ? KathaColors.darkSurface : Colors.white,
-        border: Border(
-          top: BorderSide(color: KathaColors.ink.withValues(alpha: 0.08)),
-        ),
+        color: KathaTheme.readingSurface(tone),
+        border: Border(top: BorderSide(color: ink.withValues(alpha: 0.08))),
       ),
       child: Row(
         children: [
           Expanded(
             child: OutlinedButton.icon(
               onPressed: onPrevious,
-              icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('Previous'),
+              icon: Icon(Icons.arrow_back, size: 18, color: ink),
+              label: Text('Previous', style: TextStyle(color: ink)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: ink.withValues(alpha: 0.3)),
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Text(
             'Ch $currentChapter',
-            style: Theme.of(context).textTheme.labelMedium,
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: ink),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -932,7 +1040,9 @@ class _GateSheet extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF222228) : const Color(0xFFF8F5F0),
+                color: isDark
+                    ? const Color(0xFF222228)
+                    : const Color(0xFFF8F5F0),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: KathaColors.gold.withValues(alpha: 0.25),
@@ -949,7 +1059,10 @@ class _GateSheet extends StatelessWidget {
                   ...PaywallCopy.benefits.map(
                     (b) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text('• $b', style: const TextStyle(fontSize: 12, height: 1.35)),
+                      child: Text(
+                        '• $b',
+                        style: const TextStyle(fontSize: 12, height: 1.35),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 6),
