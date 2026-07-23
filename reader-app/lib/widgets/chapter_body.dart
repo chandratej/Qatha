@@ -9,6 +9,7 @@ class ChapterBody extends StatelessWidget {
   final int fontScale;
   final double lineHeight;
   final TextAlign textAlign;
+  final bool easyReading;
 
   const ChapterBody({
     super.key,
@@ -17,6 +18,7 @@ class ChapterBody extends StatelessWidget {
     required this.fontScale,
     required this.lineHeight,
     required this.textAlign,
+    this.easyReading = false,
   });
 
   @override
@@ -25,6 +27,7 @@ class ChapterBody extends StatelessWidget {
       tone: tone,
       fontScale: fontScale,
       lineHeight: lineHeight,
+      easyReading: easyReading,
     );
 
     final blocks = parseChapterBlocks(content);

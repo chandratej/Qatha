@@ -36,11 +36,21 @@ class AnalyticsService {
   Future<void> homepageView() => track('homepage_view');
   Future<void> chapterOpened(String storyId, int chapterNum) =>
       track('chapter_opened', {'story_id': storyId, 'chapter_number': chapterNum});
-  Future<void> chapterCompleted(String storyId, int chapterNum) =>
-      track('chapter_completed', {'story_id': storyId, 'chapter_number': chapterNum});
+  Future<void> chapterCompleted(String storyId, int chapterNum, {String? freeChapterSource}) =>
+      track('chapter_completed', {
+        'story_id': storyId,
+        'chapter_number': chapterNum,
+        if (freeChapterSource != null) 'free_chapter_source': freeChapterSource,
+      });
   Future<void> otpGateShown(String storyId) => track('otp_gate_shown', {'story_id': storyId});
-  Future<void> paywallShown(String storyId) => track('paywall_shown', {'story_id': storyId});
-  Future<void> subscriptionConfirmed() => track('subscription_confirmed');
+  Future<void> paywallShown(String storyId, {String? freeChapterSource}) => track('paywall_shown', {
+        'story_id': storyId,
+        if (freeChapterSource != null) 'free_chapter_source': freeChapterSource,
+      });
+  Future<void> subscriptionConfirmed({String? storyId, String? freeChapterSource}) => track('subscription_confirmed', {
+        if (storyId != null) 'story_id': storyId,
+        if (freeChapterSource != null) 'free_chapter_source': freeChapterSource,
+      });
 
   Future<void> shareTapped(String storyId, int chapterNumber) =>
       track('share_tapped', {'story_id': storyId, 'chapter_number': chapterNumber});

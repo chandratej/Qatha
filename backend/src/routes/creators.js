@@ -341,7 +341,22 @@ creatorsRouter.patch('/stories/:storyId', requireStoryRole('story.edit'), async 
   try {
     const creatorId = getAuthenticatedUserId(req);
     const { storyId } = req.params;
-    const { title, description, genre, cover_url, release_schedule } = req.body;
+    const { title, description, genre, cover_url, release_schedule, free_chapter_count } = req.body;
+
+    // Manual override for the auto-derived free-chapter sample size (Req 3.1) — null clears
+    // the override back to auto-derivation from band data.
+    let freeChapterUpdate;
+    if (free_chapter_count !== undefined) {
+      if (free_chapter_count === null) {
+        freeChapterUpdate = { free_chapter_count: null, free_chapter_count_source: 'auto' };
+      } else {
+        const n = Number(free_chapter_count);
+        if (!Number.isFinite(n) || n < 1 || n > 100) {
+          throw createAppError('INTERNAL_ERROR', 'free_chapter_count must be between 1 and 100', 400);
+        }
+        freeChapterUpdate = { free_chapter_count: Math.floor(n), free_chapter_count_source: 'override' };
+      }
+    }
 
     if (isMockMode()) {
       const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId && s.author_id === creatorId);
@@ -351,6 +366,7 @@ creatorsRouter.patch('/stories/:storyId', requireStoryRole('story.edit'), async 
       if (genre !== undefined) story.genre = genre;
       if (cover_url !== undefined) story.cover_url = cover_url;
       if (release_schedule !== undefined) story.release_schedule = release_schedule;
+      if (freeChapterUpdate) Object.assign(story, freeChapterUpdate);
       return res.json({ story, mock: true });
     }
 
@@ -363,6 +379,7 @@ creatorsRouter.patch('/stories/:storyId', requireStoryRole('story.edit'), async 
     if (genre !== undefined) updates.genre = genre;
     if (cover_url !== undefined) updates.cover_url = cover_url;
     if (release_schedule !== undefined) updates.release_schedule = release_schedule;
+    if (freeChapterUpdate) Object.assign(updates, freeChapterUpdate);
 
     const { data, error } = await supabase.from('stories').update(updates).eq('id', storyId).select().single();
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);

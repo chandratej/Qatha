@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState, AuthUser;
 import 'core/config/app_config.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'core/models/pending_chapter_link.dart';
 import 'core/providers/app_state.dart';
 import 'core/providers/auth_state.dart';
@@ -206,6 +208,17 @@ class _KathaAppState extends State<KathaApp> {
       navigatorKey: _navigatorKey,
       title: 'Katha — కథ',
       debugShowCheckedModeBanner: false,
+      // Telugu-first UI chrome (Req 2.2) — the reading content is already Telugu, so the
+      // chrome defaults to match rather than asking readers to make a language decision.
+      // English stays registered as a supported locale for a future explicit toggle.
+      locale: const Locale('te'),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: KathaTheme.light(
         fontScale: appState.fontScale,
         highContrast: appState.highContrast,

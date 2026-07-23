@@ -6,6 +6,7 @@ import '../core/services/api_service.dart' show ApiService, ApiException, Discov
 import '../core/theme/katha_theme.dart';
 import '../widgets/error_state.dart';
 import '../widgets/story_card.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'story_detail_screen.dart';
 
 class BrowseScreen extends StatefulWidget {
@@ -114,9 +115,10 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('వెతకండి · Browse'),
+        title: Text(l10n.browseTitle),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(104),
           child: Column(
@@ -128,7 +130,7 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
                   textInputAction: TextInputAction.search,
                   onSubmitted: _runSearch,
                   decoration: InputDecoration(
-                    hintText: 'Search Telugu or English titles…',
+                    hintText: l10n.browseSearchHint,
                     prefixIcon: const Icon(Icons.search, color: KathaColors.gold),
                     suffixIcon: _searchActive
                         ? IconButton(
@@ -155,7 +157,7 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
                 TabBar(
                   controller: _tabController,
                   labelColor: KathaColors.gold,
-                  unselectedLabelColor: KathaColors.inkMuted,
+                  unselectedLabelColor: KathaTheme.mutedInk(context),
                   indicatorColor: KathaColors.gold,
                   tabs: _labels.map((l) => Tab(text: l)).toList(),
                 ),
@@ -196,7 +198,9 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
       );
     }
     if (_searchResults.isEmpty) {
-      return const Center(child: Text('No stories match that search.'));
+      return Center(
+        child: Text(AppLocalizations.of(context)!.emptySearchResultsTitle),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.all(24),
@@ -239,10 +243,14 @@ class _GenreFeed extends StatelessWidget {
     if (error != null) return ErrorState(message: error!, onRetry: onRetry);
     if (feed == null) return const SizedBox();
 
+    final l10n = AppLocalizations.of(context)!;
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        _SectionHeader(title: 'Trending this week', icon: Icons.trending_up),
+        _SectionHeader(
+          title: l10n.browseSectionTrendingThisWeek,
+          icon: Icons.trending_up,
+        ),
         const SizedBox(height: 12),
         ...feed!.trending.asMap().entries.map(
               (e) => StoryCard(
@@ -252,7 +260,7 @@ class _GenreFeed extends StatelessWidget {
               ),
             ),
         const SizedBox(height: 24),
-        _SectionHeader(title: 'New releases', icon: Icons.fiber_new),
+        _SectionHeader(title: l10n.sectionNewReleases, icon: Icons.fiber_new),
         const SizedBox(height: 12),
         ...feed!.newReleases.asMap().entries.map(
               (e) => StoryCard(

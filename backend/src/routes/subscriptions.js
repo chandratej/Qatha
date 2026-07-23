@@ -1,10 +1,49 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { supabase as sbClient, getSupabase } from '../lib/supabase.js';
-import { getRevenueConfig, creatorShareFromPaise } from '../config/revenue.js';
+import { getRevenueConfig, getPlanPricing, getReferenceNetAmountForCycle, BILLING_CYCLES } from '../config/revenue.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { registerMockSubscription } from '../services/launchOffer.js';
 import { requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
+import { getFoundingAccelerationForCreator } from '../services/foundingAuthorProgram.js';
+import { accrueEscrowEarnings } from '../services/moderationEscrowStore.js';
+
+function resolveBillingCycle(input) {
+  const id = String(input || 'monthly').trim();
+  return Object.prototype.hasOwnProperty.call(BILLING_CYCLES, id) ? id : 'monthly';
+}
+
+/**
+ * Applies the story-trust share, then the founding-author acceleration (Req 4) as a floor —
+ * acceleration only ever raises the effective share, self-expires once acceleration_ends_at
+ * passes, and never produces a permanent increase.
+ */
+async function withFoundingAcceleration(creatorId, sharePct) {
+  const accel = await getFoundingAccelerationForCreator(creatorId).catch(() => null);
+  return accel ? Math.max(sharePct, accel.accelerated_share_pct) : sharePct;
+}
+
+/**
+ * Writes a creator's earnings for a payment event — diverted into escrow (not the payable
+ * ledger) if the story is currently in an open moderation window (Req 3.4), otherwise the
+ * normal earnings_ledger insert.
+ */
+async function recordCreatorEarnings(supabase, { creatorId, storyId, subscriptionId, creatorShare, sharePct, trustLevel }) {
+  if (storyId) {
+    const escrowed = await accrueEscrowEarnings(storyId, creatorShare).catch(() => null);
+    if (escrowed) return { escrowed: true };
+  }
+  await supabase.from('earnings_ledger').insert({
+    creator_id: creatorId,
+    subscription_id: subscriptionId || null,
+    story_id: storyId || null,
+    amount: creatorShare,
+    month: new Date().toISOString().split('T')[0].slice(0, 7) + '-01',
+    effective_share_pct: sharePct,
+    trust_level_at_payment: trustLevel,
+  });
+  return { escrowed: false };
+}
 
 export const subscriptionsRouter = Router();
 
@@ -65,8 +104,10 @@ subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, r
     const userId = getAuthenticatedUserId(req);
 
     const { story_id_source, creator_id_source } = req.body;
+    const billing_cycle = resolveBillingCycle(req.body?.billing_cycle);
 
     const revenue = getRevenueConfig();
+    const plan = getPlanPricing(billing_cycle);
     const keyId = process.env.RAZORPAY_KEY_ID;
     const paymentsReady = Boolean(keyId && process.env.RAZORPAY_KEY_SECRET);
 
@@ -85,6 +126,7 @@ subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, r
       user_id: userId,
       story_id_source: story_id_source || '',
       creator_id_source: creator_id_source || '',
+      billing_cycle,
       product: 'katha_unlimited',
     };
 
@@ -96,7 +138,7 @@ subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, r
         const { createRazorpayOrder } = await import('../services/razorpayOrders.js');
         const receipt = `sub_${userId.slice(0, 8)}_${Date.now()}`.slice(0, 40);
         const created = await createRazorpayOrder({
-          amountPaise: revenue.subscription_price_paise,
+          amountPaise: plan.total_price_paise,
           receipt,
           notes,
         });
@@ -111,10 +153,15 @@ subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, r
       razorpay_key: keyId || null,
       payments_ready: paymentsReady && Boolean(order_id),
       mode: keyId?.startsWith('rzp_live') ? 'live' : keyId?.startsWith('rzp_test') ? 'test' : 'unconfigured',
-      amount: revenue.subscription_price_paise,
+      amount: plan.total_price_paise,
       currency: 'INR',
       plan_name: 'Katha Unlimited',
-      description: `₹${revenue.subscription_price_inr}/month — unlimited Telugu stories, no ads`,
+      description: billing_cycle === 'monthly'
+        ? `₹${revenue.subscription_price_inr}/month — unlimited Telugu stories, no ads`
+        : `₹${plan.total_price_inr}/${billing_cycle === 'annual' ? 'year' : 'quarter'} — unlimited Telugu stories, no ads (₹${plan.effective_monthly_price_inr}/mo effective)`,
+      billing_cycle,
+      plan,
+      plans: revenue.plans,
       /** Base platform routing share (env); story trust may raise effective author share at ledger time */
       creator_share_pct: revenue.creator_share_pct,
       base_creator_share_pct: 40,
@@ -181,8 +228,11 @@ subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, 
       }
 
       const revenue = getRevenueConfig();
-      const endsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      const amountPaise = revenue.subscription_price_paise;
+      const billing_cycle = resolveBillingCycle(req.body?.billing_cycle);
+      const plan = getPlanPricing(billing_cycle);
+      const endsAt = new Date(Date.now() + plan.months * 30 * 24 * 60 * 60 * 1000).toISOString();
+      const amountPaise = plan.total_price_paise; // what the reader actually paid this cycle
+      const referenceNetAmountPaise = getReferenceNetAmountForCycle(billing_cycle); // Option 1: what creator share is computed against
 
       const { data: inserted } = await supabase.from('subscriptions').insert({
         user_id: userId,
@@ -191,6 +241,8 @@ subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, 
         razorpay_subscription_id: razorpay_subscription_id || null,
         razorpay_payment_id,
         amount_paise: amountPaise,
+        billing_cycle,
+        reference_net_amount_paise: referenceNetAmountPaise,
         status: 'active',
         creator_share_pct: revenue.creator_share_pct,
         ends_at: endsAt,
@@ -215,16 +267,16 @@ subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, 
           }
         } catch { /* base share */ }
 
-        const creatorShare = Math.round(amountPaise * sharePct) / 10000;
         if (creator_id_source) {
-          await supabase.from('earnings_ledger').insert({
-            creator_id: creator_id_source,
-            subscription_id: inserted?.id || null,
-            story_id: story_id_source || null,
-            amount: creatorShare,
-            month: new Date().toISOString().split('T')[0].slice(0, 7) + '-01',
-            effective_share_pct: sharePct,
-            trust_level_at_payment: trustLevel,
+          sharePct = await withFoundingAcceleration(creator_id_source, sharePct);
+          const creatorShare = Math.round(referenceNetAmountPaise * sharePct) / 10000;
+          await recordCreatorEarnings(supabase, {
+            creatorId: creator_id_source,
+            storyId: story_id_source || null,
+            subscriptionId: inserted?.id || null,
+            creatorShare,
+            sharePct,
+            trustLevel,
           });
         }
       }
@@ -318,21 +370,28 @@ subscriptionsRouter.post('/webhook', async (req, res, next) => {
       const notes = sub?.notes || {};
 
       if (notes?.user_id) {
-        await supabase.from('subscriptions').insert({
+        const billing_cycle = resolveBillingCycle(notes?.billing_cycle);
+        const plan = getPlanPricing(billing_cycle);
+        const referenceNetAmountPaise = getReferenceNetAmountForCycle(billing_cycle);
+        const endsAt = new Date(Date.now() + plan.months * 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const { data: insertedSub } = await supabase.from('subscriptions').insert({
           user_id: notes.user_id,
           story_id_source: notes.story_id_source,
           creator_id_source: notes.creator_id_source,
           razorpay_subscription_id: sub.id,
           razorpay_payment_id: payment.id,
-          amount_paise: payment.amount || sub?.plan?.item?.amount || 9900,
+          amount_paise: payment.amount || plan.total_price_paise,
+          billing_cycle,
+          reference_net_amount_paise: referenceNetAmountPaise,
           status: 'active',
           creator_share_pct: getRevenueConfig().creator_share_pct,
-          ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        }).select().maybeSingle();
+          ends_at: endsAt,
+        }).select('id').maybeSingle();
 
         await supabase.from('profiles').update({
           subscription_status: 'active',
-          subscription_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subscription_ends_at: endsAt,
         }).eq('id', notes.user_id);
 
         if (notes?.creator_id_source) {
@@ -349,15 +408,17 @@ subscriptionsRouter.post('/webhook', async (req, res, next) => {
             }
           } catch { /* use base */ }
 
-          const amountPaise = payment.amount || 9900;
-          const creatorShare = Math.round(amountPaise * sharePct) / 10000;
-          await supabase.from('earnings_ledger').insert({
-            creator_id: notes.creator_id_source,
-            story_id: notes.story_id_source || null,
-            amount: creatorShare,
-            month: new Date().toISOString().split('T')[0].slice(0, 7) + '-01',
-            effective_share_pct: sharePct,
-            trust_level_at_payment: trust_level,
+          sharePct = await withFoundingAcceleration(notes.creator_id_source, sharePct);
+          // Option 1 (DEC-028): creator share is computed against the fixed reference amount,
+          // never the actual transaction amount — rail-fee variance never reaches the creator.
+          const creatorShare = Math.round(referenceNetAmountPaise * sharePct) / 10000;
+          await recordCreatorEarnings(supabase, {
+            creatorId: notes.creator_id_source,
+            storyId: notes.story_id_source || null,
+            subscriptionId: insertedSub?.id || null,
+            creatorShare,
+            sharePct,
+            trustLevel: trust_level,
           });
         }
       }

@@ -2,10 +2,22 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:katha_reader/core/models/story.dart';
 import 'package:katha_reader/core/theme/katha_theme.dart';
+import 'package:katha_reader/l10n/generated/app_localizations.dart';
 import 'package:katha_reader/widgets/story_card.dart';
+
+/// Telugu is the app's default locale (Req 2.2) — every MaterialApp below
+/// wires the real localization delegates so StoryCard's chrome text
+/// (chapter count, maturity chip) resolves exactly as it does in the app.
+const _l10nDelegates = [
+  AppLocalizations.delegate,
+  GlobalMaterialLocalizations.delegate,
+  GlobalWidgetsLocalizations.delegate,
+  GlobalCupertinoLocalizations.delegate,
+];
 
 /// Register the real Noto Sans Telugu metrics under every family the card's
 /// text styles reference — the default test font is far shorter than real
@@ -45,6 +57,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('te'),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: _l10nDelegates,
         home: Scaffold(
           body: ListView(
             padding: const EdgeInsets.all(24),
@@ -58,7 +73,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('24 ch'), findsOneWidget);
+    expect(find.text('24 అధ్యా'), findsOneWidget);
     expect(find.byIcon(Icons.people_outline), findsOneWidget);
     expect(find.byIcon(Icons.verified_outlined), findsNothing);
   });
@@ -89,6 +104,9 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             theme: KathaTheme.light(fontScale: fontScale),
+            locale: const Locale('te'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: _l10nDelegates,
             home: MediaQuery(
               data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
               child: Scaffold(

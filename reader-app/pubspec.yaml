@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
   provider: ^6.1.2
@@ -27,6 +30,7 @@ dependencies:
   razorpay_flutter: ^1.4.5
   share_plus: ^10.1.4
   app_links: ^6.3.2
+  permission_handler: ^11.3.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -34,3 +38,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true

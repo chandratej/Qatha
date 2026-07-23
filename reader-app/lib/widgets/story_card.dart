@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../core/models/story.dart';
 import '../core/theme/katha_theme.dart';
 import '../core/utils/motion.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'story_cover_art.dart';
 
 class StoryCard extends StatelessWidget {
@@ -27,6 +28,7 @@ class StoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     final card = Material(
       color: Colors.transparent,
@@ -94,12 +96,16 @@ class StoryCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Flexible(child: _chip(context, story.genreLabel)),
-                            const SizedBox(width: 8),
+                            _chip(context, story.genreLabel),
+                            if (story.isMatureThemed)
+                              _chip(context, l10n.maturityMature, muted: true),
                             Text(
-                              '${story.chapterCount} ch',
+                              l10n.storyCardChapterCount(story.chapterCount),
                               style: Theme.of(context).textTheme.labelMedium,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -151,11 +157,13 @@ class StoryCard extends StatelessWidget {
     return StoryCoverArt(title: story.title, seed: story.id);
   }
 
-  Widget _chip(BuildContext context, String label) {
+  Widget _chip(BuildContext context, String label, {bool muted = false}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
-        color: KathaColors.gold.withValues(alpha: 0.12),
+        color: muted
+            ? KathaTheme.mutedInk(context).withValues(alpha: 0.14)
+            : KathaColors.gold.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(100),
       ),
       child: Text(
@@ -163,7 +171,7 @@ class StoryCard extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: KathaColors.goldDark,
+              color: muted ? KathaTheme.mutedInk(context) : KathaColors.goldDark,
               fontSize: 11,
             ),
       ),

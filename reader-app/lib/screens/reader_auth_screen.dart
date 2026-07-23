@@ -5,6 +5,7 @@ import '../core/providers/auth_state.dart' show AuthState, AuthUser;
 import '../core/services/auth_service.dart';
 import '../core/theme/katha_theme.dart';
 import '../core/utils/motion.dart';
+import '../l10n/generated/app_localizations.dart';
 
 /// Cascading Auth Gate for readers: Google (primary) → email magic link (fallback).
 /// Phone OTP is not offered here — reserved for Creator CMS payout/KYC verification.
@@ -44,7 +45,8 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Welcome! ${result.user.launchTrialDays}-day unlimited reading unlocked.',
+            AppLocalizations.of(context)!
+                .readerAuthWelcomeTrial(result.user.launchTrialDays!),
           ),
           backgroundColor: KathaColors.gold,
         ),
@@ -98,6 +100,7 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
   }
 
   Widget _buildGooglePrimary() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -106,28 +109,29 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
           child: FilledButton.icon(
             onPressed: _loading ? null : _signInWithGoogle,
             icon: const Icon(Icons.g_mobiledata, size: 28),
-            label: const Text('Continue with Google'),
+            label: Text(l10n.buttonSignInWithGoogle),
             style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
           ),
         ),
         const SizedBox(height: 16),
         OutlinedButton(
           onPressed: _loading ? null : () => setState(() { _emailStep = true; _error = null; }),
-          child: const Text('Continue with email'),
+          child: Text(l10n.buttonContinueWithEmail),
         ),
       ],
     );
   }
 
   Widget _buildEmailFallback() {
+    final l10n = AppLocalizations.of(context)!;
     if (!_emailSent) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Sign in with email', style: Theme.of(context).textTheme.headlineSmall),
+          Text(l10n.readerAuthEmailHeadline, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           Text(
-            'We\'ll send a one-time code to your inbox',
+            l10n.readerAuthEmailSubheadline,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
@@ -136,7 +140,7 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
             decoration: InputDecoration(
-              labelText: 'Email address',
+              labelText: l10n.readerAuthEmailLabel,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               prefixIcon: const Icon(Icons.email_outlined),
             ),
@@ -148,12 +152,12 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
             child: FilledButton(
               onPressed: _loading ? null : _sendEmailLink,
               style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
-              child: _loading ? const Text('Sending…') : const Text('Send sign-in code'),
+              child: Text(_loading ? l10n.buttonSending : l10n.buttonSendSignInCode),
             ),
           ),
           TextButton(
             onPressed: () => setState(() { _emailStep = false; _error = null; }),
-            child: const Text('Back to Google sign-in'),
+            child: Text(l10n.buttonBackToGoogleSignIn),
           ),
         ],
       );
@@ -162,10 +166,10 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Check your email', style: Theme.of(context).textTheme.headlineSmall),
+        Text(l10n.readerAuthCheckEmailHeadline, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
         Text(
-          'Enter the code sent to ${_emailController.text.trim()}',
+          l10n.readerAuthCodeSentTo(_emailController.text.trim()),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
@@ -176,7 +180,7 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 20, letterSpacing: 6, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
-            labelText: 'Sign-in code',
+            labelText: l10n.readerAuthSignInCodeLabel,
             counterText: '',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
@@ -188,16 +192,16 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
           child: FilledButton(
             onPressed: _loading ? null : _verifyEmailOtp,
             style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
-            child: _loading ? const Text('Verifying…') : const Text('Verify & Continue'),
+            child: Text(_loading ? l10n.buttonVerifying : l10n.buttonVerifyAndContinue),
           ),
         ),
         TextButton(
           onPressed: _loading ? null : _sendEmailLink,
-          child: const Text('Resend code'),
+          child: Text(l10n.buttonResendCode),
         ),
         TextButton(
           onPressed: () => setState(() { _emailSent = false; _otpController.clear(); _error = null; }),
-          child: const Text('Use a different email'),
+          child: Text(l10n.buttonUseDifferentEmail),
         ),
       ],
     );
@@ -205,6 +209,7 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: SafeArea(
@@ -234,7 +239,7 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
               ).withEntrance(context, (w) => w.animate().fadeIn()),
               const SizedBox(height: 8),
               Text(
-                'Sign in to continue reading',
+                l10n.readerAuthSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium,
               ).withEntrance(context, (w) => w.animate().fadeIn(delay: 80.ms)),
               const SizedBox(height: 36),
@@ -256,13 +261,13 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
               ],
               const Spacer(flex: 2),
               Text(
-                'Creators verify phone separately in Creator Studio for payouts.',
+                l10n.readerAuthCreatorNote,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[500]),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
-                'By continuing you agree to our Terms & Privacy',
+                l10n.readerAuthTermsNotice,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[500]),
                 textAlign: TextAlign.center,
               ),

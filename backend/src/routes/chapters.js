@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import {
   getSeedChapter,
+  getPublicStoryById,
   mockChapterStore,
   countDraftWords,
   markMockStoryChapterPublished,
@@ -11,6 +12,7 @@ import { addToMockQueue } from '../data/moderationSeed.js';
 import { createAppError } from '../middleware/errorHandler.js';
 import { canAccessChapter, getAccessDenialMessage } from '../services/accessControl.js';
 import { resolveMockUser } from '../services/launchOffer.js';
+import { getOrLockSampleFreeChapterCountWithSource } from '../services/freeChapterThreshold.js';
 import { moderateChapter, moderateContent, riskScoreFromResult } from '../services/moderation/index.js';
 import { generateUniqueStorySlug } from '../lib/slugify.js';
 import { notifyNewChapter } from '../services/notifications.js';
@@ -49,10 +51,31 @@ chaptersRouter.get('/:storyId/:chapterNumber', requireAuth({ optional: true }), 
       }
     }
 
-    const access = canAccessChapter(Number(chapterNumber), user);
+    let storyForAccess;
+    if (isMockMode()) {
+      storyForAccess = getPublicStoryById(storyId);
+    } else {
+      // free_chapter_* may be absent until migration 042 — access control derives defaults without them.
+      let storyRes = await supabase
+        .from('stories')
+        .select('id, author_id, total_readers, trust_level, free_chapter_count, free_chapter_cohort')
+        .eq('id', storyId)
+        .maybeSingle();
+      if (storyRes.error && /free_chapter|column .* does not exist/i.test(storyRes.error.message || '')) {
+        storyRes = await supabase
+          .from('stories')
+          .select('id, author_id, total_readers, trust_level')
+          .eq('id', storyId)
+          .maybeSingle();
+      }
+      storyForAccess = storyRes.data;
+    }
+    const { count: freeChapters, source: freeChapterSource } = await getOrLockSampleFreeChapterCountWithSource(userId, storyForAccess);
+
+    const access = canAccessChapter(Number(chapterNumber), user, { freeChapters });
     if (!access.allowed) {
       const custom = getAccessDenialMessage(access.reason, user);
-      const err = createAppError(access.reason, custom?.user_message, 403);
+      const err = createAppError(access.reason, custom?.user_message, 403, { free_chapter_source: freeChapterSource });
       if (custom?.action) err.action = custom.action;
       throw err;
     }
@@ -252,6 +275,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
 
     const { data: story } = await supabase.from('stories').select('author_id, title, slug, is_published').eq('id', storyId).single();
     if (!story) throw createAppError('INTERNAL_ERROR', 'Story not found', 404);
+    const isStoryDebut = !story.is_published; // this story's first-ever chapter going live
 
     if (!story.slug) {
       const slug = await generateUniqueStorySlug(supabase, story.title, storyId);
@@ -274,6 +298,18 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
     const moderation = await moderateChapter(chapter.id, content, creatorId);
     if (moderation.status === 'approved') await notifyNewChapter(storyId, chapter.id);
+
+    // Founding-author cohort (Req 4, DEC-028) — a story's debut going live is the "commits
+    // pre-launch/early" signal the program is meant to catch. No-op while the program is
+    // unconfigured, already full, or the window's closed; never blocks the publish response.
+    if (isStoryDebut && moderation.status === 'approved') {
+      try {
+        const { tryEnrollFoundingAuthor } = await import('../services/foundingAuthorProgram.js');
+        await tryEnrollFoundingAuthor(creatorId);
+      } catch (e) {
+        console.warn('[publish] founding-author enrollment skipped:', e?.message);
+      }
+    }
 
     // DEC-021: refresh Story Trust SPI after publish (non-blocking failure)
     let story_trust = null;

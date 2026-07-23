@@ -12,6 +12,10 @@ import {
   listDiscoverByGenre,
 } from '../services/publicCatalog.js';
 import { createAppError } from '../middleware/errorHandler.js';
+import { resolveFreeChapterCountForStory } from '../services/freeChapterThreshold.js';
+import { listPublicPraise } from '../services/readerFeedbackStore.js';
+import { createContentReport } from '../services/contentReportStore.js';
+import { requireAuth, getAuthenticatedUserId } from '../middleware/authenticate.js';
 
 // In-memory story cache (very hot path for browse/home)
 const storyCache = new Map();
@@ -134,7 +138,13 @@ storiesRouter.get('/:id', async (req, res, next) => {
         view_count: c.view_count,
         status: c.status,
       }));
-      return res.json({ story, chapters, mock: true });
+      const { count: freeChapterCount, source: freeChapterSource } =
+        await resolveFreeChapterCountForStory(story);
+      return res.json({
+        story: { ...story, resolved_free_chapters: freeChapterCount, free_chapter_source: freeChapterSource },
+        chapters,
+        mock: true,
+      });
     }
 
     const detail = await getPublicStoryDetail(req.params.id);
@@ -142,5 +152,32 @@ storiesRouter.get('/:id', async (req, res, next) => {
     res.json(detail);
   } catch (err) {
     next(err);
+  }
+});
+
+/** Author-curated public testimonials — never an aggregate score. */
+storiesRouter.get('/:id/praise', async (req, res, next) => {
+  try {
+    const praise = await listPublicPraise(req.params.id);
+    res.json({ praise });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/**
+ * Reader content report — requires the reporter to have actually opened the story
+ * (checked server-side against reading_progress) and is rate-limited to one report
+ * per story per account. See services/contentReportStore.js for the scaled
+ * moderation-mode trigger this feeds into.
+ */
+storiesRouter.post('/:id/report', requireAuth(), async (req, res, next) => {
+  try {
+    const reporterId = getAuthenticatedUserId(req);
+    const { category, reason } = req.body || {};
+    const result = await createContentReport(req.params.id, reporterId, { category, reason });
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }
 });

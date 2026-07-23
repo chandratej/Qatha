@@ -11,6 +11,7 @@ import '../core/services/analytics_service.dart';
 import '../widgets/story_card.dart';
 import '../widgets/story_card_shimmer.dart';
 import '../core/providers/auth_state.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'reader_screen.dart';
 import 'story_detail_screen.dart';
 import '../core/utils/motion.dart';
@@ -30,10 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedGenre;
 
   static const _genres = [
-    (id: null, label: 'All', labelTe: 'అన్నీ'),
-    (id: 'romance', label: 'Romance', labelTe: 'ప్రేమ'),
-    (id: 'family_drama', label: 'Family', labelTe: 'కుటుంబం'),
-    (id: 'suspense', label: 'Suspense', labelTe: 'సస్పెన్స్'),
+    (id: null, label: 'All'),
+    (id: 'romance', label: 'Romance'),
+    (id: 'family_drama', label: 'Family'),
+    (id: 'suspense', label: 'Suspense'),
   ];
 
   @override
@@ -96,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEmpty =
         !_loading && _error == null && _trending.isEmpty && _newReleases.isEmpty;
@@ -145,13 +147,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           if (_newReleases.isNotEmpty) ...[
-                            const SliverToBoxAdapter(
+                            SliverToBoxAdapter(
                               child: Padding(
-                                padding: EdgeInsets.fromLTRB(24, 32, 24, 12),
+                                padding: const EdgeInsets.fromLTRB(24, 32, 24, 12),
                                 child: _SectionHeader(
                                   titleTe: 'కొత్త కథలు',
-                                  titleEn: 'New releases',
-                                  subtitle: 'New releases',
+                                  titleEn: l10n.sectionNewReleases,
+                                  subtitle: l10n.sectionNewReleases,
                                   icon: Icons.fiber_new_rounded,
                                 ),
                               ),
@@ -184,6 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
     AppState appState,
     bool isDark,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
@@ -257,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final g = _genres[i];
                   final selected = _selectedGenre == g.id;
                   return FilterChip(
-                    label: Text(g.label),
+                    label: Text(g.id == null ? l10n.genreFilterAll : g.label),
                     selected: selected,
                     onSelected: (_) => _selectGenre(g.id),
                     selectedColor: KathaColors.gold.withValues(alpha: 0.2),
@@ -278,10 +281,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
             if (_trending.isNotEmpty)
-              const _SectionHeader(
+              _SectionHeader(
                 titleTe: 'ఇప్పుడు ట్రెండింగ్',
-                titleEn: 'Trending now',
-                subtitle: 'Stories readers are loving right now',
+                titleEn: l10n.sectionTrendingNow,
+                subtitle: l10n.sectionTrendingSubtitle,
               ),
             if (_trending.isNotEmpty) const SizedBox(height: 12),
           ],
@@ -350,6 +353,7 @@ class _ContinueReadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -376,7 +380,7 @@ class _ContinueReadingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'కొనసాగించండి · Continue reading',
+                    l10n.buttonContinueReading,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.85),
                         ),
@@ -392,7 +396,7 @@ class _ContinueReadingCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
-                    'Chapter $chapter',
+                    l10n.errorChapterNumber(chapter),
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                           color: Colors.white.withValues(alpha: 0.75),
                         ),

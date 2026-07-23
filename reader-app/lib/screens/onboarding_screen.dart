@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/app_config.dart';
 import '../core/theme/katha_theme.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'app_shell.dart';
 import '../core/utils/motion.dart';
 
@@ -29,24 +30,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pageController = PageController();
   int _page = 0;
 
-  final _pages = const [
-    _OnboardPage(
-      icon: Icons.auto_stories_rounded,
-      title: 'తెలుగు కథలు',
-      subtitle: 'Serialized fiction in beautiful Telugu typography. Read on your commute, offline.',
-    ),
-    _OnboardPage(
-      icon: Icons.volunteer_activism_rounded,
-      title: 'No ads. No coins.',
-      subtitle:
-          '₹${AppConfig.priceMonthly}/month unlimited. ${AppConfig.creatorSharePct}% base author share — up to ${AppConfig.maxCreatorSharePct}% at Apex Story Trust.',
-    ),
-    _OnboardPage(
-      icon: Icons.favorite_rounded,
-      title: 'Support creators',
-      subtitle: 'Transparent earnings. Real stories. Your subscription keeps writers writing.',
-    ),
-  ];
+  List<_OnboardPage> get _pages {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      _OnboardPage(
+        icon: Icons.auto_stories_rounded,
+        title: l10n.onboardingWelcomeTitle,
+        subtitle: l10n.onboardingPage1Subtitle,
+      ),
+      _OnboardPage(
+        icon: Icons.volunteer_activism_rounded,
+        title: l10n.onboardingPage2Title,
+        subtitle: l10n.onboardingPage2Subtitle(
+          AppConfig.priceMonthly,
+          AppConfig.creatorSharePct,
+          AppConfig.maxCreatorSharePct,
+        ),
+      ),
+      _OnboardPage(
+        icon: Icons.favorite_rounded,
+        title: l10n.onboardingPage3Title,
+        subtitle: l10n.onboardingPage3Subtitle,
+      ),
+    ];
+  }
 
   Future<void> _finish() async {
     await OnboardingScreen.markComplete();
@@ -63,26 +70,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final pages = _pages;
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             Align(
               alignment: Alignment.topRight,
-              child: TextButton(onPressed: _finish, child: const Text('Skip')),
+              child: TextButton(onPressed: _finish, child: Text(l10n.buttonSkip)),
             ),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _page = i),
-                itemBuilder: (_, i) => _pages[i],
+                itemBuilder: (_, i) => pages[i],
               ),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
-                _pages.length,
+                pages.length,
                 (i) => AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -90,7 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   height: 8,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    color: _page == i ? KathaColors.gold : KathaColors.inkMuted.withValues(alpha: 0.3),
+                    color: _page == i ? KathaColors.gold : KathaTheme.mutedInk(context).withValues(alpha: 0.3),
                   ),
                 ),
               ),
@@ -100,7 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: FilledButton(
                 onPressed: () {
-                  if (_page < _pages.length - 1) {
+                  if (_page < pages.length - 1) {
                     _pageController.nextPage(duration: const Duration(milliseconds: 400), curve: Curves.easeOut);
                   } else {
                     _finish();
@@ -110,7 +119,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   backgroundColor: KathaColors.gold,
                   minimumSize: const Size(double.infinity, 52),
                 ),
-                child: Text(_page < _pages.length - 1 ? 'Next' : 'Start Reading'),
+                child: Text(_page < pages.length - 1 ? l10n.buttonNext : l10n.buttonStartReading),
               ),
             ),
           ],

@@ -13,7 +13,13 @@ import {
 } from './peerReviewStore.js';
 import { notifyAppealSubmitted, notifyAppealResolved } from './notificationsStore.js';
 
-const VALID_TYPES = new Set(['review_dispute', 'reviewer_conduct', 'appeal', 'fraud_flag']);
+const VALID_TYPES = new Set([
+  'review_dispute', 'reviewer_conduct', 'appeal', 'fraud_flag',
+  // Reader feedback/praise/moderation redesign (content_report = hate/controversial editorial
+  // path; copyright_claim = notice-and-counter-notice path; content_report_appeal = the single
+  // appeal step before either path's negative verdict becomes permanent).
+  'content_report', 'copyright_claim', 'content_report_appeal',
+]);
 const VALID_STATUSES = new Set(['open', 'investigating', 'resolved', 'dismissed']);
 const OPEN_STATUSES = new Set(['open', 'investigating']);
 

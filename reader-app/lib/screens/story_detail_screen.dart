@@ -8,6 +8,7 @@ import '../core/services/launch_offer_service.dart';
 import '../core/services/offline_cache.dart';
 import '../core/theme/katha_theme.dart';
 import '../widgets/error_state.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'reader_screen.dart';
 import '../core/utils/motion.dart';
 
@@ -24,6 +25,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
   StoryDetail? _detail;
   bool _loading = true;
   String? _error;
+  List<Map<String, dynamic>> _praise = const [];
 
   @override
   void initState() {
@@ -54,10 +56,15 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
         api: api,
         count: 3,
       );
+
+      // Author-curated public testimonials — never blocks the main load (§3.2).
+      api.fetchPublicPraise(widget.storyId).then((praise) {
+        if (mounted) setState(() => _praise = praise);
+      });
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Unable to load story';
+          _error = AppLocalizations.of(context)!.storyDetailLoadError;
           _loading = false;
         });
       }
@@ -65,12 +72,13 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
   }
 
   String _releaseLabel() {
+    final l10n = AppLocalizations.of(context)!;
     final s = _detail!.story;
     switch (s.genre) {
       case 'romance':
-        return 'Every Monday, 6:00 PM';
+        return l10n.storyDetailReleaseRomanceSchedule;
       default:
-        return 'New chapters weekly';
+        return l10n.storyDetailReleaseWeekly;
     }
   }
 
@@ -88,12 +96,16 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
     if (_error != null || _detail == null) {
       return Scaffold(
         appBar: AppBar(),
-        body: ErrorState(message: _error ?? 'Story not found', onRetry: _load),
+        body: ErrorState(
+          message: _error ?? AppLocalizations.of(context)!.storyDetailNotFound,
+          onRetry: _load,
+        ),
       );
     }
 
     final story = _detail!.story;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       body: CustomScrollView(
@@ -139,17 +151,25 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _InfoChip(
                         icon: Icons.category_outlined,
                         label: story.genreLabel,
                       ),
-                      const SizedBox(width: 8),
                       _InfoChip(
                         icon: Icons.people_outline,
                         label: story.readersLabel,
                       ),
+                      // Content maturity signal (§2.4) — visible trust signal, not a
+                      // hard age-gate; only shown when it deviates from "General".
+                      if (story.isMatureThemed)
+                        _InfoChip(
+                          icon: Icons.info_outline,
+                          label: l10n.maturityMature,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -175,7 +195,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Next chapter',
+                                l10n.storyDetailNextChapterLabel,
                                 style: Theme.of(context).textTheme.labelMedium,
                               ),
                               Text(
@@ -195,9 +215,43 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
+                  if (_praise.isNotEmpty) ...[
+                    const SizedBox(height: 28),
+                    Text(
+                      l10n.storyDetailWhatReadersSay,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 12),
+                    // Individual, author-curated testimonials — never an aggregate
+                    // score (§3.2). Capped so this never reads as a review wall.
+                    ..._praise.take(5).map(
+                          (p) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? KathaColors.darkSurface
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: KathaColors.gold.withValues(alpha: 0.15),
+                                ),
+                              ),
+                              child: Text(
+                                '“${p['body'] ?? ''}”',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(fontStyle: FontStyle.italic),
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
                   const SizedBox(height: 28),
                   Text(
-                    'Chapters',
+                    l10n.storyDetailChaptersHeading,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 12),
@@ -208,9 +262,16 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
           Consumer<AuthState>(
             builder: (context, auth, _) {
               final cfg = LaunchOfferService.instance.config;
-              final freeThrough = cfg.freeChapters;
-              final otpGate = cfg.otpGateChapter;
-              final subGate = cfg.subscriptionGateChapter;
+              // Per-story sample size (proven vs. unproven auto-tiering — see
+              // freeChapterThreshold.js) always wins over the platform default;
+              // OTP/subscription gates scale off it the same way the backend
+              // does in accessControl.js, so lock icons never lie about what
+              // the server will actually enforce.
+              final freeThrough = story.resolvedFreeChapters ?? cfg.freeChapters;
+              final otpGate = freeThrough + 1;
+              final subGate = [cfg.subscriptionGateChapter, freeThrough + 3].reduce(
+                (a, b) => a > b ? a : b,
+              );
               final signedIn = auth.isLoggedIn;
               final subscribed = auth.isSubscribed || auth.isOnLaunchTrial;
 
@@ -227,23 +288,30 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                   final IconData? trailingIcon;
                   final Color trailingColor;
                   if (isPreviewFree) {
-                    accessLabel =
-                        'Free · ${ch.viewCount} readers · ${ch.readTimeMinutes} min';
+                    accessLabel = l10n.storyDetailChapterAccessFree(
+                      ch.viewCount,
+                      ch.readTimeMinutes,
+                    );
                     trailingIcon = null;
                     trailingColor = KathaColors.gold;
                   } else if (needsSignIn) {
-                    accessLabel =
-                        'Free · Sign in to read · ${ch.readTimeMinutes} min';
+                    accessLabel = l10n.storyDetailChapterAccessSignIn(
+                      ch.readTimeMinutes,
+                    );
                     trailingIcon = Icons.lock_outline;
-                    trailingColor = KathaColors.inkMuted;
+                    trailingColor = KathaTheme.mutedInk(context);
                   } else if (needsSub) {
-                    accessLabel =
-                        '${ch.viewCount} readers · ${ch.readTimeMinutes} min · Members';
+                    accessLabel = l10n.storyDetailChapterAccessMembers(
+                      ch.viewCount,
+                      ch.readTimeMinutes,
+                    );
                     trailingIcon = Icons.workspace_premium;
-                    trailingColor = KathaColors.inkMuted;
+                    trailingColor = KathaTheme.mutedInk(context);
                   } else {
-                    accessLabel =
-                        '${ch.viewCount} readers · ${ch.readTimeMinutes} min';
+                    accessLabel = l10n.storyDetailChapterAccessDefault(
+                      ch.viewCount,
+                      ch.readTimeMinutes,
+                    );
                     trailingIcon = null;
                     trailingColor = KathaColors.gold;
                   }
@@ -260,7 +328,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                       ),
                     ),
                     title: Text(
-                      ch.title ?? 'Chapter $n',
+                      ch.title ?? l10n.errorChapterNumber(n),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -308,7 +376,7 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
               backgroundColor: KathaColors.gold,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            child: const Text('Start Reading — Chapter 1'),
+            child: Text(l10n.storyDetailStartReadingChapter1),
           ),
         ),
       ),

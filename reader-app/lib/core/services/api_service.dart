@@ -10,14 +10,23 @@ class ApiException implements Exception {
   final String code;
   final String userMessage;
   final String action;
+  // Free-chapter cohort/derivation tag attached to PAYWALL_REQUIRED responses, so callers can
+  // report paywall/conversion funnel data by cohort (free-chapter-threshold Req 3.3/3.4).
+  final String? freeChapterSource;
 
-  ApiException({required this.code, required this.userMessage, required this.action});
+  ApiException({
+    required this.code,
+    required this.userMessage,
+    required this.action,
+    this.freeChapterSource,
+  });
 
   factory ApiException.fromJson(Map<String, dynamic> json) {
     return ApiException(
       code: json['code'] as String? ?? 'UNKNOWN',
       userMessage: json['user_message'] as String? ?? 'Something went wrong',
       action: json['action'] as String? ?? 'RETRY',
+      freeChapterSource: json['free_chapter_source'] as String?,
     );
   }
 }
@@ -216,6 +225,31 @@ class ApiService {
       }),
     );
     if (res.statusCode != 201) throw _parseError(res);
+  }
+
+  /// Author-curated public testimonials for a story — never an aggregate score (§3.2).
+  Future<List<Map<String, dynamic>>> fetchPublicPraise(String storyId) async {
+    final res = await http
+        .get(Uri.parse('$baseUrl/stories/$storyId/praise'), headers: _headers)
+        .timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) return const [];
+    final decoded = jsonDecode(res.body) as Map<String, dynamic>;
+    return (decoded['praise'] as List? ?? []).cast<Map<String, dynamic>>();
+  }
+
+  /// Reader content report — requires the account to have opened the story and is
+  /// rate-limited to one report per story per account (enforced server-side, §3.3).
+  Future<void> reportStory({
+    required String storyId,
+    required String category,
+    required String reason,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/stories/$storyId/report'),
+      headers: _headers,
+      body: jsonEncode({'category': category, 'reason': reason}),
+    );
+    if (res.statusCode != 200) throw _parseError(res);
   }
 
   /// Lightweight readiness probe against the Node API (database-backed catalog).

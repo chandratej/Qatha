@@ -1,0 +1,118 @@
+-- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+SET search_path TO public, extensions;
+
+-- 043: Reader feedback/praise/moderation redesign — abuse-resistant reporting, escrow
+-- (not clawback) during moderation, and a separate copyright notice-and-counter-notice path.
+-- See Worklog/23 JUL 2026/katha-feedback-praise-moderation-prompt.md
+
+-- Extend moderation_cases with the two new report-driven case types this doc introduces.
+-- (review_dispute / reviewer_conduct / appeal / fraud_flag already existed for peer-review ops.)
+ALTER TABLE public.moderation_cases DROP CONSTRAINT IF EXISTS moderation_cases_case_type_check;
+ALTER TABLE public.moderation_cases ADD CONSTRAINT moderation_cases_case_type_check
+  CHECK (case_type IN (
+    'review_dispute', 'reviewer_conduct', 'appeal', 'fraud_flag',
+    'content_report', 'copyright_claim', 'content_report_appeal'
+  ));
+-- story_id for content_report/copyright_claim cases lives in metadata->>'story_id' —
+-- request_id stays FK'd to peer_review_requests only, so it can't carry a story reference.
+
+-- Reader content reports — Req 3.3. Reporter must have opened at least one chapter of the
+-- story (checked in application code against reading_progress before insert); rate-limited
+-- to one report per story per account via the unique constraint below.
+CREATE TABLE IF NOT EXISTS public.content_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  story_id UUID NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
+  reporter_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL CHECK (category IN ('hate_controversial', 'copyright')),
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (story_id, reporter_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_reports_story ON public.content_reports (story_id, created_at DESC);
+
+ALTER TABLE public.content_reports ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS content_reports_service ON public.content_reports;
+CREATE POLICY content_reports_service ON public.content_reports
+  FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+DROP POLICY IF EXISTS content_reports_reporter_read ON public.content_reports;
+CREATE POLICY content_reports_reporter_read ON public.content_reports
+  FOR SELECT USING (reporter_id = auth.uid());
+
+-- A story's moderation window — opened once the scaled report threshold trips (or a
+-- copyright claim is filed), closed on verdict. Story stays visible/earning throughout;
+-- see story_earnings_escrow for the money side (escrow, never a clawback of prior payouts).
+CREATE TABLE IF NOT EXISTS public.story_moderation_windows (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  story_id UUID NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
+  moderation_case_id UUID REFERENCES public.moderation_cases(id) ON DELETE SET NULL,
+  path TEXT NOT NULL CHECK (path IN ('hate_controversial', 'copyright')),
+  status TEXT NOT NULL DEFAULT 'open'
+    CHECK (status IN ('open', 'appeal_pending', 'cleared', 'confirmed_violation', 'archived')),
+  opened_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  verdict_at TIMESTAMPTZ,
+  verdict_notes TEXT,
+  appeal_deadline_at TIMESTAMPTZ,
+  archived_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_story_moderation_windows_story
+  ON public.story_moderation_windows (story_id, opened_at DESC);
+CREATE INDEX IF NOT EXISTS idx_story_moderation_windows_open
+  ON public.story_moderation_windows (status) WHERE status IN ('open', 'appeal_pending');
+
+ALTER TABLE public.story_moderation_windows ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS story_moderation_windows_service ON public.story_moderation_windows;
+CREATE POLICY story_moderation_windows_service ON public.story_moderation_windows
+  FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- Copyright notice-and-counter-notice detail, one row per moderation window on the copyright path.
+CREATE TABLE IF NOT EXISTS public.copyright_claims (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  moderation_window_id UUID NOT NULL REFERENCES public.story_moderation_windows(id) ON DELETE CASCADE,
+  claimant_contact TEXT NOT NULL,
+  original_work_description TEXT NOT NULL,
+  infringing_content_description TEXT NOT NULL,
+  response_window_days INT NOT NULL DEFAULT 14,
+  response_deadline_at TIMESTAMPTZ NOT NULL,
+  author_notified_at TIMESTAMPTZ,
+  author_response TEXT,
+  author_response_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.copyright_claims ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS copyright_claims_service ON public.copyright_claims;
+CREATE POLICY copyright_claims_service ON public.copyright_claims
+  FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- Escrow ledger — Req 3.4. Earnings accrued while a story is in an open moderation window are
+-- recorded here, NOT in the creator's payable balance. On clear: released to payable. On confirmed
+-- violation (post-appeal): forfeited, never disbursed. This is never a reversal of money already
+-- paid — rows here represent amounts that were never released to the creator in the first place.
+CREATE TABLE IF NOT EXISTS public.story_earnings_escrow (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  story_id UUID NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
+  moderation_window_id UUID NOT NULL REFERENCES public.story_moderation_windows(id) ON DELETE CASCADE,
+  amount_inr NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'escrow' CHECK (status IN ('escrow', 'released', 'forfeited')),
+  accrual_period_start TIMESTAMPTZ NOT NULL DEFAULT now(),
+  accrual_period_end TIMESTAMPTZ,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_story_earnings_escrow_story
+  ON public.story_earnings_escrow (story_id, status);
+
+ALTER TABLE public.story_earnings_escrow ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS story_earnings_escrow_service ON public.story_earnings_escrow;
+CREATE POLICY story_earnings_escrow_service ON public.story_earnings_escrow
+  FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
+
+-- Praise moderation: distinguish auto-filtered spam from the author's own public/private choice.
+-- (reader_feedback.status already carries 'pending' | 'published' | 'resolved' | 'archived' —
+-- flagged praise is archived with a reason so it never reaches the author's inbox.)
+ALTER TABLE public.reader_feedback
+  ADD COLUMN IF NOT EXISTS moderation_flagged BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS moderation_reason TEXT;

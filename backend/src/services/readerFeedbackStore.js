@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
 import { getCreatorSeedStories, DEMO_CREATOR_ID } from '../data/seed.js';
+import { moderateContent } from './moderation/index.js';
 
 /** @type {Map<string, object[]>} */
 const feedbackDb = new Map();
@@ -58,7 +59,21 @@ export async function createReaderFeedback(storyId, readerId, body) {
     feedback_type: feedbackType,
     body: text,
     status: 'pending',
+    moderation_flagged: false,
+    moderation_reason: null,
   };
+
+  // Praise is author-moderated (public/private), but must clear basic spam/abuse filtering
+  // first — it never reaches the author's inbox flagged (Req 3.2). Private feedback (any
+  // other type) skips this: it's never public, so brigading it has no payoff.
+  if (feedbackType === 'praise') {
+    const check = await moderateContent(text);
+    if (!check.isSafe) {
+      row.status = 'archived';
+      row.moderation_flagged = true;
+      row.moderation_reason = check.flaggedReason || 'Flagged by automated spam/abuse filter';
+    }
+  }
 
   if (isMockMode()) {
     const item = {
@@ -76,6 +91,29 @@ export async function createReaderFeedback(storyId, readerId, body) {
   const { data, error } = await supabase.from('reader_feedback').insert(row).select('*').single();
   if (error) throw new Error(error.message);
   return data;
+}
+
+/** Published praise only — public testimonial surface for the reader app (Req 3.2). No
+ * aggregate score is ever computed from this; each item is shown individually, author-curated. */
+export async function listPublicPraise(storyId, { limit = 10 } = {}) {
+  if (!storyId) throw new Error('story_id required');
+
+  if (isMockMode()) {
+    return (feedbackDb.get(storyId) || [])
+      .filter((r) => r.feedback_type === 'praise' && r.status === 'published')
+      .slice(0, limit);
+  }
+
+  const { data, error } = await supabase
+    .from('reader_feedback')
+    .select('id, chapter_number, body, created_at')
+    .eq('story_id', storyId)
+    .eq('feedback_type', 'praise')
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return data || [];
 }
 
 const VALID_STATUSES = new Set(['pending', 'published', 'resolved', 'archived']);

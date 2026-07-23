@@ -9,6 +9,12 @@ class Story {
   final int viewsThisWeek;
   final String authorName;
   final String? authorAvatar;
+  final String ageRating;
+  /// Per-story free-chapter sample size, derived server-side from creator-band
+  /// data (or a manual override) — see freeChapterThreshold.js. Null when the
+  /// backend hasn't resolved one (e.g. an older cached response).
+  final int? resolvedFreeChapters;
+  final String? freeChapterSource;
 
   const Story({
     required this.id,
@@ -21,6 +27,9 @@ class Story {
     this.viewsThisWeek = 0,
     required this.authorName,
     this.authorAvatar,
+    this.ageRating = 'all_ages',
+    this.resolvedFreeChapters,
+    this.freeChapterSource,
   });
 
   /// Defensive parse — one bad row must not kill the whole feed.
@@ -50,8 +59,21 @@ class Story {
           ? (creator!['pen_name'] as String)
           : 'Author',
       authorAvatar: creator?['avatar_url'] as String?,
+      ageRating: (json['age_rating'] as String?)?.trim().isNotEmpty == true
+          ? (json['age_rating'] as String)
+          : 'all_ages',
+      resolvedFreeChapters: json['resolved_free_chapters'] != null
+          ? _asInt(json['resolved_free_chapters'])
+          : null,
+      freeChapterSource: json['free_chapter_source'] as String?,
     );
   }
+
+  /// Content maturity signal (§2.4) — a visible trust signal, not a hard
+  /// age-gate. Only surfaced when it deviates from the default so the tag
+  /// stays non-intrusive rather than labeling every card "General".
+  bool get isMatureThemed => ageRating == 'mature';
+  String get maturityLabel => isMatureThemed ? 'Mature Themes' : 'General';
 
   static int _asInt(dynamic v) {
     if (v is int) return v;

@@ -7,7 +7,9 @@ import '../core/services/analytics_service.dart';
 import '../core/services/api_service.dart';
 import '../core/services/offline_cache.dart';
 import '../core/services/launch_offer_service.dart';
+import '../core/services/notification_permission_service.dart';
 import '../core/services/reading_progress_service.dart';
+import '../core/services/reading_session_service.dart';
 import '../core/services/share_service.dart';
 import '../core/config/paywall_copy.dart';
 import '../core/services/razorpay_checkout.dart';
@@ -15,6 +17,7 @@ import '../core/services/subscription_service.dart';
 import '../core/theme/katha_theme.dart';
 import '../widgets/chapter_body.dart';
 import '../widgets/error_state.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'reader_auth_screen.dart';
 
 class ReaderScreen extends StatefulWidget {
@@ -47,12 +50,35 @@ class _ReaderScreenState extends State<ReaderScreen> {
   ApiException? _apiError;
   bool _streakPinged = false;
 
+  // Distraction-free chrome (§2.9): app bar, progress rail, and chapter-nav
+  // bar fade to minimal on scroll-down and reveal on scroll-up or a tap.
+  bool _chromeVisible = true;
+  double _chromeLastOffset = 0;
+  static const _chromeScrollThreshold = 8.0;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _scrollController.addListener(_onChromeScroll);
     _loadChapter();
   }
+
+  void _onChromeScroll() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    final delta = offset - _chromeLastOffset;
+    if (delta.abs() < _chromeScrollThreshold) return;
+    final goingDown = delta > 0;
+    _chromeLastOffset = offset;
+    // Never hide the chrome right at the top — nothing to gain from it there.
+    final shouldShow = !goingDown || offset < 80;
+    if (shouldShow != _chromeVisible) {
+      setState(() => _chromeVisible = shouldShow);
+    }
+  }
+
+  void _toggleChrome() => setState(() => _chromeVisible = !_chromeVisible);
 
   ApiService _api(BuildContext context) =>
       ApiService.fromAuth(context.read<AuthState>());
@@ -81,6 +107,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           chapter: widget.chapterNumber,
         );
         _restoreScrollPosition();
+        _maybeShowEyeBreakReminder();
       }
       AnalyticsService.instance.chapterOpened(
         widget.storyId,
@@ -138,6 +165,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           chapter: widget.chapterNumber,
         );
         _restoreScrollPosition();
+        _maybeShowEyeBreakReminder();
       }
 
       AnalyticsService.instance.chapterOpened(
@@ -161,14 +189,25 @@ class _ReaderScreenState extends State<ReaderScreen> {
           AnalyticsService.instance.otpGateShown(widget.storyId);
           _showOtpGate();
         } else if (e.code == 'PAYWALL_REQUIRED') {
-          AnalyticsService.instance.paywallShown(widget.storyId);
+          AnalyticsService.instance.paywallShown(
+            widget.storyId,
+            freeChapterSource: e.freeChapterSource,
+          );
           _showPaywall();
+          // §2.3 — reaching the paywall means this reader just finished their
+          // entire free sample (their "first free story arc"), the moment the
+          // spec calls out as a deferred-permission trigger. One-time only.
+          NotificationPermissionService.instance
+              .maybeRequestOnFirstFreeArcComplete(
+            context,
+            context.read<AppState>(),
+          );
         }
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'No connection';
+          _error = AppLocalizations.of(context)!.errorNoConnection;
           _loading = false;
         });
       }
@@ -251,6 +290,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         _api(context).pingStreak().then((streakData) {
           if (!mounted || streakData == null) return;
           if (streakData['milestone_unlocked'] == true) {
+            final l10n = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Row(
@@ -267,13 +307,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Streak Unlocked!',
+                            l10n.readerStreakUnlockedTitle,
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(color: Colors.white, fontSize: 16),
                           ),
                           Text(
                             streakData['message'] ??
-                                'Keep reading to maintain your streak.',
+                                l10n.readerStreakDefaultMessage,
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
@@ -307,6 +347,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
+    final l10n = AppLocalizations.of(context)!;
     // Reading canvas tone is a per-reader choice, independent of app chrome
     // brightness — see AppState.readingTone. The app-bar icon below cycles it
     // directly since that's the control readers actually expect a "mode
@@ -360,68 +401,93 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 pinned: true,
                 expandedHeight: 120,
                 backgroundColor: KathaTheme.readingBackground(tone),
-                leading: IconButton(
-                  icon: Icon(Icons.arrow_back, color: ink),
-                  onPressed: () => Navigator.pop(context),
+                leading: _ChromeFade(
+                  visible: _chromeVisible,
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back, color: ink),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ),
                 actions: [
-                  IconButton(
-                    icon: Icon(Icons.share_outlined, color: ink),
-                    onPressed: () => ShareService.shareChapter(
-                      storyId: widget.storyId,
-                      storyTitle: widget.storyTitle,
-                      chapterNumber: widget.chapterNumber,
-                      chapterTitle: chapter.title,
+                  _ChromeFade(
+                    visible: _chromeVisible,
+                    child: IconButton(
+                      icon: Icon(Icons.share_outlined, color: ink),
+                      onPressed: () => ShareService.shareChapter(
+                        storyId: widget.storyId,
+                        storyTitle: widget.storyTitle,
+                        chapterNumber: widget.chapterNumber,
+                        chapterTitle: chapter.title,
+                      ),
+                      tooltip: l10n.readerShareTooltip,
                     ),
-                    tooltip: 'Share this chapter',
                   ),
-                  IconButton(
-                    icon: Icon(Icons.rate_review_outlined, color: ink),
-                    onPressed: _showFeedbackSheet,
-                    tooltip: 'Send feedback to the author',
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.text_fields, color: ink),
-                    onPressed: _showReadingOptions,
-                    tooltip: 'Reading options (tone, size, spacing, alignment)',
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      appState.fontScale >= 5
-                          ? Icons.text_decrease
-                          : Icons.text_increase,
-                      color: ink,
+                  _ChromeFade(
+                    visible: _chromeVisible,
+                    child: IconButton(
+                      icon: Icon(Icons.rate_review_outlined, color: ink),
+                      onPressed: _showFeedbackSheet,
+                      tooltip: 'Send feedback to the author',
                     ),
-                    onPressed: () => appState.setFontScale(
-                      appState.fontScale >= 5 ? 1 : appState.fontScale + 1,
-                    ),
-                    tooltip: 'Quick font size',
                   ),
-                  IconButton(
-                    icon: Icon(_toneIcon(tone), color: ink),
-                    onPressed: () => appState.setReadingTone(_nextTone(tone)),
-                    tooltip:
-                        'Reading tone: ${KathaTheme.readingToneLabel(tone)} (tap to cycle)',
+                  _ChromeFade(
+                    visible: _chromeVisible,
+                    child: IconButton(
+                      icon: Icon(Icons.text_fields, color: ink),
+                      onPressed: _showReadingOptions,
+                      tooltip: l10n.readerReadingOptionsTooltip,
+                    ),
+                  ),
+                  _ChromeFade(
+                    visible: _chromeVisible,
+                    child: IconButton(
+                      icon: Icon(
+                        appState.fontScale >= 5
+                            ? Icons.text_decrease
+                            : Icons.text_increase,
+                        color: ink,
+                      ),
+                      onPressed: () => appState.setFontScale(
+                        appState.fontScale >= 5 ? 1 : appState.fontScale + 1,
+                      ),
+                      tooltip: l10n.readerQuickFontSizeTooltip,
+                    ),
+                  ),
+                  _ChromeFade(
+                    visible: _chromeVisible,
+                    child: IconButton(
+                      icon: Icon(_toneIcon(tone), color: ink),
+                      onPressed: () => appState.setReadingTone(_nextTone(tone)),
+                      tooltip: l10n.readerToneTooltip(
+                        KathaTheme.readingToneLabel(tone),
+                      ),
+                    ),
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(
                   titlePadding: const EdgeInsets.only(left: 56, bottom: 16),
-                  title: Text(
-                    widget.storyTitle,
-                    style: TextStyle(fontSize: 16, color: ink),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  title: _ChromeFade(
+                    visible: _chromeVisible,
+                    child: Text(
+                      widget.storyTitle,
+                      style: TextStyle(fontSize: 16, color: ink),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ),
               SliverToBoxAdapter(
-                child: Padding(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: _toggleChrome,
+                  child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 100),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Chapter ${chapter.chapterNumber}',
+                        l10n.errorChapterNumber(chapter.chapterNumber),
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
                               color: KathaColors.gold,
@@ -447,7 +513,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${chapter.viewCount} readers · ${chapter.estimatedReadTimeMinutes} min read',
+                            l10n.readerViewsAndTime(
+                              chapter.viewCount,
+                              chapter.estimatedReadTimeMinutes,
+                            ),
                             style: Theme.of(
                               context,
                             ).textTheme.labelMedium?.copyWith(color: muted),
@@ -466,7 +535,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Cached — ready to read offline',
+                                l10n.readerCachedOffline,
                                 style: Theme.of(context).textTheme.labelMedium
                                     ?.copyWith(color: KathaColors.goldDark),
                               ),
@@ -484,9 +553,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           textAlign: appState.isLeftAlign
                               ? TextAlign.left
                               : TextAlign.justify,
+                          easyReading: appState.easyReading,
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
               ),
@@ -496,24 +567,31 @@ class _ReaderScreenState extends State<ReaderScreen> {
             top: 0,
             left: 0,
             right: 0,
-            child: LinearProgressIndicator(
-              value: _scrollProgress,
-              backgroundColor: Colors.transparent,
-              color: KathaColors.gold,
-              minHeight: 2,
+            child: _ChromeFade(
+              visible: _chromeVisible,
+              child: LinearProgressIndicator(
+                value: _scrollProgress,
+                backgroundColor: Colors.transparent,
+                color: KathaColors.gold,
+                minHeight: 2,
+              ),
             ),
           ),
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: _ChapterNavBar(
-              currentChapter: widget.chapterNumber,
-              tone: tone,
-              onPrevious: widget.chapterNumber > 1
-                  ? () => _navigateChapter(widget.chapterNumber - 1)
-                  : null,
-              onNext: () => _navigateChapter(widget.chapterNumber + 1),
+            child: _ChromeFade(
+              visible: _chromeVisible,
+              slideOut: true,
+              child: _ChapterNavBar(
+                currentChapter: widget.chapterNumber,
+                tone: tone,
+                onPrevious: widget.chapterNumber > 1
+                    ? () => _navigateChapter(widget.chapterNumber - 1)
+                    : null,
+                onNext: () => _navigateChapter(widget.chapterNumber + 1),
+              ),
             ),
           ),
         ],
@@ -552,9 +630,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => _GateSheet(
-        title: 'Sign in to continue',
-        subtitle: 'Chapter 4 and beyond require a free account',
-        actionLabel: 'Continue with Google',
+        title: AppLocalizations.of(sheetCtx)!.readerOtpGateTitle,
+        subtitle: AppLocalizations.of(sheetCtx)!.readerOtpGateSubtitle,
+        actionLabel: AppLocalizations.of(sheetCtx)!.buttonSignInWithGoogle,
         onAction: () async {
           Navigator.pop(sheetCtx);
           final ok = await Navigator.push<bool>(
@@ -583,13 +661,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => _GateSheet(
         title: trialEnded
-            ? 'Your launch trial has ended'
-            : 'Unlock unlimited reading',
+            ? AppLocalizations.of(sheetCtx)!.readerPaywallTrialEndedTitle
+            : AppLocalizations.of(sheetCtx)!.readerPaywallUnlockTitle,
         subtitle: PaywallCopy.subtitle(
+          sheetCtx,
           hasLaunchTrial: offer.hasLaunchTrial && !trialEnded,
           trialDays: offer.trialDays,
         ),
-        actionLabel: 'Subscribe · ${PaywallCopy.priceMonthlyLabel}',
+        actionLabel: AppLocalizations.of(sheetCtx)!.readerPaywallSubscribeAction(
+          PaywallCopy.priceMonthlyLabel(sheetCtx),
+        ),
         isPremium: true,
         loading: false,
         onAction: () async {
@@ -600,9 +681,34 @@ class _ReaderScreenState extends State<ReaderScreen> {
     );
   }
 
+  /// Opt-in eye-break reminder (§2.5) — only ever checked at a chapter boundary
+  /// (right after a chapter finishes loading), never mid-chapter/mid-scroll.
+  void _maybeShowEyeBreakReminder() {
+    final minutes = context.read<AppState>().eyeBreakMinutes;
+    if (minutes <= 0) return;
+    final session = ReadingSessionService.instance;
+    if (session.elapsedMinutes() < minutes) return;
+    session.resetWindow();
+
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 6),
+        content: Text(l10n.readerEyeBreakReminder),
+        action: SnackBarAction(
+          label: l10n.buttonDismiss,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
   void _showFeedbackSheet() {
     final controller = TextEditingController();
     var submitting = false;
+    // Feedback is always private to the author; Praise is author-moderated and may be
+    // shown publicly as a testimonial — never a public star rating either way (§3.1/3.2).
+    var isPraise = false;
 
     showModalBottomSheet(
       context: context,
@@ -620,7 +726,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Feedback for the author',
+                isPraise ? 'Praise for the author' : 'Feedback for the author',
                 style: Theme.of(ctx).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
@@ -628,14 +734,33 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 'Chapter ${widget.chapterNumber} · ${widget.storyTitle}',
                 style: Theme.of(ctx).textTheme.labelMedium,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Private feedback')),
+                  ButtonSegment(value: true, label: Text('Praise')),
+                ],
+                selected: {isPraise},
+                onSelectionChanged: (s) =>
+                    setSheetState(() => isPraise = s.first),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                isPraise
+                    ? 'Only visible to the author — they choose whether to show it publicly as a testimonial.'
+                    : 'Always private. Never shown to other readers.',
+                style: Theme.of(ctx).textTheme.labelMedium,
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: controller,
                 maxLines: 4,
                 maxLength: 500,
-                decoration: const InputDecoration(
-                  hintText: 'What did you think of this chapter?',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  hintText: isPraise
+                      ? 'What did you love about this chapter?'
+                      : 'What did you think of this chapter?',
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 12),
@@ -662,13 +787,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               storyId: widget.storyId,
                               chapterNumber: widget.chapterNumber,
                               body: text,
+                              feedbackType:
+                                  isPraise ? 'praise' : 'written_review',
                             );
                             if (!ctx.mounted) return;
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'Thank you — your feedback was sent to the author.',
+                                  isPraise
+                                      ? 'Thank you — your praise was sent to the author.'
+                                      : 'Thank you — your feedback was sent to the author.',
                                 ),
                               ),
                             );
@@ -699,9 +828,153 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Send feedback'),
+                      : Text(isPraise ? 'Send praise' : 'Send feedback'),
                 ),
               ),
+              const SizedBox(height: 4),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showReportSheet();
+                  },
+                  child: const Text('Report this story instead'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReportSheet() {
+    final controller = TextEditingController();
+    var submitting = false;
+    var category = 'hate_controversial';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: StatefulBuilder(
+          builder: (ctx, setSheetState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Report this story', style: Theme.of(ctx).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text(
+                'Reports go to Katha\'s moderation team, not the author. '
+                'The story keeps earning while it\'s reviewed — nothing is taken '
+                'down on a single report.',
+                style: Theme.of(ctx).textTheme.labelMedium,
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'hate_controversial',
+                    label: Text('Hate / harmful content'),
+                  ),
+                  ButtonSegment(
+                    value: 'copyright',
+                    label: Text('Copyright'),
+                  ),
+                ],
+                selected: {category},
+                onSelectionChanged: (s) =>
+                    setSheetState(() => category = s.first),
+              ),
+              const SizedBox(height: 12),
+              if (category == 'copyright')
+                Text(
+                  'Copyright claims go through a separate notice process — please use '
+                  'the web copyright-claim form so we can collect the required details.',
+                  style: Theme.of(ctx).textTheme.labelMedium,
+                )
+              else ...[
+                TextField(
+                  controller: controller,
+                  maxLines: 4,
+                  maxLength: 500,
+                  decoration: const InputDecoration(
+                    hintText: 'What\'s the issue? (10+ characters)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final text = controller.text.trim();
+                            if (text.length < 10) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Provide a reason (10+ characters).',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            setSheetState(() => submitting = true);
+                            try {
+                              await _api(context).reportStory(
+                                storyId: widget.storyId,
+                                category: category,
+                                reason: text,
+                              );
+                              if (!ctx.mounted) return;
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Report submitted — thank you for helping keep Katha safe.',
+                                  ),
+                                ),
+                              );
+                            } on ApiException catch (e) {
+                              setSheetState(() => submitting = false);
+                              if (!ctx.mounted) return;
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(content: Text(e.userMessage)),
+                              );
+                            } catch (_) {
+                              setSheetState(() => submitting = false);
+                              if (!ctx.mounted) return;
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Could not submit the report. Try again.',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Submit report'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -716,20 +989,22 @@ class _ReaderScreenState extends State<ReaderScreen> {
       // below actually re-highlights on tap instead of only affecting the
       // reader screen behind the sheet.
       builder: (ctx) => Consumer<AppState>(
-        builder: (context, appState, _) => Padding(
+        builder: (context, appState, _) {
+          final l10n = AppLocalizations.of(context)!;
+          return Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Reading comfort',
+                l10n.settingsReadingComfort,
                 style: Theme.of(ctx).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Reading tone',
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Text(
+                l10n.readingOptionsToneLabel,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 8),
               SegmentedButton<ReadingTone>(
@@ -749,9 +1024,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 onSelectionChanged: (s) => appState.setReadingTone(s.first),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Font size',
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Text(
+                l10n.settingsFontSize,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               SegmentedButton<int>(
                 segments: const [
@@ -765,43 +1040,44 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 onSelectionChanged: (s) => appState.setFontScale(s.first),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Line spacing',
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Text(
+                l10n.settingsLineSpacing,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: 1, label: Text('Compact')),
-                  ButtonSegment(value: 2, label: Text('Comfort')),
-                  ButtonSegment(value: 3, label: Text('Spacious')),
+                segments: [
+                  ButtonSegment(value: 1, label: Text(l10n.settingsLineSpacingCompact)),
+                  ButtonSegment(value: 2, label: Text(l10n.settingsLineSpacingComfort)),
+                  ButtonSegment(value: 3, label: Text(l10n.settingsLineSpacingSpacious)),
                 ],
                 selected: {appState.lineHeightScale},
                 onSelectionChanged: (s) => appState.setLineHeightScale(s.first),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Alignment',
-                style: TextStyle(fontWeight: FontWeight.w500),
+              Text(
+                l10n.settingsTextAlignment,
+                style: const TextStyle(fontWeight: FontWeight.w500),
               ),
               SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: 'left',
-                    label: Text('Left (recommended)'),
+                    label: Text(l10n.readingOptionsLeftRecommended),
                   ),
-                  ButtonSegment(value: 'justify', label: Text('Justified')),
+                  ButtonSegment(value: 'justify', label: Text(l10n.settingsAlignJustified)),
                 ],
                 selected: {appState.textAlign},
                 onSelectionChanged: (s) => appState.setTextAlign(s.first),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Changes apply instantly. Left + generous spacing recommended for Telugu long-form reading.',
-                style: TextStyle(fontSize: 12, color: Colors.black54),
+              Text(
+                l10n.readingOptionsFooterNote,
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
               ),
             ],
           ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -837,8 +1113,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
           SnackBar(
             content: Text(
               checkout.orderError ??
-                  'Payments are being configured (${checkout.mode}). '
-                      '${PaywallCopy.shareTransparency}. Try again soon.',
+                  AppLocalizations.of(context)!.readerPaymentsBeingConfigured(
+                    checkout.mode,
+                    PaywallCopy.shareTransparency(context),
+                  ),
             ),
             backgroundColor: KathaColors.ember,
           ),
@@ -855,7 +1133,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
       if (!payment.success) {
         if (!mounted) return;
-        final msg = payment.errorMessage ?? 'Payment cancelled';
+        final msg = payment.errorMessage ??
+            AppLocalizations.of(context)!.readerPaymentCancelled;
         if (!msg.toLowerCase().contains('cancel')) {
           ScaffoldMessenger.of(
             context,
@@ -875,12 +1154,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
       if (status == 'active') {
         await liveAuth.setSubscriptionStatus(status);
-        AnalyticsService.instance.subscriptionConfirmed();
+        AnalyticsService.instance.subscriptionConfirmed(
+          storyId: widget.storyId,
+          freeChapterSource: _apiError?.freeChapterSource,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Welcome to Katha Unlimited · ${checkout.shareLabel}',
+                AppLocalizations.of(context)!
+                    .readerSubscribedSnackbar(checkout.shareLabel),
               ),
               backgroundColor: KathaColors.gold,
             ),
@@ -892,9 +1175,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
       if (status == 'pending_webhook' && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Payment received — activating your subscription. Open this chapter again in a moment.',
+              AppLocalizations.of(context)!.readerPaymentActivating,
             ),
           ),
         );
@@ -905,7 +1188,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Payment recorded ($status). If chapters stay locked, wait a moment and retry.',
+              AppLocalizations.of(context)!.readerPaymentRecorded(status),
             ),
           ),
         );
@@ -919,6 +1202,40 @@ class _ReaderScreenState extends State<ReaderScreen> {
     } finally {
       checkoutUi.dispose();
     }
+  }
+}
+
+/// Fades (and, for the bottom chapter-nav bar, slides) reader chrome out on
+/// scroll-down and back in on scroll-up or tap — see `_onChromeScroll`/`_toggleChrome`.
+class _ChromeFade extends StatelessWidget {
+  final bool visible;
+  final Widget child;
+  final bool slideOut;
+
+  const _ChromeFade({
+    required this.visible,
+    required this.child,
+    this.slideOut = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final faded = AnimatedOpacity(
+      opacity: visible ? 1 : 0,
+      duration: const Duration(milliseconds: 200),
+      child: child,
+    );
+    return IgnorePointer(
+      ignoring: !visible,
+      child: slideOut
+          ? AnimatedSlide(
+              offset: visible ? Offset.zero : const Offset(0, 1),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: faded,
+            )
+          : faded,
+    );
   }
 }
 
@@ -938,6 +1255,7 @@ class _ChapterNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ink = KathaTheme.readingInk(tone);
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.fromLTRB(
         16,
@@ -955,7 +1273,7 @@ class _ChapterNavBar extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onPrevious,
               icon: Icon(Icons.arrow_back, size: 18, color: ink),
-              label: Text('Previous', style: TextStyle(color: ink)),
+              label: Text(l10n.readerChapterNavPrevious, style: TextStyle(color: ink)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: ink.withValues(alpha: 0.3)),
               ),
@@ -963,7 +1281,7 @@ class _ChapterNavBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Ch $currentChapter',
+            l10n.readerChapterNavCurrent(currentChapter),
             style: Theme.of(
               context,
             ).textTheme.labelMedium?.copyWith(color: ink),
@@ -973,7 +1291,7 @@ class _ChapterNavBar extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onNext,
               icon: const Icon(Icons.arrow_forward, size: 18),
-              label: const Text('Next'),
+              label: Text(l10n.buttonNext),
               style: FilledButton.styleFrom(
                 backgroundColor: KathaColors.gold,
                 foregroundColor: Colors.white,
@@ -1006,6 +1324,7 @@ class _GateSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(28),
@@ -1051,12 +1370,12 @@ class _GateSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'What you get',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  Text(
+                    l10n.paywallWhatYouGet,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                   const SizedBox(height: 8),
-                  ...PaywallCopy.benefits.map(
+                  ...PaywallCopy.benefits(context).map(
                     (b) => Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -1067,7 +1386,7 @@ class _GateSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '• ${PaywallCopy.shareBullet}',
+                    '• ${PaywallCopy.shareBullet(context)}',
                     style: const TextStyle(
                       fontSize: 12,
                       height: 1.35,
@@ -1093,12 +1412,12 @@ class _GateSheet extends StatelessWidget {
             ),
           ),
           if (isPremium)
-            const Padding(
-              padding: EdgeInsets.only(top: 10),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: Text(
-                PaywallCopy.trustLine,
+                PaywallCopy.trustLine(context),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Colors.black45),
+                style: const TextStyle(fontSize: 11, color: Colors.black45),
               ),
             ),
         ],

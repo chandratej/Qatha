@@ -9,13 +9,57 @@ import {
   sanitizeStoryDescription,
   estimateReadTimeMinutes,
 } from '../lib/publishContent.js';
+import { resolveFreeChapterCountForStory } from './freeChapterThreshold.js';
 
-const STORY_SELECT = `
-  id, title, description, genre, cover_url, chapter_count,
+/**
+ * Core columns that every catalog query needs. Optional columns from later
+ * migrations (free_chapter_*, etc.) are merged in only when present so a lagging
+ * remote schema cannot 500 the entire reader home/browse feed.
+ */
+const STORY_SELECT_BASE = `
+  id, author_id, title, description, genre, cover_url, chapter_count,
   total_readers, views_this_week, release_schedule,
   release_day_of_week, release_time_of_day, created_at, is_published,
+  trust_level, age_rating,
   creators(pen_name, avatar_url)
 `;
+
+/** Optional free-chapter columns from migration 042 — may not exist yet. */
+const STORY_SELECT_FREE_CHAPTER = 'free_chapter_count, free_chapter_cohort';
+
+/** Cached select string after first successful probe (null until known). */
+let _storySelect = null;
+let _freeChapterColumnsAvailable = null;
+
+async function resolveStorySelect() {
+  if (_storySelect) return _storySelect;
+
+  // Prefer full select; fall back if migration 042 not applied yet.
+  if (_freeChapterColumnsAvailable === null) {
+    const { error } = await supabase
+      .from('stories')
+      .select('free_chapter_count')
+      .limit(1);
+    _freeChapterColumnsAvailable = !error;
+    if (error) {
+      console.warn(
+        '[publicCatalog] free_chapter_* columns missing — catalog will derive defaults until migration 042 is applied:',
+        error.message,
+      );
+    }
+  }
+
+  _storySelect = _freeChapterColumnsAvailable
+    ? `${STORY_SELECT_BASE.replace(/\s+/g, ' ').trim()}, ${STORY_SELECT_FREE_CHAPTER}`
+    : STORY_SELECT_BASE.replace(/\s+/g, ' ').trim();
+  return _storySelect;
+}
+
+/** Test helper — reset cached schema probe between unit tests. */
+export function __resetStorySelectCacheForTests() {
+  _storySelect = null;
+  _freeChapterColumnsAvailable = null;
+}
 
 function scrubStoryForReader(story) {
   if (!story) return story;
@@ -62,6 +106,7 @@ export async function syncStoryAfterChapterPublish(storyId) {
   }
 
   const chapterCount = count ?? 0;
+  const storySelect = await resolveStorySelect();
   const { data, error } = await supabase
     .from('stories')
     .update({
@@ -69,7 +114,7 @@ export async function syncStoryAfterChapterPublish(storyId) {
       chapter_count: chapterCount,
     })
     .eq('id', storyId)
-    .select(STORY_SELECT)
+    .select(storySelect)
     .maybeSingle();
 
   if (error) {
@@ -110,9 +155,10 @@ export async function listPublicStories({
   // Repair flags async (non-blocking for response accuracy we already use counts)
   void repairStoryCatalogFlags(counts);
 
+  const storySelect = await resolveStorySelect();
   let query = supabase
     .from('stories')
-    .select(STORY_SELECT)
+    .select(storySelect)
     .in('id', readableIds);
 
   if (genre) query = query.eq('genre', genre);
@@ -179,8 +225,12 @@ export async function getPublicStoryDetail(storyId) {
     };
   });
 
+  const accurateStory = withAccurateCount(story, counts);
+  const { count: freeChapterCount, source: freeChapterSource } =
+    await resolveFreeChapterCountForStory(story);
+
   return {
-    story: withAccurateCount(story, counts),
+    story: { ...accurateStory, resolved_free_chapters: freeChapterCount, free_chapter_source: freeChapterSource },
     chapters: chapterSummaries,
   };
 }
@@ -193,9 +243,10 @@ export async function searchPublicStories(q, limit = 20) {
   });
   if (error) {
     // Fallback: simple ilike on title when RPC not applied yet
+    const storySelect = await resolveStorySelect();
     const { data: rows, error: e2 } = await supabase
       .from('stories')
-      .select(STORY_SELECT)
+      .select(storySelect)
       .eq('is_published', true)
       .ilike('title', `%${q}%`)
       .limit(limit);

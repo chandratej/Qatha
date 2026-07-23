@@ -25,6 +25,42 @@ void main() {
     expect(restored.highContrast, isTrue);
   });
 
+  test('easy reading preset defaults off, persists, and overrides line height',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.hydrate();
+    expect(state.easyReading, isFalse);
+    final beforeLineHeight = state.effectiveLineHeight;
+
+    state.setEasyReading(true);
+    await Future<void>.delayed(Duration.zero);
+    expect(state.effectiveLineHeight, greaterThan(beforeLineHeight));
+
+    final restored = AppState();
+    await restored.hydrate();
+    expect(restored.easyReading, isTrue);
+  });
+
+  test('eye-break reminder defaults off, only accepts 90/120, and persists',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.hydrate();
+    expect(state.eyeBreakMinutes, 0);
+
+    state.setEyeBreakMinutes(45); // not an allowed value
+    expect(state.eyeBreakMinutes, 0);
+
+    state.setEyeBreakMinutes(90);
+    expect(state.eyeBreakMinutes, 90);
+    await Future<void>.delayed(Duration.zero);
+
+    final restored = AppState();
+    await restored.hydrate();
+    expect(restored.eyeBreakMinutes, 90);
+  });
+
   test('ThemeMode.system survives restart (tri-state persistence)', () async {
     SharedPreferences.setMockInitialValues({});
     final state = AppState();
@@ -71,5 +107,29 @@ void main() {
     final restored2 = AppState();
     await restored2.hydrate();
     expect(restored2.readingTone, ReadingTone.night);
+  });
+
+  test(
+      'notification prompt defaults unshown, marks shown once, is idempotent, and persists',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState();
+    await state.hydrate();
+    expect(state.notificationPromptShown, isFalse);
+
+    var notifyCount = 0;
+    state.addListener(() => notifyCount++);
+    state.markNotificationPromptShown();
+    expect(state.notificationPromptShown, isTrue);
+    expect(notifyCount, 1);
+
+    // Idempotent — never re-triggers once already shown.
+    state.markNotificationPromptShown();
+    expect(notifyCount, 1);
+    await Future<void>.delayed(Duration.zero);
+
+    final restored = AppState();
+    await restored.hydrate();
+    expect(restored.notificationPromptShown, isTrue);
   });
 }

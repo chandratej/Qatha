@@ -46,7 +46,7 @@ const ERROR_MAP = {
   },
 };
 
-export function createAppError(code, message, status = 400) {
+export function createAppError(code, message, status = 400, meta) {
   const mapped = ERROR_MAP[code] || {
     userMessage: message || 'Something went wrong. Please try again.',
     action: 'RETRY',
@@ -57,6 +57,7 @@ export function createAppError(code, message, status = 400) {
   err.status = status;
   err.userMessage = userMessage;
   err.action = mapped.action;
+  if (meta) err.meta = meta;
   return err;
 }
 
@@ -73,5 +74,6 @@ export function errorHandler(err, _req, res, _next) {
     code,
     user_message: err.userMessage || err.message,
     action: err.action || 'RETRY',
+    ...(err.meta || {}),
   });
 }

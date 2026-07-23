@@ -2,6 +2,9 @@
     <!-- Network + Razorpay Standard Checkout (UPI / cards) -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- New-chapter notifications (§2.3) — declaring this does not itself prompt the user;
+         the runtime request is deferred to first-follow/first-completed-free-sample. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="Katha"
         android:name="${applicationName}"

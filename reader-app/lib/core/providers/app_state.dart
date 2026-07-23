@@ -17,6 +17,9 @@ class AppState extends ChangeNotifier {
   static const _prefNotifyTrend = 'katha_notify_trend';
   static const _prefCalmMotion = 'katha_calm_motion';
   static const _prefHighContrast = 'katha_high_contrast';
+  static const _prefEasyReading = 'katha_easy_reading';
+  static const _prefEyeBreakMinutes = 'katha_eye_break_minutes';
+  static const _prefNotificationPromptShown = 'katha_notification_prompt_shown';
 
   ThemeMode _themeMode = ThemeMode.system;
   int _fontScale = 2; // 1-5 per world-class standards
@@ -35,6 +38,19 @@ class AppState extends ChangeNotifier {
   bool _notifyTrending = true;
   bool _calmMotion = false;
   bool _highContrast = false;
+  // "Easy Reading" preset (2.8): no open-license font covering Telugu script
+  // reads as genuinely dyslexia-friendly, so this widens letter/line spacing
+  // and steps up weight on the existing Noto Sans Telugu stack instead of
+  // swapping fonts — see katha-reader-app-completion-and-beautification-prompt.md §2.8.
+  bool _easyReading = false;
+  // Eye-break reminder (§2.5) — 0 means off (the default). Opt-in only; never
+  // interrupts mid-chapter, only checked at chapter boundaries (see reader_screen.dart).
+  int _eyeBreakMinutes = 0;
+  // §2.3 — whether the app has ever shown its own pre-permission explainer /
+  // requested the OS notification permission. Never re-shown once true, even
+  // if the OS permission was denied — a one-time gentle Settings reminder
+  // (see settings_screen.dart) replaces any further prompting.
+  bool _notificationPromptShown = false;
   bool _hydrated = false;
 
   ThemeMode get themeMode => _themeMode;
@@ -57,6 +73,16 @@ class AppState extends ChangeNotifier {
 
   /// Stronger text and border contrast for tired eyes / bright light.
   bool get highContrast => _highContrast;
+
+  /// Easy Reading preset — wider letter/line spacing + heavier weight for
+  /// dyslexia-friendlier reading, on the existing Telugu font (see field doc above).
+  bool get easyReading => _easyReading;
+
+  /// 0 = off, otherwise the reminder interval in minutes (90 or 120).
+  int get eyeBreakMinutes => _eyeBreakMinutes;
+
+  /// Whether the app has already shown its notification-permission explainer once.
+  bool get notificationPromptShown => _notificationPromptShown;
   bool get isHydrated => _hydrated;
 
   static const _prefThemeMode = 'katha_theme_mode';
@@ -94,6 +120,9 @@ class AppState extends ChangeNotifier {
     _notifyTrending = prefs.getBool(_prefNotifyTrend) ?? true;
     _calmMotion = prefs.getBool(_prefCalmMotion) ?? false;
     _highContrast = prefs.getBool(_prefHighContrast) ?? false;
+    _easyReading = prefs.getBool(_prefEasyReading) ?? false;
+    _eyeBreakMinutes = prefs.getInt(_prefEyeBreakMinutes) ?? 0;
+    _notificationPromptShown = prefs.getBool(_prefNotificationPromptShown) ?? false;
     _hydrated = true;
     notifyListeners();
   }
@@ -121,6 +150,9 @@ class AppState extends ChangeNotifier {
     await prefs.setBool(_prefNotifyTrend, _notifyTrending);
     await prefs.setBool(_prefCalmMotion, _calmMotion);
     await prefs.setBool(_prefHighContrast, _highContrast);
+    await prefs.setBool(_prefEasyReading, _easyReading);
+    await prefs.setInt(_prefEyeBreakMinutes, _eyeBreakMinutes);
+    await prefs.setBool(_prefNotificationPromptShown, _notificationPromptShown);
   }
 
   void setThemeMode(ThemeMode mode) {
@@ -167,6 +199,7 @@ class AppState extends ChangeNotifier {
   }
 
   double get effectiveLineHeight {
+    if (_easyReading) return 2.05; // Easy Reading overrides the manual slider
     // Per decisions (Katha UI/UX): generous 1.75–1.95 line height recommended for long-form Telugu reading comfort
     switch (_lineHeightScale) {
       case 1:
@@ -222,6 +255,27 @@ class AppState extends ChangeNotifier {
 
   void setHighContrast(bool v) {
     _highContrast = v;
+    _persist();
+    notifyListeners();
+  }
+
+  void setEasyReading(bool v) {
+    _easyReading = v;
+    _persist();
+    notifyListeners();
+  }
+
+  void setEyeBreakMinutes(int v) {
+    _eyeBreakMinutes = (v == 90 || v == 120) ? v : 0;
+    _persist();
+    notifyListeners();
+  }
+
+  /// Marks the one-time notification explainer/permission-request as shown.
+  /// Idempotent — safe to call more than once, never re-triggers a prompt.
+  void markNotificationPromptShown() {
+    if (_notificationPromptShown) return;
+    _notificationPromptShown = true;
     _persist();
     notifyListeners();
   }

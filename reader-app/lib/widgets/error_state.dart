@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/katha_theme.dart';
+import '../l10n/generated/app_localizations.dart';
 
 class ErrorState extends StatelessWidget {
   final String message;
@@ -23,6 +24,7 @@ class ErrorState extends StatelessWidget {
     // Never force MediaQuery full-screen height (overflows under bottom nav).
     return LayoutBuilder(
       builder: (context, constraints) {
+        final l10n = AppLocalizations.of(context)!;
         final hasBoundedH =
             constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
         final hasBoundedW =
@@ -38,7 +40,7 @@ class ErrorState extends StatelessWidget {
                 Icon(
                   Icons.cloud_off_rounded,
                   size: 56,
-                  color: KathaColors.inkMuted.withValues(alpha: 0.5),
+                  color: KathaTheme.mutedInk(context).withValues(alpha: 0.5),
                 ),
                 const SizedBox(height: 20),
                 Text(
@@ -49,13 +51,13 @@ class ErrorState extends StatelessWidget {
                 if (offlineChapters != null && offlineChapters!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Available offline:',
+                    l10n.errorAvailableOffline,
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                   const SizedBox(height: 8),
                   ...offlineChapters!.map(
                     (n) => Text(
-                      'Chapter $n',
+                      l10n.errorChapterNumber(n),
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
@@ -69,7 +71,7 @@ class ErrorState extends StatelessWidget {
                     if (onRetry != null)
                       FilledButton(
                         onPressed: onRetry,
-                        child: const Text('Retry'),
+                        child: Text(l10n.errorRetry),
                       ),
                     if (onAction != null && actionLabel != null)
                       OutlinedButton(

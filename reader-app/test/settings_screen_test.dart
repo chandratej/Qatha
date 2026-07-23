@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:katha_reader/core/providers/app_state.dart';
 import 'package:katha_reader/core/providers/auth_state.dart';
 import 'package:katha_reader/core/theme/katha_theme.dart';
+import 'package:katha_reader/l10n/generated/app_localizations.dart';
 import 'package:katha_reader/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +19,8 @@ void main() {
     return state;
   }
 
+  // Telugu is the app's default locale (Req 2.2) — the chrome under test renders
+  // Telugu strings, so assertions below match the real default-locale UI, not English.
   Widget host(AppState appState, {Size? surface}) => MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: appState),
@@ -24,6 +28,14 @@ void main() {
         ],
         child: MaterialApp(
           theme: KathaTheme.light(),
+          locale: const Locale('te'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: const SettingsScreen(),
         ),
       );
@@ -44,11 +56,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Font size'), findsOneWidget);
-    await scrollTo(tester, find.text('Calm motion'));
-    expect(find.text('Calm motion'), findsOneWidget);
-    await scrollTo(tester, find.text('High contrast'));
-    expect(find.text('High contrast'), findsOneWidget);
+    expect(find.text('ఫాంట్ పరిమాణం'), findsOneWidget);
+    await scrollTo(tester, find.text('తక్కువ యానిమేషన్'));
+    expect(find.text('తక్కువ యానిమేషన్'), findsOneWidget);
+    await scrollTo(tester, find.text('హై కాంట్రాస్ట్'));
+    expect(find.text('హై కాంట్రాస్ట్'), findsOneWidget);
   });
 
   testWidgets('settings interactions: theme segments and comfort switches',
@@ -60,12 +72,12 @@ void main() {
     await tester.pumpWidget(host(appState));
     await tester.pumpAndSettle();
 
-    await scrollTo(tester, find.text('Dark'));
-    await tester.tap(find.text('Dark'));
+    await scrollTo(tester, find.text('డార్క్'));
+    await tester.tap(find.text('డార్క్'));
     await tester.pumpAndSettle();
     expect(appState.themeMode, ThemeMode.dark);
 
-    await scrollTo(tester, find.text('Calm motion'));
+    await scrollTo(tester, find.text('తక్కువ యానిమేషన్'));
     await tester.tap(find.byType(Switch).first, warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(appState.calmMotion, isTrue);
@@ -98,6 +110,14 @@ void main() {
         ],
         child: MaterialApp(
           theme: KathaTheme.light(),
+          locale: const Locale('te'),
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: const SettingsScreen(),
         ),
       ),
@@ -106,7 +126,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     await scrollTo(tester, find.text('పరీక్ష పాఠకుడు'));
-    expect(find.text('Sign out'), findsOneWidget);
+    expect(find.text('సైన్ అవుట్'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

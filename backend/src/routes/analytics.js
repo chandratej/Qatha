@@ -43,3 +43,41 @@ analyticsRouter.get('/funnel', (_req, res) => {
   }
   res.json({ funnel: counts, total_events: eventLog.length, mock: isMockMode() });
 });
+
+/**
+ * Conversion rate by free-chapter-count cohort (Req 3.3/3.4 of the free-chapter-threshold
+ * redesign) — groups paywall_shown / subscription_confirmed by whatever cohort tag the
+ * caller attached in `properties.free_chapter_source` (e.g. "proven_story", "cohort:control_5",
+ * "unproven_default"). This is the lightweight MVP version the doc explicitly allows —
+ * not a full experimentation platform.
+ */
+analyticsRouter.get('/funnel/cohorts', (_req, res) => {
+  const cohorts = {};
+  const ensure = (key) => {
+    if (!cohorts[key]) {
+      cohorts[key] = { paywall_shown: 0, subscription_confirmed: 0, chapter_3_completed: 0 };
+    }
+    return cohorts[key];
+  };
+
+  for (const e of eventLog) {
+    if (!['paywall_shown', 'subscription_confirmed', 'chapter_3_completed'].includes(e.event)) continue;
+    const key = e.properties?.free_chapter_source || e.properties?.free_chapter_cohort || 'unknown';
+    const bucket = ensure(key);
+    bucket[e.event] += 1;
+  }
+
+  const summary = Object.fromEntries(
+    Object.entries(cohorts).map(([key, bucket]) => [
+      key,
+      {
+        ...bucket,
+        conversion_rate: bucket.paywall_shown > 0
+          ? Math.round((bucket.subscription_confirmed / bucket.paywall_shown) * 1000) / 10
+          : null,
+      },
+    ]),
+  );
+
+  res.json({ cohorts: summary, mock: isMockMode() });
+});

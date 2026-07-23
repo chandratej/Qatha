@@ -13,7 +13,14 @@ class KathaColors {
   static const paperWarm = Color(0xFFF5F0E8);
   static const ink = Color(0xFF1A1814);
   static const inkSoft = Color(0xFF4A4540);
-  static const inkMuted = Color(0xFF8A847C);
+  // Default muted ink, raised from the old 0xFF8A847C (~3.5:1 on paper) to
+  // ~4.9:1 against `paper`/white surfaces — was previously AA-passing only
+  // behind the high-contrast toggle; now the global default per contrast audit.
+  static const inkMuted = Color(0xFF726C63);
+  // Pre-audit value, kept only for surfaces with a dark/near-black background
+  // (inkMuted is ~5.3:1 there already; darkening it further would *reduce*
+  // dark-mode contrast, so dark chrome keeps this lighter tone instead).
+  static const inkMutedOnDark = Color(0xFF8A847C);
   static const darkBg = Color(0xFF0D0D0F);
   static const darkSurface = Color(0xFF1A1A1E);
   static const darkElevated = Color(0xFF222228);
@@ -22,7 +29,8 @@ class KathaColors {
   static const sepia = Color(0xFFF1E5C7);
   static const sepiaSurface = Color(0xFFECDCB4);
   static const sepiaInk = Color(0xFF4A3624);
-  static const sepiaMuted = Color(0xFF8A7355);
+  // Raised from 0xFF8A7355 (~3.7:1 on sepia) to ~5.1:1, same audit as inkMuted.
+  static const sepiaMuted = Color(0xFF6E5C44);
 }
 
 /// The chapter reading canvas's own color mode — deliberately independent of
@@ -172,6 +180,7 @@ class KathaTheme {
     required int fontScale,
     double lineHeight =
         1.82, // MD3 per 04_JUL_Visual_UX_Framework_Selection_Katha.md
+    bool easyReading = false,
   }) {
     // Material Design 3 + Minimalist: generous line height for Telugu long-form comfort
     final size = 18.0 + (fontScale - 2) * 3;
@@ -179,7 +188,11 @@ class KathaTheme {
       fontSize: size,
       height: lineHeight,
       color: readingInk(tone),
-      letterSpacing: 0.15,
+      // Easy Reading (§2.8): wider letter spacing + a touch more weight on
+      // the same Noto Sans Telugu stack, since no open-license dyslexia
+      // font with reasonable Telugu coverage exists to swap in.
+      letterSpacing: easyReading ? 0.6 : 0.15,
+      fontWeight: easyReading ? FontWeight.w500 : null,
     );
   }
 
@@ -206,8 +219,17 @@ class KathaTheme {
   static Color readingMuted(ReadingTone tone) => switch (tone) {
     ReadingTone.paper => KathaColors.inkMuted,
     ReadingTone.sepia => KathaColors.sepiaMuted,
-    ReadingTone.night => Colors.white30,
+    // white30 measured ~2.7:1 on darkBg — bumped to white60 (~4.6:1).
+    ReadingTone.night => Colors.white60,
   };
+
+  /// Muted/secondary ink for app chrome (icons, unselected labels, dividers)
+  /// — brightness-aware so the light-mode contrast fix doesn't wash out on
+  /// dark backgrounds, where the pre-audit tone already reads correctly.
+  static Color mutedInk(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+          ? KathaColors.inkMutedOnDark
+          : KathaColors.inkMuted;
 
   static bool isDarkTone(ReadingTone tone) => tone == ReadingTone.night;
 

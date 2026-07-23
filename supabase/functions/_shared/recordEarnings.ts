@@ -10,7 +10,15 @@ export interface RecordEarningsInput {
   creator_id: string;
   subscription_id?: string;
   story_id?: string;
+  /** Actual transaction amount — kept for reference/logging only, no longer drives the
+   *  creator-share calculation (DEC-028 Option 1: rail-fee variance never reaches the creator). */
   amount_paise: number;
+  /** The fixed reference amount (scaled by billing cycle) creator share IS computed against. */
+  reference_amount_paise: number;
+  /** Founding-author acceleration floor (Req 4) — if set, the effective share never drops
+   *  below this, but story-trust can still raise it higher. Self-expiring: caller only passes
+   *  this when the creator's acceleration window is still active. */
+  accelerated_share_pct?: number | null;
 }
 
 export interface RecordEarningsResult {
@@ -18,6 +26,37 @@ export interface RecordEarningsResult {
   ledger_id?: string;
   effective_share_pct?: number;
   trust_level?: string;
+  /** True if this payment's earnings were diverted into escrow (Req 3.4) instead of the
+   *  payable earnings_ledger, because the story is currently in an open moderation window. */
+  escrowed?: boolean;
+}
+
+/** Story currently in an open moderation window (Req 3.4) — earnings divert to escrow, not payout. */
+async function findOpenModerationWindow(admin: SupabaseClient, storyId: string) {
+  const { data } = await admin
+    .from('story_moderation_windows')
+    .select('id')
+    .eq('story_id', storyId)
+    .in('status', ['open', 'appeal_pending'])
+    .order('opened_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.id as string | undefined;
+}
+
+/** Diverts a real payment-time amount into the story's open escrow row. Mirrors
+ *  backend/src/services/moderationEscrowStore.js#accrueEscrowEarnings. */
+async function accrueEscrow(admin: SupabaseClient, windowId: string, amountInr: number): Promise<void> {
+  const { data: rows } = await admin
+    .from('story_earnings_escrow')
+    .select('id, amount_inr')
+    .eq('moderation_window_id', windowId)
+    .eq('status', 'escrow')
+    .limit(1);
+  const row = rows?.[0];
+  if (!row) return;
+  const newAmount = Math.round(((Number(row.amount_inr) || 0) + amountInr) * 100) / 100;
+  await admin.from('story_earnings_escrow').update({ amount_inr: newAmount }).eq('id', row.id);
 }
 
 const TRUST_MULTIPLIER: Record<string, number> = {
@@ -34,10 +73,14 @@ export async function recordEarnings(
   admin: SupabaseClient,
   input: RecordEarningsInput,
 ): Promise<RecordEarningsResult> {
-  const { creator_id, subscription_id, story_id, amount_paise } = input;
+  const { creator_id, subscription_id, story_id, amount_paise, reference_amount_paise, accelerated_share_pct } = input;
   if (!creator_id || !amount_paise) {
     throw new Error('creator_id and amount_paise are required');
   }
+  // Option 1 (DEC-028): share is computed against the fixed reference amount, never the raw
+  // transaction amount — falls back to amount_paise only if a caller omits it (shouldn't happen
+  // from payment-webhook, which always passes it).
+  const shareBasisPaise = reference_amount_paise ?? amount_paise;
 
   const revenue = await loadRevenueConfig(admin);
   let sharePct = revenue.creator_share_pct;
@@ -61,7 +104,22 @@ export async function recordEarnings(
     }
   }
 
-  const creatorShare = creatorShareFromPaise(amount_paise, sharePct);
+  // Founding-author acceleration (Req 4) — a floor only, self-expiring, never a permanent increase.
+  if (accelerated_share_pct && accelerated_share_pct > sharePct) {
+    sharePct = accelerated_share_pct;
+  }
+
+  const creatorShare = creatorShareFromPaise(shareBasisPaise, sharePct);
+
+  // Req 3.4 — a story in an open moderation window earns into escrow, never the payable ledger.
+  if (story_id) {
+    const windowId = await findOpenModerationWindow(admin, story_id);
+    if (windowId) {
+      await accrueEscrow(admin, windowId, creatorShare);
+      return { creator_share_inr: creatorShare, effective_share_pct: sharePct, trust_level: trustLevel, escrowed: true };
+    }
+  }
+
   const month = new Date().toISOString().split('T')[0].slice(0, 7) + '-01';
 
   const { data: ledger, error: ledgerError } = await admin

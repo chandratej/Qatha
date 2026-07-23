@@ -46,32 +46,68 @@ export function ReaderFeedbackPanel({ storyId, storyTitle }: ReaderFeedbackPanel
             {item.status === 'pending' ? <span className="reader-feedback-panel__pending">Pending</span> : null}
           </div>
           <p>{item.body}</p>
-          {item.status === 'pending' && (
-            <div className="reader-feedback-panel__actions">
-              <button
-                type="button"
-                className="katha-cta katha-cta--soft"
-                onClick={() => { void updateStatus(item.id, 'published'); }}
-              >
-                Publish to inbox
-              </button>
+          {item.feedback_type === 'praise' ? (
+            // Praise is author-moderated, never an aggregate score (Req 3.2): "published"
+            // is what the public /:id/praise endpoint surfaces as a testimonial on the
+            // story page; any other status keeps it visible only here, to the author.
+            item.status === 'published' ? (
               <button
                 type="button"
                 className="btn btn-ghost"
-                onClick={() => { void updateStatus(item.id, 'archived'); }}
+                onClick={() => { void updateStatus(item.id, 'resolved'); }}
               >
-                Dismiss
+                Make private
               </button>
-            </div>
-          )}
-          {item.status === 'published' && (
-            <button
-              type="button"
-              className="katha-cta katha-cta--soft"
-              onClick={() => { void updateStatus(item.id, 'resolved'); }}
-            >
-              <CheckCircle2 size={14} aria-hidden /> Mark resolved
-            </button>
+            ) : (
+              <div className="reader-feedback-panel__actions">
+                <button
+                  type="button"
+                  className="katha-cta katha-cta--soft"
+                  onClick={() => { void updateStatus(item.id, 'published'); }}
+                >
+                  Show publicly on story page
+                </button>
+                {item.status === 'pending' && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => { void updateStatus(item.id, 'resolved'); }}
+                  >
+                    Keep private
+                  </button>
+                )}
+              </div>
+            )
+          ) : (
+            <>
+              {item.status === 'pending' && (
+                <div className="reader-feedback-panel__actions">
+                  <button
+                    type="button"
+                    className="katha-cta katha-cta--soft"
+                    onClick={() => { void updateStatus(item.id, 'published'); }}
+                  >
+                    Publish to inbox
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    onClick={() => { void updateStatus(item.id, 'archived'); }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
+              {item.status === 'published' && (
+                <button
+                  type="button"
+                  className="katha-cta katha-cta--soft"
+                  onClick={() => { void updateStatus(item.id, 'resolved'); }}
+                >
+                  <CheckCircle2 size={14} aria-hidden /> Mark resolved
+                </button>
+              )}
+            </>
           )}
         </li>
       ))}

@@ -360,6 +360,7 @@ export async function sbUpdateStory(
     genre?: string;
     cover_url?: string;
     release_schedule?: string;
+    free_chapter_count?: number | null;
   },
 ): Promise<{ story: StoryData }> {
   const user = await requireUser();
@@ -371,6 +372,12 @@ export async function sbUpdateStory(
   if (body.genre !== undefined) updates.genre = body.genre;
   if (body.cover_url !== undefined) updates.cover_url = body.cover_url;
   if (body.release_schedule !== undefined) updates.release_schedule = body.release_schedule;
+  // Manual override of the auto-derived free-chapter sample size — null clears it back
+  // to auto-derivation from band data (see backend freeChapterThreshold.js).
+  if (body.free_chapter_count !== undefined) {
+    updates.free_chapter_count = body.free_chapter_count;
+    updates.free_chapter_count_source = body.free_chapter_count === null ? 'auto' : 'override';
+  }
 
   const { data, error } = await supabase.from('stories').update(updates).eq('id', storyId).select().single();
   if (error) throw new Error(error.message);

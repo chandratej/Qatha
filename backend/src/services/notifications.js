@@ -21,6 +21,17 @@ export function scheduleNotifications(cron) {
   // DEC-021: Story Trust SPI batch — 02:15 UTC daily + every 6h catch-up for stale rows
   cron.schedule('15 2 * * *', () => recomputeAllStoryTrust({ onlyStale: false }));
   cron.schedule('20 */6 * * *', () => recomputeAllStoryTrust({ onlyStale: true }));
+  // Req 3.7: auto-finalize any moderation appeal whose bounded window expired unanswered —
+  // hourly, since the appeal window itself is measured in days (CONTENT_MODERATION_APPEAL_DAYS).
+  cron.schedule('40 * * * *', async () => {
+    try {
+      const { expireAllUnappealedWindows } = await import('./moderationEscrowStore.js');
+      const result = await expireAllUnappealedWindows();
+      if (result.expired > 0) console.log('[moderationEscrow] auto-expired unanswered appeals:', result);
+    } catch (e) {
+      console.warn('[moderationEscrow] expiry sweep failed:', e.message);
+    }
+  });
 }
 
 async function sendPush(token, title, body) {

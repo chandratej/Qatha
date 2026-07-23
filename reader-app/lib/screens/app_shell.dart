@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/katha_theme.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'browse_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
@@ -18,23 +19,24 @@ class _AppShellState extends State<AppShell> {
   /// Prevents Settings/Browse layout or API errors from breaking Home on start.
   final Set<int> _visited = {0};
 
-  static const _tabs = [
-    _NavTab(
-      icon: Icons.home_rounded,
-      activeIcon: Icons.home,
-      label: 'Home',
-    ),
-    _NavTab(
-      icon: Icons.explore_outlined,
-      activeIcon: Icons.explore,
-      label: 'Browse',
-    ),
-    _NavTab(
-      icon: Icons.tune_rounded,
-      activeIcon: Icons.tune,
-      label: 'Settings',
-    ),
+  static const _tabIcons = [
+    (icon: Icons.home_rounded, activeIcon: Icons.home),
+    (icon: Icons.explore_outlined, activeIcon: Icons.explore),
+    (icon: Icons.tune_rounded, activeIcon: Icons.tune),
   ];
+
+  List<_NavTab> _tabs(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final labels = [l10n.navHome, l10n.navBrowse, l10n.navSettings];
+    return [
+      for (var i = 0; i < _tabIcons.length; i++)
+        _NavTab(
+          icon: _tabIcons[i].icon,
+          activeIcon: _tabIcons[i].activeIcon,
+          label: labels[i],
+        ),
+    ];
+  }
 
   Widget _pageFor(int i) {
     switch (i) {
@@ -51,11 +53,12 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    final tabs = _tabs(context);
     return Scaffold(
       body: IndexedStack(
         index: _index,
         sizing: StackFit.expand,
-        children: List.generate(_tabs.length, (i) {
+        children: List.generate(tabs.length, (i) {
           if (!_visited.contains(i)) {
             return const SizedBox.expand();
           }
@@ -77,7 +80,7 @@ class _AppShellState extends State<AppShell> {
             ? KathaColors.darkSurface
             : Colors.white,
         indicatorColor: KathaColors.gold.withValues(alpha: 0.18),
-        destinations: _tabs
+        destinations: tabs
             .map(
               (t) => NavigationDestination(
                 icon: Icon(t.icon),
