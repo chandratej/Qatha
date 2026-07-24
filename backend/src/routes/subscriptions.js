@@ -3,10 +3,11 @@ import crypto from 'crypto';
 import { supabase as sbClient, getSupabase } from '../lib/supabase.js';
 import { getRevenueConfig, getPlanPricing, getReferenceNetAmountForCycle, BILLING_CYCLES } from '../config/revenue.js';
 import { createAppError } from '../middleware/errorHandler.js';
-import { registerMockSubscription } from '../services/launchOffer.js';
 import { requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
 import { getFoundingAccelerationForCreator } from '../services/foundingAuthorProgram.js';
 import { accrueEscrowEarnings } from '../services/moderationEscrowStore.js';
+import { platformWriteRateLimit } from '../middleware/platformWriteRateLimit.js';
+import { isMockMode } from '../lib/mockMode.js';
 
 function resolveBillingCycle(input) {
   const id = String(input || 'monthly').trim();
@@ -47,26 +48,48 @@ async function recordCreatorEarnings(supabase, { creatorId, storyId, subscriptio
 
 export const subscriptionsRouter = Router();
 
+// P1-14: rate-limit money endpoints (IP + user sliding window)
+const subscriptionWriteLimit = platformWriteRateLimit({
+  limit: Number(process.env.SUBSCRIPTION_RATE_LIMIT) || 20,
+  windowSec: Number(process.env.SUBSCRIPTION_RATE_WINDOW_SEC) || 60,
+});
+
 const processedWebhooks = new Set(); // idempotency for current process; prod uses webhook_logs table
 
-// ===== Razorpay Webhook Security (Blueprint Gap 2) =====
-function verifyRazorpaySignature(body, signature) {
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keySecret) {
-    console.error('FATAL: RAZORPAY_KEY_SECRET is not set');
+// ===== Razorpay Webhook Security =====
+// Prefer RAZORPAY_WEBHOOK_SECRET (dashboard webhook secret). Fall back to KEY_SECRET for legacy.
+function getWebhookSecret() {
+  return process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET || '';
+}
+
+/**
+ * Verify HMAC. Prefer raw body string (set by express.json verify) so signature matches Razorpay.
+ */
+function verifyRazorpaySignature(body, signature, rawBody) {
+  const secret = getWebhookSecret();
+  if (!secret) {
+    console.error('FATAL: RAZORPAY_WEBHOOK_SECRET / RAZORPAY_KEY_SECRET is not set');
     return false;
   }
+  if (!signature) return false;
+  const payload = typeof rawBody === 'string' && rawBody.length
+    ? rawBody
+    : JSON.stringify(body);
   const expected = crypto
-    .createHmac('sha256', keySecret)
-    .update(JSON.stringify(body))
+    .createHmac('sha256', secret)
+    .update(payload)
     .digest('hex');
-  return expected === signature;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(String(signature)));
+  } catch {
+    return expected === signature;
+  }
 }
 
 function isRecentWebhook(timestamp) {
   if (!timestamp) return true;
   const ageMin = (Date.now() - (Number(timestamp) * 1000)) / 60000;
-  return ageMin < 5; // Reject webhooks older than ~5 min (replay protection)
+  return ageMin < 60; // align with edge — Razorpay retries can lag
 }
 
 async function recordWebhookProcessed(webhookId, event) {
@@ -77,7 +100,7 @@ async function recordWebhookProcessed(webhookId, event) {
       await sb.from('webhook_logs').insert({
         webhook_id: webhookId,
         event,
-        payload: {}, // avoid storing full sensitive payload in some cases
+        payload: {},
         processed_at: new Date().toISOString(),
       });
     } catch (e) { /* ignore */ }
@@ -99,7 +122,90 @@ async function isWebhookAlreadyProcessed(webhookId) {
   return false;
 }
 
-subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, res, next) => {
+async function paymentAlreadyActivated(supabase, paymentId) {
+  if (!paymentId || !supabase) return false;
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('id, status, ends_at')
+    .eq('razorpay_payment_id', paymentId)
+    .maybeSingle();
+  return data || null;
+}
+
+async function activateFromPayment(supabase, {
+  userId,
+  notes = {},
+  paymentId,
+  subscriptionId,
+  orderId,
+  amountPaise,
+}) {
+  const existing = await paymentAlreadyActivated(supabase, paymentId);
+  if (existing) {
+    return { subscription: existing, skipped: true };
+  }
+
+  const billing_cycle = resolveBillingCycle(notes?.billing_cycle);
+  const plan = getPlanPricing(billing_cycle);
+  const referenceNetAmountPaise = getReferenceNetAmountForCycle(billing_cycle);
+  const endsAt = new Date(Date.now() + plan.months * 30 * 24 * 60 * 60 * 1000).toISOString();
+  const amount = amountPaise || plan.total_price_paise;
+
+  const { data: insertedSub, error: insertErr } = await supabase.from('subscriptions').insert({
+    user_id: userId,
+    story_id_source: notes.story_id_source || null,
+    creator_id_source: notes.creator_id_source || null,
+    razorpay_subscription_id: subscriptionId || null,
+    razorpay_payment_id: paymentId || null,
+    amount_paise: amount,
+    billing_cycle,
+    reference_net_amount_paise: referenceNetAmountPaise,
+    status: 'active',
+    creator_share_pct: getRevenueConfig().creator_share_pct,
+    ends_at: endsAt,
+  }).select('id, status, ends_at').maybeSingle();
+
+  if (insertErr) {
+    if (/duplicate|unique|23505/i.test(insertErr.message || '')) {
+      const again = await paymentAlreadyActivated(supabase, paymentId);
+      return { subscription: again, skipped: true };
+    }
+    throw insertErr;
+  }
+
+  await supabase.from('profiles').update({
+    subscription_status: 'active',
+    subscription_ends_at: endsAt,
+  }).eq('id', userId);
+
+  if (notes?.creator_id_source) {
+    let trust_level = 'performing';
+    let sharePct = getRevenueConfig().creator_share_pct;
+    try {
+      const { effectiveShareForStory } = await import('../services/storyTrust.js');
+      if (notes.story_id_source) {
+        const t = await effectiveShareForStory(notes.story_id_source);
+        trust_level = t.trust_level;
+        if (t.effective_share_pct > 0) sharePct = t.effective_share_pct;
+      }
+    } catch { /* use base */ }
+
+    sharePct = await withFoundingAcceleration(notes.creator_id_source, sharePct);
+    const creatorShare = Math.round(referenceNetAmountPaise * sharePct) / 10000;
+    await recordCreatorEarnings(supabase, {
+      creatorId: notes.creator_id_source,
+      storyId: notes.story_id_source || null,
+      subscriptionId: insertedSub?.id || null,
+      creatorShare,
+      sharePct,
+      trustLevel: trust_level,
+    });
+  }
+
+  return { subscription: { ...insertedSub, ends_at: endsAt }, skipped: false };
+}
+
+subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), subscriptionWriteLimit, async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
 
@@ -180,7 +286,7 @@ subscriptionsRouter.post('/create', requireAuthOrMockLegacyUser(), async (req, r
   }
 });
 
-subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, res, next) => {
+subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), subscriptionWriteLimit, async (req, res, next) => {
   try {
     const userId = getAuthenticatedUserId(req);
     const {
@@ -193,11 +299,31 @@ subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, 
     } = req.body || {};
     const supabase = getSupabase() || sbClient;
 
+    // P1-20: fail closed in production — never mock-active without a real ledger
     if (!supabase) {
-      return res.json({ subscription_status: 'active', mock: true, note: 'No DB — client-side confirm only' });
+      if (process.env.NODE_ENV === 'production' || !isMockMode()) {
+        return res.status(503).json({
+          error: 'Subscription service unavailable',
+          subscription_status: 'free',
+          code: 'PAYMENTS_UNAVAILABLE',
+        });
+      }
+      return res.json({ subscription_status: 'active', mock: true, note: 'No DB — client-side confirm only (dev mock)' });
     }
 
     // Prefer live row written by webhook; never trust client for money
+    if (razorpay_payment_id) {
+      const byPayment = await paymentAlreadyActivated(supabase, razorpay_payment_id);
+      if (byPayment?.status === 'active') {
+        return res.json({
+          subscription_status: 'active',
+          ends_at: byPayment.ends_at,
+          razorpay_payment_id,
+          source: 'ledger',
+        });
+      }
+    }
+
     const { data: sub } = await supabase
       .from('subscriptions')
       .select('status, ends_at, razorpay_payment_id')
@@ -227,65 +353,24 @@ subscriptionsRouter.post('/confirm', requireAuthOrMockLegacyUser(), async (req, 
         return res.status(400).json({ error: 'Invalid payment signature', subscription_status: 'free' });
       }
 
-      const revenue = getRevenueConfig();
       const billing_cycle = resolveBillingCycle(req.body?.billing_cycle);
-      const plan = getPlanPricing(billing_cycle);
-      const endsAt = new Date(Date.now() + plan.months * 30 * 24 * 60 * 60 * 1000).toISOString();
-      const amountPaise = plan.total_price_paise; // what the reader actually paid this cycle
-      const referenceNetAmountPaise = getReferenceNetAmountForCycle(billing_cycle); // Option 1: what creator share is computed against
-
-      const { data: inserted } = await supabase.from('subscriptions').insert({
-        user_id: userId,
-        story_id_source: story_id_source || null,
-        creator_id_source: creator_id_source || null,
-        razorpay_subscription_id: razorpay_subscription_id || null,
-        razorpay_payment_id,
-        amount_paise: amountPaise,
-        billing_cycle,
-        reference_net_amount_paise: referenceNetAmountPaise,
-        status: 'active',
-        creator_share_pct: revenue.creator_share_pct,
-        ends_at: endsAt,
-      }).select('id').maybeSingle();
-
-      await supabase.from('profiles').update({
-        subscription_status: 'active',
-        subscription_ends_at: endsAt,
-      }).eq('id', userId);
-
-      if (creator_id_source || story_id_source) {
-        let sharePct = revenue.creator_share_pct;
-        let trustLevel = 'performing';
-        try {
-          if (story_id_source) {
-            const { effectiveShareForStory } = await import('../services/storyTrust.js');
-            const t = await effectiveShareForStory(story_id_source);
-            if (t.effective_share_pct > 0) {
-              sharePct = t.effective_share_pct;
-              trustLevel = t.trust_level;
-            }
-          }
-        } catch { /* base share */ }
-
-        if (creator_id_source) {
-          sharePct = await withFoundingAcceleration(creator_id_source, sharePct);
-          const creatorShare = Math.round(referenceNetAmountPaise * sharePct) / 10000;
-          await recordCreatorEarnings(supabase, {
-            creatorId: creator_id_source,
-            storyId: story_id_source || null,
-            subscriptionId: inserted?.id || null,
-            creatorShare,
-            sharePct,
-            trustLevel,
-          });
-        }
-      }
+      const result = await activateFromPayment(supabase, {
+        userId,
+        notes: {
+          story_id_source,
+          creator_id_source,
+          billing_cycle,
+        },
+        paymentId: razorpay_payment_id,
+        subscriptionId: razorpay_subscription_id || null,
+        orderId: razorpay_order_id,
+      });
 
       return res.json({
         subscription_status: 'active',
-        ends_at: endsAt,
+        ends_at: result.subscription?.ends_at,
         razorpay_payment_id,
-        source: 'signature_confirm',
+        source: result.skipped ? 'ledger' : 'signature_confirm',
       });
     }
 
@@ -309,6 +394,9 @@ subscriptionsRouter.get('/status', requireAuthOrMockLegacyUser(), async (req, re
     const supabase = getSupabase() || sbClient;
 
     if (!supabase) {
+      if (process.env.NODE_ENV === 'production' || !isMockMode()) {
+        return res.status(503).json({ subscription_status: 'free', error: 'unavailable' });
+      }
       return res.json({ subscription_status: 'free', mock: true });
     }
 
@@ -318,12 +406,19 @@ subscriptionsRouter.get('/status', requireAuthOrMockLegacyUser(), async (req, re
       .eq('id', userId)
       .maybeSingle();
 
-    const status = profile?.subscription_status || 'free';
+    let status = profile?.subscription_status || 'free';
     const endsAt = profile?.subscription_ends_at || null;
 
-    // Grace: expired active → free
+    // Active past ends_at → expired
     if (status === 'active' && endsAt && Date.parse(endsAt) < Date.now()) {
       return res.json({ subscription_status: 'expired', ends_at: endsAt });
+    }
+
+    // P1-03: grace_period is time-bound (subscription_ends_at = grace deadline)
+    if (status === 'grace_period') {
+      if (!endsAt || Date.parse(endsAt) < Date.now()) {
+        status = 'expired';
+      }
     }
 
     res.json({
@@ -337,103 +432,88 @@ subscriptionsRouter.get('/status', requireAuthOrMockLegacyUser(), async (req, re
 });
 
 // @deprecated Wave C — use Supabase Edge Function `payment-webhook` in production.
+// Kept for local/dev parity. Prefer edge for raw-body HMAC + payment.captured.
 subscriptionsRouter.post('/webhook', async (req, res, next) => {
   try {
     const signature = req.headers['x-razorpay-signature'];
     const body = req.body;
+    const rawBody = req.rawBody; // set by express.json verify in index.js
     const webhookId = req.headers['x-razorpay-webhook-id'] || body?.id || `wh_${Date.now()}`;
     const event = body?.event;
 
-    // 1. Signature verification (always enforced in prod)
-    if (!verifyRazorpaySignature(body, signature)) {
+    if (!verifyRazorpaySignature(body, signature, rawBody)) {
       console.warn('[Webhook] Invalid signature', { webhookId, event });
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // 2. Timestamp validation (replay)
-    const ts = body?.created_at || body?.payload?.subscription?.entity?.created_at;
+    const paymentEntity = body?.payload?.payment?.entity || body?.payload?.payment || {};
+    const orderEntity = body?.payload?.order?.entity || body?.payload?.order || {};
+    const subEntity = body?.payload?.subscription?.entity || body?.payload?.subscription || {};
+
+    const ts = body?.created_at
+      || subEntity?.created_at
+      || paymentEntity?.created_at;
     if (!isRecentWebhook(ts)) {
       return res.json({ received: true, ignored: 'stale' });
     }
 
-    // 3. Idempotency
     if (await isWebhookAlreadyProcessed(webhookId)) {
       return res.json({ received: true, already_processed: true });
     }
 
     const supabase = getSupabase() || sbClient;
+    if (!supabase) {
+      return res.status(503).json({ error: 'DB unavailable' });
+    }
 
-    // 4. Process events (adapt payload shape to real Razorpay)
+    // payment.captured / order.paid — Flutter Orders API path (P0-03)
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const payment = paymentEntity;
+      const order = orderEntity;
+      const notes = { ...(order?.notes || {}), ...(payment?.notes || {}) };
+      const userId = notes?.user_id;
+      const paymentId = payment?.id;
+      if (userId && paymentId) {
+        await activateFromPayment(supabase, {
+          userId,
+          notes,
+          paymentId,
+          orderId: order?.id || payment?.order_id,
+          amountPaise: payment?.amount || order?.amount,
+        });
+      }
+    }
+
     if (event === 'subscription.charged' || event === 'subscription.authenticated') {
-      const sub = body.payload?.subscription?.entity || body.payload?.subscription;
-      const payment = body.payload?.payment?.entity || {};
+      const sub = subEntity;
+      const payment = paymentEntity;
       const notes = sub?.notes || {};
 
       if (notes?.user_id) {
-        const billing_cycle = resolveBillingCycle(notes?.billing_cycle);
-        const plan = getPlanPricing(billing_cycle);
-        const referenceNetAmountPaise = getReferenceNetAmountForCycle(billing_cycle);
-        const endsAt = new Date(Date.now() + plan.months * 30 * 24 * 60 * 60 * 1000).toISOString();
-
-        const { data: insertedSub } = await supabase.from('subscriptions').insert({
-          user_id: notes.user_id,
-          story_id_source: notes.story_id_source,
-          creator_id_source: notes.creator_id_source,
-          razorpay_subscription_id: sub.id,
-          razorpay_payment_id: payment.id,
-          amount_paise: payment.amount || plan.total_price_paise,
-          billing_cycle,
-          reference_net_amount_paise: referenceNetAmountPaise,
-          status: 'active',
-          creator_share_pct: getRevenueConfig().creator_share_pct,
-          ends_at: endsAt,
-        }).select('id').maybeSingle();
-
-        await supabase.from('profiles').update({
-          subscription_status: 'active',
-          subscription_ends_at: endsAt,
-        }).eq('id', notes.user_id);
-
-        if (notes?.creator_id_source) {
-          let trust_level = 'performing';
-          let sharePct = getRevenueConfig().creator_share_pct;
-          try {
-            const { effectiveShareForStory } = await import('../services/storyTrust.js');
-            if (notes.story_id_source) {
-              const t = await effectiveShareForStory(notes.story_id_source);
-              trust_level = t.trust_level;
-              // Ladder: use max(base env share at performing, effective trust share)
-              sharePct = Math.max(sharePct, t.effective_share_pct || 0) || sharePct;
-              if (t.effective_share_pct > 0) sharePct = t.effective_share_pct;
-            }
-          } catch { /* use base */ }
-
-          sharePct = await withFoundingAcceleration(notes.creator_id_source, sharePct);
-          // Option 1 (DEC-028): creator share is computed against the fixed reference amount,
-          // never the actual transaction amount — rail-fee variance never reaches the creator.
-          const creatorShare = Math.round(referenceNetAmountPaise * sharePct) / 10000;
-          await recordCreatorEarnings(supabase, {
-            creatorId: notes.creator_id_source,
-            storyId: notes.story_id_source || null,
-            subscriptionId: insertedSub?.id || null,
-            creatorShare,
-            sharePct,
-            trustLevel: trust_level,
-          });
-        }
+        await activateFromPayment(supabase, {
+          userId: notes.user_id,
+          notes,
+          paymentId: payment?.id,
+          subscriptionId: sub?.id,
+          amountPaise: payment?.amount,
+        });
       }
     }
 
     if (event === 'subscription.halted' || event === 'payment.failed') {
-      const sub = body.payload?.subscription?.entity;
+      const sub = subEntity;
       const userId = sub?.notes?.user_id;
       if (userId) {
-        await supabase.from('profiles').update({ subscription_status: 'grace_period' }).eq('id', userId);
+        const graceEnds = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        await supabase.from('profiles').update({
+          subscription_status: 'grace_period',
+          subscription_ends_at: graceEnds,
+        }).eq('id', userId);
       }
     }
 
     if (event && ['subscription.cancelled', 'subscription.completed'].includes(event)) {
-      const sub = body.payload?.subscription?.entity;
+      const sub = subEntity;
       const userId = sub?.notes?.user_id;
       if (userId) {
         await supabase.from('profiles').update({ subscription_status: 'cancelled' }).eq('id', userId);
@@ -443,7 +523,6 @@ subscriptionsRouter.post('/webhook', async (req, res, next) => {
     await recordWebhookProcessed(webhookId, event);
     res.json({ received: true });
   } catch (err) {
-    // Return 200 so Razorpay does not keep retrying bad payloads forever
     console.error('Webhook processing error (non-fatal ack):', err.message);
     res.json({ received: true, error: 'logged' });
   }

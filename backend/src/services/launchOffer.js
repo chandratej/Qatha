@@ -3,18 +3,20 @@
  * Modes align with RESEARCH_DEVIATION_LOG.md; switch via env without code changes.
  */
 
+import { getUnprovenFreeChapterDefault, PROVEN_FREE_CHAPTERS } from './freeChapterThreshold.js';
+
 export const LAUNCH_OFFER_MODES = Object.freeze({
   immediate: {
     id: 'immediate',
     label: 'Immediate paywall at subscription gate',
-    description: 'Ch 1–3 free → Ch 4 OTP → paywall at gate chapter. No launch trial.',
+    description: 'Free sample (story-derived) → sign-in → paywall at free+3. No launch trial.',
     trialDays: 0,
     foundingLimit: null,
   },
   seven_day_unlimited: {
     id: 'seven_day_unlimited',
     label: '7-day unlimited after signup',
-    description: 'Full access for 7 days after phone OTP (MVP doc). Paywall after trial ends.',
+    description: 'Full access for 7 days after sign-in. Paywall after trial ends.',
     trialDays: 7,
     foundingLimit: null,
   },
@@ -28,8 +30,12 @@ export const LAUNCH_OFFER_MODES = Object.freeze({
 });
 
 const DEFAULT_MODE = 'immediate';
+// Platform minimum paywall chapter for proven sample (free=3 → paywall at 6).
+// Per-story free counts expand the gate via accessControl Math.max(configured, free+3).
 const DEFAULT_GATE_CHAPTER = 6;
 const DEFAULT_FOUNDING_LIMIT = 500;
+/** Grace after payment failure — days of continued unlimited access (P1-03). */
+const DEFAULT_GRACE_DAYS = 7;
 
 /** In-memory trial registry for mock mode */
 const mockTrialUsers = new Map();
@@ -46,6 +52,12 @@ export function getLaunchOfferMode() {
 export function getSubscriptionGateChapter() {
   const n = Number(process.env.LAUNCH_OFFER_SUBSCRIPTION_GATE_CHAPTER || DEFAULT_GATE_CHAPTER);
   return Number.isFinite(n) && n >= 4 ? Math.floor(n) : DEFAULT_GATE_CHAPTER;
+}
+
+/** Days of continued access after payment failure while status=grace_period. */
+export function getGracePeriodDays() {
+  const n = Number(process.env.KATHA_GRACE_PERIOD_DAYS || DEFAULT_GRACE_DAYS);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : DEFAULT_GRACE_DAYS;
 }
 
 export function getTrialDays() {
@@ -67,17 +79,24 @@ export function getFoundingLimit() {
 export function getLaunchOfferConfig() {
   const mode = getLaunchOfferMode();
   const spec = LAUNCH_OFFER_MODES[mode];
+  // P1-02: free-chapter count is story-derived (proven=3 / unproven default); surface both.
+  const unprovenFree = getUnprovenFreeChapterDefault();
+  const gate = getSubscriptionGateChapter();
   return {
     mode,
     label: spec.label,
     description: spec.description,
     trial_days: getTrialDays(),
     founding_limit: getFoundingLimit(),
-    subscription_gate_chapter: getSubscriptionGateChapter(),
-    free_chapters: 3,
-    otp_gate_chapter: 4,
+    subscription_gate_chapter: gate,
+    free_chapters: unprovenFree,
+    free_chapters_proven: PROVEN_FREE_CHAPTERS,
+    free_chapters_unproven: unprovenFree,
+    otp_gate_chapter: unprovenFree + 1,
+    grace_period_days: getGracePeriodDays(),
     founding_slots_remaining: getFoundingSlotsRemaining(),
     paywall_active: mode === 'immediate' || getTrialDays() === 0,
+    auth_methods: ['google', 'email'],
   };
 }
 
@@ -103,8 +122,21 @@ export function hasUnlimitedAccess(user) {
   const activeStatuses = ['active', 'trial', 'grace_period'];
   if (activeStatuses.includes(user.subscription_status)) {
     if (user.subscription_status === 'trial') return isTrialActive(user);
-    if (user.subscription_status === 'active') return true;
-    if (user.subscription_status === 'grace_period') return true;
+    if (user.subscription_status === 'active') {
+      // If ends_at is set and past, no longer unlimited
+      if (user.subscription_ends_at && new Date(user.subscription_ends_at) <= new Date()) {
+        return false;
+      }
+      return true;
+    }
+    // P1-03: grace is time-bound via subscription_ends_at (grace deadline)
+    if (user.subscription_status === 'grace_period') {
+      if (user.subscription_ends_at) {
+        return new Date(user.subscription_ends_at) > new Date();
+      }
+      // No deadline set — treat as expired (fail closed), not forever unlimited
+      return false;
+    }
   }
   if (getTrialDays() > 0 && isTrialActive(user)) return true;
   return false;

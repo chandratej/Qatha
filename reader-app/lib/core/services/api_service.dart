@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/story.dart';
@@ -46,6 +47,11 @@ class ApiService {
   final String? trialEndsAt;
   final String? accessToken;
 
+  static const _deviceIdStorageKey = 'katha_stable_device_id';
+  static const _secureStorage = FlutterSecureStorage();
+  static String? _cachedDeviceId;
+  static Future<String>? _deviceIdFuture;
+
   factory ApiService.fromAuth(AuthState auth, {String? baseUrl}) {
     return ApiService(
       baseUrl: baseUrl ?? AppConfig.apiBase,
@@ -56,16 +62,44 @@ class ApiService {
     );
   }
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (accessToken != null && accessToken!.isNotEmpty)
-          'Authorization': 'Bearer $accessToken',
-        if (userId != null) 'x-user-id': userId!,
-        if (subscriptionStatus != null) 'x-subscription-status': subscriptionStatus!,
-        if (trialEndsAt != null) 'x-trial-ends-at': trialEndsAt!,
-        // Helps backend bind sessions for OTP rate limiting / device checks (blueprint Phase 1)
-        'x-device-id': 'flutter-${DateTime.now().millisecondsSinceEpoch % 999999}',
-      };
+  /// P1-07: stable device id in secure storage (not regenerated every request).
+  static Future<String> stableDeviceId() async {
+    if (_cachedDeviceId != null) return _cachedDeviceId!;
+    _deviceIdFuture ??= () async {
+      try {
+        final existing = await _secureStorage.read(key: _deviceIdStorageKey);
+        if (existing != null && existing.isNotEmpty) {
+          _cachedDeviceId = existing;
+          return existing;
+        }
+        final created =
+            'flutter-${DateTime.now().microsecondsSinceEpoch}-${DateTime.now().hashCode.abs()}';
+        await _secureStorage.write(key: _deviceIdStorageKey, value: created);
+        _cachedDeviceId = created;
+        return created;
+      } catch (_) {
+        // Secure storage unavailable (e.g. some web contexts) — session-stable fallback
+        _cachedDeviceId ??=
+            'flutter-session-${DateTime.now().millisecondsSinceEpoch}';
+        return _cachedDeviceId!;
+      }
+    }();
+    return _deviceIdFuture!;
+  }
+
+  Future<Map<String, String>> get _headers async {
+    final deviceId = await stableDeviceId();
+    return {
+      'Content-Type': 'application/json',
+      if (accessToken != null && accessToken!.isNotEmpty)
+        'Authorization': 'Bearer $accessToken',
+      if (userId != null) 'x-user-id': userId!,
+      if (subscriptionStatus != null)
+        'x-subscription-status': subscriptionStatus!,
+      if (trialEndsAt != null) 'x-trial-ends-at': trialEndsAt!,
+      'x-device-id': deviceId,
+    };
+  }
 
   Future<List<Story>> fetchStories({String? genre, String sort = 'trending'}) async {
     final params = <String, String>{'sort': sort};
@@ -73,7 +107,7 @@ class ApiService {
     final uri = Uri.parse('$baseUrl/stories').replace(queryParameters: params);
     late final http.Response res;
     try {
-      res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+      res = await http.get(uri, headers: await _headers).timeout(const Duration(seconds: 15));
     } catch (e) {
       throw ApiException(
         code: 'NETWORK_OFFLINE',
@@ -119,7 +153,7 @@ class ApiService {
     );
     late final http.Response res;
     try {
-      res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 15));
+      res = await http.get(uri, headers: await _headers).timeout(const Duration(seconds: 15));
     } catch (_) {
       throw ApiException(
         code: 'NETWORK_OFFLINE',
@@ -145,7 +179,7 @@ class ApiService {
   }
 
   Future<DiscoverFeed> fetchDiscover(String genre) async {
-    final res = await http.get(Uri.parse('$baseUrl/stories/discover/$genre'), headers: _headers);
+    final res = await http.get(Uri.parse('$baseUrl/stories/discover/$genre'), headers: await _headers);
     if (res.statusCode != 200) throw _parseError(res);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     List<Story> parseList(dynamic raw) {
@@ -168,7 +202,7 @@ class ApiService {
   }
 
   Future<StoryDetail> fetchStoryDetail(String storyId) async {
-    final res = await http.get(Uri.parse('$baseUrl/stories/$storyId'), headers: _headers);
+    final res = await http.get(Uri.parse('$baseUrl/stories/$storyId'), headers: await _headers);
     if (res.statusCode != 200) throw _parseError(res);
     return StoryDetail.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
@@ -176,7 +210,7 @@ class ApiService {
   Future<Chapter> fetchChapter(String storyId, int chapterNumber) async {
     final res = await http.get(
       Uri.parse('$baseUrl/chapters/$storyId/$chapterNumber'),
-      headers: _headers,
+      headers: await _headers,
     );
     if (res.statusCode == 403) throw _parseError(res);
     if (res.statusCode != 200) throw _parseError(res);
@@ -203,7 +237,7 @@ class ApiService {
     }
     await http.post(
       Uri.parse('$baseUrl/chapters/progress'),
-      headers: _headers,
+      headers: await _headers,
       body: jsonEncode(progressBody),
     );
   }
@@ -216,7 +250,7 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/engagement/reader-feedback'),
-      headers: _headers,
+      headers: await _headers,
       body: jsonEncode({
         'story_id': storyId,
         'chapter_number': chapterNumber,
@@ -230,7 +264,7 @@ class ApiService {
   /// Author-curated public testimonials for a story — never an aggregate score (§3.2).
   Future<List<Map<String, dynamic>>> fetchPublicPraise(String storyId) async {
     final res = await http
-        .get(Uri.parse('$baseUrl/stories/$storyId/praise'), headers: _headers)
+        .get(Uri.parse('$baseUrl/stories/$storyId/praise'), headers: await _headers)
         .timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) return const [];
     final decoded = jsonDecode(res.body) as Map<String, dynamic>;
@@ -246,7 +280,7 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/stories/$storyId/report'),
-      headers: _headers,
+      headers: await _headers,
       body: jsonEncode({'category': category, 'reason': reason}),
     );
     if (res.statusCode != 200) throw _parseError(res);
@@ -256,7 +290,7 @@ class ApiService {
   Future<bool> healthCheck() async {
     try {
       final res = await http
-          .get(Uri.parse('$baseUrl/health'), headers: _headers)
+          .get(Uri.parse('$baseUrl/health'), headers: await _headers)
           .timeout(const Duration(seconds: 8));
       return res.statusCode == 200;
     } catch (_) {
@@ -269,7 +303,7 @@ class ApiService {
     try {
       final res = await http.post(
         Uri.parse('$baseUrl/engagement/ping-streak'),
-        headers: _headers,
+        headers: await _headers,
       );
       if (res.statusCode == 200) {
         return jsonDecode(res.body) as Map<String, dynamic>;

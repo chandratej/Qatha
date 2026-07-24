@@ -63,7 +63,8 @@ moderationRouter.get('/stories/:storyId/escrow', requireAuth(), async (req, res,
   }
 });
 
-moderationRouter.use(requireRole('admin', 'moderator'));
+// Admin queue — require session + role (router is no longer globally requireAuth so copyright POST stays public)
+moderationRouter.use(requireAuth(), requireRole('admin', 'moderator'));
 
 /** Content-report / copyright-claim / appeal cases awaiting moderator action. */
 moderationRouter.get('/cases', async (req, res, next) => {

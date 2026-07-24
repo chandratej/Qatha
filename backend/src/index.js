@@ -40,13 +40,18 @@ function isDevLocalOrigin(origin) {
   return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin || '');
 }
 
+/** Vercel preview/production hosts for Creator Studio + Gateway (Mode B). */
+function isVercelOrigin(origin) {
+  return /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(origin || '');
+}
+
 // CORS must run before helmet / routes so preflight and error responses get ACAO.
 // When the API is down, browsers also report "CORS" — keep this process stable (see bottom).
 app.use(cors({
   origin(origin, callback) {
     // Non-browser clients (curl, mobile) send no Origin
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || isDevLocalOrigin(origin)) {
+    if (allowedOrigins.includes(origin) || isDevLocalOrigin(origin) || isVercelOrigin(origin)) {
       return callback(null, true);
     }
     // Reflect unknown origins in non-production so misconfigured previews still work
@@ -79,7 +84,15 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 app.use(compression()); // Gzip/Brotli for all responses - big win for chapter text
-app.use(express.json({ limit: '2mb' }));
+// Capture raw body for Razorpay webhook HMAC (JSON.stringify of parsed body breaks signatures)
+app.use(express.json({
+  limit: '2mb',
+  verify: (req, _res, buf) => {
+    if (buf?.length) {
+      req.rawBody = buf.toString('utf8');
+    }
+  },
+}));
 app.use(deprecationHeaders());
 
 app.get('/api/openapi.json', (_, res) => {
@@ -98,11 +111,21 @@ app.get('/api/docs', (_, res) => {
 });
 
 function healthPayload() {
+  const paymentsReady = Boolean(
+    process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET,
+  );
+  const webhookReady = Boolean(
+    process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET,
+  );
   return {
     status: 'ok',
     service: 'katha-api',
     version: '1.0.0',
     mock_mode: isMockMode(),
+    node_env: process.env.NODE_ENV || 'development',
+    payments_ready: paymentsReady,
+    webhook_secret_configured: webhookReady,
+    spi_batch_secret_required: process.env.NODE_ENV === 'production',
     launch_offer: getLaunchOfferConfig(),
   };
 }
@@ -116,7 +139,7 @@ app.get('/api/health', (_, res) => {
   res.json(healthPayload());
 });
 
-/** Ops: SPI batch stats (no secrets). Full recompute requires SPI_BATCH_SECRET header if set. */
+/** Ops: SPI batch stats (no secrets). Full recompute requires SPI_BATCH_SECRET. */
 app.get('/api/ops/spi-stats', async (_, res) => {
   try {
     const { spiBatchStats } = await import('./services/storyTrustBatch.js');
@@ -128,7 +151,12 @@ app.get('/api/ops/spi-stats', async (_, res) => {
 
 app.post('/api/ops/spi-recompute', async (req, res) => {
   const secret = process.env.SPI_BATCH_SECRET;
-  if (secret && req.headers['x-spi-batch-secret'] !== secret) {
+  // P1-13: always require secret in production; never open recompute when unset
+  if (process.env.NODE_ENV === 'production') {
+    if (!secret || req.headers['x-spi-batch-secret'] !== secret) {
+      return res.status(401).json({ error: 'Unauthorized — SPI_BATCH_SECRET required' });
+    }
+  } else if (secret && req.headers['x-spi-batch-secret'] !== secret) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   try {
@@ -149,7 +177,10 @@ app.use('/api/stories', storiesRouter);
 app.use('/api/chapters', chaptersRouter);
 app.use('/api/creators', requireAuth(), creatorsRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
-app.use('/api/moderation', requireAuth(), moderationRouter);
+// Copyright claim POST is public (rights holders are not logged-in readers) — P1-05.
+// Mount before the auth-gated moderation router so /copyright-claims is reachable.
+app.use('/api/moderation', moderationRouter);
+// Role-gated admin moderation still requires auth inside route handlers.
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/waitlist', waitlistRouter);
 app.use('/api/config', configRouter);

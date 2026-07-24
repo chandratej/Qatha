@@ -38,9 +38,9 @@ engagementRouter.post('/reader-feedback', requireAuth(), async (req, res, next) 
     }
 
     if (!isMockMode()) {
-      const { data: story } = await supabase.from('stories').select('id, moderation_status').eq('id', storyId).maybeSingle();
+      const { data: story } = await supabase.from('stories').select('id, is_published').eq('id', storyId).maybeSingle();
       if (!story) throw createAppError('NOT_FOUND', 'Story not found', 404);
-      if (story.moderation_status !== 'published') {
+      if (story.is_published !== true) {
         throw createAppError('BAD_REQUEST', 'Feedback is only accepted for published stories', 400);
       }
       if (chapter_number != null) {

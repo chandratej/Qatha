@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
@@ -10,6 +12,25 @@ class AnalyticsService {
   String? userId;
 
   void setUserId(String? id) => userId = id;
+
+  /// P1-08: report real platform (android / ios / web / desktop).
+  static String get platformName {
+    if (kIsWeb) return 'web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.linux:
+        return 'linux';
+      case TargetPlatform.fuchsia:
+        return 'fuchsia';
+    }
+  }
 
   Future<void> track(String event, [Map<String, dynamic>? properties]) async {
     // Best-effort only — never block UI or crash when API is offline
@@ -23,7 +44,7 @@ class AnalyticsService {
               'user_id': userId,
               'properties': {
                 ...?properties,
-                'platform': 'web',
+                'platform': platformName,
                 'timestamp': DateTime.now().toIso8601String(),
               },
             }),

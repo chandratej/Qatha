@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>కథ — Stories that stay with you</title>
-  <meta name="description" content="Katha — Telugu stories that stay with you. No ads. No coins. ₹99/month. 60% to writers. Built with pride for Telugu storytellers." />
+  <meta name="description" content="Katha — Telugu stories that stay with you. No ads. No coins. ₹99/month. Writers start at 40% and earn up to 60% with Story Trust. Built with pride for Telugu storytellers." />
   <meta name="theme-color" content="#C4A052" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -246,13 +246,13 @@
   <section class="hero">
     <div class="logo">కథ</div>
     <p class="tagline-te">మనసులో నిలిచే కథలు</p>
-    <p class="tagline-en">Stories that stay with you. Telugu fiction — no ads, no coins. Writers keep 60%.</p>
+    <p class="tagline-en">Stories that stay with you. Telugu fiction — no ads, no coins. Writers earn 40%→60% with Story Trust.</p>
     <p style="font-size:0.875rem;color:var(--ink-muted);margin:-24px 0 28px;font-family:'Noto Sans Telugu',serif;">తెలుగు కథకుల కోసం గర్వంతో నిర్మించబడింది</p>
     <div class="price-badge" id="price-badge">₹99/month · UPI autopay</div>
     <p id="launch-offer-banner" style="display:none; margin-bottom: 24px; padding: 12px 20px; background: rgba(196,160,82,0.15); border-radius: 100px; font-size: 0.9375rem; color: var(--gold-dark); font-weight: 500;"></p>
     <div class="cta-group">
       <button class="btn btn-primary" onclick="openWaitlist()">Join Waitlist</button>
-      <a href="http://localhost:5173/onboarding" class="btn btn-secondary">Write on Katha</a>
+      <a id="write-cta" href="/onboarding" class="btn btn-secondary">Write on Katha</a>
     </div>
     <p id="waitlist-count" style="margin-top: 20px; font-size: 0.875rem; color: var(--ink-muted);"></p>
     <p class="scroll-hint">↓ How it works</p>
@@ -272,22 +272,22 @@
 
   <section class="how-it-works">
     <h2>ఎలా పని చేస్తుంది</h2>
-    <p class="subtitle">Three chapters free. One price. Unlimited stories.</p>
+    <p class="subtitle">A free sample of every story. One price. Unlimited reading.</p>
     <div class="steps">
       <div class="step" data-reveal>
         <div class="step-num">1</div>
         <h3>Read free</h3>
-        <p>Chapters 1–3 of every story. No signup. No ads interrupting your flow.</p>
+        <p>Sample chapters of every story — no signup, no ads interrupting your flow. Sample size grows with proven authors (as few as 3 free).</p>
       </div>
       <div class="step" data-reveal>
         <div class="step-num">2</div>
         <h3>Sign in once</h3>
-        <p>Phone OTP at Chapter 4. One tap. Built for Indian readers.</p>
+        <p>Google or email when you hit the free-sample gate. Built for Indian readers.</p>
       </div>
       <div class="step" data-reveal>
         <div class="step-num">3</div>
         <h3>₹99 unlimited</h3>
-        <p>All chapters, all stories. 60% goes to writers. No coin math ever.</p>
+        <p>All chapters, all stories. Writers start at <strong>40%</strong> and can earn up to <strong>60%</strong> with Story Trust. No coin math ever.</p>
       </div>
     </div>
   </section>
@@ -303,8 +303,8 @@
       <p>Beautiful Telugu fonts, dark mode, offline chapters for your commute.</p>
     </div>
     <div class="feature" data-reveal>
-      <h3>✍️ 60% to creators</h3>
-      <p>Transparent earnings from day one. No Golden Badge gatekeeping.</p>
+      <h3>✍️ 40%→60% to creators</h3>
+      <p>Story Trust ladder — base 40% at Performing, up to 60% at Apex. No Golden Badge gatekeeping.</p>
     </div>
     <div class="feature" data-reveal>
       <h3>🚫 No ads. No coins.</h3>
@@ -317,19 +317,33 @@
     <p>Creator share escalates with Story Trust: <strong>40% base at Performing → up to 60% at Apex</strong>. No coins. No ads. No follower gates.</p>
     <p>SPI (Story Trust score) weights retention 35%, completion 25%, satisfaction 15%, growth 10%, publishing consistency 10%, policy quality 5%.</p>
     <p>Grievance officer: <a href="mailto:grievance@katha.in">grievance@katha.in</a> (72h acknowledgment target).</p>
-    <p>Full Creator Agreement + Privacy Policy are versioned in product consent (Creator Studio) and <code>PRD/Legal/</code>.</p>
+    <p>Full Creator Agreement + Privacy Policy are versioned in product consent (Creator Studio). Hosted legal pages: <a href="/privacy.html">Privacy Policy</a> · <a href="/terms.html">Terms of Service</a>.</p>
   </section>
 
   <footer>
     © 2026 Katha · Telugu-first
     <a href="#transparency">Transparency</a>
     <a href="mailto:grievance@katha.in">Grievance</a>
-    <a href="#transparency">Privacy</a>
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
   </footer>
   <script>
-    const API = (window.location.port === '3001' || window.location.hostname === 'localhost')
+    // Prefer same-origin /api in production; localhost only for local API dev.
+    const API = (window.location.port === '3001' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? `${window.location.protocol}//${window.location.hostname}:3001/api`
       : '/api';
+
+    // Write CTA: production CMS origin via meta/env, never hard-coded localhost in prod
+    (function resolveWriteCta() {
+      const el = document.getElementById('write-cta');
+      if (!el) return;
+      const params = new URLSearchParams(window.location.search);
+      const fromQuery = params.get('cms');
+      const fromMeta = document.querySelector('meta[name="katha-cms-url"]')?.content;
+      const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+      const cmsBase = (fromQuery || fromMeta || (isLocal ? 'http://localhost:5173' : 'https://studio.katha.in')).replace(/\/$/, '');
+      el.href = `${cmsBase}/onboarding`;
+    })();
 
     function openWaitlist() {
       document.getElementById('waitlist-modal').classList.add('open');

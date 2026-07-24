@@ -90,7 +90,8 @@ export async function publishedChapterCounts() {
 }
 
 /**
- * After a chapter is approved, mark the parent story catalog-visible.
+ * After a chapter is approved, mark the parent story catalog-visible
+ * and ensure a gateway-friendly slug exists.
  */
 export async function syncStoryAfterChapterPublish(storyId) {
   if (!storyId) return null;
@@ -106,13 +107,32 @@ export async function syncStoryAfterChapterPublish(storyId) {
   }
 
   const chapterCount = count ?? 0;
+  const update = {
+    is_published: chapterCount > 0,
+    chapter_count: chapterCount,
+  };
+
+  // Gateway teaser needs slug; generate if missing and we have published chapters
+  if (chapterCount > 0) {
+    try {
+      const { data: current } = await supabase
+        .from('stories')
+        .select('id, title, slug')
+        .eq('id', storyId)
+        .maybeSingle();
+      if (current && !current.slug) {
+        const { generateUniqueStorySlug } = await import('../lib/slugify.js');
+        update.slug = await generateUniqueStorySlug(supabase, current.title, storyId);
+      }
+    } catch (e) {
+      console.warn('[publicCatalog] slug ensure failed:', e.message);
+    }
+  }
+
   const storySelect = await resolveStorySelect();
   const { data, error } = await supabase
     .from('stories')
-    .update({
-      is_published: chapterCount > 0,
-      chapter_count: chapterCount,
-    })
+    .update(update)
     .eq('id', storyId)
     .select(storySelect)
     .maybeSingle();

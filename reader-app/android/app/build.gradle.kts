@@ -31,11 +31,49 @@ android {
         multiDexEnabled = true
     }
 
+    // Release signing: prefer keystore via env / gradle.properties (P0-07).
+    // Set KATHA_UPLOAD_STORE_FILE, KATHA_UPLOAD_STORE_PASSWORD, KATHA_UPLOAD_KEY_ALIAS,
+    // KATHA_UPLOAD_KEY_PASSWORD — or android/key.properties — before Play upload.
+    // Until configured, release falls back to debug so local `flutter run --release` works.
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val keystoreProperties = java.util.Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(keystorePropertiesFile.inputStream())
+    }
+    val uploadStoreFile = System.getenv("KATHA_UPLOAD_STORE_FILE")
+        ?: keystoreProperties.getProperty("storeFile")
+    val uploadStorePassword = System.getenv("KATHA_UPLOAD_STORE_PASSWORD")
+        ?: keystoreProperties.getProperty("storePassword")
+    val uploadKeyAlias = System.getenv("KATHA_UPLOAD_KEY_ALIAS")
+        ?: keystoreProperties.getProperty("keyAlias")
+    val uploadKeyPassword = System.getenv("KATHA_UPLOAD_KEY_PASSWORD")
+        ?: keystoreProperties.getProperty("keyPassword")
+    val hasReleaseKeystore = !uploadStoreFile.isNullOrBlank()
+        && !uploadStorePassword.isNullOrBlank()
+        && !uploadKeyAlias.isNullOrBlank()
+        && !uploadKeyPassword.isNullOrBlank()
+
+    if (hasReleaseKeystore) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(uploadStoreFile!!)
+                storePassword = uploadStorePassword
+                keyAlias = uploadKeyAlias
+                keyPassword = uploadKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                // Debug fallback — do NOT ship this APK to Play Store
+                println("WARNING: No release keystore configured; signing release with debug keys")
+                signingConfigs.getByName("debug")
+            }
+            isMinifyEnabled = false
         }
     }
 }

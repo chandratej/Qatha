@@ -16,7 +16,7 @@ const ERROR_MAP = {
     action: 'SHOW_PAYWALL',
   },
   OTP_REQUIRED: {
-    userMessage: 'Sign in with your phone to continue reading.',
+    userMessage: 'Sign in to continue reading.',
     action: 'SHOW_OTP_GATE',
   },
   CREATOR_BANNED: {

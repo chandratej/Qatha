@@ -13,6 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import type { StudioStringKey } from '../lib/studioLocale';
+import { isFeatureEnabled } from './feature_flags';
 
 export interface NavItemConfig {
   key: string;
@@ -22,6 +23,8 @@ export interface NavItemConfig {
   /** Optional status chip (e.g. early-stage features) */
   statusKey?: StudioStringKey;
   end?: boolean;
+  /** When set, item is omitted from nav unless the feature flag is on */
+  featureFlag?: 'events' | 'marketplace' | 'magazine' | 'community';
 }
 
 /** Primary destinations — always visible on desktop and mobile tab bar */
@@ -48,7 +51,7 @@ export const NAV_PRIMARY: NavItemConfig[] = [
 ];
 
 /** Secondary destinations — More dropdown (desktop) / bottom sheet (mobile) */
-export const NAV_MORE: NavItemConfig[] = [
+const NAV_MORE_ALL: NavItemConfig[] = [
   {
     key: 'publishing',
     labelKey: 'nav.publishing',
@@ -60,6 +63,7 @@ export const NAV_MORE: NavItemConfig[] = [
     labelKey: 'nav.events',
     icon: Trophy,
     route: '/events',
+    featureFlag: 'events',
   },
   {
     key: 'community',
@@ -69,6 +73,11 @@ export const NAV_MORE: NavItemConfig[] = [
     statusKey: 'nav.communityStatus',
   },
 ];
+
+/** Visible secondary nav (feature flags applied — P1-21 / P1-25). */
+export const NAV_MORE: NavItemConfig[] = NAV_MORE_ALL.filter(
+  (item) => !item.featureFlag || isFeatureEnabled(item.featureFlag),
+);
 
 /** Mobile-only extras inside the More sheet (no room in the tab bar) */
 export const NAV_MORE_MOBILE_EXTRAS: NavItemConfig[] = [

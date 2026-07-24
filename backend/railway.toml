@@ -1,0 +1,14 @@
+# Katha API — Railway free-tier beta
+# Root directory in Railway dashboard: backend
+# Or from monorepo: railway up --service katha-api from backend/
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm ci --omit=dev"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

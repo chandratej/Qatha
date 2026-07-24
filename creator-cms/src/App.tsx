@@ -41,6 +41,7 @@ import { Monetization } from './pages/Monetization';
 import { Earn } from './pages/Earn';
 import { PlatformMap } from './pages/PlatformMap';
 import { MagazineEdition } from './pages/MagazineEdition';
+import { isFeatureEnabled } from './config/feature_flags';
 import './styles/theme.css';
 import './styles/scroll-overlay.css';
 import './styles/components.css';
@@ -131,15 +132,26 @@ function App() {
                   <Route path="/stories/:storyId/media" element={<MediaLibrary />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/community" element={<Community />} />
-                  {/* Events are core GTM + revenue (not Labs) — authors must register freely */}
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/events/new" element={<EventCreate />} />
-                  <Route path="/events/:eventId" element={<EventDetail />} />
-                  <Route path="/magazine" element={<MagazineEdition />} />
+                  {/* Events / magazine gated by FEATURE_FLAGS (off for launch until staffed) */}
+                  {isFeatureEnabled('events') && (
+                    <>
+                      <Route path="/events" element={<Events />} />
+                      <Route path="/events/new" element={<EventCreate />} />
+                      <Route path="/events/:eventId" element={<EventDetail />} />
+                    </>
+                  )}
+                  {isFeatureEnabled('magazine') && (
+                    <Route path="/magazine" element={<MagazineEdition />} />
+                  )}
                   {/* Earn hub: Reviewer Pool + Monetization as sub-tabs (nav redesign v2) */}
                   <Route path="/earn" element={<Earn />}>
-                    <Route index element={<Navigate to="reviews" replace />} />
-                    <Route path="reviews" element={<ReviewerMarketplace />} />
+                    <Route
+                      index
+                      element={<Navigate to={isFeatureEnabled('marketplace') ? 'reviews' : 'payouts'} replace />}
+                    />
+                    {isFeatureEnabled('marketplace') && (
+                      <Route path="reviews" element={<ReviewerMarketplace />} />
+                    )}
                     <Route path="payouts" element={<Monetization />} />
                   </Route>
                   {/* Legacy routes → Earn hub tabs (assignments stay under /reviewers) */}

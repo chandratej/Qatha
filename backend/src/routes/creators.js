@@ -898,8 +898,8 @@ creatorsRouter.post('/stories', async (req, res, next) => {
         release_schedule: release_schedule || 'irregular',
         release_day_of_week,
         release_time_of_day,
-        // Catalog-visible once ≥1 chapter is published (reader feed filters empty shells)
-        is_published: true,
+        // Unpublished until first approved chapter (P1-06 — empty shells must not look live)
+        is_published: false,
         chapter_count: 0,
         total_readers: 0,
         views_this_week: 0,
@@ -920,7 +920,7 @@ creatorsRouter.post('/stories', async (req, res, next) => {
     const { data, error } = await supabase.from('stories').insert({
       author_id: creatorId, title, description, genre, cover_url,
       release_schedule: release_schedule || 'irregular',
-      release_day_of_week, release_time_of_day, slug, is_published: true,
+      release_day_of_week, release_time_of_day, slug, is_published: false, chapter_count: 0,
     }).select().single();
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);

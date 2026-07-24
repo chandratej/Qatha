@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../core/config/app_config.dart';
 import '../core/providers/app_state.dart';
 import '../core/providers/auth_state.dart';
 import '../core/services/launch_offer_service.dart';
@@ -210,6 +212,40 @@ class SettingsScreen extends StatelessWidget {
             subtitle: l10n.settingsNotifyWeeklyTrendingSubtitle,
             value: appState.notifyTrending,
             onChanged: appState.setNotifyTrending,
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            child: Text(
+              // P1-16 honesty: in-app prefs only; remote push not wired for MVP1
+              'Notification preferences are saved on this device. Remote push delivery is not enabled in this build.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _SectionTitle('Legal & privacy'),
+          _NavCard(
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy',
+            onTap: () => launchUrl(
+              Uri.parse(AppConfig.privacyUrl),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          _NavCard(
+            icon: Icons.description_outlined,
+            title: 'Terms of Service',
+            onTap: () => launchUrl(
+              Uri.parse(AppConfig.termsUrl),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          _NavCard(
+            icon: Icons.delete_outline,
+            title: 'Request account / data deletion',
+            subtitle: AppConfig.grievanceEmail,
+            onTap: () => launchUrl(Uri.parse(AppConfig.dataDeletionMailto)),
           ),
         ],
       ),

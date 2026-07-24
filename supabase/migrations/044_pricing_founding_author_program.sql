@@ -24,3 +24,9 @@ ALTER TABLE public.profiles
 CREATE INDEX IF NOT EXISTS idx_profiles_founding_cohort
   ON public.profiles (founding_cohort_enrolled_at)
   WHERE founding_cohort_enrolled_at IS NOT NULL;
+
+-- Idempotent payment activation: one subscription row per Razorpay payment id
+-- (prevents double confirm + webhook from double-writing earnings_ledger).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_razorpay_payment_id
+  ON public.subscriptions (razorpay_payment_id)
+  WHERE razorpay_payment_id IS NOT NULL;

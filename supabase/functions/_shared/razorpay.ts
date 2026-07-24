@@ -1,11 +1,17 @@
-/** Razorpay webhook signature verification (mirrors Node subscriptions.js). */
+/** Razorpay webhook signature verification.
+ *  HMAC-SHA256 over the **raw** request body with RAZORPAY_WEBHOOK_SECRET
+ *  (or KEY_SECRET as legacy fallback). Do not re-JSON.stringify a parsed body —
+ *  key order / spacing will break the signature.
+ */
 
 export async function verifyRazorpaySignature(
-  body: unknown,
+  rawBody: string | unknown,
   signature: string | null,
   secret: string,
 ): Promise<boolean> {
   if (!signature || !secret) return false;
+
+  const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(rawBody);
 
   const key = await crypto.subtle.importKey(
     'raw',
@@ -18,7 +24,7 @@ export async function verifyRazorpaySignature(
   const sig = await crypto.subtle.sign(
     'HMAC',
     key,
-    new TextEncoder().encode(JSON.stringify(body)),
+    new TextEncoder().encode(payload),
   );
 
   const expected = Array.from(new Uint8Array(sig))

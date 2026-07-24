@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Katha MVP API — Node.js + Supabase",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",

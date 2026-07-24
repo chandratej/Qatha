@@ -305,7 +305,9 @@ export async function sbCreateStory(body: {
     genre: body.genre,
     cover_url: body.cover_url,
     release_schedule: body.release_schedule || 'irregular',
-    is_published: true,
+    // Unpublished until first approved chapter (P1-06)
+    is_published: false,
+    chapter_count: 0,
   };
 
   if (body.content_type) insertPayload.content_type = body.content_type;

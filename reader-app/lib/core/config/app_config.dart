@@ -66,4 +66,17 @@ class AppConfig {
   /// DEC-006: base share at Performing; ladder raises effective share to maxCreatorSharePct.
   static const creatorSharePct = 40;
   static const maxCreatorSharePct = 60;
+
+  /// Hosted legal docs (Play Store / DPDP). Override if privacy lives on another host.
+  static const privacyUrl = String.fromEnvironment(
+    'PRIVACY_URL',
+    defaultValue: 'https://katha.app/privacy.html',
+  );
+  static const termsUrl = String.fromEnvironment(
+    'TERMS_URL',
+    defaultValue: 'https://katha.app/terms.html',
+  );
+  static const grievanceEmail = 'grievance@katha.in';
+  static const dataDeletionMailto =
+      'mailto:grievance@katha.in?subject=Data%20deletion%20request';
 }

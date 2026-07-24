@@ -34,10 +34,18 @@ export function scheduleNotifications(cron) {
   });
 }
 
+/**
+ * Remote push is NOT wired for MVP1 (P1-16). This logs only — do not market push delivery.
+ * Wire FCM/CPaaS later and flip a feature flag before promising notifications externally.
+ */
 async function sendPush(token, title, body) {
   if (!token) return;
-  // Push delivery via Supabase Edge Function or India CPaaS webhook (no Firebase)
-  console.log(`[Push] ${title}: ${body} → ${token.slice(0, 8)}...`);
+  if (process.env.PUSH_DELIVERY_ENABLED === 'true') {
+    // Future: call edge function / CPaaS here
+    console.log(`[Push:enabled-stub] ${title}: ${body} → ${token.slice(0, 8)}...`);
+    return;
+  }
+  console.log(`[Push:disabled] would send "${title}" (set PUSH_DELIVERY_ENABLED=true when CPaaS ready)`);
 }
 
 export async function notifyNewChapter(storyId, chapterId) {

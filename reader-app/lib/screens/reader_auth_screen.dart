@@ -1,6 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../core/config/app_config.dart';
 import '../core/providers/auth_state.dart' show AuthState, AuthUser;
 import '../core/services/auth_service.dart';
 import '../core/theme/katha_theme.dart';
@@ -266,9 +269,38 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
-                l10n.readerAuthTermsNotice,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[500]),
+              Text.rich(
+                TextSpan(
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.grey[500]),
+                  children: [
+                    const TextSpan(text: 'By continuing you agree to our '),
+                    TextSpan(
+                      text: 'Terms',
+                      style: TextStyle(
+                        color: KathaColors.gold,
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => launchUrl(
+                              Uri.parse(AppConfig.termsUrl),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                    ),
+                    const TextSpan(text: ' & '),
+                    TextSpan(
+                      text: 'Privacy',
+                      style: TextStyle(
+                        color: KathaColors.gold,
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => launchUrl(
+                              Uri.parse(AppConfig.privacyUrl),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                    ),
+                  ],
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

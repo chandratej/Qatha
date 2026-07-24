@@ -27,7 +27,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
   || process.env.SUPABASE_SECRET_KEY;
 
-/** Tables required for MVP-1 launch (waves + legal + search) */
+/** Tables required for MVP-1 launch (waves + legal + search + 042–044) */
 const REQUIRED_TABLES = [
   // Core catalog / money
   'stories',
@@ -48,6 +48,12 @@ const REQUIRED_TABLES = [
   // Legal Wave 0 + beta feedback (041)
   'user_consents',
   'beta_feedback',
+  // 042 free-chapter threshold
+  'reader_story_sample_locks',
+  // 043 moderation escrow / copyright
+  'story_moderation_windows',
+  'copyright_claims',
+  'story_earnings_escrow',
 ];
 
 /** Columns on peer_review_requests from migration 032 */
@@ -64,6 +70,27 @@ const REQUIRED_PROFILE_COLUMNS = [
   'dpdp_consent_at',
   'creator_agreement_version',
   'creator_agreement_at',
+];
+
+/** stories free-chapter columns (042) */
+const REQUIRED_STORY_FREE_CHAPTER_COLUMNS = [
+  'free_chapter_count',
+  'free_chapter_count_source',
+  'free_chapter_cohort',
+  'ever_reached_performing_at',
+];
+
+/** subscriptions pricing columns (044) */
+const REQUIRED_SUBSCRIPTION_COLUMNS = [
+  'billing_cycle',
+  'reference_net_amount_paise',
+];
+
+/** profiles founding-author cohort (044) */
+const REQUIRED_FOUNDING_PROFILE_COLUMNS = [
+  'founding_cohort_enrolled_at',
+  'founding_cohort_scope',
+  'founding_cohort_acceleration_ends_at',
 ];
 
 async function tableExists(supabase, table) {
@@ -121,6 +148,25 @@ async function main() {
     else console.log(`[verify-wave-migrations] OK column profiles.${col}`);
   }
 
+  // Migration 042 — free-chapter threshold
+  for (const col of REQUIRED_STORY_FREE_CHAPTER_COLUMNS) {
+    const ok = await columnExists(supabase, 'stories', col);
+    if (!ok) gaps.push(`column:stories.${col}`);
+    else console.log(`[verify-wave-migrations] OK column stories.${col}`);
+  }
+
+  // Migration 044 — billing cycle + founding cohort
+  for (const col of REQUIRED_SUBSCRIPTION_COLUMNS) {
+    const ok = await columnExists(supabase, 'subscriptions', col);
+    if (!ok) gaps.push(`column:subscriptions.${col}`);
+    else console.log(`[verify-wave-migrations] OK column subscriptions.${col}`);
+  }
+  for (const col of REQUIRED_FOUNDING_PROFILE_COLUMNS) {
+    const ok = await columnExists(supabase, 'profiles', col);
+    if (!ok) gaps.push(`column:profiles.${col}`);
+    else console.log(`[verify-wave-migrations] OK column profiles.${col}`);
+  }
+
   // Optional but recommended: public search RPC
   try {
     const { error } = await supabase.rpc('search_public_stories', { q: 'కథ', lim: 1 });
@@ -136,11 +182,12 @@ async function main() {
   if (gaps.length > 0) {
     console.error('[verify-wave-migrations] GATE FAILED — missing schema:');
     for (const g of gaps) console.error(`  - ${g}`);
-    console.error('[verify-wave-migrations] Run: npm run migrate:wave1 (applies 017–041)');
+    console.error('[verify-wave-migrations] Run: npm run migrate:wave1 (applies 017–044)');
+    console.error('[verify-wave-migrations] Or paste supabase/migrations/042–044 in SQL Editor.');
     process.exit(2);
   }
 
-  console.log('[verify-wave-migrations] GATE PASSED — MVP-1 schema verified (incl. 038–041).');
+  console.log('[verify-wave-migrations] GATE PASSED — MVP-1 schema verified (incl. 038–044).');
 }
 
 main().catch((err) => {

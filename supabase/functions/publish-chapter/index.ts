@@ -1,4 +1,5 @@
 // Edge Function: publish-chapter (Wave B — SVC-PUB-01, SVC-MOD-01)
+// Mirrors Node flow: moderate → publish chapter → sync story (slug, is_published, chapter_count).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { corsHeaders, handleCorsPreflight } from '../_shared/cors.ts';
@@ -37,6 +38,78 @@ function estimateReadTimeMinutes(content: string): number {
   if (!plain) return 1;
   const words = plain.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 180));
+}
+
+function slugifyTitle(title: string): string {
+  const ascii = (title || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+  return ascii.length >= 3 ? ascii : '';
+}
+
+/** Generate unique story slug for gateway teaser routes. */
+async function generateUniqueStorySlug(
+  admin: ReturnType<typeof createClient>,
+  title: string,
+  storyId: string,
+): Promise<string> {
+  const base = slugifyTitle(title) || `story-${storyId.replace(/-/g, '').slice(0, 12)}`;
+  let slug = base;
+  let n = 0;
+  while (n < 100) {
+    const { data } = await admin.from('stories').select('id').eq('slug', slug).maybeSingle();
+    if (!data || data.id === storyId) return slug;
+    n += 1;
+    slug = `${base}-${n}`;
+  }
+  return `${base}-${Date.now()}`;
+}
+
+/**
+ * After a chapter is approved, mark parent story catalog-visible with accurate
+ * chapter_count and slug (required by reader catalog + gateway /read/{slug}).
+ */
+async function syncStoryAfterChapterPublish(
+  admin: ReturnType<typeof createClient>,
+  storyId: string,
+  storyTitle?: string | null,
+  existingSlug?: string | null,
+) {
+  const { count, error: countErr } = await admin
+    .from('chapters')
+    .select('id', { count: 'exact', head: true })
+    .eq('story_id', storyId)
+    .eq('status', 'published');
+
+  if (countErr) {
+    console.warn('[publish-chapter] chapter count failed:', countErr.message);
+  }
+
+  const chapterCount = count ?? 0;
+  const update: Record<string, unknown> = {
+    is_published: chapterCount > 0,
+    chapter_count: chapterCount,
+  };
+
+  if (chapterCount > 0 && !existingSlug) {
+    try {
+      update.slug = await generateUniqueStorySlug(admin, storyTitle || 'story', storyId);
+    } catch (e) {
+      console.warn('[publish-chapter] slug generation failed:', (e as Error).message);
+    }
+  }
+
+  const { error } = await admin.from('stories').update(update).eq('id', storyId);
+  if (error) {
+    console.warn('[publish-chapter] story sync failed:', error.message);
+  }
+  return { chapter_count: chapterCount, slug: update.slug as string | undefined };
 }
 
 Deno.serve(async (req) => {
@@ -80,7 +153,11 @@ Deno.serve(async (req) => {
     const content = sanitizePublishedContent(String(rawContent));
     const estimated_read_time_minutes = estimateReadTimeMinutes(content);
 
-    const { data: story } = await supabaseUser.from('stories').select('author_id').eq('id', story_id).single();
+    const { data: story } = await supabaseUser
+      .from('stories')
+      .select('author_id, title, slug, is_published')
+      .eq('id', story_id)
+      .single();
     if (!story || story.author_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 403,
@@ -185,8 +262,35 @@ Deno.serve(async (req) => {
       published_at: new Date().toISOString(),
     }).eq('id', chapter.id).select().single();
 
+    // Critical: keep parent story in reader catalog + gateway (was missing before)
+    const storySync = await syncStoryAfterChapterPublish(
+      admin,
+      story_id,
+      story.title,
+      story.slug,
+    );
+
+    // Best-effort creator notification (table may not exist in all envs)
+    try {
+      await admin.from('creator_notifications').insert({
+        creator_id: user.id,
+        type: 'chapter_published',
+        title: 'Chapter published',
+        body: `Chapter ${chapter_number} is live.`,
+        metadata: { story_id, chapter_number, chapter_id: chapter.id },
+      });
+    } catch {
+      // ignore
+    }
+
     return new Response(JSON.stringify({
       chapter: published,
+      story: {
+        id: story_id,
+        is_published: true,
+        chapter_count: storySync.chapter_count,
+        slug: storySync.slug || story.slug || null,
+      },
       moderation: {
         status: 'approved',
         risk_score: riskScore,

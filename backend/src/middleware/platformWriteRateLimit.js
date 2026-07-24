@@ -1,7 +1,10 @@
 /**
  * Platform write API rate limiting — LRC-16-D10
  * Security Council: bot abuse protection on reviewer pool mutations.
- * Lean: in-memory sliding window; Redis deferred until scale.
+ *
+ * IMPORTANT (P1-15): in-memory sliding window only — correct for a **single API instance**.
+ * Multi-instance / horizontal scale needs Redis (or equivalent) shared counters.
+ * Do not assume limits hold across processes until that lands.
  */
 
 import { createAppError } from './errorHandler.js';

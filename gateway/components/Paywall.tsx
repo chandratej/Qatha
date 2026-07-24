@@ -26,7 +26,7 @@ declare global {
 const BENEFITS = [
   'Finish this chapter instantly after payment',
   'Support the author through literary patronage — not coins or tips',
-  'Secure checkout with UPI via Razorpay',
+  'Or subscribe in the Katha app for unlimited stories (₹99/mo)',
 ] as const;
 
 export function Paywall({
@@ -225,6 +225,20 @@ export function Paywall({
         >
           {ctaLabel}
         </button>
+
+        <p className="paywall__fine" style={{ marginTop: 12 }}>
+          Prefer unlimited?{' '}
+          <a
+            href={
+              process.env.NEXT_PUBLIC_READER_APP_URL
+                ? `${process.env.NEXT_PUBLIC_READER_APP_URL.replace(/\/$/, '')}`
+                : 'https://katha.app'
+            }
+          >
+            Open the Katha app
+          </a>{' '}
+          and subscribe — no dead unlock if payments are not configured on web.
+        </p>
 
         <p className="paywall__fine">
           Secure payment via Razorpay · Cancel anytime on subscription plans in the Katha app · Prefer

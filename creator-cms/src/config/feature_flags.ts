@@ -12,8 +12,8 @@ export const FEATURE_FLAGS = {
   aiTranslation: false,
   /** Local planning notes panels (non-generative). */
   planningNotes: false,
-  /** Marketplace / reviewer pool surfaces. */
-  marketplace: true,
+  /** Marketplace / reviewer pool surfaces — off until schema + staffing ready (P1-21). */
+  marketplace: false,
   /** Audio books — not in MVP1. */
   audioBooks: false,
   /** Advanced analytics. */
@@ -24,8 +24,10 @@ export const FEATURE_FLAGS = {
   publishSchedule: true,
   /** Narrative OS editor (false forces legacy when VITE_LEGACY_EDITOR=true). */
   narrativeOs: import.meta.env.VITE_LEGACY_EDITOR !== 'true',
-  /** Contests / events. */
-  events: true,
+  /** Contests / events — off for launch until fully staffed (P1-21). */
+  events: false,
+  /** Magazine edition placeholder — hide from nav (P1-25). */
+  magazine: false,
 } as const;
 
 export type FeatureFlags = typeof FEATURE_FLAGS;

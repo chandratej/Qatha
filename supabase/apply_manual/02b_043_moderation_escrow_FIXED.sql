@@ -1,28 +1,17 @@
--- CLI migration runner resets search_path per-file; uuid-ossp/pg_trgm live in extensions.
+-- 043 FIXED — previous 02 failed because public.content_reports already exists
+-- from migration 014 with a DIFFERENT schema (target_type/target_id, not story_id).
+-- This renames the legacy table, then creates the story-report + escrow objects.
 SET search_path TO public, extensions;
 
--- 043: Reader feedback/praise/moderation redesign — abuse-resistant reporting, escrow
--- (not clawback) during moderation, and a separate copyright notice-and-counter-notice path.
--- See Worklog/23 JUL 2026/katha-feedback-praise-moderation-prompt.md
-
--- Extend moderation_cases with the two new report-driven case types this doc introduces.
--- (review_dispute / reviewer_conduct / appeal / fraud_flag already existed for peer-review ops.)
+-- Widen moderation_cases.case_type for content_report / copyright_claim
 ALTER TABLE public.moderation_cases DROP CONSTRAINT IF EXISTS moderation_cases_case_type_check;
 ALTER TABLE public.moderation_cases ADD CONSTRAINT moderation_cases_case_type_check
   CHECK (case_type IN (
     'review_dispute', 'reviewer_conduct', 'appeal', 'fraud_flag',
     'content_report', 'copyright_claim', 'content_report_appeal'
   ));
--- story_id for content_report/copyright_claim cases lives in metadata->>'story_id' —
--- request_id stays FK'd to peer_review_requests only, so it can't carry a story reference.
 
--- Reader content reports — Req 3.3. Reporter must have opened at least one chapter of the
--- story (checked in application code against reading_progress before insert); rate-limited
--- to one report per story per account via the unique constraint below.
---
--- NOTE: migration 014 already created a differently shaped public.content_reports
--- (target_type/target_id governance reports). Rename that legacy table first so this
--- story-report table can be created cleanly.
+-- Rename legacy 014 governance reports if present (no story_id column)
 DO $$
 BEGIN
   IF EXISTS (
@@ -36,6 +25,7 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'content_reports' AND column_name = 'story_id'
   ) THEN
     ALTER TABLE public.content_reports RENAME TO content_reports_legacy_014;
+    RAISE NOTICE 'Renamed legacy content_reports -> content_reports_legacy_014';
   END IF;
 END $$;
 
@@ -49,7 +39,8 @@ CREATE TABLE IF NOT EXISTS public.content_reports (
   UNIQUE (story_id, reporter_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_content_reports_story ON public.content_reports (story_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_reports_story
+  ON public.content_reports (story_id, created_at DESC);
 
 ALTER TABLE public.content_reports ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS content_reports_service ON public.content_reports;
@@ -59,9 +50,6 @@ DROP POLICY IF EXISTS content_reports_reporter_read ON public.content_reports;
 CREATE POLICY content_reports_reporter_read ON public.content_reports
   FOR SELECT USING (reporter_id = auth.uid());
 
--- A story's moderation window — opened once the scaled report threshold trips (or a
--- copyright claim is filed), closed on verdict. Story stays visible/earning throughout;
--- see story_earnings_escrow for the money side (escrow, never a clawback of prior payouts).
 CREATE TABLE IF NOT EXISTS public.story_moderation_windows (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   story_id UUID NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
@@ -86,7 +74,6 @@ DROP POLICY IF EXISTS story_moderation_windows_service ON public.story_moderatio
 CREATE POLICY story_moderation_windows_service ON public.story_moderation_windows
   FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
--- Copyright notice-and-counter-notice detail, one row per moderation window on the copyright path.
 CREATE TABLE IF NOT EXISTS public.copyright_claims (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   moderation_window_id UUID NOT NULL REFERENCES public.story_moderation_windows(id) ON DELETE CASCADE,
@@ -106,10 +93,6 @@ DROP POLICY IF EXISTS copyright_claims_service ON public.copyright_claims;
 CREATE POLICY copyright_claims_service ON public.copyright_claims
   FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
--- Escrow ledger — Req 3.4. Earnings accrued while a story is in an open moderation window are
--- recorded here, NOT in the creator's payable balance. On clear: released to payable. On confirmed
--- violation (post-appeal): forfeited, never disbursed. This is never a reversal of money already
--- paid — rows here represent amounts that were never released to the creator in the first place.
 CREATE TABLE IF NOT EXISTS public.story_earnings_escrow (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   story_id UUID NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
@@ -130,9 +113,7 @@ DROP POLICY IF EXISTS story_earnings_escrow_service ON public.story_earnings_esc
 CREATE POLICY story_earnings_escrow_service ON public.story_earnings_escrow
   FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
--- Praise moderation: distinguish auto-filtered spam from the author's own public/private choice.
--- (reader_feedback.status already carries 'pending' | 'published' | 'resolved' | 'archived' —
--- flagged praise is archived with a reason so it never reaches the author's inbox.)
 ALTER TABLE public.reader_feedback
-  ADD COLUMN IF NOT EXISTS moderation_flagged BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS moderation_flagged BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.reader_feedback
   ADD COLUMN IF NOT EXISTS moderation_reason TEXT;
