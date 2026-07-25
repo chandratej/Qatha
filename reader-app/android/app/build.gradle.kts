@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -36,9 +38,9 @@ android {
     // KATHA_UPLOAD_KEY_PASSWORD — or android/key.properties — before Play upload.
     // Until configured, release falls back to debug so local `flutter run --release` works.
     val keystorePropertiesFile = rootProject.file("key.properties")
-    val keystoreProperties = java.util.Properties()
+    val keystoreProperties = Properties()
     if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(keystorePropertiesFile.inputStream())
+        keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
     }
     val uploadStoreFile = System.getenv("KATHA_UPLOAD_STORE_FILE")
         ?: keystoreProperties.getProperty("storeFile")
@@ -56,7 +58,7 @@ android {
     if (hasReleaseKeystore) {
         signingConfigs {
             create("release") {
-                storeFile = file(uploadStoreFile!!)
+                storeFile = file(uploadStoreFile as String)
                 storePassword = uploadStorePassword
                 keyAlias = uploadKeyAlias
                 keyPassword = uploadKeyPassword
@@ -74,6 +76,7 @@ android {
                 signingConfigs.getByName("debug")
             }
             isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

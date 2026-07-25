@@ -1,16 +1,21 @@
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+    show TargetPlatform, defaultTargetPlatform, kIsWeb, kReleaseMode;
 
 /// Runtime configuration — override via --dart-define=...
 class AppConfig {
   static const _apiBaseOverride = String.fromEnvironment('API_BASE', defaultValue: '');
 
+  /// Mode B production API (Render). Used for release builds unless overridden.
+  static const productionApiBase = 'https://katha-api.onrender.com/api';
+
   /// Backend API base.
-  /// - Web / iOS simulator / Windows / macOS / Linux: localhost
-  /// - Android emulator: 10.0.2.2 (host machine loopback)
-  /// - Physical devices: pass `--dart-define=API_BASE=http://HOST_LAN_IP:3001/api`
+  /// - Release: production Render API (Mode B)
+  /// - Debug web / iOS simulator / desktop: localhost
+  /// - Debug Android emulator: 10.0.2.2
+  /// - Override anytime: `--dart-define=API_BASE=https://…/api`
   static String get apiBase {
     if (_apiBaseOverride.isNotEmpty) return _apiBaseOverride;
+    if (kReleaseMode) return productionApiBase;
     if (kIsWeb) return 'http://localhost:3001/api';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -67,14 +72,15 @@ class AppConfig {
   static const creatorSharePct = 40;
   static const maxCreatorSharePct = 60;
 
-  /// Hosted legal docs (Play Store / DPDP). Override if privacy lives on another host.
+  /// Hosted legal docs (Mode B landing on Vercel until custom domain).
+  /// Override: `--dart-define=PRIVACY_URL=…` / `TERMS_URL=…`
   static const privacyUrl = String.fromEnvironment(
     'PRIVACY_URL',
-    defaultValue: 'https://katha.app/privacy.html',
+    defaultValue: 'https://katha-landing-psi.vercel.app/privacy.html',
   );
   static const termsUrl = String.fromEnvironment(
     'TERMS_URL',
-    defaultValue: 'https://katha.app/terms.html',
+    defaultValue: 'https://katha-landing-psi.vercel.app/terms.html',
   );
   static const grievanceEmail = 'grievance@katha.in';
   static const dataDeletionMailto =

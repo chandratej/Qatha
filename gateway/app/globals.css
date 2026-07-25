@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Noto+Serif+Telugu:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
-@import '../../packages/shared/brand-tokens.css';
+/* Vendored from packages/shared/brand-tokens.css for standalone Vercel deploy */
+@import '../styles/brand-tokens.css';
 
 :root,
 [data-katha-mode='reading'] {

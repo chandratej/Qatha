@@ -6,6 +6,9 @@
   <title>కథ — Stories that stay with you</title>
   <meta name="description" content="Katha — Telugu stories that stay with you. No ads. No coins. ₹99/month. Writers start at 40% and earn up to 60% with Story Trust. Built with pride for Telugu storytellers." />
   <meta name="theme-color" content="#C4A052" />
+  <!-- Production Creator CMS (Mode B — no custom domain required) -->
+  <meta name="katha-cms-url" content="https://katha-creator-cms.vercel.app" />
+  <meta name="katha-api-url" content="https://katha-api.onrender.com/api" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -328,21 +331,21 @@
     <a href="/terms.html">Terms</a>
   </footer>
   <script>
-    // Prefer same-origin /api in production; localhost only for local API dev.
-    const API = (window.location.port === '3001' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    // Local API when serving landing next to backend; otherwise production Render API.
+    const isLocalHost = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+    const API = (window.location.port === '3001' || isLocalHost)
       ? `${window.location.protocol}//${window.location.hostname}:3001/api`
-      : '/api';
+      : (document.querySelector('meta[name="katha-api-url"]')?.content || 'https://katha-api.onrender.com/api').replace(/\/$/, '');
 
-    // Write CTA: production CMS origin via meta/env, never hard-coded localhost in prod
+    // Write CTA → production Creator CMS (override with ?cms= or meta katha-cms-url)
     (function resolveWriteCta() {
       const el = document.getElementById('write-cta');
       if (!el) return;
       const params = new URLSearchParams(window.location.search);
       const fromQuery = params.get('cms');
       const fromMeta = document.querySelector('meta[name="katha-cms-url"]')?.content;
-      const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
-      const cmsBase = (fromQuery || fromMeta || (isLocal ? 'http://localhost:5173' : 'https://studio.katha.in')).replace(/\/$/, '');
-      el.href = `${cmsBase}/onboarding`;
+      const cmsBase = (fromQuery || fromMeta || (isLocalHost ? 'http://localhost:5173' : 'https://katha-creator-cms.vercel.app')).replace(/\/$/, '');
+      el.href = `${cmsBase}/login`;
     })();
 
     function openWaitlist() {
