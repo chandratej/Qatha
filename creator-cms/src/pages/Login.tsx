@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, ArrowRight, Loader2, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
@@ -14,6 +14,14 @@ export function Login() {
   const { user, loading: authLoading, signInWithGoogle, sendEmailOtp, verifyEmailOtp, isMockMode } = useAuth();
   const { t, locale, setLocale } = useLocale();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  /** Google/OAuth return URL still points at /login?code=... until deploy picks up root redirect. */
+  const isOAuthReturn = useMemo(
+    () => searchParams.has('code') || searchParams.has('error'),
+    [searchParams],
+  );
+  const oauthError = searchParams.get('error_description') || searchParams.get('error');
 
   useEffect(() => {
     if (!authLoading && user) navigate('/', { replace: true });
@@ -23,8 +31,18 @@ export function Login() {
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(oauthError);
   const [resendSecs, setResendSecs] = useState(0);
+
+  useEffect(() => {
+    if (oauthError) setError(oauthError);
+  }, [oauthError]);
+
+  useEffect(() => {
+    if (!authLoading && isOAuthReturn && !user && !oauthError) {
+      setError((prev) => prev || 'Sign-in could not be completed. Please try Google again.');
+    }
+  }, [authLoading, isOAuthReturn, user, oauthError]);
 
   useEffect(() => {
     if (resendSecs <= 0) return;
@@ -107,6 +125,19 @@ export function Login() {
       setLoading(false);
     }
   };
+
+  // While auth is resolving (including PKCE ?code= exchange), do not render the form.
+  // After loading finishes without a user, show the form again (retry / email).
+  if (authLoading) {
+    return (
+      <div className="cms-auth-page cms-auth-page--v2 cms-auth-page--wave28">
+        <div className="cms-loading" role="status" aria-live="polite">
+          <Loader2 size={22} className="cms-loading__spin" />
+          {isOAuthReturn ? 'Completing sign-in…' : 'Loading…'}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="cms-auth-page cms-auth-page--v2 cms-auth-page--wave28 wc-page-enter">

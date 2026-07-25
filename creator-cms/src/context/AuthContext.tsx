@@ -123,6 +123,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
+    /** Strip PKCE/OAuth params so React Router does not re-process the callback. */
+    const stripOAuthParamsFromUrl = () => {
+      const url = new URL(window.location.href);
+      const keys = ['code', 'state', 'error', 'error_description', 'error_code'];
+      let changed = false;
+      for (const key of keys) {
+        if (url.searchParams.has(key)) {
+          url.searchParams.delete(key);
+          changed = true;
+        }
+      }
+      if (changed) {
+        const next = `${url.pathname}${url.search}${url.hash}`;
+        window.history.replaceState({}, document.title, next || '/');
+      }
+    };
+
+    /**
+     * Finish sign-in from a Supabase session (profile load lives outside the auth lock).
+     * Supabase docs: never await other supabase-js calls directly inside onAuthStateChange.
+     */
+    const applySession = async (session: Session) => {
+      try {
+        const authUser = await loadProfile(session);
+        if (cancelled) return;
+        persist(authUser, session.access_token);
+        stripOAuthParamsFromUrl();
+      } catch {
+        if (cancelled) return;
+        await handleAuthFailure();
+        clearSession();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
     async function restoreSession() {
       if (!isMockMode) {
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -158,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       let session: Session | null = null;
       try {
+        // Prefer session from storage / detectSessionInUrl init.
         const { data, error } = await supabase.auth.getSession();
         if (error) {
           await handleAuthFailure();
@@ -168,6 +205,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         session = data.session;
+
+        // If still on the OAuth return URL and no session yet, exchange the PKCE code.
+        // (detectSessionInUrl usually handles this; explicit fallback covers races.)
+        if (!session?.user) {
+          const code = new URLSearchParams(window.location.search).get('code');
+          if (code) {
+            const exchanged = await supabase.auth.exchangeCodeForSession(code);
+            if (!exchanged.error && exchanged.data.session) {
+              session = exchanged.data.session;
+            }
+          }
+        }
       } catch {
         await handleAuthFailure();
         if (!cancelled) {
@@ -185,30 +234,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const authUser = await loadProfile(session);
-      persist(authUser, session.access_token);
-      setLoading(false);
+      await applySession(session);
     }
 
     restoreSession();
 
     if (!isMockMode) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
         if (cancelled) return;
 
-        if (event === 'SIGNED_OUT' || !session?.user) {
+        // Only clear on explicit sign-out. Treating every null session as logout
+        // races with PKCE exchange (INITIAL_SESSION null → clear while code is pending).
+        if (event === 'SIGNED_OUT') {
           clearSession();
+          setLoading(false);
           return;
         }
 
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-          try {
-            const authUser = await loadProfile(session);
-            persist(authUser, session.access_token);
-          } catch {
-            await handleAuthFailure();
-            clearSession();
-          }
+        if (
+          (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') &&
+          nextSession?.user
+        ) {
+          // Defer async Supabase work so we do not deadlock the auth client lock.
+          // https://supabase.com/docs/reference/javascript/auth-onauthstatechange
+          setTimeout(() => {
+            if (cancelled || !nextSession?.user) return;
+            void applySession(nextSession);
+          }, 0);
         }
       });
 
@@ -236,7 +288,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const redirectTo = `${window.location.origin}/login`;
+    // Land on app root so ProtectedRoute can show loading while PKCE completes.
+    // /login also works (Login waits on ?code=); root avoids an extra hop.
+    const redirectTo = `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
