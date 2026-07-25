@@ -7,6 +7,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { BrandMark } from '../components/studio/BrandMark';
 import { api } from '../lib/api';
 import { ONBOARDING_KEY, BRAND } from '../lib/constants';
+import { AUTH_BUILD_ID } from '../lib/authBuild';
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -16,7 +17,7 @@ export function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  /** Google/OAuth return URL still points at /login?code=... until deploy picks up root redirect. */
+  /** OAuth return: /login?code=... (PKCE). AuthContext exchanges the code then hard-navigates home. */
   const isOAuthReturn = useMemo(
     () => searchParams.has('code') || searchParams.has('error'),
     [searchParams],
@@ -24,7 +25,9 @@ export function Login() {
   const oauthError = searchParams.get('error_description') || searchParams.get('error');
 
   useEffect(() => {
-    if (!authLoading && user) navigate('/', { replace: true });
+    if (!authLoading && user) {
+      navigate('/', { replace: true });
+    }
   }, [user, authLoading, navigate]);
   const [mode, setMode] = useState<'choose' | 'email' | 'otp'>('choose');
   const [email, setEmail] = useState('');
@@ -127,7 +130,6 @@ export function Login() {
   };
 
   // While auth is resolving (including PKCE ?code= exchange), do not render the form.
-  // After loading finishes without a user, show the form again (retry / email).
   if (authLoading) {
     return (
       <div className="cms-auth-page cms-auth-page--v2 cms-auth-page--wave28">
@@ -135,6 +137,10 @@ export function Login() {
           <Loader2 size={22} className="cms-loading__spin" />
           {isOAuthReturn ? 'Completing sign-in…' : 'Loading…'}
         </div>
+        {/* Greppable deploy marker (also logged as [katha-auth] build …) */}
+        <span style={{ display: 'none' }} data-auth-build={AUTH_BUILD_ID}>
+          {AUTH_BUILD_ID}
+        </span>
       </div>
     );
   }

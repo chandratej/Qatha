@@ -13,6 +13,7 @@ import { verifyPhoneVerification, triggerPhoneVerification } from '../lib/phoneV
 import { handleAuthFailure } from '../lib/authSession';
 import { getDeviceId } from '../lib/device';
 import { syncPhoneticCorrectionsFromCloud } from '../lib/phonetic';
+import { AUTH_BUILD_ID } from '../lib/authBuild';
 
 export type { AuthUser };
 
@@ -63,6 +64,30 @@ function sessionFallbackUser(session: Session, displayName?: string): AuthUser {
   };
 }
 
+function stripOAuthParamsFromUrl() {
+  const url = new URL(window.location.href);
+  const keys = ['code', 'state', 'error', 'error_description', 'error_code'];
+  let changed = false;
+  for (const key of keys) {
+    if (url.searchParams.has(key)) {
+      url.searchParams.delete(key);
+      changed = true;
+    }
+  }
+  if (changed) {
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState({}, document.title, next || '/');
+  }
+}
+
+function readOAuthCodeFromUrl(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get('code');
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -90,31 +115,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loadProfile = async (session: Session, displayName?: string): Promise<AuthUser> => {
-    const userId = session.user.id;
-    const { data: profile, schemaMissing } = await fetchCreatorProfile(userId);
+    try {
+      const userId = session.user.id;
+      const { data: profile, schemaMissing } = await fetchCreatorProfile(userId);
 
-    if (schemaMissing) {
-      return sessionFallbackUser(session, displayName);
-    }
-
-    if (!profile || profile.role !== 'creator') {
-      const ensured = await ensureCreatorProfile(session, displayName);
-      if (ensured.schemaMissing || !ensured.profile) {
+      if (schemaMissing) {
         return sessionFallbackUser(session, displayName);
       }
-      return profileToAuthUser(userId, session, ensured.profile, displayName);
+
+      if (!profile || profile.role !== 'creator') {
+        const ensured = await ensureCreatorProfile(session, displayName);
+        if (ensured.schemaMissing || !ensured.profile) {
+          return sessionFallbackUser(session, displayName);
+        }
+        return profileToAuthUser(userId, session, ensured.profile, displayName);
+      }
+
+      try {
+        await supabase.from('creators').upsert(
+          {
+            id: userId,
+            pen_name: profile.display_name || 'Creator',
+          },
+          { onConflict: 'id' },
+        );
+      } catch {
+        // Non-fatal: session is still valid without creators row sync.
+      }
+
+      return profileToAuthUser(userId, session, profile, displayName);
+    } catch {
+      // Never block sign-in if profile tables/RLS misbehave.
+      return sessionFallbackUser(session, displayName);
     }
-
-    await supabase.from('creators').upsert({
-      id: userId,
-      pen_name: profile.display_name || 'Creator',
-    }, { onConflict: 'id' });
-
-    return profileToAuthUser(userId, session, profile, displayName);
   };
 
   const refreshUser = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) return;
     const authUser = await loadProfile(session);
     persist(authUser, session.access_token);
@@ -123,37 +162,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    /** Strip PKCE/OAuth params so React Router does not re-process the callback. */
-    const stripOAuthParamsFromUrl = () => {
-      const url = new URL(window.location.href);
-      const keys = ['code', 'state', 'error', 'error_description', 'error_code'];
-      let changed = false;
-      for (const key of keys) {
-        if (url.searchParams.has(key)) {
-          url.searchParams.delete(key);
-          changed = true;
-        }
-      }
-      if (changed) {
-        const next = `${url.pathname}${url.search}${url.hash}`;
-        window.history.replaceState({}, document.title, next || '/');
-      }
-    };
+    // Deploy verification: open DevTools → Console and look for this id.
+    console.info(`[katha-auth] build ${AUTH_BUILD_ID}`);
 
     /**
-     * Finish sign-in from a Supabase session (profile load lives outside the auth lock).
-     * Supabase docs: never await other supabase-js calls directly inside onAuthStateChange.
+     * Hydrate React auth from a Supabase session.
+     * Profile failures must not wipe a valid OAuth session.
      */
-    const applySession = async (session: Session) => {
+    const applySession = async (session: Session, opts?: { fromOAuth?: boolean }) => {
       try {
         const authUser = await loadProfile(session);
         if (cancelled) return;
         persist(authUser, session.access_token);
         stripOAuthParamsFromUrl();
+
+        // Hard navigate off /login?code= so Router + ProtectedRoute see a clean URL.
+        if (opts?.fromOAuth || window.location.pathname === '/login') {
+          const target = '/';
+          if (window.location.pathname + window.location.search !== target) {
+            window.location.replace(target);
+            return;
+          }
+        }
       } catch {
         if (cancelled) return;
-        await handleAuthFailure();
-        clearSession();
+        // Still sign in with JWT claims — do not call handleAuthFailure here.
+        persist(sessionFallbackUser(session), session.access_token);
+        stripOAuthParamsFromUrl();
+        if (opts?.fromOAuth || window.location.pathname === '/login') {
+          window.location.replace('/');
+          return;
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -164,8 +203,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
-            const { token } = JSON.parse(saved) as { token?: string };
-            if (typeof token === 'string' && token.startsWith('mock-token-')) {
+            const { token: savedToken } = JSON.parse(saved) as { token?: string };
+            if (typeof savedToken === 'string' && savedToken.startsWith('mock-token-')) {
               localStorage.removeItem(STORAGE_KEY);
             }
           } catch {
@@ -193,31 +232,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       let session: Session | null = null;
-      try {
-        // Prefer session from storage / detectSessionInUrl init.
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          await handleAuthFailure();
-          if (!cancelled) {
-            clearSession();
-            setLoading(false);
-          }
-          return;
-        }
-        session = data.session;
+      let fromOAuth = false;
 
-        // If still on the OAuth return URL and no session yet, exchange the PKCE code.
-        // (detectSessionInUrl usually handles this; explicit fallback covers races.)
-        if (!session?.user) {
-          const code = new URLSearchParams(window.location.search).get('code');
-          if (code) {
-            const exchanged = await supabase.auth.exchangeCodeForSession(code);
-            if (!exchanged.error && exchanged.data.session) {
-              session = exchanged.data.session;
-            }
+      try {
+        // 1) PKCE return: exchange one-time code first (detectSessionInUrl is off).
+        const code = readOAuthCodeFromUrl();
+        if (code) {
+          fromOAuth = true;
+          const exchanged = await supabase.auth.exchangeCodeForSession(code);
+          if (exchanged.error) {
+            console.warn('[katha-auth] exchangeCodeForSession failed', exchanged.error.message);
+            // Code may already be consumed; fall through to getSession.
+          } else if (exchanged.data.session) {
+            session = exchanged.data.session;
           }
         }
-      } catch {
+
+        // 2) Existing local session
+        if (!session?.user) {
+          const { data, error } = await supabase.auth.getSession();
+          if (error) {
+            console.warn('[katha-auth] getSession failed', error.message);
+            await handleAuthFailure();
+            if (!cancelled) {
+              clearSession();
+              setLoading(false);
+            }
+            return;
+          }
+          session = data.session;
+        }
+      } catch (err) {
+        console.warn('[katha-auth] restoreSession error', err);
         await handleAuthFailure();
         if (!cancelled) {
           clearSession();
@@ -234,32 +280,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      await applySession(session);
+      await applySession(session, { fromOAuth });
     }
 
-    restoreSession();
+    void restoreSession();
 
     if (!isMockMode) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, nextSession) => {
         if (cancelled) return;
 
-        // Only clear on explicit sign-out. Treating every null session as logout
-        // races with PKCE exchange (INITIAL_SESSION null → clear while code is pending).
         if (event === 'SIGNED_OUT') {
           clearSession();
           setLoading(false);
           return;
         }
 
-        if (
-          (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') &&
-          nextSession?.user
-        ) {
-          // Defer async Supabase work so we do not deadlock the auth client lock.
-          // https://supabase.com/docs/reference/javascript/auth-onauthstatechange
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && nextSession?.user) {
+          // Defer: never await other Supabase calls inside the auth lock.
           setTimeout(() => {
             if (cancelled || !nextSession?.user) return;
-            void applySession(nextSession);
+            void applySession(nextSession, {
+              fromOAuth: Boolean(readOAuthCodeFromUrl()) || window.location.pathname === '/login',
+            });
+          }, 0);
+          return;
+        }
+
+        if (event === 'TOKEN_REFRESHED' && nextSession?.access_token) {
+          setTimeout(() => {
+            if (cancelled) return;
+            setToken(nextSession.access_token);
+            try {
+              const raw = localStorage.getItem(STORAGE_KEY);
+              if (raw) {
+                const parsed = JSON.parse(raw) as { user: AuthUser; token: string };
+                if (parsed.user) {
+                  localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify({ user: parsed.user, token: nextSession.access_token }),
+                  );
+                  setApiAuth(parsed.user, nextSession.access_token);
+                }
+              }
+            } catch {
+              /* ignore */
+            }
           }, 0);
         }
       });
@@ -270,30 +337,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const signInWithGoogle = async () => {
     if (isMockMode) {
       const userId = 'demo-creator-001';
-      persist({
-        id: userId,
-        phone: '',
-        email: 'demo@katha.in',
-        role: 'creator',
-        display_name: 'Demo Creator',
-        subscription_status: 'free',
-        phone_verified: false,
-      }, `mock-token-${userId}-${Date.now()}`);
+      persist(
+        {
+          id: userId,
+          phone: '',
+          email: 'demo@katha.in',
+          role: 'creator',
+          display_name: 'Demo Creator',
+          subscription_status: 'free',
+          phone_verified: false,
+        },
+        `mock-token-${userId}-${Date.now()}`,
+      );
       return;
     }
 
-    // Land on app root so ProtectedRoute can show loading while PKCE completes.
-    // /login also works (Login waits on ?code=); root avoids an extra hop.
-    const redirectTo = `${window.location.origin}/`;
+    // Prefer /login so allowlists that only include /login keep working.
+    // AuthContext exchanges ?code= on this path and then hard-navigates home.
+    const redirectTo = `${window.location.origin}/login`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo },
+      options: {
+        redirectTo,
+        skipBrowserRedirect: false,
+      },
     });
     if (error) throw new Error(error.message);
   };
@@ -317,15 +392,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const MOCK_OTP = '123456';
       if ((otp || '') !== MOCK_OTP) throw new Error('Invalid OTP. In MOCK_MODE use 123456');
       const userId = 'demo-creator-001';
-      persist({
-        id: userId,
-        phone: '',
-        email: email.trim(),
-        role: 'creator',
-        display_name: displayName || 'Demo Creator',
-        subscription_status: 'free',
-        phone_verified: false,
-      }, `mock-token-${userId}-${Date.now()}`);
+      persist(
+        {
+          id: userId,
+          phone: '',
+          email: email.trim(),
+          role: 'creator',
+          display_name: displayName || 'Demo Creator',
+          subscription_status: 'free',
+          phone_verified: false,
+        },
+        `mock-token-${userId}-${Date.now()}`,
+      );
       return;
     }
 

@@ -41,12 +41,15 @@ const explicitMock = envFlag('VITE_MOCK_MODE');
 export const isMockMode =
   explicitMock !== null ? explicitMock : import.meta.env.PROD ? false : hasPlaceholderConfig();
 
+/**
+ * PKCE OAuth: we exchange `?code=` ourselves in AuthContext.
+ * detectSessionInUrl:false avoids a race where the client and our code both consume the one-time code.
+ */
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   auth: {
     persistSession: true,
-    // Dev: skip auto-refresh to avoid /auth/v1/user 500 loops from stale JWTs
     autoRefreshToken: import.meta.env.PROD,
-    detectSessionInUrl: true,
+    detectSessionInUrl: false,
     flowType: 'pkce',
   },
 });
