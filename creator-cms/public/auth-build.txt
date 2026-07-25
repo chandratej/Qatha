@@ -1,0 +1,2 @@
+pkce-hydrate-v5-bootstrap-2026-07-25
+KATHA_OAUTH_BOOTSTRAP_V1

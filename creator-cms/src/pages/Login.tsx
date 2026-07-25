@@ -22,16 +22,18 @@ export function Login() {
     () => searchParams.has('code') || searchParams.has('error'),
     [searchParams],
   );
-  const oauthError = searchParams.get('error_description') || searchParams.get('error');
+  const oauthError =
+    searchParams.get('error_description') ||
+    searchParams.get('error') ||
+    searchParams.get('auth_error');
 
   useEffect(() => {
     if (authLoading || !user) return;
-    // Soft navigate is not enough after Google OAuth — full load picks up session cleanly.
-    // (AuthContext also hard-navigates; this is a belt-and-suspenders path.)
+    // Prefer full navigation after OAuth so dashboard mounts with a clean session.
     try {
       if (sessionStorage.getItem('katha_oauth_return') === '1' || isOAuthReturn) {
         sessionStorage.removeItem('katha_oauth_return');
-        window.location.assign(`${window.location.origin}/`);
+        window.location.replace(`${window.location.origin}/`);
         return;
       }
     } catch {
