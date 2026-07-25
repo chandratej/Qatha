@@ -165,37 +165,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Deploy verification: open DevTools → Console and look for this id.
     console.info(`[katha-auth] build ${AUTH_BUILD_ID}`);
 
+    /** Full page load into studio so ProtectedRoute + layout mount with a clean session. */
+    const hardEnterStudio = () => {
+      try {
+        sessionStorage.removeItem('katha_oauth_return');
+      } catch {
+        /* ignore */
+      }
+      stripOAuthParamsFromUrl();
+      // assign (not only replace) — most reliable after external OAuth return
+      window.location.assign(`${window.location.origin}/`);
+    };
+
     /**
      * Hydrate React auth from a Supabase session.
      * Profile failures must not wipe a valid OAuth session.
+     * After Google OAuth, always full-reload into `/` so the user never needs a manual refresh.
      */
     const applySession = async (session: Session, opts?: { fromOAuth?: boolean }) => {
+      let authUser: AuthUser;
       try {
-        const authUser = await loadProfile(session);
-        if (cancelled) return;
-        persist(authUser, session.access_token);
-        stripOAuthParamsFromUrl();
-
-        // Hard navigate off /login?code= so Router + ProtectedRoute see a clean URL.
-        if (opts?.fromOAuth || window.location.pathname === '/login') {
-          const target = '/';
-          if (window.location.pathname + window.location.search !== target) {
-            window.location.replace(target);
-            return;
-          }
-        }
+        authUser = await loadProfile(session);
       } catch {
-        if (cancelled) return;
-        // Still sign in with JWT claims — do not call handleAuthFailure here.
-        persist(sessionFallbackUser(session), session.access_token);
-        stripOAuthParamsFromUrl();
-        if (opts?.fromOAuth || window.location.pathname === '/login') {
-          window.location.replace('/');
-          return;
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+        authUser = sessionFallbackUser(session);
       }
+
+      // Always write storage even if this effect was cancelled (StrictMode / remount).
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ user: authUser, token: session.access_token }),
+        );
+        setApiAuth(authUser, session.access_token);
+      } catch {
+        /* ignore */
+      }
+
+      if (!cancelled) {
+        setUser(authUser);
+        setToken(session.access_token);
+        // Side-effects that should not block navigation
+        if (!isMockMode) {
+          import('../lib/supabaseData').then(({ sbMigrateLocalPhoneticCorrections, sbRegisterDevice }) => {
+            sbMigrateLocalPhoneticCorrections().catch(() => {});
+            sbRegisterDevice(getDeviceId()).catch(() => {});
+          });
+          syncPhoneticCorrectionsFromCloud().catch(() => {});
+        }
+      }
+
+      const oauthReturn =
+        opts?.fromOAuth ||
+        Boolean(readOAuthCodeFromUrl()) ||
+        window.location.pathname.startsWith('/login') ||
+        (() => {
+          try {
+            return sessionStorage.getItem('katha_oauth_return') === '1';
+          } catch {
+            return false;
+          }
+        })();
+
+      if (oauthReturn) {
+        hardEnterStudio();
+        return;
+      }
+
+      if (!cancelled) setLoading(false);
     };
 
     async function restoreSession() {
@@ -361,7 +397,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Prefer /login so allowlists that only include /login keep working.
-    // AuthContext exchanges ?code= on this path and then hard-navigates home.
+    // After return, applySession hard-navigates into studio (no manual refresh).
+    try {
+      sessionStorage.setItem('katha_oauth_return', '1');
+    } catch {
+      /* ignore */
+    }
     const redirectTo = `${window.location.origin}/login`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -370,7 +411,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         skipBrowserRedirect: false,
       },
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      try {
+        sessionStorage.removeItem('katha_oauth_return');
+      } catch {
+        /* ignore */
+      }
+      throw new Error(error.message);
+    }
   };
 
   const sendEmailOtp = async (email: string) => {

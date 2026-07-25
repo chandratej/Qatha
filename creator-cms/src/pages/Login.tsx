@@ -25,10 +25,20 @@ export function Login() {
   const oauthError = searchParams.get('error_description') || searchParams.get('error');
 
   useEffect(() => {
-    if (!authLoading && user) {
-      navigate('/', { replace: true });
+    if (authLoading || !user) return;
+    // Soft navigate is not enough after Google OAuth — full load picks up session cleanly.
+    // (AuthContext also hard-navigates; this is a belt-and-suspenders path.)
+    try {
+      if (sessionStorage.getItem('katha_oauth_return') === '1' || isOAuthReturn) {
+        sessionStorage.removeItem('katha_oauth_return');
+        window.location.assign(`${window.location.origin}/`);
+        return;
+      }
+    } catch {
+      /* fall through to SPA navigate */
     }
-  }, [user, authLoading, navigate]);
+    navigate('/', { replace: true });
+  }, [user, authLoading, navigate, isOAuthReturn]);
   const [mode, setMode] = useState<'choose' | 'email' | 'otp'>('choose');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
