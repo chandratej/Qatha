@@ -810,6 +810,35 @@ export async function sbPublishChapter(
   const user = await requireUser();
   await assertStoryOwner(storyId, user.id);
 
+  // Client-side gate (same band as edge/Node) so short chapters fail before network.
+  const { softWordTargetForContentType } = await import('../../../packages/shared/content-types');
+  const { data: storyMeta } = await supabase
+    .from('stories')
+    .select('content_type')
+    .eq('id', storyId)
+    .maybeSingle();
+  const band = softWordTargetForContentType(storyMeta?.content_type || 'serialized_story');
+  if (band) {
+    const plain = String(body.content || '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const n = plain ? plain.split(/\s+/).filter(Boolean).length : 0;
+    if (n < band.min) {
+      throw new Error(
+        `Serialized chapters need at least ${band.min.toLocaleString()} words ` +
+          `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}, hard max ${(band.hardMax ?? 3000).toLocaleString()}). ` +
+          `You have ${n}.`,
+      );
+    }
+    if (band.hardMax != null && n > band.hardMax) {
+      throw new Error(
+        `Serialized chapters cannot exceed ${band.hardMax.toLocaleString()} words ` +
+          `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}). You have ${n}.`,
+      );
+    }
+  }
+
   const { data, error } = await supabase.functions.invoke('publish-chapter', {
     body: {
       story_id: storyId,

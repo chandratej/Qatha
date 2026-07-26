@@ -85,6 +85,7 @@ export function NarrativePublishView({
           className="nos-publish__cta"
           onClick={onPublish}
           disabled={publishDisabled || busy}
+          title={busy ? undefined : 'Submit for review — word limits are checked on click'}
         >
           <Rocket size={16} aria-hidden />
           {publishing ? t('editor.saving') : publishLabel}

@@ -40,6 +40,52 @@ function estimateReadTimeMinutes(content: string): number {
   return Math.max(1, Math.round(words / 180));
 }
 
+/** Serialized Story word band — keep in sync with packages/shared/content-types.ts */
+const SERIALIZED_SOFT_WORD_MIN = 1500;
+const SERIALIZED_SOFT_WORD_MAX = 2500;
+const SERIALIZED_HARD_WORD_MAX = 3000;
+
+function countWordsInContent(html: string): number {
+  const plain = String(html || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!plain) return 0;
+  return plain.split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Enforce word band for serialized (and default/null) stories.
+ * Short story / flash / collection are not subject to this band.
+ */
+function assertSerializedWordBand(contentType: string | null | undefined, content: string): string | null {
+  const ct = contentType || 'serialized_story';
+  if (
+    ct === 'short_story' ||
+    ct === 'flash_fiction' ||
+    ct === 'short_story_collection' ||
+    ct === 'epistolary_chat' ||
+    ct === 'interactive_branching'
+  ) {
+    return null;
+  }
+  const n = countWordsInContent(content);
+  if (n < SERIALIZED_SOFT_WORD_MIN) {
+    return (
+      `Serialized chapters need at least ${SERIALIZED_SOFT_WORD_MIN} words ` +
+      `(recommended ${SERIALIZED_SOFT_WORD_MIN}–${SERIALIZED_SOFT_WORD_MAX}, hard max ${SERIALIZED_HARD_WORD_MAX}). ` +
+      `You have ${n}.`
+    );
+  }
+  if (n > SERIALIZED_HARD_WORD_MAX) {
+    return (
+      `Serialized chapters cannot exceed ${SERIALIZED_HARD_WORD_MAX} words ` +
+      `(recommended ${SERIALIZED_SOFT_WORD_MIN}–${SERIALIZED_SOFT_WORD_MAX}). You have ${n}.`
+    );
+  }
+  return null;
+}
+
 function slugifyTitle(title: string): string {
   const ascii = (title || '')
     .toLowerCase()
@@ -155,12 +201,23 @@ Deno.serve(async (req) => {
 
     const { data: story } = await supabaseUser
       .from('stories')
-      .select('author_id, title, slug, is_published')
+      .select('author_id, title, slug, is_published, content_type')
       .eq('id', story_id)
       .single();
     if (!story || story.author_id !== user.id) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const wordBandError = assertSerializedWordBand(
+      (story as { content_type?: string }).content_type,
+      content,
+    );
+    if (wordBandError) {
+      return new Response(JSON.stringify({ error: wordBandError, code: 'CHAPTER_TOO_SHORT_OR_LONG' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

@@ -196,7 +196,13 @@ export function EditorNavbar({
             className="katha-proto-publish-btn"
             onClick={onPublish}
             disabled={publishDisabled || publishing}
-            title={`${publishLabel} chapter`}
+            title={
+              softWordTarget && wordCount < softWordTarget.min
+                ? `Need at least ${softWordTarget.min.toLocaleString()} words to publish (you have ${wordCount.toLocaleString()})`
+                : softWordTarget?.hardMax != null && wordCount > softWordTarget.hardMax
+                  ? `Over hard max ${softWordTarget.hardMax.toLocaleString()} words — trim before publish`
+                  : `${publishLabel} chapter`
+            }
           >
             {publishing ? (
               <Loader2 size={15} className="katha-editor-save-status__spin" aria-hidden />

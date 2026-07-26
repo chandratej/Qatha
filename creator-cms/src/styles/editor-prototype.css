@@ -3013,6 +3013,61 @@
   color: var(--ink);
 }
 
+.katha-word-band-block {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.katha-word-band-block__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(122, 74, 82, 0.1);
+  color: var(--ember, #6b2d3c);
+}
+.katha-word-band-block__lead {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink, #1a1410);
+}
+.katha-word-band-block__meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(122, 99, 64, 0.06);
+}
+.katha-word-band-block__meta div {
+  margin: 0;
+}
+.katha-word-band-block__meta dt {
+  margin: 0 0 2px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted, #5c534c);
+}
+.katha-word-band-block__meta dd {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.katha-word-band-block__bad {
+  color: var(--ember, #6b2d3c);
+}
+.katha-word-band-block__note {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-muted, #5c534c);
+}
+
 .katha-publish-confirm__soft {
   font-size: 0.85em;
   color: var(--ink-muted, #5c534c);

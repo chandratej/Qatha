@@ -40,8 +40,6 @@ export function PublishConfirmModal({
     softWordTarget != null &&
     wordCount > softWordTarget.max &&
     (hardMax == null || wordCount <= hardMax);
-  const blocked = underSoftMin || overHard;
-
   let bandLabel = '';
   if (softWordTarget) {
     if (inSoftBand) bandLabel = ' · in recommended range';
@@ -63,7 +61,7 @@ export function PublishConfirmModal({
             type="button"
             className="btn btn-primary katha-publish-confirm__cta"
             onClick={onConfirm}
-            disabled={publishing || blocked}
+            disabled={publishing}
           >
             <Rocket size={15} aria-hidden />
             {publishing ? 'Submitting…' : isResubmit ? 'Resubmit' : 'Submit for review'}
