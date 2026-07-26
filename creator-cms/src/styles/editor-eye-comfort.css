@@ -1,0 +1,209 @@
+/**
+ * Editor eye-comfort layer — wins the cascade for writing surfaces.
+ * Goals (long-form Telugu / English sessions):
+ *  - Soft paper (not yellow tea-stain sepia)
+ *  - High ink contrast without pure black on pure white glare
+ *  - No repeating textures / gold wash on the reading surface
+ *  - Generous measure, leading, and calm chrome
+ * Import after editor-prototype / narrative-os / comfort-system.
+ */
+
+/* ── Manuscript page (legacy + premium layouts) ─────────────────────── */
+[data-katha-mode='creation'] .katha-proto-editor-body,
+[data-katha-mode='creation'] .katha-proto-layout--premium .katha-proto-editor-body {
+  background:
+    linear-gradient(180deg, rgba(253, 250, 244, 0.35) 0%, transparent 28%),
+    var(--paper) !important;
+}
+
+[data-katha-mode='creation'] .katha-proto-editor-canvas,
+[data-katha-mode='creation'] .katha-proto-layout--premium .katha-proto-editor-canvas {
+  /* Flat soft paper — texture patterns cause micro-saccade fatigue */
+  background-color: var(--editor-canvas, #fdfaf4) !important;
+  background-image: none !important;
+  border: 1px solid rgba(36, 31, 24, 0.06) !important;
+  box-shadow:
+    0 1px 2px rgba(36, 31, 24, 0.04),
+    0 12px 40px rgba(36, 31, 24, 0.05) !important;
+  border-radius: 2px 14px 14px 2px;
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-editor-canvas,
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-layout--premium .katha-proto-editor-canvas {
+  background-color: var(--editor-canvas, #1a1612) !important;
+  background-image: none !important;
+  border-color: rgba(240, 233, 220, 0.08) !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 16px 48px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* Body text — deep ink, optimized rendering */
+[data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor,
+[data-katha-mode='creation'] .katha-proto-layout--premium .ql-editor {
+  color: var(--ink, #241f18) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  letter-spacing: 0.012em !important;
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor,
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-layout--premium .ql-editor {
+  color: var(--ink, #f0e9dc) !important;
+  /* Slightly softer night text to reduce OLED bloom */
+  text-shadow: 0 0 0 transparent;
+}
+
+[data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor p,
+[data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor li {
+  margin-bottom: 1.15em !important;
+}
+
+/* Scene titles */
+[data-katha-mode='creation'] .katha-proto-scene-title-input {
+  color: var(--ink, #241f18);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Chrome: quieter chrome so the page is the hero */
+[data-katha-mode='creation'] .katha-editor-chrome {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom-color: rgba(36, 31, 24, 0.06);
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .katha-editor-chrome {
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  border-bottom-color: rgba(240, 233, 220, 0.08);
+}
+
+[data-katha-mode='creation'] .katha-proto-format-toolbar {
+  background: color-mix(in srgb, var(--surface) 88%, rgba(253, 250, 244, 0.9));
+  border-color: rgba(36, 31, 24, 0.06);
+  box-shadow: 0 2px 12px rgba(36, 31, 24, 0.04);
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-format-toolbar {
+  background: color-mix(in srgb, var(--surface) 96%, #1a1612);
+  border-color: rgba(240, 233, 220, 0.08);
+}
+
+/* Sidebars: slightly cooler than page so the manuscript “pops” softly */
+[data-katha-mode='creation'] .katha-proto-scene-sidebar,
+[data-katha-mode='creation'] .sc-u-sidebar {
+  background: var(--editor-sidebar, var(--paper-warm));
+}
+
+/* Focus mode — dim chrome, pure page */
+[data-katha-mode='creation'] .katha-proto-layout.focus-mode .katha-proto-editor-body {
+  background: var(--editor-canvas, #fdfaf4) !important;
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-layout.focus-mode .katha-proto-editor-body {
+  background: var(--editor-canvas, #1a1612) !important;
+}
+
+[data-katha-mode='creation'] .katha-proto-layout.focus-mode .katha-proto-editor-canvas {
+  box-shadow: none !important;
+  border-color: transparent !important;
+  max-width: min(40rem, 100%);
+}
+
+/* Selection — soft gold, not harsh blue */
+[data-katha-mode='creation'] .ql-editor ::selection {
+  background: rgba(196, 160, 82, 0.28);
+  color: inherit;
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .ql-editor ::selection {
+  background: rgba(196, 160, 96, 0.32);
+}
+
+/* Cursor / caret weight for tired eyes */
+[data-katha-mode='creation'] .ql-editor {
+  caret-color: var(--katha-maroon, #6b2338);
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .ql-editor {
+  caret-color: var(--gold, #c4a060);
+}
+
+/* ── Narrative OS manuscript ────────────────────────────────────────── */
+.narrative-os-app .nos-manuscript,
+.narrative-os-app .nos-write-stage,
+.narrative-os-app [data-manuscript],
+.narrative-os-app .manuscript-column {
+  color: var(--nos-ink);
+}
+
+.narrative-os-app .nos-write-stage {
+  background: var(--nos-paper-deep) !important;
+}
+
+/* Soft page without decorative noise */
+.narrative-os-app .nos-manuscript-page,
+.narrative-os-app .nos-page,
+.narrative-os-app .manuscript-shell {
+  background: var(--nos-paper) !important;
+  box-shadow:
+    0 1px 2px rgba(36, 31, 24, 0.04),
+    0 14px 40px rgba(36, 31, 24, 0.06);
+}
+
+[data-theme='dark'] .narrative-os-app .nos-manuscript-page,
+[data-theme='dark'] .narrative-os-app .nos-page,
+[data-theme='dark'] .narrative-os-app .manuscript-shell {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 16px 48px rgba(0, 0, 0, 0.35);
+}
+
+/* Prose inside Narrative OS */
+.narrative-os-app .ql-editor,
+.narrative-os-app .nos-prose,
+.narrative-os-app [contenteditable='true'] {
+  color: var(--nos-ink) !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0.012em;
+}
+
+/* Topbar / bottom nav — lower visual weight than manuscript */
+.narrative-os-app .topbar,
+.narrative-os-app .bottomnav,
+.narrative-os-app .statusbar {
+  background: color-mix(in srgb, var(--nos-paper-deep) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+/* High-contrast comfort boost for creation */
+html[data-contrast='high'][data-katha-mode='creation'],
+html[data-contrast='high'] [data-katha-mode='creation'] {
+  --katha-mode-ink: #1a1610;
+  --katha-mode-ink-soft: #2e2820;
+  --ink: #1a1610;
+  --ink-soft: #2e2820;
+}
+
+html[data-theme='dark'][data-contrast='high'] [data-katha-mode='creation'] {
+  --katha-mode-ink: #f7f1e6;
+  --katha-mode-ink-soft: #e4dccf;
+  --ink: #f7f1e6;
+  --ink-soft: #e4dccf;
+}
+
+/* Prefer dim screens: slightly reduce pure white flash on surfaces */
+@media (prefers-contrast: more) {
+  [data-katha-mode='creation'] .katha-proto-editor-canvas {
+    border-color: rgba(36, 31, 24, 0.14) !important;
+  }
+}
+
+/* Calm motion already global — ensure page enter is subtle */
+html[data-motion='calm'] [data-katha-mode='creation'] .katha-proto-editor-canvas {
+  animation: none !important;
+}

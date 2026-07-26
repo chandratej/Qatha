@@ -88,6 +88,8 @@ import './styles/nav-v2.css';
 import './styles/cover-art.css';
 /* Ergonomics layer — must stay the LAST style import to win the cascade */
 import './styles/comfort-system.css';
+/* Editor eye-comfort — after comfort-system so manuscript surfaces win */
+import './styles/editor-eye-comfort.css';
 
 const ChapterEditor = lazy(() => import('./pages/ChapterEditor').then((m) => ({ default: m.ChapterEditor })));
 const ReviewWorkspace = lazy(() => import('./pages/ReviewWorkspace').then((m) => ({ default: m.ReviewWorkspace })));

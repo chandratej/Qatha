@@ -250,7 +250,11 @@ export function NarrativeEditorApp({
     onOpenFind: () => onRequestFind?.(),
     onOpenPreview: () => onOpenRefine?.(),
     onSaveDraft: onSaveDraft,
-    onOpenPublish: () => enterPhase('publish'),
+    onOpenPublish: () => {
+      enterPhase('publish');
+      // Run word-band validation immediately (popup / alert), not only when landing on the phase.
+      onPublish?.();
+    },
   }), [
     onInsertDialogue,
     onInsertNote,
@@ -259,6 +263,7 @@ export function NarrativeEditorApp({
     onRequestFind,
     onOpenRefine,
     onSaveDraft,
+    onPublish,
     enterPhase,
   ]);
 
@@ -516,8 +521,12 @@ export function NarrativeEditorApp({
             type="button"
             className={`bn-item${phase === id ? ' active' : ''}`}
             onClick={() => {
-              if (id === 'publish') enterPhase('publish');
-              else enterPhase(id);
+              if (id === 'publish') {
+                enterPhase('publish');
+                onPublish?.();
+              } else {
+                enterPhase(id);
+              }
             }}
             disabled={id === 'publish' && (publishDisabled || publishing)}
             aria-current={phase === id ? 'step' : undefined}

@@ -92,22 +92,26 @@
   --katha-mode-accent: var(--katha-gold);
 }
 
-/* ── Creation Mode — Chapter Editor, Review, Planning ── */
+/* ── Creation Mode — Chapter Editor (eye-comfort first) ──
+   Prior sepia (#e8dfc8 / tea-stain canvas) caused yellow cast + low
+   ink contrast → fatigue. Paper mode uses soft off-white (Kindle /
+   iA Writer tradition) with deep warm charcoal ink for AA+ body text
+   without glare. */
 [data-katha-mode='creation'] {
-  --katha-mode-bg: #e8dfc8;
-  --katha-mode-bg-warm: #e2d6bc;
-  --katha-mode-surface: #f0e9d8;
-  --katha-mode-surface-raised: #f5efe2;
-  --katha-mode-canvas: #ede4cf;
-  --katha-mode-border: #d4c8ae;
-  --katha-mode-border-strong: rgba(74, 63, 50, 0.14);
-  --katha-mode-shadow-sm: 0 1px 4px rgba(74, 63, 50, 0.05);
-  --katha-mode-shadow: 0 2px 12px rgba(74, 63, 50, 0.07);
-  --katha-mode-shadow-lg: 0 4px 20px rgba(74, 63, 50, 0.09);
+  --katha-mode-bg: #f0ebe2;
+  --katha-mode-bg-warm: #e9e3d7;
+  --katha-mode-surface: #f7f3eb;
+  --katha-mode-surface-raised: #fbf8f2;
+  --katha-mode-canvas: #fdfaf4;
+  --katha-mode-border: rgba(36, 31, 24, 0.09);
+  --katha-mode-border-strong: rgba(36, 31, 24, 0.14);
+  --katha-mode-shadow-sm: 0 1px 3px rgba(36, 31, 24, 0.04);
+  --katha-mode-shadow: 0 2px 14px rgba(36, 31, 24, 0.06);
+  --katha-mode-shadow-lg: 0 8px 28px rgba(36, 31, 24, 0.08);
   --katha-mode-accent: var(--katha-gold-muted);
-  --katha-mode-ink: #4a3f32;
-  --katha-mode-ink-soft: #5c4f3e;
-  --katha-mode-ink-muted: #8a7b68;
+  --katha-mode-ink: #241f18;
+  --katha-mode-ink-soft: #3a342c;
+  --katha-mode-ink-muted: #6b6358;
 }
 
 /* ── Reading Mode — Reader App, Gateway Preview ── */
@@ -149,18 +153,19 @@
   --katha-elevation-4: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
+/* Night creation — warm OLED-safe ink, low blue, soft cream text (not yellow). */
 [data-theme='dark'][data-katha-mode='creation'] {
-  --katha-mode-bg: #1c1814;
-  --katha-mode-bg-warm: #252019;
-  --katha-mode-surface: #2e2820;
-  --katha-mode-surface-raised: #363024;
-  --katha-mode-canvas: #2a241e;
-  --katha-mode-border: rgba(229, 220, 200, 0.12);
-  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
+  --katha-mode-bg: #12100e;
+  --katha-mode-bg-warm: #181410;
+  --katha-mode-surface: #1c1814;
+  --katha-mode-surface-raised: #221e19;
+  --katha-mode-canvas: #1a1612;
+  --katha-mode-border: rgba(240, 233, 220, 0.1);
+  --katha-mode-border-strong: rgba(240, 233, 220, 0.16);
   --katha-mode-accent: #c4a060;
-  --katha-mode-ink: #e5dcc8;
-  --katha-mode-ink-soft: #c9bda8;
-  --katha-mode-ink-muted: #9a8f7e;
+  --katha-mode-ink: #f0e9dc;
+  --katha-mode-ink-soft: #d8d0c0;
+  --katha-mode-ink-muted: #9a9184;
 }
 
 @media (prefers-reduced-motion: reduce) {

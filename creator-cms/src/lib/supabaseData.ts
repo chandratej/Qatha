@@ -849,8 +849,21 @@ export async function sbPublishChapter(
     },
   });
 
-  if (error) throw new Error(error.message || 'Publish failed');
-  if (data?.error) throw new Error(data.error);
+  // Supabase often returns a generic non-2xx message; prefer JSON body.error when present.
+  if (data?.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error));
+  if (error) {
+    let detail = error.message || 'Publish failed';
+    try {
+      const ctx = (error as { context?: Response }).context;
+      if (ctx && typeof ctx.json === 'function') {
+        const body = await ctx.json();
+        if (body?.error) detail = String(body.error);
+      }
+    } catch {
+      /* keep detail */
+    }
+    throw new Error(detail);
+  }
 
   return {
     chapter: data.chapter as ChapterDraftData,

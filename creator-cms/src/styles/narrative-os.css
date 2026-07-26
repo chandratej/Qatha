@@ -4,24 +4,25 @@
  */
 
 .narrative-os-app {
-  --nos-paper: #fbf7ee;
-  --nos-paper-deep: #f1e9d6;
-  --nos-ink: #2b2420;
-  --nos-ink-soft: #8a7f6e;
-  --nos-ink-faint: #c9bfa9;
+  /* Soft paper — not tea-stain yellow; high ink contrast for long sessions */
+  --nos-paper: #fdfaf4;
+  --nos-paper-deep: #f0ebe2;
+  --nos-ink: #241f18;
+  --nos-ink-soft: #4a433a;
+  --nos-ink-faint: #8a8278;
   --nos-brass: #a9812f;
   --nos-brass-soft: #d7bd7e;
   --nos-oxblood: #7a3b36;
   --nos-sage: #62705c;
-  --nos-hairline: #e7dcc4;
+  --nos-hairline: rgba(36, 31, 24, 0.1);
   --nos-line: var(--nos-hairline);
-  --nos-shadow: rgba(43, 36, 32, 0.1);
+  --nos-shadow: rgba(36, 31, 24, 0.07);
   --nos-spine-w: 5px;
   --paper: var(--nos-paper);
   --ink-faint: var(--nos-ink-faint);
   --brass: var(--nos-brass);
   --sage: var(--nos-sage);
-  /* Manuscript canvas — character-per-line measure, single tuning surface */
+  /* Manuscript canvas — ~60–70 chars, generous leading for Telugu */
   --manuscript-column-width: 680px;
   --manuscript-column-breadth: 650px;
   --manuscript-padding-top: 52px;
@@ -30,19 +31,19 @@
   --manuscript-padding-horizontal: 20px;
   --manuscript-left-gutter: 30px;
   --manuscript-para-ctx-offset: 30px;
-  --manuscript-line-height-latin: 1.75;
-  --manuscript-line-height-telugu: 1.95;
+  --manuscript-line-height-latin: 1.8;
+  --manuscript-line-height-telugu: 2.05;
 }
 
 [data-theme='dark'] .narrative-os-app {
-  --nos-paper: #1a1512;
-  --nos-paper-deep: #241e19;
-  --nos-ink: #ede7d8;
-  --nos-ink-soft: #a89f92;
-  --nos-ink-faint: #6b6358;
-  --nos-hairline: #3a332c;
+  --nos-paper: #1a1612;
+  --nos-paper-deep: #12100e;
+  --nos-ink: #f0e9dc;
+  --nos-ink-soft: #c8c0b2;
+  --nos-ink-faint: #7a7368;
+  --nos-hairline: rgba(240, 233, 220, 0.12);
   --nos-line: var(--nos-hairline);
-  --nos-shadow: rgba(0, 0, 0, 0.35);
+  --nos-shadow: rgba(0, 0, 0, 0.4);
 }
 
 .narrative-os-app .nos-skip-link {

@@ -5,10 +5,8 @@ import { NARRATIVE_FORMAT_LABELS } from '../../lib/narrativeOsTypes';
 import { EditorComfortControls } from '../Editor/EditorComfortControls';
 import type { FontScale } from '../../lib/comfortPrefs';
 import { useLocale } from '../../context/LocaleContext';
-import { UI_CONFIG } from '../../config/ui_config';
 
 const FORMATS: NarrativeFormat[] = ['novel', 'chat', 'letter'];
-const CHAR_WARN_RATIO = UI_CONFIG.editor.charWarnRatio;
 
 const TAB_KEYS = ['scene', 'people', 'notes', 'settings'] as const;
 type InspectorTab = typeof TAB_KEYS[number];
@@ -39,8 +37,6 @@ export function NarrativeInspectorPanel({
   narrativeFormat,
   onNarrativeFormatChange,
   wordCount,
-  charCount,
-  charLimit,
   phoneticLive,
   onTogglePhonetic,
   fontScale,

@@ -275,10 +275,14 @@ export function Settings() {
                   aria-label="Theme preference"
                 >
                   <option value="system">Match system — follows your device day/night schedule</option>
-                  <option value="light">Sepia (light)</option>
-                  <option value="dark">Night (dark)</option>
+                  <option value="light">Paper (soft daylight) — best for daytime writing</option>
+                  <option value="dark">Night (low glare) — best for evenings</option>
                 </select>
               </label>
+              <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+                Paper mode uses soft off-white (not yellow sepia) with deep warm ink to reduce eye strain
+                over multi-hour sessions. Night mode keeps a warm low-blue canvas.
+              </p>
               <label className="studio-settings-field">
                 <span>Interface text size — {uiScaleLabel(comfort.uiScale)}</span>
                 <select
@@ -307,7 +311,7 @@ export function Settings() {
                   checked={comfort.highContrast}
                   onChange={(e) => updateComfort({ highContrast: e.target.checked })}
                 />
-                <span>High contrast — stronger text and panel borders</span>
+                <span>High contrast — stronger text and panel borders (glare / tired eyes)</span>
               </label>
             </div>
           </div>
@@ -316,7 +320,11 @@ export function Settings() {
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <Coffee size={18} aria-hidden />
-            <h3>Writing comfort</h3>
+            <h3>Writing comfort (editor)</h3>
+            <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+              Defaults favour longer sessions: larger type and spacious line height. Adjust anytime —
+              preferences stay on this device.
+            </p>
           </div>
           <div className="studio-settings-section__body">
             <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>

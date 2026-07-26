@@ -29,13 +29,14 @@ export function NarrativePublishView({
   chapterNum,
   publishLabel,
   publishing,
-  publishDisabled,
+  publishDisabled: _publishDisabledIgnored,
   onPublish,
   onBackToWrite,
   scheduling = false,
   scheduleError = null,
   scheduleSuccess = null,
 }: NarrativePublishViewProps) {
+  void _publishDisabledIgnored;
   const { t, locale } = useLocale();
   const busy = publishing || scheduling;
   const te = locale === 'te';
@@ -91,13 +92,31 @@ export function NarrativePublishView({
         <button
           type="button"
           className="nos-publish__cta"
-          onClick={onPublish}
-          disabled={publishDisabled || busy}
-          title={busy ? undefined : 'Submit for review — word limits are checked on click'}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Failsafe: always invoke parent handler (word-band alert lives there).
+            onPublish();
+          }}
+          disabled={busy}
+          title={
+            wordCount < 1500
+              ? `Need at least 1,500 words (you have ${wordCount})`
+              : busy
+                ? undefined
+                : 'Submit for review — word limits are checked on click'
+          }
         >
           <Rocket size={16} aria-hidden />
           {publishing ? t('editor.saving') : publishLabel}
         </button>
+        {wordCount > 0 && wordCount < 1500 && (
+          <p className="nos-publish__error" role="alert" style={{ marginTop: 12 }}>
+            {te
+              ? `ప్రచురణ బ్లాక్: కనీసం 1,500 పదాలు (ప్రస్తుతం ${wordCount}). బటన్ నొక్కితే వివరాలు.`
+              : `Publishing blocked: need at least 1,500 words (you have ${wordCount}). Click the button for details.`}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,2 +1,3 @@
-pkce-hydrate-v5-bootstrap-2026-07-25
-KATHA_OAUTH_BOOTSTRAP_V1
+﻿pkce-hydrate-v5-bootstrap-2026-07-26
+WORD_BAND_POPUP_V1
+

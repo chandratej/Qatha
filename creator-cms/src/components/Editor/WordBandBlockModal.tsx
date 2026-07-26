@@ -1,5 +1,5 @@
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FileWarning } from 'lucide-react';
 
 export type WordBandBlockReason = 'below_min' | 'over_hard_max';
 
@@ -19,8 +19,8 @@ const DEFAULT_MAX = 2500;
 const DEFAULT_HARD = 3000;
 
 /**
- * Blocking popup when serialized word-band fails.
- * Portaled to document.body so Narrative OS stacking never hides it.
+ * Failsafe publish-block dialog. Uses createPortal + fully inline styles
+ * so Narrative OS / CSS stacking can never hide it.
  */
 export function WordBandBlockModal({
   open,
@@ -32,6 +32,20 @@ export function WordBandBlockModal({
   reason = 'below_min',
   locale = 'en',
 }: WordBandBlockModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open, onClose]);
+
   if (!open || typeof document === 'undefined') return null;
 
   const te = locale === 'te';
@@ -40,87 +54,158 @@ export function WordBandBlockModal({
 
   const title = below
     ? te
-      ? 'ప్రచురణకు ఇంకా సరిపడా పదాలు లేవు'
-      : 'Not enough words to publish'
+      ? 'ప్రచురణ బ్లాక్ అయింది — పదాలు సరిపోలేదు'
+      : 'Publishing blocked — not enough words'
     : te
-      ? 'అధ్యాయం చాలా పొడవుగా ఉంది'
-      : 'Chapter is too long to publish';
+      ? 'ప్రచురణ బ్లాక్ అయింది — చాలా పొడవు'
+      : 'Publishing blocked — chapter too long';
 
   const lead = below
     ? te
-      ? `ధారావాహిక అధ్యాయాలకు కనీసం ${min.toLocaleString('te')} పదాలు అవసరం. ప్రస్తుతం ${wordCount.toLocaleString('te')} పదాలు — ఇంకా ${need.toLocaleString('te')} పదాలు రాయండి. మీ డ్రాఫ్ట్ సేవ్ అయింది; ప్రచురణ జరగలేదు.`
-      : `Serialized chapters need at least ${min.toLocaleString()} words. You have ${wordCount.toLocaleString()} words — write about ${need.toLocaleString()} more. Your draft is saved; publish did not go through.`
+      ? `కనీసం ${min.toLocaleString('te')} పదాలు అవసరం. మీకు ${wordCount.toLocaleString('te')} పదాలు ఉన్నాయి. ఇంకా ~${need.toLocaleString('te')} పదాలు రాయండి. డ్రాఫ్ట్ సేవ్ అయింది — ప్రచురణ జరగలేదు.`
+      : `You need at least ${min.toLocaleString()} words to publish. You have ${wordCount.toLocaleString()} words — write about ${need.toLocaleString()} more. Your draft is saved; publishing did not complete.`
     : te
-      ? `గరిష్ఠ ${hardMax.toLocaleString('te')} పదాలు. ప్రస్తుతం ${wordCount.toLocaleString('te')} — ${need.toLocaleString('te')} పదాలు తగ్గించండి.`
-      : `Serialized chapters cannot exceed ${hardMax.toLocaleString()} words. You have ${wordCount.toLocaleString()} — trim about ${need.toLocaleString()} words.`;
+      ? `గరిష్ఠ ${hardMax.toLocaleString('te')} పదాలు. మీకు ${wordCount.toLocaleString('te')} ఉన్నాయి — ~${need.toLocaleString('te')} తగ్గించండి.`
+      : `Hard maximum is ${hardMax.toLocaleString()} words. You have ${wordCount.toLocaleString()} — trim about ${need.toLocaleString()} words.`;
+
+  const backdrop: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 2147483000,
+    background: 'rgba(20, 16, 12, 0.72)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    boxSizing: 'border-box',
+  };
+
+  const panel: React.CSSProperties = {
+    width: '100%',
+    maxWidth: 440,
+    background: '#faf7f2',
+    color: '#1a1410',
+    borderRadius: 14,
+    border: '1px solid #d4c4a8',
+    boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
+    padding: '22px 22px 18px',
+    fontFamily: 'system-ui, Segoe UI, sans-serif',
+  };
+
+  const btn: React.CSSProperties = {
+    marginTop: 16,
+    width: '100%',
+    padding: '12px 16px',
+    border: 'none',
+    borderRadius: 10,
+    background: '#6b2d3c',
+    color: '#fff',
+    fontWeight: 600,
+    fontSize: 15,
+    cursor: 'pointer',
+  };
 
   return createPortal(
     <div
-      className="cms-modal-backdrop katha-word-band-block-backdrop"
+      style={backdrop}
       role="presentation"
       onClick={onClose}
-      style={{ zIndex: 20000 }}
+      data-testid="word-band-block-modal"
     >
       <div
-        className="cms-modal katha-word-band-block-modal"
+        style={panel}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="word-band-block-title"
-        aria-describedby="word-band-block-desc"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="cms-modal__head">
-          <h2 id="word-band-block-title" className="cms-modal__title">
-            {title}
-          </h2>
-          <button type="button" className="cms-modal__close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
-        <div className="cms-modal__body">
-          <div className="katha-word-band-block">
-            <div className="katha-word-band-block__icon" aria-hidden>
-              <FileWarning size={28} strokeWidth={1.75} />
+        <h2
+          id="word-band-block-title"
+          style={{ margin: '0 0 12px', fontSize: 20, fontWeight: 700, color: '#6b2d3c' }}
+        >
+          {title}
+        </h2>
+        <p style={{ margin: '0 0 16px', fontSize: 15, lineHeight: 1.5 }}>{lead}</p>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 10,
+            padding: 12,
+            borderRadius: 10,
+            background: 'rgba(107, 45, 60, 0.08)',
+            fontSize: 14,
+          }}
+        >
+          <div>
+            <div style={{ opacity: 0.7, fontSize: 11, textTransform: 'uppercase' }}>
+              {te ? 'మీ పదాలు' : 'Your words'}
             </div>
-            <p id="word-band-block-desc" className="katha-word-band-block__lead">
-              {lead}
-            </p>
-            <dl className="katha-word-band-block__meta">
-              <div>
-                <dt>{te ? 'మీ పదాలు' : 'Your words'}</dt>
-                <dd className="katha-word-band-block__bad">{wordCount.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>{te ? 'కనీసం (publish)' : 'Minimum to publish'}</dt>
-                <dd>{min.toLocaleString()}</dd>
-              </div>
-              <div>
-                <dt>{te ? 'సిఫార్సు' : 'Recommended'}</dt>
-                <dd>
-                  {min.toLocaleString()}–{max.toLocaleString()}
-                </dd>
-              </div>
-              <div>
-                <dt>{te ? 'గరిష్ఠం' : 'Hard maximum'}</dt>
-                <dd>{hardMax.toLocaleString()}</dd>
-              </div>
-            </dl>
-            <p className="katha-word-band-block__note">
-              {te
-                ? 'ఇది characters కాదు — పదాల లెక్క. సరిపడా పదాలు రాసిన తర్వాత Publish మళ్ళీ నొక్కండి.'
-                : 'This is a word count, not a character limit. Click Publish again after you meet the minimum.'}
-            </p>
+            <div style={{ fontWeight: 700, fontSize: 18, color: '#6b2d3c' }}>
+              {wordCount.toLocaleString()}
+            </div>
+          </div>
+          <div>
+            <div style={{ opacity: 0.7, fontSize: 11, textTransform: 'uppercase' }}>
+              {te ? 'కనీసం' : 'Minimum'}
+            </div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>{min.toLocaleString()}</div>
+          </div>
+          <div>
+            <div style={{ opacity: 0.7, fontSize: 11, textTransform: 'uppercase' }}>
+              {te ? 'సిఫార్సు' : 'Recommended'}
+            </div>
+            <div style={{ fontWeight: 600 }}>
+              {min.toLocaleString()}–{max.toLocaleString()}
+            </div>
+          </div>
+          <div>
+            <div style={{ opacity: 0.7, fontSize: 11, textTransform: 'uppercase' }}>
+              {te ? 'గరిష్ఠం' : 'Hard max'}
+            </div>
+            <div style={{ fontWeight: 600 }}>{hardMax.toLocaleString()}</div>
           </div>
         </div>
-        <footer className="cms-modal__footer">
-          <div className="cms-modal__footer-actions">
-            <button type="button" className="btn btn-primary" onClick={onClose} autoFocus>
-              {te ? 'సరే — సవరించడం కొనసాగించు' : 'OK — keep editing'}
-            </button>
-          </div>
-        </footer>
+        <p style={{ margin: '14px 0 0', fontSize: 13, lineHeight: 1.45, opacity: 0.8 }}>
+          {te
+            ? 'ఇది characters కాదు — పదాలు. అవసరమైన పదాలు రాసిన తర్వాత Publish మళ్ళీ నొక్కండి.'
+            : 'This is a word count (not characters). Click Publish again after you meet the minimum.'}
+        </p>
+        <button type="button" style={btn} onClick={onClose} autoFocus>
+          {te ? 'సరే — సవరించడం కొనసాగించు' : 'OK — keep editing'}
+        </button>
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** Imperative failsafe when React state alone is unreliable. */
+export function showWordBandBlockedAlert(opts: {
+  wordCount: number;
+  min?: number;
+  hardMax?: number;
+  reason?: WordBandBlockReason;
+}): void {
+  const min = opts.min ?? DEFAULT_MIN;
+  const hardMax = opts.hardMax ?? DEFAULT_HARD;
+  const count = opts.wordCount;
+  if (opts.reason === 'over_hard_max') {
+    window.alert(
+      `Publishing blocked — chapter too long.\n\n` +
+        `Hard maximum: ${hardMax.toLocaleString()} words\n` +
+        `Your words: ${count.toLocaleString()}\n\n` +
+        `Trim the chapter, then publish again. Your draft is saved.`,
+    );
+    return;
+  }
+  const need = Math.max(0, min - count);
+  window.alert(
+    `Publishing blocked — not enough words.\n\n` +
+      `Minimum to publish: ${min.toLocaleString()} words\n` +
+      `Recommended: ${min.toLocaleString()}–${DEFAULT_MAX.toLocaleString()} words\n` +
+      `Your words: ${count.toLocaleString()}\n` +
+      `Still need about: ${need.toLocaleString()} words\n\n` +
+      `Your draft is saved. Write more, then click Publish again.`,
   );
 }

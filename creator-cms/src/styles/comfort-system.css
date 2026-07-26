@@ -113,12 +113,12 @@ html[data-contrast='high'] :focus-visible {
    different product from Stories/editor. Unified on the WARM night
    palette per the brand's low-glare philosophy. */
 [data-theme='dark'] [data-katha-mode='management'] {
-  --katha-mode-bg: #1c1814;
-  --katha-mode-bg-warm: #252019;
-  --katha-mode-surface: #2e2820;
-  --katha-mode-surface-raised: #363024;
-  --katha-mode-border: rgba(229, 220, 200, 0.12);
-  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
+  --katha-mode-bg: #12100e;
+  --katha-mode-bg-warm: #181410;
+  --katha-mode-surface: #1c1814;
+  --katha-mode-surface-raised: #221e19;
+  --katha-mode-border: rgba(240, 233, 220, 0.1);
+  --katha-mode-border-strong: rgba(240, 233, 220, 0.16);
   --katha-mode-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.22);
   --katha-mode-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   --katha-mode-shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.38);
@@ -128,23 +128,23 @@ html[data-contrast='high'] :focus-visible {
 /* Same warm remap at the root so pages outside the shell (auth) and
    html-level fallbacks agree. */
 [data-theme='dark']:root {
-  --katha-mode-bg: #1c1814;
-  --katha-mode-bg-warm: #252019;
-  --katha-mode-surface: #2e2820;
-  --katha-mode-surface-raised: #363024;
-  --katha-mode-border: rgba(229, 220, 200, 0.12);
-  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
+  --katha-mode-bg: #12100e;
+  --katha-mode-bg-warm: #181410;
+  --katha-mode-surface: #1c1814;
+  --katha-mode-surface-raised: #221e19;
+  --katha-mode-border: rgba(240, 233, 220, 0.1);
+  --katha-mode-border-strong: rgba(240, 233, 220, 0.16);
 }
 
 /* premium-shell's cool-dark hardcodes → warm night */
 [data-theme='dark'] {
-  --premium-surface: #2e2820;
-  --premium-surface-soft: rgba(37, 32, 25, 0.88);
-  --premium-border: rgba(229, 220, 200, 0.1);
+  --premium-surface: #1c1814;
+  --premium-surface-soft: rgba(24, 20, 16, 0.9);
+  --premium-border: rgba(240, 233, 220, 0.1);
 }
 
 [data-theme='dark'] .app-shell[data-katha-mode='management'] {
-  background-color: #1c1814;
+  background-color: #12100e;
 }
 
 [data-theme='dark'] .cms-auth-page {

@@ -1318,12 +1318,9 @@
 }
 
 [data-katha-mode='creation'] .katha-proto-editor-canvas {
+  /* Flat soft paper only — palm/gold textures removed (eye-fatigue). */
   background-color: var(--editor-canvas);
-  background-image:
-    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(196, 160, 82, 0.04), transparent 58%),
-    var(--katha-palm-pattern-subtle, var(--katha-palm-pattern));
-  background-size: 100% 100%, 48px 24px;
-  background-repeat: no-repeat, repeat;
+  background-image: none;
   border: 1px solid var(--border-subtle, var(--border));
 }
 
@@ -1456,11 +1453,12 @@
 
 .katha-proto-editor-canvas .ql-editor {
   padding: 0 !important;
-  font-size: var(--editor-font-size, 1.125rem) !important;
-  line-height: var(--editor-line-height, 1.95) !important;
-  letter-spacing: 0.015em !important;
+  font-size: var(--editor-font-size, 1.25rem) !important;
+  line-height: var(--editor-line-height, 2.05) !important;
+  letter-spacing: 0.012em !important;
   min-height: 320px;
-  color: var(--ink-soft);
+  /* Prefer full ink (not muted) for sustained reading contrast */
+  color: var(--ink);
 }
 
 .katha-proto-editor-canvas .ql-editor p,

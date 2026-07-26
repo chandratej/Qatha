@@ -22,8 +22,10 @@ export interface ComfortPrefs {
 const STORAGE_KEY = 'katha_comfort_prefs';
 
 const DEFAULTS: ComfortPrefs = {
-  fontScale: 2,
-  lineHeightScale: 2,
+  /** Comfort (scale 3) — larger body type for multi-hour Telugu sessions. */
+  fontScale: 3,
+  /** Spacious leading reduces line-tracking fatigue. */
+  lineHeightScale: 3,
   breakReminderMinutes: 90,
   uiScale: 2,
   calmMotion: false,
@@ -117,9 +119,9 @@ export function applyGlobalComfort(prefs: ComfortPrefs = loadComfortPrefs()) {
   else root.removeAttribute('data-contrast');
 }
 
-/** Newsreader at scale 2 ≈ 19px — targets ~65–70 Latin chars in the manuscript column. */
+/** Scale 2 ≈ 20px — slightly larger for lower accommodation strain. */
 export function editorFontSizePx(fontScale: FontScale): number {
-  return 19 + (fontScale - 2) * 3;
+  return 20 + (fontScale - 2) * 2.5;
 }
 
 export function editorLineHeight(
@@ -129,20 +131,20 @@ export function editorLineHeight(
   if (script === 'telugu') {
     switch (lineHeightScale) {
       case 1:
-        return 1.9;
-      case 3:
-        return 2.05;
-      default:
         return 1.95;
+      case 3:
+        return 2.15;
+      default:
+        return 2.05;
     }
   }
   switch (lineHeightScale) {
     case 1:
-      return 1.65;
+      return 1.7;
     case 3:
-      return 1.85;
+      return 1.95;
     default:
-      return 1.75;
+      return 1.82;
   }
 }
 

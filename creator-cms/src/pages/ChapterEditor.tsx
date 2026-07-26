@@ -14,6 +14,7 @@ import { EditorStatusStrip } from '../components/Editor/EditorStatusStrip';
 import { PublishConfirmModal } from '../components/Editor/PublishConfirmModal';
 import {
   WordBandBlockModal,
+  showWordBandBlockedAlert,
   type WordBandBlockReason,
 } from '../components/Editor/WordBandBlockModal';
 import { DeleteSceneModal } from '../components/Editor/DeleteSceneModal';
@@ -614,8 +615,13 @@ export function ChapterEditor() {
    * Always resolve a concrete band for serials (hardcoded fallback if shared def missing).
    * Exempt: short_story, flash, collection, chat, branching.
    */
+  /**
+   * Always enforce the serial word band for normal stories.
+   * Only skip for explicit short/flash/collection/experimental formats.
+   * Hardcoded fallback so a bad content_type import can never disable the UI gate.
+   */
   const softWordTarget = useMemo(() => {
-    const ct = storyContentType || 'serialized_story';
+    const ct = (storyContentType || 'serialized_story').trim();
     const exempt = new Set([
       'short_story',
       'flash_fiction',
@@ -624,21 +630,17 @@ export function ChapterEditor() {
       'interactive_branching',
     ]);
     if (exempt.has(ct)) return null;
-    return (
-      softWordTargetForContentType(ct) ||
-      softWordTargetForContentType('serialized_story') || {
-        min: 1500,
-        max: 2500,
-        hardMax: 3000,
-      }
-    );
+    const FALLBACK = { min: 1500, max: 2500, hardMax: 3000 as number | null };
+    try {
+      return softWordTargetForContentType(ct)
+        || softWordTargetForContentType('serialized_story')
+        || FALLBACK;
+    } catch {
+      return FALLBACK;
+    }
   }, [storyContentType]);
   const softWordGoal = softWordTarget?.max ?? CHAPTER_WORD_GOAL;
-  const underSoftWordMin = Boolean(softWordTarget && wordCount < softWordTarget.min);
-  const overHardWordMax = Boolean(
-    softWordTarget?.hardMax != null && wordCount > softWordTarget.hardMax,
-  );
-  const wordBandBlocksPublish = underSoftWordMin || overHardWordMax;
+
 
   useEffect(() => {
     const fromScene = scenes.find((s) => s.narrativeFormat)?.narrativeFormat;
@@ -1008,29 +1010,36 @@ export function ChapterEditor() {
     setWordBandBlockReason(reason);
     setWordBandBlockOpen(true);
     setPublishConfirmOpen(false);
-    if (reason === 'below_min') {
-      setPublishError(
-        `Cannot publish: need at least ${band.min.toLocaleString()} words ` +
-          `(you have ${count.toLocaleString()}). Recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}.`,
-      );
-    } else {
-      setPublishError(
-        `Cannot publish: hard max is ${(band.hardMax ?? 3000).toLocaleString()} words ` +
-          `(you have ${count.toLocaleString()}). Trim before publishing.`,
-      );
+    const errMsg =
+      reason === 'below_min'
+        ? `Cannot publish: need at least ${band.min.toLocaleString()} words (you have ${count.toLocaleString()}). Recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}.`
+        : `Cannot publish: hard max is ${(band.hardMax ?? 3000).toLocaleString()} words (you have ${count.toLocaleString()}). Trim before publishing.`;
+    setPublishError(errMsg);
+    // Native alert is guaranteed visible even if React portal fails or CMS is stale-bundled oddly.
+    try {
+      showWordBandBlockedAlert({
+        wordCount: count,
+        min: band.min,
+        hardMax: band.hardMax ?? 3000,
+        reason,
+      });
+    } catch {
+      /* ignore */
     }
   };
 
   /** Returns false if blocked (and opens popup). True if OK to continue. */
   const checkWordBandOrNotify = (count: number): boolean => {
-    // Always enforce for non-exempt formats (softWordTarget null only when exempt).
-    if (!softWordTarget) return true;
-    const band = softWordTarget;
-    if (count < band.min) {
+    // softWordTarget null = exempt format only
+    if (softWordTarget === null) return true;
+    const band = softWordTarget ?? publishWordBand;
+    const min = band.min ?? 1500;
+    const hardMax = band.hardMax ?? 3000;
+    if (count < min) {
       openWordBandBlock('below_min', count);
       return false;
     }
-    if (band.hardMax != null && count > band.hardMax) {
+    if (count > hardMax) {
       openWordBandBlock('over_hard_max', count);
       return false;
     }
@@ -1175,8 +1184,18 @@ export function ChapterEditor() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Publish failed';
       const liveCount = getWordCountFromScenes(scenes, locale);
-      if (!notifyWordBandFromError(msg, liveCount)) {
+      // If under min, always show word-band UI (edge errors often hide the real message).
+      if (liveCount > 0 && liveCount < 1500) {
+        openWordBandBlock('below_min', liveCount);
+      } else if (liveCount > 3000) {
+        openWordBandBlock('over_hard_max', liveCount);
+      } else if (!notifyWordBandFromError(msg, liveCount)) {
         setPublishError(msg);
+        try {
+          window.alert(`Publish failed:\n\n${msg}`);
+        } catch {
+          /* ignore */
+        }
       }
       setPublishConfirmOpen(false);
     } finally {
@@ -1187,14 +1206,33 @@ export function ChapterEditor() {
 
   const handlePublish = () => {
     // Re-count from live scenes so stale wordCount cannot skip the popup.
-    flushEditor();
+    try {
+      flushEditor();
+    } catch {
+      /* ignore */
+    }
     const liveCount = getWordCountFromScenes(scenes, locale);
     if (liveCount <= 0) {
       setPublishError('Add some content before publishing');
       setWordBandBlockOpen(false);
+      try {
+        window.alert('Add some content before publishing.');
+      } catch {
+        /* ignore */
+      }
       return;
     }
-    // Always allow the click — show a clear popup when word band fails.
+    // Force serial band even if softWordTarget failed to resolve (except explicit exempt).
+    const ct = (storyContentType || 'serialized_story').trim();
+    const exempt = ['short_story', 'flash_fiction', 'short_story_collection', 'epistolary_chat', 'interactive_branching'];
+    if (!exempt.includes(ct) && liveCount < 1500) {
+      openWordBandBlock('below_min', liveCount);
+      return;
+    }
+    if (!exempt.includes(ct) && liveCount > 3000) {
+      openWordBandBlock('over_hard_max', liveCount);
+      return;
+    }
     if (!checkWordBandOrNotify(liveCount)) {
       return;
     }

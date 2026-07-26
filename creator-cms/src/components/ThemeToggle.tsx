@@ -18,8 +18,8 @@ export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProp
         className={`theme-toggle theme-toggle--compact${className ? ` ${className}` : ''}`}
         onClick={toggleTheme}
         aria-pressed={isDark}
-        aria-label={isDark ? 'Switch to sepia mode' : 'Switch to night mode'}
-        title={isDark ? 'Sepia mode' : 'Night mode'}
+        aria-label={isDark ? 'Switch to paper (day) mode' : 'Switch to night mode'}
+        title={isDark ? 'Paper mode — soft daylight paper' : 'Night mode — low-glare dark'}
       >
         {isDark ? <Coffee size={16} /> : <Moon size={16} />}
       </button>
@@ -32,7 +32,7 @@ export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProp
       className={`theme-toggle${className ? ` ${className}` : ''}`}
       onClick={toggleTheme}
       aria-pressed={isDark}
-      aria-label={isDark ? 'Switch to sepia mode' : 'Switch to night mode'}
+      aria-label={isDark ? 'Switch to paper (day) mode' : 'Switch to night mode'}
     >
       <span className="theme-toggle__icons" aria-hidden>
         <Coffee size={14} className={!isDark ? 'active' : ''} />
@@ -42,8 +42,12 @@ export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProp
         <span className={`theme-toggle__thumb${isDark ? ' theme-toggle__thumb--dark' : ''}`} />
       </span>
       <span className="theme-toggle__copy">
-        <span className="theme-toggle__label">{isDark ? 'Night mode' : 'Sepia mode'}</span>
-        <span className="theme-toggle__hint">Easy on the eyes for long sessions</span>
+        <span className="theme-toggle__label">{isDark ? 'Night' : 'Paper'}</span>
+        <span className="theme-toggle__hint">
+          {isDark
+            ? 'Warm low-glare dark for late sessions'
+            : 'Soft paper white — designed for multi-hour writing'}
+        </span>
       </span>
     </button>
   );

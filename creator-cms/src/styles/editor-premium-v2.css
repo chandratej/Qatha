@@ -123,22 +123,18 @@
   letter-spacing: -0.01em;
 }
 
-/* Writing canvas — literary page */
+/* Writing canvas — calm literary page (eye-comfort: no gold wash / spine stripe glare) */
 .katha-proto-layout--premium .katha-proto-editor-body {
   padding: 28px 20px 56px;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(196, 160, 82, 0.05), transparent 60%),
-    var(--paper);
+  background: var(--paper);
 }
 
 .katha-proto-layout--premium .katha-proto-editor-canvas {
-  border-radius: 4px 16px 16px 4px;
+  border-radius: 2px 14px 14px 2px;
   box-shadow:
-    -6px 0 0 color-mix(in srgb, var(--katha-maroon) 12%, transparent),
-    0 8px 40px rgba(26, 24, 20, 0.1),
-    0 2px 8px rgba(26, 24, 20, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(196, 160, 82, 0.18) !important;
+    0 1px 2px rgba(36, 31, 24, 0.04),
+    0 12px 40px rgba(36, 31, 24, 0.06);
+  border: 1px solid rgba(36, 31, 24, 0.06) !important;
   padding: clamp(36px, 5vw, 56px) clamp(32px, 6vw, 64px) clamp(48px, 6vw, 72px);
   animation: katha-page-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -186,14 +182,15 @@
   color: var(--katha-maroon);
 }
 
-/* Quill editor typography */
+/* Quill editor typography — comfort-first (size/leading also set via --editor-* vars) */
 .katha-proto-layout--premium .ql-editor {
   font-family: var(--font-telugu), var(--font-reading), 'Literata', Georgia, serif !important;
-  font-size: 1.125rem !important;
-  line-height: 1.85 !important;
+  font-size: var(--editor-font-size, 1.25rem) !important;
+  line-height: var(--editor-line-height, 1.95) !important;
   color: var(--ink) !important;
   min-height: 280px;
   padding: 0 !important;
+  letter-spacing: 0.012em !important;
 }
 
 .katha-proto-layout--premium .ql-editor p {

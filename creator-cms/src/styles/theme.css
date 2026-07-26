@@ -16,11 +16,12 @@
   --sepia-deep: var(--katha-mode-border);
   --sepia-surface: var(--katha-mode-surface);
   --sepia-surface-raised: var(--katha-mode-surface-raised);
-  --sepia-night-base: #1C1814;
-  --sepia-night-warm: #252019;
-  --sepia-night-surface: #2E2820;
-  --sepia-night-ink: #E5DCC8;
-  --sepia-night-ink-soft: #C9BDA8;
+  /* Night paper — soft cream on near-black (low glare) */
+  --sepia-night-base: #12100e;
+  --sepia-night-warm: #181410;
+  --sepia-night-surface: #1c1814;
+  --sepia-night-ink: #f0e9dc;
+  --sepia-night-ink-soft: #d8d0c0;
 
   --editor-canvas: var(--katha-mode-surface-raised);
   --editor-sidebar: var(--katha-mode-bg-warm);
@@ -97,7 +98,7 @@
   color-scheme: light;
 }
 
-/* Creation Mode — parchment editor atmosphere */
+/* Creation Mode — soft paper editor (eye comfort) */
 [data-katha-mode='creation'] {
   --sepia-base: var(--katha-mode-bg);
   --sepia-warm: var(--katha-mode-bg-warm);
@@ -115,22 +116,26 @@
   --ink: var(--katha-mode-ink);
   --ink-soft: var(--katha-mode-ink-soft);
   --ink-muted: var(--katha-mode-ink-muted);
-  --ink-faint: #a89882;
+  --ink-faint: #8a8278;
   --border: var(--katha-mode-border);
-  --border-subtle: rgba(74, 63, 50, 0.08);
-  --border-faint: rgba(74, 63, 50, 0.06);
+  --border-subtle: rgba(36, 31, 24, 0.07);
+  --border-faint: rgba(36, 31, 24, 0.05);
   --border-medium: var(--katha-mode-border-strong);
   --shadow-sm: var(--katha-mode-shadow-sm);
   --shadow-md: var(--katha-mode-shadow);
   --shadow-lg: var(--katha-mode-shadow-lg);
+  /* Reading measure for long sessions */
+  --line-height-body: 1.75;
+  --line-height-relaxed: 1.9;
+  --letter-spacing-body: 0.01em;
 }
 
 [data-theme='dark'] {
   --paper: var(--sepia-night-base);
   --paper-warm: var(--sepia-night-warm);
   --surface: var(--sepia-night-surface);
-  --surface-elevated: #363024;
-  --editor-canvas: #2A241E;
+  --surface-elevated: #221e19;
+  --editor-canvas: #1a1612;
   --editor-sidebar: var(--sepia-night-warm);
 
   /* Brighter gold on dark for premium legibility without glare */
