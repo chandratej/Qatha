@@ -40,7 +40,7 @@
 /* Body text — deep ink, optimized rendering */
 [data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor,
 [data-katha-mode='creation'] .katha-proto-layout--premium .ql-editor {
-  color: var(--ink, #241f18) !important;
+  color: var(--ink, #14110d) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -211,6 +211,360 @@ html[data-theme='dark'][data-contrast='high'] [data-katha-mode='creation'] {
 /* Calm motion already global — ensure page enter is subtle */
 html[data-motion='calm'] [data-katha-mode='creation'] .katha-proto-editor-canvas {
   animation: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAPER / SEPIA (LIGHT) UI LEGIBILITY
+   Warm paper lowers page glare — chrome + buttons must stay near-black
+   ink, not gold-washed or cream-on-cream. Tokens pinned here so later
+   stylesheets cannot re-introduce washed greys under data-katha-mode.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Pin ink on creation shell (mirrors dark comfort-system remap) */
+html:not([data-theme='dark']) [data-katha-mode='creation'],
+[data-theme='light'] [data-katha-mode='creation'] {
+  --ink: #14110d;
+  --ink-soft: #241f18;
+  --ink-muted: #3f3a32;
+  --ink-faint: #5c554c;
+  --gold: #7a5c28;
+  --gold-dark: #4a3614;
+  color: #241f18;
+  -webkit-font-smoothing: antialiased;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] h1,
+html:not([data-theme='dark']) [data-katha-mode='creation'] h2,
+html:not([data-theme='dark']) [data-katha-mode='creation'] h3,
+html:not([data-theme='dark']) [data-katha-mode='creation'] h4,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .studio-page-header__title {
+  color: #14110d !important;
+}
+
+/* Manuscript body — force solid ink (not inherited muted greys) */
+html:not([data-theme='dark']) [data-katha-mode='creation'] .ql-editor,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .ProseMirror,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor {
+  color: #14110d !important;
+}
+
+/* Primary gold CTAs: dark ink on solid gold (cream-on-muted-gold fails) */
+html:not([data-theme='dark']) .btn-primary,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .btn-primary,
+html:not([data-theme='dark']) .btn.btn-primary,
+html:not([data-theme='dark']) button.btn-primary {
+  color: #1a1510 !important;
+  background: linear-gradient(168deg, #d4b46e 0%, #b8923e 55%, #8a6b32 100%) !important;
+  border: 1px solid rgba(74, 54, 20, 0.4) !important;
+  font-weight: 600 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #1a1510;
+}
+
+html:not([data-theme='dark']) .btn-primary:hover,
+html:not([data-theme='dark']) button.btn-primary:hover {
+  color: #140f0c !important;
+  -webkit-text-fill-color: #140f0c;
+  filter: brightness(0.97);
+}
+
+/* Maroon publish — cream on deep maroon (high contrast, brand) */
+html:not([data-theme='dark']) .katha-proto-publish-btn,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-publish-btn {
+  color: #fdf8f0 !important;
+  -webkit-text-fill-color: #fdf8f0;
+  background: linear-gradient(168deg, #6b2338 0%, #4a1526 100%) !important;
+  border: 1px solid rgba(74, 21, 38, 0.55) !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+}
+
+html:not([data-theme='dark']) .katha-proto-publish-btn:hover:not(:disabled) {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+  filter: brightness(1.05);
+}
+
+/* Secondary / ghost — full ink, not grey mud */
+html:not([data-theme='dark']) .btn-secondary,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .btn-secondary,
+html:not([data-theme='dark']) button.btn-secondary {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  background: var(--surface-elevated, #ebe3d4) !important;
+  border: 1px solid rgba(28, 22, 16, 0.22) !important;
+  font-weight: 600 !important;
+}
+
+html:not([data-theme='dark']) .btn-ghost,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .btn-ghost,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-btn--ghost,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-icon-btn,
+html:not([data-theme='dark']) button.btn-ghost {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+  font-weight: 600 !important;
+}
+
+html:not([data-theme='dark']) .btn-ghost:hover,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-btn--ghost:hover,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-icon-btn:hover {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  background: rgba(20, 17, 13, 0.07) !important;
+  border-color: rgba(28, 22, 16, 0.2);
+}
+
+html:not([data-theme='dark']) .btn-ghost.active {
+  color: #4a3614 !important;
+  -webkit-text-fill-color: #4a3614;
+  background: rgba(122, 92, 40, 0.16) !important;
+  font-weight: 700 !important;
+}
+
+/* Editor chrome controls + labels */
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-nav-btn,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-fmt-btn,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .icon-btn,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .theme-toggle,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .theme-toggle--compact,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-nav-btn span,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-fmt-btn span {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-nav-btn:hover,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-fmt-btn:hover,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .icon-btn:hover {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  background: rgba(20, 17, 13, 0.07);
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-nav-btn__label,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-editor-chrome__hint,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-chapter-num,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-editor-doc-stats,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .input-hint,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .muted,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-editor-chrome__meta,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-status {
+  color: #3f3a32 !important;
+  -webkit-text-fill-color: #3f3a32;
+  opacity: 1 !important;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-inline-title-input,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-scene-title-input,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .epistolary-editor__title {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+}
+
+/* Badges / chips / tabs / pills on paper */
+html:not([data-theme='dark']) [data-katha-mode='creation'] .badge,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .chip,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .tag,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .pill,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .tab,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .segmented-control button,
+html:not([data-theme='dark']) [data-katha-mode='creation'] [role='tab'] {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+  font-weight: 500;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] .tab.active,
+html:not([data-theme='dark']) [data-katha-mode='creation'] [role='tab'][aria-selected='true'] {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  font-weight: 700;
+}
+
+/* Narrative OS paper chrome */
+html:not([data-theme='dark']) .narrative-os-app {
+  --nos-ink: #14110d;
+  --nos-ink-soft: #241f18;
+  --nos-ink-faint: #4a4338;
+  --nos-brass: #7a5c28;
+  color: #241f18;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .topbar-btn,
+html:not([data-theme='dark']) .narrative-os-app .topbar-btn span {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+  border-color: var(--nos-hairline);
+  font-weight: 600;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .topbar-btn:hover:not(:disabled) {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  background: rgba(20, 17, 13, 0.07);
+}
+
+html:not([data-theme='dark']) .narrative-os-app .topbar-btn--primary {
+  background: #5a1d2e !important;
+  border-color: #5a1d2e !important;
+  color: #fdf8f0 !important;
+  -webkit-text-fill-color: #fdf8f0;
+  font-weight: 700 !important;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .topbar-btn--primary:hover:not(:disabled) {
+  background: #4a1526 !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .bn-item,
+html:not([data-theme='dark']) .narrative-os-app .bn-item span {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+  font-weight: 600;
+  opacity: 1 !important;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .bn-item.active,
+html:not([data-theme='dark']) .narrative-os-app .bn-item.active span {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  font-weight: 700 !important;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .statusbar,
+html:not([data-theme='dark']) .narrative-os-app .nos-publish__note,
+html:not([data-theme='dark']) .narrative-os-app .nos-publish__schedule-hint,
+html:not([data-theme='dark']) .narrative-os-app .statusbar span {
+  color: #3f3a32 !important;
+  -webkit-text-fill-color: #3f3a32;
+  opacity: 1 !important;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .nos-publish__stat strong,
+html:not([data-theme='dark']) .narrative-os-app .nos-mode-header h2,
+html:not([data-theme='dark']) .narrative-os-app .nos-publish__stat {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+}
+
+html:not([data-theme='dark']) .narrative-os-app .nos-publish__cta {
+  color: #1a1510 !important;
+  -webkit-text-fill-color: #1a1510;
+  background: linear-gradient(168deg, #d4b46e 0%, #b8923e 100%) !important;
+  font-weight: 700 !important;
+  border: 1px solid rgba(74, 54, 20, 0.35) !important;
+}
+
+/* Epistolary paper controls */
+html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__name,
+html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__body {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+}
+
+html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__role {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+  font-weight: 600;
+}
+
+html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__time,
+html:not([data-theme='dark']) .epistolary-editor .epistolary-editor__persist-hint {
+  color: #3f3a32 !important;
+  -webkit-text-fill-color: #3f3a32;
+  opacity: 1 !important;
+}
+
+/* Inputs on paper */
+html:not([data-theme='dark']) [data-katha-mode='creation'] input,
+html:not([data-theme='dark']) [data-katha-mode='creation'] textarea,
+html:not([data-theme='dark']) [data-katha-mode='creation'] select,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .cms-input {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  background: color-mix(in srgb, var(--surface-elevated, #ebe3d4) 85%, #fff);
+  border-color: rgba(28, 22, 16, 0.22);
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] input::placeholder,
+html:not([data-theme='dark']) [data-katha-mode='creation'] textarea::placeholder {
+  color: #5c554c !important;
+  opacity: 1;
+}
+
+/* Links / gold labels on paper — darker brass, not washed gold */
+html:not([data-theme='dark']) [data-katha-mode='creation'] a {
+  color: #4a3614 !important;
+  font-weight: 600;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] a:hover {
+  color: #2e210c !important;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] .text-gold,
+html:not([data-theme='dark']) [data-katha-mode='creation'] [class*='gold-label'],
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-label--accent {
+  color: #4a3614 !important;
+  -webkit-text-fill-color: #4a3614;
+}
+
+/* Soft word-band chip on paper */
+html:not([data-theme='dark']) .katha-soft-word-target {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+  background: rgba(20, 17, 13, 0.08);
+  font-weight: 600;
+}
+
+html:not([data-theme='dark']) .katha-soft-word-target--in-band {
+  color: #4a3614 !important;
+  -webkit-text-fill-color: #4a3614;
+  background: rgba(122, 92, 40, 0.16);
+}
+
+html:not([data-theme='dark']) .katha-soft-word-target--below,
+html:not([data-theme='dark']) .katha-soft-word-target--over-hard {
+  color: #5a1d2e !important;
+  -webkit-text-fill-color: #5a1d2e;
+  background: rgba(107, 35, 56, 0.12);
+  font-weight: 700;
+}
+
+/* Nav / sidebar labels under creation shell */
+html:not([data-theme='dark']) [data-katha-mode='creation'] .nav-item,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .premium-nav a {
+  color: #241f18 !important;
+  -webkit-text-fill-color: #241f18;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] .nav-item.active,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .premium-nav a.active {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  font-weight: 700;
+}
+
+/* Disabled controls: still readable (was opacity 0.45 mud) */
+html:not([data-theme='dark']) [data-katha-mode='creation'] .btn:disabled,
+html:not([data-theme='dark']) [data-katha-mode='creation'] button:disabled,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-publish-btn:disabled,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-nav-btn:disabled {
+  opacity: 0.72 !important;
+  color: #3f3a32 !important;
+}
+
+/* CMS-wide light paper: raise body/chrome ink outside creation too */
+html:not([data-theme='dark']) body {
+  color: var(--ink-soft, #2e2820);
+}
+
+html:not([data-theme='dark']) .btn,
+html:not([data-theme='dark']) button:not([class*='theme']):not(.nos-skip-link) {
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ══════════════════════════════════════════════════════════════════════

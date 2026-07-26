@@ -19,10 +19,11 @@
   /** Indigo — future accent for community / reader features */
   --katha-indigo: #3d3a8c;
   --katha-indigo-soft: rgba(61, 58, 140, 0.12);
-  --katha-ink: #1a1814;
-  --katha-ink-soft: #4a4540;
-  --katha-ink-muted: #8a847c;
-  --katha-ink-faint: #b0a99f;
+  /* Light/paper defaults — AA+ on warm ivory (muted greys wash out on sepia) */
+  --katha-ink: #16130f;
+  --katha-ink-soft: #2e2820;
+  --katha-ink-muted: #524c44;
+  --katha-ink-faint: #6e675e;
   --katha-cream: #fdf8f0;
 
   /* Typography */
@@ -102,15 +103,16 @@
   --katha-mode-surface: #e6ddcc;
   --katha-mode-surface-raised: #ebe3d4;
   --katha-mode-canvas: #e8e0d0;
-  --katha-mode-border: rgba(36, 31, 24, 0.1);
-  --katha-mode-border-strong: rgba(36, 31, 24, 0.16);
-  --katha-mode-shadow-sm: 0 1px 3px rgba(36, 31, 24, 0.05);
-  --katha-mode-shadow: 0 2px 12px rgba(36, 31, 24, 0.07);
-  --katha-mode-shadow-lg: 0 8px 24px rgba(36, 31, 24, 0.09);
-  --katha-mode-accent: var(--katha-gold-muted);
-  --katha-mode-ink: #1f1a14;
-  --katha-mode-ink-soft: #322c24;
-  --katha-mode-ink-muted: #5c554a;
+  --katha-mode-border: rgba(28, 22, 16, 0.14);
+  --katha-mode-border-strong: rgba(28, 22, 16, 0.22);
+  --katha-mode-shadow-sm: 0 1px 3px rgba(28, 22, 16, 0.05);
+  --katha-mode-shadow: 0 2px 12px rgba(28, 22, 16, 0.07);
+  --katha-mode-shadow-lg: 0 8px 24px rgba(28, 22, 16, 0.09);
+  --katha-mode-accent: var(--katha-gold-dark);
+  /* Near-black warm ink on ivory — buttons/labels stay readable (not grey mud) */
+  --katha-mode-ink: #14110d;
+  --katha-mode-ink-soft: #241f18;
+  --katha-mode-ink-muted: #3f3a32;
 }
 
 /* ── Reading Mode — Reader App, Gateway Preview ── */

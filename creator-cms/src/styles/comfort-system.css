@@ -170,6 +170,20 @@ html[data-contrast='high'] :focus-visible {
   --ink-faint: #a89c8a;
 }
 
+/* Paper creation — pin near-black ink (descendant; brand same-element miss) */
+html:not([data-theme='dark']) [data-katha-mode='creation'],
+[data-theme='light'] [data-katha-mode='creation'] {
+  --katha-mode-ink: #14110d;
+  --katha-mode-ink-soft: #241f18;
+  --katha-mode-ink-muted: #3f3a32;
+  --ink: #14110d;
+  --ink-soft: #241f18;
+  --ink-muted: #3f3a32;
+  --ink-faint: #5c554c;
+  --gold: #7a5c28;
+  --gold-dark: #4a3614;
+}
+
 /* ── Dark-theme parity for page-scoped v2 stylesheets ────────────────
    studio-v21 / katha-ops-v2 / katha-community-v2 / reviewer-pool-v2
    hardcode cream palettes with no dark variant, leaving whole pages

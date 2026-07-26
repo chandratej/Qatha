@@ -98,7 +98,7 @@
   color-scheme: light;
 }
 
-/* Creation Mode — soft paper editor (eye comfort) */
+/* Creation Mode — soft paper editor (eye comfort + high UI legibility) */
 [data-katha-mode='creation'] {
   --sepia-base: var(--katha-mode-bg);
   --sepia-warm: var(--katha-mode-bg-warm);
@@ -106,9 +106,10 @@
   --sepia-surface-raised: var(--katha-mode-surface-raised);
   --editor-canvas: var(--katha-mode-canvas);
   --editor-sidebar: var(--katha-mode-bg-warm);
-  --gold: var(--katha-gold-muted);
-  --gold-light: #d4c4a0;
-  --gold-dark: #7a6340;
+  /* Stronger gold for labels/links on warm paper (muted gold washes out) */
+  --gold: #7a5c28;
+  --gold-light: rgba(122, 92, 40, 0.16);
+  --gold-dark: #4a3614;
   --paper: var(--katha-mode-bg);
   --paper-warm: var(--katha-mode-bg-warm);
   --surface: var(--katha-mode-surface);
@@ -116,18 +117,25 @@
   --ink: var(--katha-mode-ink);
   --ink-soft: var(--katha-mode-ink-soft);
   --ink-muted: var(--katha-mode-ink-muted);
-  --ink-faint: #8a8278;
+  --ink-faint: #5c554c;
   --border: var(--katha-mode-border);
-  --border-subtle: rgba(36, 31, 24, 0.07);
-  --border-faint: rgba(36, 31, 24, 0.05);
+  --border-subtle: rgba(28, 22, 16, 0.1);
+  --border-faint: rgba(28, 22, 16, 0.07);
   --border-medium: var(--katha-mode-border-strong);
   --shadow-sm: var(--katha-mode-shadow-sm);
   --shadow-md: var(--katha-mode-shadow);
   --shadow-lg: var(--katha-mode-shadow-lg);
-  /* Reading measure for long sessions */
   --line-height-body: 1.75;
   --line-height-relaxed: 1.9;
   --letter-spacing-body: 0.01em;
+  --katha-maroon: #5a1d2e;
+  --katha-maroon-soft: #7a2e45;
+}
+
+/* Default body ink in creation: use full ink, not washed soft */
+[data-katha-mode='creation'] body,
+body:has([data-katha-mode='creation']) {
+  color: var(--ink-soft);
 }
 
 [data-theme='dark'] {

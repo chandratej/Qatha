@@ -4,19 +4,19 @@
  */
 
 .narrative-os-app {
-  /* Low-glare ivory paper (not near-white) + deep ink for multi-hour writing */
+  /* Low-glare ivory + near-black ink for buttons/chrome legibility on paper */
   --nos-paper: #e8e0d0;
   --nos-paper-deep: #ddd4c4;
-  --nos-ink: #1f1a14;
-  --nos-ink-soft: #3a342c;
-  --nos-ink-faint: #6b6358;
-  --nos-brass: #a9812f;
-  --nos-brass-soft: #c4a86a;
-  --nos-oxblood: #7a3b36;
-  --nos-sage: #62705c;
-  --nos-hairline: rgba(31, 26, 20, 0.12);
+  --nos-ink: #14110d;
+  --nos-ink-soft: #241f18;
+  --nos-ink-faint: #4a4338;
+  --nos-brass: #7a5c28;
+  --nos-brass-soft: #8a6b32;
+  --nos-oxblood: #5a1d2e;
+  --nos-sage: #4a5c48;
+  --nos-hairline: rgba(24, 20, 15, 0.14);
   --nos-line: var(--nos-hairline);
-  --nos-shadow: rgba(31, 26, 20, 0.08);
+  --nos-shadow: rgba(24, 20, 15, 0.08);
   --nos-spine-w: 5px;
   --paper: var(--nos-paper);
   --ink-faint: var(--nos-ink-faint);

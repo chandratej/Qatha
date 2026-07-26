@@ -11,15 +11,19 @@
 }
 
 .btn-primary {
-  background: linear-gradient(
-    168deg,
-    color-mix(in srgb, var(--gold) 90%, var(--surface)) 0%,
-    color-mix(in srgb, var(--gold-dark) 90%, var(--katha-maroon-deep) 10%) 100%
-  );
-  color: var(--katha-cream, #fdf8f0);
-  border: 1px solid color-mix(in srgb, var(--gold-dark) 30%, transparent);
-  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  /* Dark ink on solid gold — cream-on-muted-gold fails on warm paper */
+  background: linear-gradient(168deg, #d4b46e 0%, #b8923e 55%, #8a6b32 100%);
+  color: #1a1510;
+  border: 1px solid rgba(92, 69, 32, 0.4);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   letter-spacing: 0.02em;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .btn-primary {
+  background: linear-gradient(168deg, #e0c88a 0%, #c4a060 55%, #a8864e 100%);
+  color: #1a1510;
+  border-color: rgba(240, 223, 176, 0.35);
 }
 
 .btn-primary:hover {
@@ -44,34 +48,37 @@
 }
 
 .btn-secondary {
-  background: var(--surface);
-  color: var(--ink-soft);
-  border: 1px solid var(--border);
+  background: var(--surface-elevated, var(--surface));
+  color: var(--ink);
+  border: 1px solid var(--border-medium, var(--border));
   box-shadow: var(--shadow-sm);
+  font-weight: 500;
 }
 
 .btn-secondary:hover {
   background: var(--paper-warm);
-  border-color: color-mix(in srgb, var(--border) 70%, var(--gold-light));
+  border-color: color-mix(in srgb, var(--border) 50%, var(--gold-dark, #5c4520));
   color: var(--ink);
   box-shadow: var(--shadow-md);
 }
 
 .btn-ghost {
-  color: var(--ink-soft);
+  color: var(--ink);
   padding: 8px 16px;
   border-radius: var(--radius-md);
+  font-weight: 500;
 }
 
 .btn-ghost:hover {
   color: var(--ink);
   background: var(--paper-warm);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-medium, var(--border));
 }
 
 .btn-ghost.active {
-  color: var(--gold-dark);
-  background: rgba(196, 160, 82, 0.15);
+  color: var(--gold-dark, #4a3614);
+  background: rgba(122, 92, 40, 0.14);
+  font-weight: 600;
 }
 
 .btn-danger {
