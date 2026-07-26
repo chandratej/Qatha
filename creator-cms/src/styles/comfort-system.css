@@ -152,17 +152,22 @@ html[data-contrast='high'] :focus-visible {
 }
 
 [data-theme='dark'] [data-katha-mode='creation'] {
-  --katha-mode-bg: #1c1814;
-  --katha-mode-bg-warm: #252019;
-  --katha-mode-surface: #2e2820;
-  --katha-mode-surface-raised: #363024;
-  --katha-mode-canvas: #2a241e;
-  --katha-mode-border: rgba(229, 220, 200, 0.12);
-  --katha-mode-border-strong: rgba(229, 220, 200, 0.18);
-  --katha-mode-accent: #c4a060;
-  --katha-mode-ink: #e5dcc8;
-  --katha-mode-ink-soft: #c9bda8;
-  --katha-mode-ink-muted: #9a8f7e;
+  --katha-mode-bg: #12100e;
+  --katha-mode-bg-warm: #181410;
+  --katha-mode-surface: #1c1814;
+  --katha-mode-surface-raised: #221e19;
+  --katha-mode-canvas: #1a1612;
+  --katha-mode-border: rgba(244, 239, 228, 0.14);
+  --katha-mode-border-strong: rgba(244, 239, 228, 0.22);
+  --katha-mode-accent: #d4b46e;
+  --katha-mode-ink: #f4efe4;
+  --katha-mode-ink-soft: #e4dccf;
+  --katha-mode-ink-muted: #c4b9a8;
+  /* Align global ink aliases when shell is creation */
+  --ink: #f4efe4;
+  --ink-soft: #e4dccf;
+  --ink-muted: #c4b9a8;
+  --ink-faint: #a89c8a;
 }
 
 /* ── Dark-theme parity for page-scoped v2 stylesheets ────────────────
@@ -180,9 +185,9 @@ html[data-contrast='high'] :focus-visible {
   --cv2-border: rgba(229, 220, 200, 0.14); --rpv2-border: rgba(229, 220, 200, 0.14);
   --sv21-border-strong: rgba(229, 220, 200, 0.22); --ops-border-strong: rgba(229, 220, 200, 0.22);
   --cv2-border-strong: rgba(229, 220, 200, 0.22); --rpv2-border-strong: rgba(229, 220, 200, 0.22);
-  --sv21-ink: #e5dcc8; --ops-text: #e5dcc8; --cv2-text: #e5dcc8; --rpv2-text: #e5dcc8;
-  --sv21-ink-soft: #c9bda8; --ops-text-2: #c9bda8; --cv2-text-2: #c9bda8; --rpv2-text-2: #c9bda8;
-  --sv21-ink-muted: #9a8f7e; --ops-text-3: #9a8f7e; --cv2-text-3: #9a8f7e; --rpv2-text-3: #9a8f7e;
+  --sv21-ink: #f4efe4; --ops-text: #f4efe4; --cv2-text: #f4efe4; --rpv2-text: #f4efe4;
+  --sv21-ink-soft: #e4dccf; --ops-text-2: #e4dccf; --cv2-text-2: #e4dccf; --rpv2-text-2: #e4dccf;
+  --sv21-ink-muted: #c4b9a8; --ops-text-3: #c4b9a8; --cv2-text-3: #c4b9a8; --rpv2-text-3: #c4b9a8;
   --sv21-maroon: #b0757e; --ops-maroon: #b0757e; --cv2-maroon: #b0757e; --rpv2-maroon: #b0757e;
   --sv21-maroon-dark: #c48f98; --ops-maroon-dark: #c48f98; --cv2-maroon-dark: #c48f98; --rpv2-maroon-dark: #c48f98;
   --sv21-gold: #c4a060; --ops-gold: #c4a060; --cv2-gold: #c4a060; --rpv2-gold: #c4a060;

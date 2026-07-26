@@ -1,31 +1,39 @@
 /**
- * English + Epistolary editor shells — Wave 10 premium layer
- * Parity with Chapter Editor glass chrome (without Telugu scene bloat)
+ * English + Epistolary editor shells
+ * Aligned with regular story editor eye-comfort (Paper / Night).
+ * No near-white glass chrome; uses creation-mode tokens.
  */
 
 .katha-proto-layout--premium.english-editor,
 .katha-proto-layout--premium.epistolary-editor {
-  background:
-    radial-gradient(ellipse 100% 80% at 0% 0%, rgba(196, 160, 82, 0.07), transparent 55%),
-    radial-gradient(ellipse 80% 60% at 100% 20%, rgba(107, 35, 56, 0.05), transparent 50%),
-    var(--paper);
+  background: var(--paper, #ddd4c4);
   min-height: 100dvh;
+  color: var(--ink-soft, #3a342c);
 }
 
+[data-theme='dark'] .katha-proto-layout--premium.english-editor,
+[data-theme='dark'] .katha-proto-layout--premium.epistolary-editor {
+  background: var(--paper, #12100e);
+  color: var(--ink-soft, #e4dccf);
+}
+
+/* Chrome — matte, not frosted white */
 .katha-proto-layout--premium.english-editor .katha-editor-chrome,
 .katha-proto-layout--premium.epistolary-editor .katha-editor-chrome {
-  background: rgba(255, 252, 247, 0.9);
-  backdrop-filter: blur(20px) saturate(1.6);
-  -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border-bottom: 1px solid rgba(107, 35, 56, 0.08);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 4px 24px rgba(26, 24, 20, 0.04);
+  background: color-mix(in srgb, var(--surface, #e6ddcc) 94%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border, rgba(31, 26, 20, 0.1));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--surface) 80%, transparent) inset;
+  color: var(--ink-soft);
 }
 
 [data-theme='dark'] .katha-proto-layout--premium.english-editor .katha-editor-chrome,
 [data-theme='dark'] .katha-proto-layout--premium.epistolary-editor .katha-editor-chrome {
-  background: rgba(22, 20, 18, 0.92);
+  background: color-mix(in srgb, var(--surface, #1c1814) 94%, transparent);
+  border-bottom-color: rgba(244, 239, 228, 0.12);
+  box-shadow: none;
+  color: var(--ink-soft, #e4dccf);
 }
 
 .katha-proto-layout--premium .english-editor__badge,
@@ -39,9 +47,16 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: color-mix(in srgb, var(--katha-maroon) 8%, var(--surface));
-  color: var(--katha-maroon);
-  border: 1px solid rgba(107, 35, 56, 0.12);
+  background: color-mix(in srgb, var(--katha-maroon, #6b2338) 10%, var(--surface));
+  color: var(--katha-maroon, #6b2338);
+  border: 1px solid color-mix(in srgb, var(--katha-maroon, #6b2338) 18%, transparent);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .english-editor__badge,
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-editor__badge {
+  background: rgba(212, 180, 110, 0.12);
+  color: #e0c88a;
+  border-color: rgba(212, 180, 110, 0.28);
 }
 
 /* English prose canvas */
@@ -49,25 +64,33 @@
   display: flex;
   justify-content: center;
   padding: clamp(20px, 4vw, 40px);
+  background: var(--paper);
 }
 
 .katha-proto-layout--premium .english-editor__canvas {
   width: min(44rem, 100%);
   padding: clamp(28px, 5vw, 44px);
-  border-radius: var(--wc-radius-xl, 24px);
-  background: rgba(255, 252, 247, 0.96);
-  border: 1px solid rgba(107, 35, 56, 0.1);
+  border-radius: 2px 14px 14px 2px;
+  background: var(--editor-canvas, #e8e0d0);
+  border: 1px solid var(--border, rgba(31, 26, 20, 0.1));
   box-shadow:
-    0 20px 60px rgba(26, 24, 20, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+    0 1px 2px rgba(31, 26, 20, 0.05),
+    0 12px 36px rgba(31, 26, 20, 0.06);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .english-editor__canvas {
+  background: var(--editor-canvas, #1a1612);
+  border-color: rgba(244, 239, 228, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
 }
 
 .katha-proto-layout--premium .english-editor__hint {
   margin-bottom: 16px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--katha-gold) 6%, transparent);
-  border: 1px solid rgba(196, 160, 82, 0.2);
+  background: color-mix(in srgb, var(--katha-gold) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--katha-gold) 22%, transparent);
+  color: var(--ink-soft);
 }
 
 .katha-proto-layout--premium .english-editor__prose {
@@ -76,84 +99,327 @@
   border: none;
   resize: vertical;
   font-family: 'Literata', Georgia, 'Times New Roman', serif;
-  font-size: 1.125rem;
-  line-height: 1.85;
+  font-size: 1.1875rem;
+  line-height: 1.9;
+  letter-spacing: 0.012em;
   color: var(--ink);
   background: transparent;
   outline: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .katha-proto-layout--premium .english-editor__prose::placeholder {
   color: var(--ink-muted);
-  opacity: 0.7;
+  opacity: 0.85;
 }
 
 .katha-proto-layout--premium .english-editor__title,
 .katha-proto-layout--premium .epistolary-editor__title {
   font-weight: 600;
   letter-spacing: -0.02em;
+  color: var(--ink);
+  background: transparent;
+  border: none;
 }
 
-/* Epistolary thread */
+/* ── Epistolary thread (chat-letter comfort) ─────────────────────────── */
+.katha-proto-layout--premium .epistolary-editor__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 0;
+  min-height: calc(100dvh - 120px);
+  background: var(--paper);
+}
+
+@media (max-width: 960px) {
+  .katha-proto-layout--premium .epistolary-editor__split {
+    grid-template-columns: 1fr;
+  }
+}
+
 .katha-proto-layout--premium .epistolary-editor__thread {
-  max-width: min(36rem, 92vw);
+  max-width: min(40rem, 100%);
+  width: 100%;
   margin: 0 auto;
-  padding: clamp(20px, 4vw, 36px) 16px 48px;
+  padding: clamp(20px, 4vw, 36px) clamp(16px, 3vw, 28px) 64px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  background: var(--paper);
+  overflow-y: auto;
+}
+
+.katha-proto-layout--premium .epistolary-editor__thread-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  color: var(--ink-muted);
+}
+
+.katha-proto-layout--premium .epistolary-editor__persist-hint {
+  margin: 0 0 8px;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
 }
 
 .katha-proto-layout--premium .epistolary-bubble {
-  border-radius: 18px;
-  padding: 14px 16px;
-  background: var(--premium-surface);
-  border: 1px solid var(--premium-border);
-  box-shadow: var(--premium-shadow-rest);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 16px;
+  padding: 14px 16px 12px;
+  background: var(--editor-canvas, #e8e0d0);
+  border: 1px solid var(--border, rgba(31, 26, 20, 0.1));
+  box-shadow: 0 1px 3px rgba(31, 26, 20, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  color: var(--ink-soft);
 }
 
-.katha-proto-layout--premium .epistolary-bubble:hover {
-  box-shadow: var(--premium-shadow-hover);
+.katha-proto-layout--premium .epistolary-bubble:hover,
+.katha-proto-layout--premium .epistolary-bubble:focus-within {
+  border-color: color-mix(in srgb, var(--katha-gold-muted, #a8864e) 35%, var(--border));
+  box-shadow: 0 2px 12px rgba(31, 26, 20, 0.06);
 }
 
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble {
+  background: var(--editor-canvas, #1a1612);
+  border-color: rgba(244, 239, 228, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  color: var(--ink-soft, #e4dccf);
+}
+
+/* Speaker lanes — soft tint only, keep page luminance even */
 .katha-proto-layout--premium .epistolary-bubble--protagonist {
-  margin-right: 12%;
-  border-color: color-mix(in srgb, var(--katha-maroon) 18%, transparent);
-  background: color-mix(in srgb, var(--katha-maroon) 4%, var(--premium-surface));
+  margin-right: clamp(0px, 8vw, 48px);
+  border-color: color-mix(in srgb, var(--katha-maroon, #6b2338) 22%, var(--border));
+  background: color-mix(in srgb, var(--katha-maroon, #6b2338) 5%, var(--editor-canvas, #e8e0d0));
 }
 
 .katha-proto-layout--premium .epistolary-bubble--antagonist {
-  margin-left: 12%;
-  border-color: color-mix(in srgb, var(--katha-gold) 30%, transparent);
-  background: color-mix(in srgb, var(--katha-gold) 5%, var(--premium-surface));
+  margin-left: clamp(0px, 8vw, 48px);
+  border-color: color-mix(in srgb, var(--katha-gold, #c4a052) 28%, var(--border));
+  background: color-mix(in srgb, var(--katha-gold, #c4a052) 6%, var(--editor-canvas, #e8e0d0));
 }
 
 .katha-proto-layout--premium .epistolary-bubble--narrator {
-  margin: 0 8%;
+  margin: 0 clamp(4%, 6vw, 12%);
   border-style: dashed;
-  opacity: 0.92;
+  background: color-mix(in srgb, var(--surface) 70%, var(--editor-canvas, #e8e0d0));
+  opacity: 1;
 }
 
-.katha-proto-layout--premium .epistolary-bubble__avatar {
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble--protagonist {
+  background: color-mix(in srgb, #8b3a52 12%, #1a1612);
+  border-color: rgba(196, 140, 150, 0.28);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble--antagonist {
+  background: color-mix(in srgb, #c4a060 10%, #1a1612);
+  border-color: rgba(212, 180, 110, 0.28);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble--narrator {
+  background: color-mix(in srgb, #221e19 80%, #1a1612);
+  border-color: rgba(244, 239, 228, 0.14);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__avatar,
+.katha-proto-layout--premium .epistolary-bubble__avatar-ring {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--katha-maroon) 10%, var(--surface));
-  color: var(--katha-maroon);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--katha-maroon, #6b2338) 12%, var(--surface));
+  color: var(--katha-maroon, #6b2338);
 }
 
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble__avatar,
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble__avatar-ring {
+  background: rgba(212, 180, 110, 0.14);
+  color: #e0c88a;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Name / role / time — high legibility */
+.katha-proto-layout--premium .epistolary-bubble__name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  border: none;
+  background: transparent;
+  min-width: 6rem;
+  max-width: 12rem;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__name:focus {
+  outline: none;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__role {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--surface) 90%, var(--paper));
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  max-width: 100%;
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble__role {
+  color: var(--ink);
+  background: rgba(244, 239, 228, 0.08);
+  border-color: rgba(244, 239, 228, 0.16);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__time {
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  margin-left: auto;
+}
+
+/* Message body — same comfort type as regular editor */
 .katha-proto-layout--premium .epistolary-bubble__body {
+  width: 100%;
+  box-sizing: border-box;
   border-radius: 12px;
-  border: 1.5px solid rgba(26, 24, 20, 0.08);
-  padding: 10px 12px;
-  font-size: 1rem;
-  line-height: 1.6;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  border: 1.5px solid var(--border, rgba(31, 26, 20, 0.1));
+  padding: 12px 14px;
+  font-family: var(--font-telugu, 'Noto Serif Telugu'), var(--font-reading), 'Literata', Georgia, serif;
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  letter-spacing: 0.012em;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--editor-canvas, #e8e0d0) 55%, var(--surface, #ebe3d4));
+  resize: vertical;
+  min-height: 3.25rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble__body {
+  background: color-mix(in srgb, #1a1612 70%, #221e19);
+  border-color: rgba(244, 239, 228, 0.14);
+  color: var(--ink, #f4efe4);
+  caret-color: #d4b46e;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__body::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.9;
 }
 
 .katha-proto-layout--premium .epistolary-bubble__body:focus {
-  border-color: color-mix(in srgb, var(--katha-gold) 45%, transparent);
-  box-shadow: 0 0 0 3px rgba(196, 160, 82, 0.12);
+  border-color: color-mix(in srgb, var(--katha-gold, #c4a052) 50%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--katha-gold, #c4a052) 18%, transparent);
   outline: none;
+  background: var(--editor-canvas, #e8e0d0);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble__body:focus {
+  background: #1c1814;
+  border-color: rgba(212, 180, 110, 0.45);
+  box-shadow: 0 0 0 3px rgba(212, 180, 110, 0.15);
+}
+
+/* Chrome actions in epistolary header */
+.katha-proto-layout--premium.epistolary-editor .katha-btn,
+.katha-proto-layout--premium.epistolary-editor .katha-icon-btn {
+  color: var(--ink-soft);
+}
+
+.katha-proto-layout--premium.epistolary-editor .katha-btn--ghost:hover,
+.katha-proto-layout--premium.epistolary-editor .katha-icon-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium.epistolary-editor .katha-btn,
+[data-theme='dark'] .katha-proto-layout--premium.epistolary-editor .katha-icon-btn {
+  color: var(--ink-soft, #e4dccf);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium.epistolary-editor .katha-btn--ghost:hover {
+  color: var(--ink, #f4efe4);
+  background: rgba(244, 239, 228, 0.08);
+}
+
+.katha-proto-layout--premium.epistolary-editor .input-hint,
+.katha-proto-layout--premium.epistolary-editor .alternate-editor__autosave,
+.katha-proto-layout--premium.epistolary-editor .alternate-editor__sync {
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+}
+
+/* Preview panel — match paper luminance */
+.katha-proto-layout--premium .alternate-reader-preview,
+.katha-proto-layout--premium .epistolary-reader-preview {
+  background: var(--paper-warm, var(--paper));
+  border-left: 1px solid var(--border);
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .alternate-reader-preview,
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-reader-preview {
+  background: var(--paper-warm, #181410);
+  border-left-color: rgba(244, 239, 228, 0.1);
+  color: var(--ink-soft, #e4dccf);
+}
+
+.katha-proto-layout--premium .alternate-reader-preview__title {
+  color: var(--ink);
+}
+
+.katha-proto-layout--premium .alternate-reader-preview__reset {
+  color: var(--ink-soft);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .alternate-reader-preview__reset {
+  color: var(--ink);
+  background: rgba(244, 239, 228, 0.06);
+  border-color: rgba(244, 239, 228, 0.14);
+}
+
+/* Preview-focus mode */
+.epistolary-editor--preview-focus .epistolary-editor__thread {
+  display: none;
+}
+
+.epistolary-editor--preview-focus .epistolary-editor__split {
+  grid-template-columns: 1fr;
+}
+
+.epistolary-editor--preview-focus .alternate-reader-preview {
+  border-left: none;
+  max-width: min(40rem, 100%);
+  margin: 0 auto;
+  min-height: calc(100dvh - 120px);
 }

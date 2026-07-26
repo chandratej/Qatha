@@ -51,9 +51,13 @@
 
 [data-theme='dark'][data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor,
 [data-theme='dark'][data-katha-mode='creation'] .katha-proto-layout--premium .ql-editor {
-  color: var(--ink, #f0e9dc) !important;
-  /* Slightly softer night text to reduce OLED bloom */
-  text-shadow: 0 0 0 transparent;
+  color: var(--ink, #f4efe4) !important;
+  text-shadow: none;
+  opacity: 1;
+}
+
+[data-theme='dark'][data-katha-mode='creation'] .katha-proto-scene-title-input {
+  color: var(--ink, #f4efe4) !important;
 }
 
 [data-katha-mode='creation'] .katha-proto-editor-canvas .ql-editor p,
@@ -207,4 +211,306 @@ html[data-theme='dark'][data-contrast='high'] [data-katha-mode='creation'] {
 /* Calm motion already global — ensure page enter is subtle */
 html[data-motion='calm'] [data-katha-mode='creation'] .katha-proto-editor-canvas {
   animation: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DARK MODE UI LEGIBILITY
+   Buttons, labels, nav, and chrome must stay AA-readable on night surfaces.
+   ══════════════════════════════════════════════════════════════════════ */
+
+[data-theme='dark'] {
+  /* Ensure semantic tokens used by pages outside creation mode */
+  --katha-ink: #f4efe4;
+  --katha-ink-soft: #e4dccf;
+  --katha-ink-muted: #c4b9a8;
+  --katha-ink-faint: #a89c8a;
+}
+
+/* Body & headings */
+[data-theme='dark'] body,
+[data-theme='dark'] p,
+[data-theme='dark'] label,
+[data-theme='dark'] span,
+[data-theme='dark'] li,
+[data-theme='dark'] td,
+[data-theme='dark'] th {
+  color: inherit;
+}
+
+[data-theme='dark'] body {
+  color: var(--ink-soft);
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme='dark'] h1,
+[data-theme='dark'] h2,
+[data-theme='dark'] h3,
+[data-theme='dark'] h4,
+[data-theme='dark'] h5,
+[data-theme='dark'] h6 {
+  color: var(--ink);
+}
+
+/* Buttons — secondary / ghost were ink-soft on dark surfaces (too dim) */
+[data-theme='dark'] .btn-secondary {
+  color: var(--ink);
+  background: var(--surface-elevated, var(--surface));
+  border-color: var(--border-medium, var(--border));
+}
+
+[data-theme='dark'] .btn-secondary:hover {
+  color: #fffaf0;
+  background: color-mix(in srgb, var(--surface-elevated, var(--surface)) 80%, #3a3228);
+  border-color: rgba(212, 180, 110, 0.35);
+}
+
+[data-theme='dark'] .btn-ghost {
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] .btn-ghost:hover {
+  color: var(--ink);
+  background: rgba(244, 239, 228, 0.08);
+  border-color: var(--border);
+}
+
+[data-theme='dark'] .btn-ghost.active {
+  color: #f0dfb0;
+  background: rgba(212, 180, 110, 0.18);
+}
+
+[data-theme='dark'] .btn-primary {
+  color: #1a1510;
+  background: linear-gradient(168deg, #e0c88a 0%, #c4a060 55%, #a8864e 100%);
+  border-color: rgba(240, 223, 176, 0.35);
+  text-shadow: none;
+}
+
+[data-theme='dark'] .btn-primary:hover {
+  color: #140f0c;
+  filter: brightness(1.06);
+}
+
+/* Icon-only / chrome buttons */
+[data-theme='dark'] .katha-proto-nav-btn,
+[data-theme='dark'] .katha-proto-fmt-btn,
+[data-theme='dark'] .icon-btn,
+[data-theme='dark'] .theme-toggle,
+[data-theme='dark'] .theme-toggle--compact {
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] .katha-proto-nav-btn:hover,
+[data-theme='dark'] .katha-proto-fmt-btn:hover,
+[data-theme='dark'] .icon-btn:hover {
+  color: var(--ink);
+  background: rgba(244, 239, 228, 0.08);
+}
+
+[data-theme='dark'] .katha-proto-publish-btn {
+  color: #1a1510 !important;
+  background: linear-gradient(168deg, #e0c88a 0%, #c4a060 100%) !important;
+}
+
+/* Inputs / selects */
+[data-theme='dark'] input,
+[data-theme='dark'] textarea,
+[data-theme='dark'] select,
+[data-theme='dark'] .cms-input {
+  color: var(--ink);
+  background: var(--surface-elevated, var(--surface));
+  border-color: var(--border-medium, var(--border));
+  caret-color: var(--gold, #d4b46e);
+}
+
+[data-theme='dark'] input::placeholder,
+[data-theme='dark'] textarea::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+[data-theme='dark'] option {
+  background: #1c1814;
+  color: #f4efe4;
+}
+
+/* Muted helper text — still readable (was ~#7a / #9a) */
+[data-theme='dark'] .muted,
+[data-theme='dark'] .studio-settings-field span,
+[data-theme='dark'] .studio-page-header__subtitle,
+[data-theme='dark'] .katha-editor-doc-stats,
+[data-theme='dark'] .katha-editor-save-status {
+  color: var(--ink-muted);
+}
+
+[data-theme='dark'] .katha-editor-save-status--saved {
+  color: #9dc2a4;
+}
+
+[data-theme='dark'] .katha-editor-save-status--dirty {
+  color: #e0c88a;
+}
+
+/* Narrative OS chrome */
+[data-theme='dark'] .narrative-os-app .topbar-btn {
+  color: var(--nos-ink-soft);
+  border-color: var(--nos-hairline);
+}
+
+[data-theme='dark'] .narrative-os-app .topbar-btn:hover:not(:disabled) {
+  color: var(--nos-ink);
+  background: rgba(244, 239, 228, 0.08);
+}
+
+[data-theme='dark'] .narrative-os-app .topbar-btn--primary {
+  background: #c4a060;
+  border-color: #d4b46e;
+  color: #1a1510;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .narrative-os-app .topbar-btn--primary:hover:not(:disabled) {
+  background: #e0c88a;
+  color: #140f0c;
+}
+
+[data-theme='dark'] .narrative-os-app .bn-item {
+  color: var(--nos-ink-soft);
+}
+
+[data-theme='dark'] .narrative-os-app .bn-item.active {
+  color: var(--nos-ink);
+  font-weight: 600;
+}
+
+[data-theme='dark'] .narrative-os-app .statusbar {
+  color: var(--nos-ink-soft);
+}
+
+[data-theme='dark'] .narrative-os-app .nos-publish__cta {
+  color: #1a1510 !important;
+  background: linear-gradient(168deg, #e0c88a 0%, #c4a060 100%) !important;
+  font-weight: 600;
+}
+
+[data-theme='dark'] .narrative-os-app .nos-publish__stat strong {
+  color: var(--nos-ink);
+}
+
+[data-theme='dark'] .narrative-os-app .nos-publish__stat span,
+[data-theme='dark'] .narrative-os-app .nos-publish__note,
+[data-theme='dark'] .narrative-os-app .nos-publish__schedule-hint {
+  color: var(--nos-ink-soft);
+}
+
+[data-theme='dark'] .narrative-os-app .nos-mode-header h2 {
+  color: var(--nos-ink);
+}
+
+[data-theme='dark'] .narrative-os-app .nos-mode-header p,
+[data-theme='dark'] .narrative-os-app .nos-mode-close {
+  color: var(--nos-ink-soft);
+}
+
+/* Editor chrome labels */
+[data-theme='dark'] .katha-editor-chrome,
+[data-theme='dark'] .katha-editor-chrome__hint,
+[data-theme='dark'] .katha-proto-chapter-num {
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] .katha-proto-navbar__title,
+[data-theme='dark'] .katha-editor-doc-header__title-block {
+  color: var(--ink);
+}
+
+/* Soft word target in night */
+[data-theme='dark'] .katha-soft-word-target {
+  color: var(--ink-soft);
+  background: rgba(244, 239, 228, 0.08);
+}
+
+[data-theme='dark'] .katha-soft-word-target--in-band {
+  color: #e0c88a;
+  background: rgba(212, 180, 110, 0.14);
+}
+
+[data-theme='dark'] .katha-soft-word-target--below,
+[data-theme='dark'] .katha-soft-word-target--over-hard {
+  color: #f0c4b8;
+  background: rgba(180, 90, 80, 0.16);
+}
+
+/* Cards / lists */
+[data-theme='dark'] .card,
+[data-theme='dark'] .studio-settings-section,
+[data-theme='dark'] .cms-card {
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] .card h2,
+[data-theme='dark'] .card h3,
+[data-theme='dark'] .studio-settings-section h3 {
+  color: var(--ink);
+}
+
+/* Sidebar nav if present */
+[data-theme='dark'] .nav-item,
+[data-theme='dark'] .app-nav a,
+[data-theme='dark'] .premium-nav a {
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] .nav-item:hover,
+[data-theme='dark'] .nav-item.active,
+[data-theme='dark'] .app-nav a:hover,
+[data-theme='dark'] .premium-nav a:hover,
+[data-theme='dark'] .premium-nav a.active {
+  color: var(--ink);
+}
+
+/* Disabled opacity was crushing contrast — keep readable */
+[data-theme='dark'] button:disabled,
+[data-theme='dark'] .btn:disabled {
+  opacity: 0.55;
+  color: var(--ink-muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   EPISTOLARY (chat / letter) — same Paper/Night comfort as serial editor
+   ══════════════════════════════════════════════════════════════════════ */
+
+body.epistolary-editor-body {
+  overflow: hidden;
+}
+
+.epistolary-editor[data-katha-mode='creation'] {
+  /* Ensure creation tokens apply even if shell mode differs */
+  --editor-canvas: var(--katha-mode-canvas, #e8e0d0);
+}
+
+[data-theme='dark'] .epistolary-editor[data-katha-mode='creation'] {
+  --editor-canvas: var(--katha-mode-canvas, #1a1612);
+}
+
+/* Softer page field behind chat thread */
+.epistolary-editor .epistolary-editor__thread {
+  scrollbar-gutter: stable;
+}
+
+.epistolary-editor .epistolary-bubble__body {
+  font-size: clamp(1.05rem, 0.4vw + 1rem, 1.15rem) !important;
+  line-height: 1.9 !important;
+}
+
+/* Telugu epistolary — extra leading (matches serial manuscript) */
+html[lang='te'] .epistolary-editor .epistolary-bubble__body,
+.epistolary-editor .epistolary-bubble__body:lang(te) {
+  line-height: 2.05 !important;
+  letter-spacing: 0.015em !important;
+}
+
+/* Reduce motion on bubble hover for calm writing */
+html[data-motion='calm'] .epistolary-bubble {
+  transition: none !important;
 }

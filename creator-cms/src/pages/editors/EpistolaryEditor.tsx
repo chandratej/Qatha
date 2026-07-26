@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Cloud, CloudOff, Eye, Loader2, MessageCircle, PenLine, Plus, Save } from 'lucide-react';
 import { EpistolaryReaderPreview } from '../../components/editors/EpistolaryReaderPreview';
 import { useLocale } from '../../context/LocaleContext';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import type { StudioStringKey } from '../../lib/studioLocale';
 import { StudioGlyph } from '../../components/studio/StudioGlyph';
 import type { StudioGlyphId } from '../../components/studio/StudioGlyph';
@@ -10,6 +11,7 @@ import type { ChatSpeaker, EpistolaryBubble } from '../../lib/alternateEditorCac
 import { saveEpistolaryDraft } from '../../lib/alternateEditorCache';
 import { loadEpistolaryMerged, saveEpistolaryCloud } from '../../lib/alternateEditorSync';
 import '../../styles/editor-prototype.css';
+import '../../styles/editor-eye-comfort.css';
 
 const LOCAL_AUTOSAVE_MS = 800;
 const CLOUD_AUTOSAVE_MS = 2500;
@@ -81,6 +83,19 @@ export function EpistolaryEditor() {
     () => (Object.keys(SPEAKER_ROLE_KEYS) as ChatSpeaker[]),
     [],
   );
+
+  // Match regular story editor: creation mode + body scroll lock for long sessions.
+  useEffect(() => {
+    const root = document.documentElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.classList.add('epistolary-editor-body');
+    root.setAttribute('data-katha-editor', 'epistolary');
+    return () => {
+      document.body.classList.remove('epistolary-editor-body');
+      root.removeAttribute('data-katha-editor');
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     if (!storyKey) return;
@@ -221,6 +236,7 @@ export function EpistolaryEditor() {
               {previewMode ? <PenLine size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
               {previewMode ? t('epistolaryEditor.editMode') : t('epistolaryEditor.previewMode')}
             </button>
+            <ThemeToggle compact />
             <button
               type="button"
               className="katha-btn katha-btn--ghost"

@@ -152,19 +152,19 @@
   --katha-elevation-4: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
-/* Night creation — warm OLED-safe ink, low blue, soft cream text (not yellow). */
+/* Night creation — warmer page + brighter UI ink so chrome stays readable. */
 [data-theme='dark'][data-katha-mode='creation'] {
   --katha-mode-bg: #12100e;
   --katha-mode-bg-warm: #181410;
   --katha-mode-surface: #1c1814;
   --katha-mode-surface-raised: #221e19;
   --katha-mode-canvas: #1a1612;
-  --katha-mode-border: rgba(240, 233, 220, 0.1);
-  --katha-mode-border-strong: rgba(240, 233, 220, 0.16);
-  --katha-mode-accent: #c4a060;
-  --katha-mode-ink: #f0e9dc;
-  --katha-mode-ink-soft: #d8d0c0;
-  --katha-mode-ink-muted: #9a9184;
+  --katha-mode-border: rgba(244, 239, 228, 0.14);
+  --katha-mode-border-strong: rgba(244, 239, 228, 0.22);
+  --katha-mode-accent: #d4b46e;
+  --katha-mode-ink: #f4efe4;
+  --katha-mode-ink-soft: #e4dccf;
+  --katha-mode-ink-muted: #c4b9a8;
 }
 
 @media (prefers-reduced-motion: reduce) {

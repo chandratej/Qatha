@@ -151,15 +151,16 @@
   --accent-rose: #B0928A;
   --accent-rose-soft: rgba(176, 146, 138, 0.16);
 
-  --ink: var(--sepia-night-ink);
-  --ink-soft: var(--sepia-night-ink-soft);
-  --ink-muted: #9A8F7E;
-  --ink-faint: #7A7064;
-  --border: rgba(229, 220, 200, 0.12);
-  --border-subtle: rgba(229, 220, 200, 0.08);
-  --border-faint: rgba(229, 220, 200, 0.06);
-  --border-medium: rgba(229, 220, 200, 0.14);
-  --focus-ring: rgba(196, 160, 96, 0.28);
+  /* High-legibility night ink (AA+ on dark surfaces) */
+  --ink: #f4efe4;
+  --ink-soft: #e4dccf;
+  --ink-muted: #c4b9a8;
+  --ink-faint: #a89c8a;
+  --border: rgba(244, 239, 228, 0.16);
+  --border-subtle: rgba(244, 239, 228, 0.11);
+  --border-faint: rgba(244, 239, 228, 0.08);
+  --border-medium: rgba(244, 239, 228, 0.22);
+  --focus-ring: rgba(212, 180, 110, 0.4);
   --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.22);
   --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.38);
@@ -170,9 +171,26 @@
   --dash-gold: var(--gold);
   --dash-gold-soft: var(--gold-light);
   --dash-sidebar-bg: #1A1512;
-  --dash-sidebar-ink: #E8DFD0;
-  --dash-sidebar-muted: #9A8A78;
+  --dash-sidebar-ink: #F4EFE4;
+  --dash-sidebar-muted: #C4B9A8;
+  /* Links / accents readable on dark */
+  --gold: #d4b46e;
+  --gold-dark: #e0c88a;
+  --gold-light: rgba(212, 180, 110, 0.28);
   color-scheme: dark;
+}
+
+/* Body copy defaults to soft ink — lift default for dark readability */
+[data-theme='dark'] body {
+  color: var(--ink-soft);
+}
+
+[data-theme='dark'] a {
+  color: var(--gold-dark);
+}
+
+[data-theme='dark'] a:hover {
+  color: #f0dfb0;
 }
 
 [data-theme='dark'] ::selection {

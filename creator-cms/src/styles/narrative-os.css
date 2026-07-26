@@ -38,10 +38,12 @@
 [data-theme='dark'] .narrative-os-app {
   --nos-paper: #1a1612;
   --nos-paper-deep: #12100e;
-  --nos-ink: #f0e9dc;
-  --nos-ink-soft: #c8c0b2;
-  --nos-ink-faint: #7a7368;
-  --nos-hairline: rgba(240, 233, 220, 0.12);
+  --nos-ink: #f4efe4;
+  --nos-ink-soft: #e4dccf;
+  --nos-ink-faint: #b8ae9c;
+  --nos-brass: #d4b46e;
+  --nos-brass-soft: #e0c88a;
+  --nos-hairline: rgba(244, 239, 228, 0.16);
   --nos-line: var(--nos-hairline);
   --nos-shadow: rgba(0, 0, 0, 0.4);
 }
