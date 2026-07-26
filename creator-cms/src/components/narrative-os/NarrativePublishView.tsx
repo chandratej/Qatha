@@ -72,6 +72,14 @@ export function NarrativePublishView({
           </p>
         </div>
 
+        {wordCount > 0 && wordCount < 1500 && (
+          <p className="nos-publish__error" role="status">
+            {te
+              ? `ప్రచురణకు కనీసం 1,500 పదాలు అవసరం (ప్రస్తుతం ${wordCount.toLocaleString('te')}). Publish నొక్కితే వివరాలు చూస్తారు.`
+              : `Need at least 1,500 words to publish (you have ${wordCount.toLocaleString()}). Click Publish for details.`}
+          </p>
+        )}
+
         <p className="nos-publish__note">{t('narrativeOs.publishNote')}</p>
         <p className="nos-publish__schedule-hint" lang={te ? 'te' : 'en'}>
           {scheduleComingSoon}

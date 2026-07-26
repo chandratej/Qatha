@@ -3013,6 +3013,12 @@
   color: var(--ink);
 }
 
+.katha-word-band-block-backdrop {
+  z-index: 20000 !important;
+}
+.katha-word-band-block-modal {
+  max-width: 480px;
+}
 .katha-word-band-block {
   display: flex;
   flex-direction: column;

@@ -386,7 +386,17 @@ export function NarrativeEditorApp({
             </button>
           )}
           {onPublish && phase !== 'publish' && (
-            <button type="button" className="topbar-btn topbar-btn--primary" onClick={() => enterPhase('publish')} disabled={publishDisabled || publishing} title={publishLabel}>
+            <button
+              type="button"
+              className="topbar-btn topbar-btn--primary"
+              onClick={() => {
+                // Go to publish phase AND run validation (word-band popup) immediately.
+                enterPhase('publish');
+                onPublish();
+              }}
+              disabled={publishDisabled || publishing}
+              title={publishLabel}
+            >
               {publishing ? <Loader2 size={14} className="nos-spin" /> : <Rocket size={14} />}
               <span className="nos-btn-label">{publishLabel}</span>
             </button>
