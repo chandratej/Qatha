@@ -11,6 +11,7 @@ import { formatRelativeTime } from '../../lib/relativeTime';
 import type { FontScale } from '../../lib/comfortPrefs';
 import type { AuthoringWorkspace } from '../../lib/authoringWorkspace';
 import { useLocale } from '../../context/LocaleContext';
+import { SoftWordTarget } from './SoftWordTarget';
 
 interface EditorNavbarProps {
   chapterNum: number;
@@ -20,7 +21,10 @@ interface EditorNavbarProps {
   wordCount: number;
   readMins: number;
   charCount?: number;
+  /** @deprecated Character ceiling removed — ignored. */
   charLimit?: number;
+  /** Serialized Story soft band (+ hard max) — never shown for unvalidated formats. */
+  softWordTarget?: { min: number; max: number; hardMax?: number | null } | null;
   backTo?: string;
   saving: boolean;
   lastSaved: Date | null;
@@ -104,8 +108,7 @@ export function EditorNavbar({
   phoneticLive,
   wordCount,
   readMins,
-  charCount = 0,
-  charLimit = 50000,
+  softWordTarget = null,
   backTo,
   saving,
   lastSaved,
@@ -121,12 +124,9 @@ export function EditorNavbar({
   workspace,
   onWorkspaceChange,
 }: EditorNavbarProps) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const navigate = useNavigate();
   const savePulse = useSavePulse(saving, lastSaved);
-  const nearLimit = charCount > charLimit * 0.85;
-  const overLimit = charCount > charLimit;
-  const charPct = Math.min(100, Math.round((charCount / charLimit) * 100));
 
   return (
     <header className="katha-editor-chrome">
@@ -196,7 +196,7 @@ export function EditorNavbar({
             className="katha-proto-publish-btn"
             onClick={onPublish}
             disabled={publishDisabled || publishing}
-            title={overLimit ? `Over ${charLimit.toLocaleString()} character limit` : `${publishLabel} chapter`}
+            title={`${publishLabel} chapter`}
           >
             {publishing ? (
               <Loader2 size={15} className="katha-editor-save-status__spin" aria-hidden />
@@ -221,32 +221,30 @@ export function EditorNavbar({
             ·
           </span>
           <span title="Word count across all scenes">{wordCount.toLocaleString()} {t('editor.words')}</span>
+          {softWordTarget && (
+            <>
+              <span className="katha-editor-doc-meta__sep" aria-hidden>
+                ·
+              </span>
+              <SoftWordTarget
+                wordCount={wordCount}
+                min={softWordTarget.min}
+                max={softWordTarget.max}
+                hardMax={softWordTarget.hardMax}
+                locale={locale}
+                belowMin={wordCount < softWordTarget.min}
+                overHardMax={
+                  softWordTarget.hardMax != null && wordCount > softWordTarget.hardMax
+                }
+              />
+            </>
+          )}
           <span className="katha-editor-doc-meta__sep" aria-hidden>
             ·
           </span>
           <span title="Estimated reading time">
             {readMins > 0 ? `~${readMins} ${t('editor.minRead')}` : t('editor.drafting')}
           </span>
-          {(nearLimit || overLimit) && (
-            <>
-              <span className="katha-editor-doc-meta__sep" aria-hidden>
-                ·
-              </span>
-              <span
-                className={`katha-editor-char-meter${overLimit ? ' katha-editor-char-meter--over' : ''}`}
-                title={`${charCount.toLocaleString()} / ${charLimit.toLocaleString()} characters`}
-              >
-                <span
-                  className="katha-editor-char-meter__bar"
-                  style={{ width: `${charPct}%` }}
-                  aria-hidden
-                />
-                <span className="katha-editor-char-meter__label">
-                  {charCount.toLocaleString()} / {charLimit.toLocaleString()}
-                </span>
-              </span>
-            </>
-          )}
         </div>
 
         <p className="katha-editor-chrome__hint" aria-hidden>

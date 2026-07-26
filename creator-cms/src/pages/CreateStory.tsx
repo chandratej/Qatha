@@ -36,15 +36,33 @@ const CONTENT_TYPE_ICONS: Record<string, typeof BookOpen> = {
 };
 
 function contentTypeSubtitle(ct: ContentTypeDef, locale: string): string {
+  const te = locale === 'te';
+  if (ct.confidence === 'placeholder') {
+    return te ? 'ప్రారంభ మార్గదర్శకం · మారవచ్చు' : 'Early guidance · subject to change';
+  }
+  if (ct.confidence === 'none') {
+    return te ? 'ప్రయోగాత్మక · అధికారిక specs లేవు' : 'Experimental · no formal length specs';
+  }
   const parts: string[] = [];
-  if (ct.minChapters != null) {
-    parts.push(locale === 'te' ? `${ct.minChapters}+ అధ్యాయాలు` : `${ct.minChapters}+ chapters`);
+  if (ct.softWordTargetMin != null && ct.softWordTargetMax != null) {
+    parts.push(
+      te
+        ? `${ct.softWordTargetMin}–${ct.softWordTargetMax} పదాలు/అధ్యాయం (సూచన)`
+        : `${ct.softWordTargetMin}–${ct.softWordTargetMax} words/chapter (soft)`,
+    );
+  } else if (ct.minWordsPerChapter != null && ct.maxWordsPerChapter != null) {
+    parts.push(
+      te
+        ? `${ct.minWordsPerChapter}–${ct.maxWordsPerChapter} పదాలు (సూచన)`
+        : `${ct.minWordsPerChapter}–${ct.maxWordsPerChapter} words (soft)`,
+    );
   }
-  if (ct.minWordsPerChapter != null) {
-    parts.push(locale === 'te' ? `${ct.minWordsPerChapter}+ పదాలు` : `${ct.minWordsPerChapter}+ words`);
-  }
-  if ('maxWords' in ct && ct.maxWords != null) {
-    parts.push(locale === 'te' ? `గరిష్ఠ ${ct.maxWords} పదాలు` : `max ${ct.maxWords} words`);
+  if (ct.suggestedLaunchChaptersMin != null && ct.suggestedLaunchChaptersMax != null) {
+    parts.push(
+      te
+        ? `లాంచ్‌కు ~${ct.suggestedLaunchChaptersMin}–${ct.suggestedLaunchChaptersMax} అధ్యాయాలు`
+        : `~${ct.suggestedLaunchChaptersMin}–${ct.suggestedLaunchChaptersMax} ch before launch`,
+    );
   }
   return parts.join(' · ');
 }
@@ -266,22 +284,53 @@ export function CreateStory() {
             </button>
           </div>
 
+          {selectedContentType && (
+            <div className="cs-v21__format-guide" role="note">
+              <p className="cs-v21__format-guide-body">
+                {locale === 'te'
+                  ? selectedContentType.selectionGuideTelugu
+                  : selectedContentType.selectionGuideEnglish}
+              </p>
+              {selectedContentType.confidence === 'placeholder' && (
+                <p className="cs-v21__format-guide-flag">
+                  {locale === 'te'
+                    ? 'Early guidance — alpha రచయితల డేటా తర్వాత మారవచ్చు. Publishకు నియమం కాదు.'
+                    : 'Early guidance — subject to change after alpha writers. Never a publish requirement.'}
+                </p>
+              )}
+              {selectedContentType.confidence === 'high' && (
+                <p className="cs-v21__format-guide-flag">
+                  {locale === 'te'
+                    ? 'మార్కెట్-validated సూచనలు — మీ కథ, మీరు రాసినట్లు రాయండి. Word count publishను block చేయదు.'
+                    : 'Market-validated guidance — this is your story, write it your way. Word count never blocks publish.'}
+                </p>
+              )}
+            </div>
+          )}
+
           {showFormatPicker && (
             <div className="cs-v21__format-alt">
               {allFormats.map((ct) => {
                 const label = locale === 'te' ? ct.labelTelugu : ct.label;
                 const sub = contentTypeSubtitle(ct, locale);
                 const isMoat = 'moat' in ct && ct.moat;
+                const guide = locale === 'te' ? ct.selectionGuideTelugu : ct.selectionGuideEnglish;
                 return (
                   <button
                     key={ct.id}
                     type="button"
                     className={`cs-v21__format-alt-option${contentType === ct.id ? ' cs-v21__format-alt-option--active' : ''}`}
                     onClick={() => { setContentType(ct.id); setShowFormatPicker(false); }}
+                    title={guide}
                   >
                     <span>
                       {label}
                       {isMoat && <span className="cs-v21__type-badge" style={{ marginLeft: 6 }}>{t('createStory.formatBadge')}</span>}
+                      {ct.confidence === 'placeholder' && (
+                        <span className="cs-v21__type-badge cs-v21__type-badge--soft" style={{ marginLeft: 6 }}>
+                          {locale === 'te' ? 'ప్రారంభం' : 'early'}
+                        </span>
+                      )}
                     </span>
                     <span className="sub">{sub || '—'}</span>
                   </button>

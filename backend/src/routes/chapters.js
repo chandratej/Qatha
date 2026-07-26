@@ -24,6 +24,10 @@ import {
   sanitizePublishedContent,
   estimateReadTimeMinutes,
 } from '../lib/publishContent.js';
+import {
+  softWordTargetForContentType,
+  countWordsInContent,
+} from '../services/contentFormatDiscovery.js';
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
@@ -208,13 +212,46 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.
     const creatorId = getAuthenticatedUserId(req);
     const { chapter_number, title, content: rawContent, content_delta, appeal_note } = req.body;
 
-    if (!rawContent || rawContent.length > 50000) {
-      throw createAppError('INTERNAL_ERROR', 'Chapter content invalid (max 50,000 chars)', 400);
+    if (!rawContent || !String(rawContent).trim()) {
+      throw createAppError('INTERNAL_ERROR', 'Chapter content is required', 400);
     }
 
     // Always strip editor-only formatting before any publish path.
     const content = sanitizePublishedContent(rawContent);
     const estimated_read_time_minutes = estimateReadTimeMinutes(content);
+
+    // Serialized word band only: soft 1,500–2,500 · hard max 3,000 words (no character ceiling).
+    let storyContentType = 'serialized_story';
+    if (!isMockMode()) {
+      const { data: storyMeta } = await supabase
+        .from('stories')
+        .select('content_type')
+        .eq('id', storyId)
+        .maybeSingle();
+      if (storyMeta?.content_type) storyContentType = storyMeta.content_type;
+    }
+    const softWords = softWordTargetForContentType(storyContentType);
+    if (softWords) {
+      const wordCount = countWordsInContent(content);
+      if (wordCount < softWords.min) {
+        throw createAppError(
+          'CHAPTER_TOO_SHORT',
+          `Serialized chapters need at least ${softWords.min.toLocaleString()} words ` +
+            `(recommended ${softWords.min.toLocaleString()}–${softWords.max.toLocaleString()}, ` +
+            `hard max ${softWords.hardMax.toLocaleString()}). You have ${wordCount}.`,
+          400,
+        );
+      }
+      if (wordCount > softWords.hardMax) {
+        throw createAppError(
+          'CHAPTER_TOO_LONG',
+          `Serialized chapters cannot exceed ${softWords.hardMax.toLocaleString()} words ` +
+            `(recommended ${softWords.min.toLocaleString()}–${softWords.max.toLocaleString()}). ` +
+            `You have ${wordCount}.`,
+          400,
+        );
+      }
+    }
 
     if (isMockMode()) {
       const moderation = await moderateContent(content);

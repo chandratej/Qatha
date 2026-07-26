@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { story_id, chapter_number, title, content, content_delta, scheduled_publish_at } = body;
 
-    if (!story_id || !chapter_number || !content || !scheduled_publish_at || content.length > 50000) {
+    if (!story_id || !chapter_number || !content || !String(content).trim() || !scheduled_publish_at) {
       return new Response(JSON.stringify({ error: 'Invalid schedule payload' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

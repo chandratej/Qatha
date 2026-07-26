@@ -10,7 +10,9 @@ import '../core/theme/katha_theme.dart';
 import '../core/utils/motion.dart';
 import '../l10n/generated/app_localizations.dart';
 
-/// Cascading Auth Gate for readers: Google (primary) → email magic link (fallback).
+/// Cascading Auth Gate for readers: Google (primary when configured) → email magic link.
+/// If `GOOGLE_WEB_CLIENT_ID` is missing from the build, email is primary so first-time
+/// signup still fulfills “sign in to continue reading.”
 /// Phone OTP is not offered here — reserved for Creator CMS payout/KYC verification.
 class ReaderAuthScreen extends StatefulWidget {
   final VoidCallback? onSuccess;
@@ -27,7 +29,8 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
   final _otpController = TextEditingController();
 
   bool _loading = false;
-  bool _emailStep = false;
+  /// Prefer email when Google Web Client ID was not baked into this build.
+  late bool _emailStep = !AppConfig.googleSignInConfigured;
   bool _emailSent = false;
   String? _error;
 
@@ -64,12 +67,32 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
   }
 
   Future<void> _signInWithGoogle() async {
+    if (!AppConfig.googleSignInConfigured) {
+      setState(() {
+        _emailStep = true;
+        _error = AppLocalizations.of(context)!.readerAuthGoogleUnavailable;
+      });
+      return;
+    }
     setState(() { _loading = true; _error = null; });
     try {
       final result = await _auth.signInWithGoogle();
       await _completeSession(result);
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      final raw = e.toString().replaceFirst('Exception: ', '');
+      final missingGoogle = raw.contains('GOOGLE_WEB_CLIENT_ID_MISSING') ||
+          raw.contains('no ID token') ||
+          raw.contains('GOOGLE_WEB_CLIENT_ID');
+      if (!mounted) return;
+      if (missingGoogle) {
+        setState(() {
+          _emailStep = true;
+          _error = AppLocalizations.of(context)!.readerAuthGoogleFailedUseEmail;
+          _loading = false;
+        });
+        return;
+      }
+      setState(() => _error = raw);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -104,23 +127,54 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
 
   Widget _buildGooglePrimary() {
     final l10n = AppLocalizations.of(context)!;
+    final googleReady = AppConfig.googleSignInConfigured;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 52,
-          child: FilledButton.icon(
-            onPressed: _loading ? null : _signInWithGoogle,
-            icon: const Icon(Icons.g_mobiledata, size: 28),
-            label: Text(l10n.buttonSignInWithGoogle),
-            style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
+        if (googleReady) ...[
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _signInWithGoogle,
+              icon: const Icon(Icons.g_mobiledata, size: 28),
+              label: Text(l10n.buttonSignInWithGoogle),
+              style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton(
-          onPressed: _loading ? null : () => setState(() { _emailStep = true; _error = null; }),
-          child: Text(l10n.buttonContinueWithEmail),
-        ),
+          const SizedBox(height: 16),
+          OutlinedButton(
+            onPressed: _loading
+                ? null
+                : () => setState(() {
+                      _emailStep = true;
+                      _error = null;
+                    }),
+            child: Text(l10n.buttonContinueWithEmail),
+          ),
+        ] else ...[
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: _loading
+                  ? null
+                  : () => setState(() {
+                        _emailStep = true;
+                        _error = null;
+                      }),
+              icon: const Icon(Icons.email_outlined, size: 22),
+              label: Text(l10n.buttonContinueWithEmail),
+              style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.readerAuthGoogleUnavailable,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ],
     );
   }
@@ -158,10 +212,14 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
               child: Text(_loading ? l10n.buttonSending : l10n.buttonSendSignInCode),
             ),
           ),
-          TextButton(
-            onPressed: () => setState(() { _emailStep = false; _error = null; }),
-            child: Text(l10n.buttonBackToGoogleSignIn),
-          ),
+          if (AppConfig.googleSignInConfigured)
+            TextButton(
+              onPressed: () => setState(() {
+                _emailStep = false;
+                _error = null;
+              }),
+              child: Text(l10n.buttonBackToGoogleSignIn),
+            ),
         ],
       );
     }
@@ -245,7 +303,15 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
                 l10n.readerAuthSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium,
               ).withEntrance(context, (w) => w.animate().fadeIn(delay: 80.ms)),
-              const SizedBox(height: 36),
+              const SizedBox(height: 10),
+              Text(
+                l10n.readerAuthPromiseNote,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                      height: 1.35,
+                    ),
+              ).withEntrance(context, (w) => w.animate().fadeIn(delay: 100.ms)),
+              const SizedBox(height: 28),
               if (_emailStep) _buildEmailFallback() else _buildGooglePrimary(),
               if (_error != null) ...[
                 const SizedBox(height: 18),

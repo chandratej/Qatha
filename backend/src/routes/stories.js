@@ -140,8 +140,19 @@ storiesRouter.get('/:id', async (req, res, next) => {
       }));
       const { count: freeChapterCount, source: freeChapterSource } =
         await resolveFreeChapterCountForStory(story);
+      const { discoveryFormatFromPublishedChapters } = await import(
+        '../services/contentFormatDiscovery.js'
+      );
       return res.json({
-        story: { ...story, resolved_free_chapters: freeChapterCount, free_chapter_source: freeChapterSource },
+        story: {
+          ...story,
+          resolved_free_chapters: freeChapterCount,
+          free_chapter_source: freeChapterSource,
+          discovery_format: discoveryFormatFromPublishedChapters(
+            chapters.length,
+            story.content_type,
+          ),
+        },
         chapters,
         mock: true,
       });

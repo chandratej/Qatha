@@ -700,9 +700,6 @@ creatorsRouter.post('/schedule', requireStoryRole('story.publish', { bodyField: 
     if (!content || plainTextLength(content) < 1) {
       throw createAppError('INTERNAL_ERROR', 'Write chapter content before scheduling', 400);
     }
-    if (content.length > 50000) {
-      throw createAppError('INTERNAL_ERROR', 'Chapter content invalid (max 50,000 chars)', 400);
-    }
 
     const { data: chapter, error } = await supabase.from('chapters').upsert({
       story_id,

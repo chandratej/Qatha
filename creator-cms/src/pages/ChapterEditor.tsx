@@ -99,12 +99,18 @@ import {
   resolveChapterEditorPath,
 } from '../lib/storyContentFormat';
 import { stripHtml } from '../lib/chapterFind';
+import { softWordTargetForContentType } from '../../../packages/shared/content-types';
 
 const NARRATIVE_OS_ENABLED = FEATURE_FLAGS.narrativeOs;
 
+/**
+ * Soft reference upper band for Serialized Story (1,500–2,500 soft · 3,000 hard).
+ * InkProgress uses soft max as the visual goal.
+ */
 const CHAPTER_WORD_GOAL = UI_CONFIG.editor.chapterWordGoal;
 
-const CHAR_LIMIT = UI_CONFIG.editor.maxChapterChars;
+/** Character ceiling removed — use serialized word band only. */
+const CHAR_LIMIT = Number.MAX_SAFE_INTEGER;
 
 function getWordCountFromScenes(scenes: SceneBlock[], locale = 'en'): number {
   return countWordsInScenes(scenes, locale);
@@ -597,6 +603,20 @@ export function ChapterEditor() {
   }, [scenes, activeSceneId]);
   const narrativeFormat: NarrativeFormat = chapterNarrativeFormat;
   const wordCount = getWordCountFromScenes(scenes, locale);
+  /**
+   * Serialized: soft 1,500–2,500 · hard max 3,000 words.
+   * Default to serialized when content_type is missing so creators always see the band.
+   */
+  const softWordTarget = useMemo(
+    () => softWordTargetForContentType(storyContentType || 'serialized_story'),
+    [storyContentType],
+  );
+  const softWordGoal = softWordTarget?.max ?? CHAPTER_WORD_GOAL;
+  const underSoftWordMin = Boolean(softWordTarget && wordCount < softWordTarget.min);
+  const overHardWordMax = Boolean(
+    softWordTarget?.hardMax != null && wordCount > softWordTarget.hardMax,
+  );
+  const wordBandBlocksPublish = underSoftWordMin || overHardWordMax;
 
   useEffect(() => {
     const fromScene = scenes.find((s) => s.narrativeFormat)?.narrativeFormat;
@@ -605,12 +625,13 @@ export function ChapterEditor() {
 
   const arrivalMomentum: ArrivalMomentum | null = useMemo(() => {
     if (!chapterTitle && !activeScene?.title) return null;
+    const goal = softWordTarget?.max ?? CHAPTER_WORD_GOAL;
     return {
       storyTitle: storyDisplayTitle || chapterTitle || 'Untitled Chapter',
       lastSceneTitle: activeScene?.title || undefined,
-      progressPercent: wordCount > 0 ? Math.min(100, Math.round((wordCount / CHAPTER_WORD_GOAL) * 100)) : undefined,
+      progressPercent: wordCount > 0 ? Math.min(100, Math.round((wordCount / goal) * 100)) : undefined,
     };
-  }, [storyDisplayTitle, chapterTitle, activeScene?.title, wordCount]);
+  }, [storyDisplayTitle, chapterTitle, activeScene?.title, wordCount, softWordTarget]);
 
   /** MVP1: format is fixed at story creation — ignore in-editor format changes. */
   const handleNarrativeFormatChange = useCallback((_format: NarrativeFormat) => {
@@ -680,7 +701,8 @@ export function ChapterEditor() {
 
   const readMins = wordCount === 0 ? 0 : Math.max(1, Math.round(wordCount / 200));
   const workspaceLayout = layoutForWorkspace(authoringWorkspace);
-  const overLimit = charCount > CHAR_LIMIT;
+  /** Character ceiling removed — only word band blocks publish for serials. */
+  const overLimit = false;
   const hasContent = wordCount > 0;
 
   const findMatches = useMemo(
@@ -963,9 +985,7 @@ export function ChapterEditor() {
       if (!content.trim() || wordCount === 0) {
         throw new Error('Add some content before publishing');
       }
-      if (charCount > CHAR_LIMIT) {
-        throw new Error(`Chapter exceeds ${CHAR_LIMIT.toLocaleString()} character limit`);
-      }
+
 
       if (!isDemo) {
         try {
@@ -1069,8 +1089,22 @@ export function ChapterEditor() {
       setPublishError('Add some content before publishing');
       return;
     }
-    if (overLimit) {
-      setPublishError(`Chapter exceeds ${CHAR_LIMIT.toLocaleString()} character limit`);
+    // Serialized: soft min 1,500 · soft max 2,500 · hard max 3,000 words (no character ceiling).
+    if (softWordTarget && wordCount < softWordTarget.min) {
+      setPublishError(
+        `Serialized chapters need at least ${softWordTarget.min.toLocaleString()} words ` +
+          `(recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()}, ` +
+          `hard max ${(softWordTarget.hardMax ?? 3000).toLocaleString()}). ` +
+          `You have ${wordCount.toLocaleString()} words.`,
+      );
+      return;
+    }
+    if (softWordTarget?.hardMax != null && wordCount > softWordTarget.hardMax) {
+      setPublishError(
+        `Serialized chapters cannot exceed ${softWordTarget.hardMax.toLocaleString()} words ` +
+          `(recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()}). ` +
+          `You have ${wordCount.toLocaleString()} words — trim before publishing.`,
+      );
       return;
     }
     if (!isDemo && !user?.phone_verified) {
@@ -1086,10 +1120,6 @@ export function ChapterEditor() {
     setScheduleSuccess(null);
     if (!hasContent) {
       setScheduleError('Add some content before scheduling');
-      return;
-    }
-    if (overLimit) {
-      setScheduleError(`Chapter exceeds ${CHAR_LIMIT.toLocaleString()} character limit`);
       return;
     }
     const when = new Date(isoDatetime);
@@ -1217,6 +1247,7 @@ export function ChapterEditor() {
         sceneCount={scenes.length}
         isResubmit={needsResubmit}
         publishing={publishing}
+        softWordTarget={softWordTarget}
       />
       <DeleteSceneModal
         open={Boolean(deleteSceneId)}
@@ -1434,7 +1465,7 @@ export function ChapterEditor() {
           onOpenTimeline={() => navigate(`/stories/${storyId}`)}
           publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
           publishing={publishing}
-          publishDisabled={!hasContent || overLimit}
+          publishDisabled={!hasContent || overLimit || wordBandBlocksPublish}
           statusContent={narrativeStatusContent}
           previewDevice={previewDevice}
           previewTheme={previewTheme}
@@ -1542,6 +1573,7 @@ export function ChapterEditor() {
           readMins={readMins}
           charCount={charCount}
           charLimit={CHAR_LIMIT}
+          softWordTarget={softWordTarget}
           backTo={`/stories/${storyId}`}
           saving={saving || publishing || savingDraft}
           lastSaved={lastSaved}
@@ -1553,18 +1585,23 @@ export function ChapterEditor() {
           onPublish={handlePublish}
           publishLabel={needsResubmit ? 'Resubmit' : 'Publish'}
           publishing={publishing}
-          publishDisabled={!hasContent || overLimit}
+          publishDisabled={!hasContent || overLimit || wordBandBlocksPublish}
           workspace={authoringWorkspace}
           onWorkspaceChange={applyAuthoringWorkspace}
         />
       )}
 
-      {!focusMode && !NARRATIVE_OS_ENABLED && (
+      {/* Serialized word band: soft 1,500–2,500 · hard max 3,000 words. */}
+      {!focusMode && !NARRATIVE_OS_ENABLED && softWordTarget && (
         <div className="chapter-editor__progress" aria-label={t('editor.chapterWordGoal')}>
           <InkProgress
             wordsToday={wordCount}
-            dailyGoal={CHAPTER_WORD_GOAL}
-            label={t('editor.chapterWordGoal')}
+            dailyGoal={softWordGoal}
+            label={
+              locale === 'te'
+                ? `సిఫార్సు ${softWordTarget.min}–${softWordTarget.max} · కనీసం ${softWordTarget.min} · గరిష్ఠ ${softWordTarget.hardMax ?? 3000} పదాలు`
+                : `Recommended ${softWordTarget.min}–${softWordTarget.max} · min ${softWordTarget.min} · hard max ${softWordTarget.hardMax ?? 3000} words`
+            }
           />
         </div>
       )}

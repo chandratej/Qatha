@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "cd creator-cms && npm install",
+  "buildCommand": "cd creator-cms && npm run build",
+  "outputDirectory": "creator-cms/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}

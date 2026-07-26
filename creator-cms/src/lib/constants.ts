@@ -49,5 +49,5 @@ export const PAYWALL = {
 
 export const ONBOARDING_KEY = 'katha_onboarding_complete';
 
-/** Reader gateway — Trojan Horse share links (VITE_GATEWAY_URL in .env) */
+/** Reader gateway — Trojan Horse share links (never localhost in production builds) */
 export const GATEWAY_URL = API_CONFIG.gatewayUrl;

@@ -83,14 +83,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
   ApiService _api(BuildContext context) =>
       ApiService.fromAuth(context.read<AuthState>());
 
-  Future<void> _loadChapter() async {
+  Future<void> _loadChapter({bool forceNetwork = false}) async {
     final api = _api(context);
 
     // === SNAP UX: Try cache first for instant render ===
-    final cached = _cache.getCachedChapter(
-      widget.storyId,
-      widget.chapterNumber,
-    );
+    // Skip cache after auth so soft-gate resume always uses the new session.
+    final cached = forceNetwork
+        ? null
+        : _cache.getCachedChapter(
+            widget.storyId,
+            widget.chapterNumber,
+          );
     if (cached != null) {
       if (mounted) {
         setState(() {
@@ -629,10 +632,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
       builder: (sheetCtx) => _GateSheet(
         title: AppLocalizations.of(sheetCtx)!.readerOtpGateTitle,
         subtitle: AppLocalizations.of(sheetCtx)!.readerOtpGateSubtitle,
-        actionLabel: AppLocalizations.of(sheetCtx)!.buttonSignInWithGoogle,
+        // Neutral CTA — Google may be missing on some builds; auth screen routes correctly.
+        actionLabel: AppLocalizations.of(sheetCtx)!.buttonSignInAndContinue,
         onAction: () async {
           Navigator.pop(sheetCtx);
           final ok = await Navigator.push<bool>(
@@ -641,11 +646,44 @@ class _ReaderScreenState extends State<ReaderScreen> {
           );
           if (!mounted) return;
           if (ok == true || context.read<AuthState>().isLoggedIn) {
-            _loadChapter();
+            await _resumeAfterAuth();
           }
         },
       ),
     );
+  }
+
+  /// After first signup / login: reload the same chapter so the soft-gate promise holds
+  /// for both proven and unproven free-sample sizes.
+  Future<void> _resumeAfterAuth() async {
+    if (!mounted) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _apiError = null;
+      // Drop any stale offline body for this slot so we re-fetch with the new session.
+      _chapter = null;
+      _isOfflineChapter = false;
+    });
+    await _loadChapter(forceNetwork: true);
+    if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
+    if (_chapter != null && _apiError == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.readerAuthContinueSuccess),
+          backgroundColor: KathaColors.gold,
+        ),
+      );
+      return;
+    }
+    // Soft gate cleared but hard paywall (or network) — gates re-shown by _loadChapter.
+    if (_apiError?.code == 'OTP_REQUIRED' && context.read<AuthState>().isLoggedIn) {
+      // Should be rare: session not attached to API. Surface retry.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.errorNoConnection)),
+      );
+    }
   }
 
   void _showPaywall() {

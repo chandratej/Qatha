@@ -1,7 +1,14 @@
 /** Trojan Horse reader gateway — shareable chapter URLs for social distribution */
 
-const GATEWAY_BASE =
-  import.meta.env.VITE_GATEWAY_URL || 'http://localhost:3000';
+import { API_CONFIG } from '../config/api_config';
+
+/**
+ * Always resolve at call time so tests / late env fixes are respected.
+ * Production builds never fall back to localhost (see API_CONFIG.gatewayUrl).
+ */
+export function getGatewayBase(): string {
+  return String(API_CONFIG.gatewayUrl || '').replace(/\/$/, '') || 'https://gateway-qatha.vercel.app';
+}
 
 export function slugifyTitle(title: string): string {
   const ascii = title
@@ -29,7 +36,7 @@ export function resolveStorySlug(story: {
 }
 
 export function buildChapterShareUrl(slug: string, chapterNumber: number): string {
-  const base = GATEWAY_BASE.replace(/\/$/, '');
+  const base = getGatewayBase();
   return `${base}/read/${encodeURIComponent(slug)}/${chapterNumber}`;
 }
 

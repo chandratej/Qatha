@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { story_id, chapter_number, title, content: rawContent, content_delta, appeal_note } = body;
 
-    if (!story_id || !chapter_number || !rawContent || rawContent.length > 50000) {
+    if (!story_id || !chapter_number || !rawContent || !String(rawContent).trim()) {
       return new Response(JSON.stringify({ error: 'Invalid chapter payload' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

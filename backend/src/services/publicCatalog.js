@@ -10,6 +10,7 @@ import {
   estimateReadTimeMinutes,
 } from '../lib/publishContent.js';
 import { resolveFreeChapterCountForStory } from './freeChapterThreshold.js';
+import { discoveryFormatFromPublishedChapters } from './contentFormatDiscovery.js';
 
 /**
  * Core columns that every catalog query needs. Optional columns from later
@@ -20,7 +21,7 @@ const STORY_SELECT_BASE = `
   id, author_id, title, description, genre, cover_url, chapter_count,
   total_readers, views_this_week, release_schedule,
   release_day_of_week, release_time_of_day, created_at, is_published,
-  trust_level, age_rating,
+  trust_level, age_rating, content_type, story_status,
   creators(pen_name, avatar_url)
 `;
 
@@ -153,6 +154,8 @@ function withAccurateCount(story, counts) {
     total_readers: story.total_readers ?? 0,
     views_this_week: story.views_this_week ?? 0,
     creators: story.creators || { pen_name: 'Author', avatar_url: null },
+    // Discovery shelf only — not a creator publish requirement.
+    discovery_format: discoveryFormatFromPublishedChapters(n, story.content_type),
   });
 }
 
@@ -250,7 +253,15 @@ export async function getPublicStoryDetail(storyId) {
     await resolveFreeChapterCountForStory(story);
 
   return {
-    story: { ...accurateStory, resolved_free_chapters: freeChapterCount, free_chapter_source: freeChapterSource },
+    story: {
+      ...accurateStory,
+      resolved_free_chapters: freeChapterCount,
+      free_chapter_source: freeChapterSource,
+      discovery_format: discoveryFormatFromPublishedChapters(
+        publishedCount,
+        story.content_type,
+      ),
+    },
     chapters: chapterSummaries,
   };
 }

@@ -323,7 +323,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get buttonUseDifferentEmail => 'Use a different email';
 
   @override
-  String get readerAuthSubtitle => 'Sign in to continue reading';
+  String get readerAuthSubtitle => 'Sign in free to keep reading this story';
+
+  @override
+  String get readerAuthPromiseNote =>
+      'After sign-in you continue from this chapter. Subscription is only for later locked chapters — not required to finish your free sample.';
 
   @override
   String get readerAuthCreatorNote =>
@@ -337,6 +341,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String readerAuthWelcomeTrial(int days) {
     return 'Welcome! $days-day unlimited reading unlocked.';
   }
+
+  @override
+  String get readerAuthContinueSuccess =>
+      'Welcome back — continuing your story.';
+
+  @override
+  String get readerAuthGoogleUnavailable =>
+      'Google sign-in is not configured on this build. Use email instead.';
+
+  @override
+  String get readerAuthGoogleFailedUseEmail =>
+      'Google sign-in failed. Continue with email below.';
+
+  @override
+  String get buttonSignInAndContinue => 'Sign in & continue reading';
 
   @override
   String get settingsSectionReading => 'Reading';
@@ -434,7 +453,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSignInSubtitle =>
-      'Google or email — required from Chapter 4';
+      'Google or email — free account to continue after the free sample';
 
   @override
   String get settingsNotifyNewChapters => 'New chapters';
@@ -536,13 +555,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readerOtpGateSubtitle =>
-      'Chapter 4 and beyond require a free account';
+      'A free account lets you keep reading this story from this chapter. No payment yet — subscribe only when locked chapters begin.';
 
   @override
   String get readerPaywallTrialEndedTitle => 'Your launch trial has ended';
 
   @override
-  String get readerPaywallUnlockTitle => 'Unlock unlimited reading';
+  String get readerPaywallUnlockTitle => 'Subscribe to keep reading';
 
   @override
   String readerPaywallSubscribeAction(String price) {

@@ -716,9 +716,6 @@ export async function sbScheduleChapter(
   if (plainTextLength(content) < 1) {
     throw new Error('Write chapter content before scheduling');
   }
-  if (content.length > 50_000) {
-    throw new Error('Chapter content invalid (max 50,000 chars)');
-  }
   if (chapter.status === 'published') {
     throw new Error('Published chapters cannot be scheduled');
   }

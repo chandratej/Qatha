@@ -127,16 +127,7 @@ export function NarrativeInspectorPanel({
             <div className="insp-label">Words</div>
             <div className="insp-value">{wordCount.toLocaleString()}</div>
           </div>
-          {/* Character limit is a real product constraint (~50k) but constant chrome
-              mid-scene is noise. Surface only when approaching or over the limit. */}
-          {charCount > charLimit * CHAR_WARN_RATIO && (
-            <div className="insp-row insp-row--warning">
-              <div className="insp-label">{charCount > charLimit ? 'Over limit' : 'Nearing limit'}</div>
-              <div className={`insp-value${charCount > charLimit ? ' nos-over-limit' : ' nos-near-limit'}`}>
-                {charCount.toLocaleString()} / {charLimit.toLocaleString()}
-              </div>
-            </div>
-          )}
+          {/* Character ceiling removed — length is word-based for serials. */}
         </div>
       )}
 

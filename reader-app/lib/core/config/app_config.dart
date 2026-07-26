@@ -42,10 +42,14 @@ class AppConfig {
   );
 
   /// Web OAuth client ID — required for Google sign-in ID token on Android.
+  /// Build with: `--dart-define=GOOGLE_WEB_CLIENT_ID=….apps.googleusercontent.com`
   static const googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
     defaultValue: '',
   );
+
+  /// True when this binary can obtain a Google ID token for Supabase.
+  static bool get googleSignInConfigured => googleWebClientId.trim().isNotEmpty;
 
   /// Deep link / web redirect for email magic links.
   static const authRedirectUrl = String.fromEnvironment(

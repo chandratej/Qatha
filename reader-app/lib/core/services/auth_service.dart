@@ -33,6 +33,12 @@ class AuthService {
 
   /// Primary reader path — explicit account picker on first use (no silent auto-select).
   Future<({AuthUser user, String accessToken})> signInWithGoogle() async {
+    if (!AppConfig.googleSignInConfigured) {
+      throw Exception(
+        'GOOGLE_WEB_CLIENT_ID_MISSING',
+      );
+    }
+
     final account = await googleSignIn.signIn();
     if (account == null) {
       throw Exception('Google sign-in cancelled');
@@ -41,7 +47,9 @@ class AuthService {
     final googleAuth = await account.authentication;
     final idToken = googleAuth.idToken;
     if (idToken == null) {
-      throw Exception('Google sign-in failed — no ID token. Set GOOGLE_WEB_CLIENT_ID.');
+      throw Exception(
+        'GOOGLE_WEB_CLIENT_ID_MISSING',
+      );
     }
 
     final response = await _supabase.auth.signInWithIdToken(

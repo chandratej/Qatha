@@ -1,4 +1,4 @@
-# Apply migrations 042–044 (free chapter, escrow, pricing) then re-run schema gate.
+﻿# Apply migrations 042-044 (free chapter, escrow, pricing) then re-run schema gate.
 #
 # Paths:
 #   A) SUPABASE_DB_URL set → apply via npx supabase db query
@@ -42,7 +42,7 @@ function Get-ProjectRef {
 }
 
 Write-Host ""
-Write-Host "Katha — apply 042–044 + verify" -ForegroundColor Cyan
+Write-Host "Katha - apply 042-044 + verify" -ForegroundColor Cyan
 Write-Host "==============================" -ForegroundColor Cyan
 Write-Host "Combined SQL: $Combined"
 Write-Host ""
@@ -77,7 +77,7 @@ $sqlEditor = if ($ref) {
 }
 
 if ($OpenOnly -or -not $DbUrl) {
-  Write-Host "No SUPABASE_DB_URL — opening manual apply path." -ForegroundColor Yellow
+  Write-Host "No SUPABASE_DB_URL - opening manual apply path." -ForegroundColor Yellow
   Write-Host ""
   Write-Host "1. SQL Editor will open (or go to):" -ForegroundColor Cyan
   Write-Host "   $sqlEditor"
@@ -115,11 +115,11 @@ if ($OpenOnly -or -not $DbUrl) {
 
   if ($code -eq 0) {
     Write-Host ""
-    Write-Host "GATE PASSED — 042–044 schema present." -ForegroundColor Green
+    Write-Host "GATE PASSED - 042-044 schema present." -ForegroundColor Green
     Write-Host "Next: run backfill_story_slugs.sql if not done; deploy edge functions (see Mode B checklist)."
   } else {
     Write-Host ""
-    Write-Host "GATE still failing — re-check SQL errors in the editor, then: .\scripts\apply-042-044-and-verify.ps1 -VerifyOnly" -ForegroundColor Red
+    Write-Host "GATE still failing - re-check SQL errors in the editor, then: .\scripts\apply-042-044-and-verify.ps1 -VerifyOnly" -ForegroundColor Red
   }
   exit $code
 }

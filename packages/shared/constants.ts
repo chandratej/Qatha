@@ -45,14 +45,23 @@ export {
   STORY_STATUSES,
   AGE_RATINGS,
   LANGUAGES,
+  DISCOVERY_SERIALIZED_CHAPTER_FLOOR,
+  SERIALIZED_SOFT_WORD_MIN,
+  SERIALIZED_SOFT_WORD_MAX,
+  SERIALIZED_HARD_WORD_MAX,
+  getContentTypeDef,
+  softWordTargetForContentType,
+  discoveryFormatFromPublishedChapters,
 } from './content-types';
 export type {
   ContentTypeId,
   ContentTypeDef,
+  ContentSpecConfidence,
   MoatContentTypeId,
   StoryStatusId,
   AgeRatingId,
   LanguageId,
+  DiscoveryFormatId,
 } from './content-types';
 
 export {
@@ -229,7 +238,8 @@ export const PAYWALL = {
   freeChapters: 3,
   otpGateChapter: 4,
   subscriptionGateChapter: 6,
-  maxChapterChars: 50_000,
+  /** @deprecated No character ceiling — use serialized word band (1,500–2,500 soft · 3,000 hard). */
+  maxChapterChars: Number.MAX_SAFE_INTEGER,
   maxStoryTitleChars: 100,
   maxStoryDescChars: 300,
   maxChapterTitleChars: 60,

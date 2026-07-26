@@ -671,8 +671,14 @@ abstract class AppLocalizations {
   /// No description provided for @readerAuthSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Sign in to continue reading'**
+  /// **'Sign in free to keep reading this story'**
   String get readerAuthSubtitle;
+
+  /// No description provided for @readerAuthPromiseNote.
+  ///
+  /// In en, this message translates to:
+  /// **'After sign-in you continue from this chapter. Subscription is only for later locked chapters — not required to finish your free sample.'**
+  String get readerAuthPromiseNote;
 
   /// No description provided for @readerAuthCreatorNote.
   ///
@@ -691,6 +697,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Welcome! {days}-day unlimited reading unlocked.'**
   String readerAuthWelcomeTrial(int days);
+
+  /// No description provided for @readerAuthContinueSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back — continuing your story.'**
+  String get readerAuthContinueSuccess;
+
+  /// No description provided for @readerAuthGoogleUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in is not configured on this build. Use email instead.'**
+  String get readerAuthGoogleUnavailable;
+
+  /// No description provided for @readerAuthGoogleFailedUseEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Google sign-in failed. Continue with email below.'**
+  String get readerAuthGoogleFailedUseEmail;
+
+  /// No description provided for @buttonSignInAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in & continue reading'**
+  String get buttonSignInAndContinue;
 
   /// No description provided for @settingsSectionReading.
   ///
@@ -857,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSignInSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Google or email — required from Chapter 4'**
+  /// **'Google or email — free account to continue after the free sample'**
   String get settingsSignInSubtitle;
 
   /// No description provided for @settingsNotifyNewChapters.
@@ -1025,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @readerOtpGateSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Chapter 4 and beyond require a free account'**
+  /// **'A free account lets you keep reading this story from this chapter. No payment yet — subscribe only when locked chapters begin.'**
   String get readerOtpGateSubtitle;
 
   /// No description provided for @readerPaywallTrialEndedTitle.
@@ -1037,7 +1067,7 @@ abstract class AppLocalizations {
   /// No description provided for @readerPaywallUnlockTitle.
   ///
   /// In en, this message translates to:
-  /// **'Unlock unlimited reading'**
+  /// **'Subscribe to keep reading'**
   String get readerPaywallUnlockTitle;
 
   /// No description provided for @readerPaywallSubscribeAction.

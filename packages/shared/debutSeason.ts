@@ -1,4 +1,9 @@
-/** PRD — Debut Season (అవతరణ కాలం) — first serialized arc evaluation */
+/**
+ * PRD — Debut Season (అవతరణ కాలం) — first serialized arc evaluation.
+ * Day-to-day serialized writing band is soft 1,500–2,500 / hard max 3,000 words
+ * (content-types.ts). Debut Season evaluation thresholds below are a separate
+ * competition bar and must not replace the editor word band in CMS.
+ */
 
 /** Core requirements for a Debut Season manuscript */
 export const DEBUT_SEASON_REQUIREMENTS = {

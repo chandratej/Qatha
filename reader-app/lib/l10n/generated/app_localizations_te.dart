@@ -324,7 +324,12 @@ class AppLocalizationsTe extends AppLocalizations {
   String get buttonUseDifferentEmail => 'వేరే ఇమెయిల్‌ను ఉపయోగించండి';
 
   @override
-  String get readerAuthSubtitle => 'చదవడం కొనసాగించడానికి సైన్ ఇన్ చేయండి';
+  String get readerAuthSubtitle =>
+      'ఈ కథను కొనసాగించడానికి ఉచితంగా సైన్ ఇన్ చేయండి';
+
+  @override
+  String get readerAuthPromiseNote =>
+      'సైన్ ఇన్ తర్వాత ఈ అధ్యాయం నుంచే కొనసాగుతారు. చెల్లింపు ఇప్పుడు కాదు — లాక్ అయిన అధ్యాయాలకు మాత్రమే సబ్‌స్క్రిప్షన్.';
 
   @override
   String get readerAuthCreatorNote =>
@@ -338,6 +343,20 @@ class AppLocalizationsTe extends AppLocalizations {
   String readerAuthWelcomeTrial(int days) {
     return 'స్వాగతం! $days రోజుల అపరిమిత పఠనం అన్‌లాక్ అయింది.';
   }
+
+  @override
+  String get readerAuthContinueSuccess => 'స్వాగతం — మీ కథను కొనసాగిస్తున్నాం.';
+
+  @override
+  String get readerAuthGoogleUnavailable =>
+      'ఈ బిల్డ్‌లో Google సైన్-ఇన్ లేదు. ఇమెయిల్‌తో కొనసాగండి.';
+
+  @override
+  String get readerAuthGoogleFailedUseEmail =>
+      'Google సైన్-ఇన్ విఫలమైంది. కింద ఇమెయిల్‌తో కొనసాగండి.';
+
+  @override
+  String get buttonSignInAndContinue => 'సైన్ ఇన్ చేసి చదవడం కొనసాగించండి';
 
   @override
   String get settingsSectionReading => 'పఠనం';
@@ -435,7 +454,7 @@ class AppLocalizationsTe extends AppLocalizations {
 
   @override
   String get settingsSignInSubtitle =>
-      'Google లేదా ఇమెయిల్ — అధ్యాయం 4 నుండి అవసరం';
+      'Google లేదా ఇమెయిల్ — ఉచిత నమూనా తర్వాత కొనసాగించడానికి ఉచిత ఖాతా';
 
   @override
   String get settingsNotifyNewChapters => 'కొత్త అధ్యాయాలు';
@@ -540,13 +559,15 @@ class AppLocalizationsTe extends AppLocalizations {
   String get readerOtpGateTitle => 'కొనసాగించడానికి సైన్ ఇన్ చేయండి';
 
   @override
-  String get readerOtpGateSubtitle => 'అధ్యాయం 4 నుండి ఉచిత ఖాతా అవసరం';
+  String get readerOtpGateSubtitle =>
+      'ఉచిత ఖాతాతో ఈ అధ్యాయం నుంచి కథ కొనసాగుతుంది. ఇప్పుడు చెల్లింపు లేదు — లాక్ అయిన అధ్యాయాలకు మాత్రమే సబ్‌స్క్రైబ్.';
 
   @override
   String get readerPaywallTrialEndedTitle => 'మీ లాంచ్ ట్రయల్ ముగిసింది';
 
   @override
-  String get readerPaywallUnlockTitle => 'అపరిమిత పఠనాన్ని అన్‌లాక్ చేయండి';
+  String get readerPaywallUnlockTitle =>
+      'చదవడం కొనసాగించడానికి సబ్‌స్క్రైబ్ చేయండి';
 
   @override
   String readerPaywallSubscribeAction(String price) {
