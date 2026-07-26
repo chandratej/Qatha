@@ -166,6 +166,335 @@
   line-height: 1.45;
 }
 
+/* ── Story cast panel (name once → auto-fill on messages) ── */
+.katha-proto-layout--premium .epistolary-cast {
+  margin: 0 0 18px;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border, rgba(28, 22, 16, 0.14));
+  background: color-mix(in srgb, var(--surface, #e6ddcc) 88%, var(--editor-canvas, #e8e0d0));
+  box-shadow: 0 1px 4px rgba(28, 22, 16, 0.04);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-cast {
+  background: color-mix(in srgb, #221e19 85%, #1a1612);
+  border-color: rgba(244, 239, 228, 0.14);
+}
+
+.katha-proto-layout--premium .epistolary-cast__head {
+  margin-bottom: 12px;
+}
+
+.katha-proto-layout--premium .epistolary-cast__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--ink, #14110d);
+  letter-spacing: 0.01em;
+}
+
+.katha-proto-layout--premium .epistolary-cast__hint {
+  margin: 6px 0 0;
+  max-width: 42rem;
+  line-height: 1.45;
+}
+
+.katha-proto-layout--premium .epistolary-cast__groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.katha-proto-layout--premium .epistolary-cast__group {
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid var(--border, rgba(28, 22, 16, 0.1));
+  background: color-mix(in srgb, var(--editor-canvas, #e8e0d0) 70%, transparent);
+}
+
+.katha-proto-layout--premium .epistolary-cast__group--protagonist {
+  border-color: color-mix(in srgb, var(--katha-maroon, #6b2338) 28%, var(--border));
+}
+
+.katha-proto-layout--premium .epistolary-cast__group--antagonist {
+  border-color: color-mix(in srgb, var(--katha-gold, #c4a052) 32%, var(--border));
+}
+
+.katha-proto-layout--premium .epistolary-cast__group--narrator {
+  border-style: dashed;
+}
+
+.katha-proto-layout--premium .epistolary-cast__group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.katha-proto-layout--premium .epistolary-cast__role-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink, #14110d);
+}
+
+.katha-proto-layout--premium .epistolary-cast__role-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: rgba(28, 22, 16, 0.08);
+  color: var(--ink-soft, #241f18);
+}
+
+.katha-proto-layout--premium .epistolary-cast__add-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  color: var(--gold-dark, #4a3614);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 8px;
+}
+
+.katha-proto-layout--premium .epistolary-cast__add-role:hover {
+  background: rgba(122, 92, 40, 0.12);
+  color: var(--ink, #14110d);
+}
+
+.katha-proto-layout--premium .epistolary-cast__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.katha-proto-layout--premium .epistolary-cast__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.katha-proto-layout--premium .epistolary-cast__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--ink, #14110d);
+  border: 1px solid var(--border, rgba(28, 22, 16, 0.14));
+  background: color-mix(in srgb, var(--surface-elevated, #ebe3d4) 90%, #fff);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.katha-proto-layout--premium .epistolary-cast__name:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--gold, #7a5c28) 50%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold, #7a5c28) 18%, transparent);
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-cast__name {
+  background: rgba(244, 239, 228, 0.06);
+  border-color: rgba(244, 239, 228, 0.16);
+  color: var(--ink, #f4efe4);
+}
+
+.katha-proto-layout--premium .epistolary-cast__msg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  border: 1px solid var(--border, rgba(28, 22, 16, 0.14));
+  background: var(--surface, #e6ddcc);
+  color: var(--ink-soft, #241f18);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 5px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.katha-proto-layout--premium .epistolary-cast__msg-btn:hover {
+  background: color-mix(in srgb, var(--gold, #7a5c28) 14%, var(--surface));
+  color: var(--ink, #14110d);
+}
+
+.katha-proto-layout--premium .epistolary-cast__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted, #3f3a32);
+  cursor: pointer;
+}
+
+.katha-proto-layout--premium .epistolary-cast__remove:hover:not(:disabled) {
+  background: rgba(107, 35, 56, 0.1);
+  color: #5a1d2e;
+}
+
+.katha-proto-layout--premium .epistolary-cast__remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.katha-proto-layout--premium .epistolary-cast__empty {
+  margin: 0;
+  padding: 4px 2px;
+  font-size: 0.75rem;
+}
+
+/* Character select on each message */
+.katha-proto-layout--premium .epistolary-bubble__cast-select {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink, #14110d);
+  background: color-mix(in srgb, var(--surface) 92%, var(--paper));
+  border: 1px solid var(--border-medium, var(--border));
+  border-radius: 8px;
+  padding: 5px 8px;
+  max-width: min(100%, 16rem);
+  cursor: pointer;
+}
+
+[data-theme='dark'] .katha-proto-layout--premium .epistolary-bubble__cast-select {
+  color: var(--ink, #f4efe4);
+  background: rgba(244, 239, 228, 0.08);
+  border-color: rgba(244, 239, 228, 0.18);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__name-display {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--ink, #14110d);
+  min-width: 0;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__role-chip {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(28, 22, 16, 0.07);
+  color: var(--ink-soft, #241f18);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__role-chip--protagonist {
+  background: color-mix(in srgb, var(--katha-maroon, #6b2338) 14%, transparent);
+  color: var(--katha-maroon, #6b2338);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__role-chip--antagonist {
+  background: color-mix(in srgb, var(--katha-gold-dark, #7a6340) 16%, transparent);
+  color: var(--gold-dark, #4a3614);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__role-chip--narrator {
+  background: rgba(28, 22, 16, 0.06);
+  color: var(--ink-muted, #3f3a32);
+}
+
+.katha-proto-layout--premium .epistolary-bubble__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted, #3f3a32);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__delete:hover:not(:disabled) {
+  background: rgba(107, 35, 56, 0.1);
+  color: #5a1d2e;
+}
+
+.katha-proto-layout--premium .epistolary-bubble__delete:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Quick-add chips under thread */
+.katha-proto-layout--premium .epistolary-editor__quick-add {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border, rgba(28, 22, 16, 0.12));
+}
+
+.katha-proto-layout--premium .epistolary-editor__quick-add-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.katha-proto-layout--premium .epistolary-editor__quick-add-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.katha-proto-layout--premium .epistolary-editor__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border-medium, var(--border));
+  background: var(--surface-elevated, var(--surface));
+  color: var(--ink, #14110d);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.katha-proto-layout--premium .epistolary-editor__chip:hover {
+  border-color: color-mix(in srgb, var(--gold, #7a5c28) 40%, var(--border));
+  background: color-mix(in srgb, var(--gold, #7a5c28) 10%, var(--surface));
+}
+
+.katha-proto-layout--premium .epistolary-editor__chip--protagonist {
+  border-color: color-mix(in srgb, var(--katha-maroon, #6b2338) 30%, var(--border));
+}
+
+.katha-proto-layout--premium .epistolary-editor__chip--antagonist {
+  border-color: color-mix(in srgb, var(--katha-gold, #c4a052) 35%, var(--border));
+}
+
+.katha-proto-layout--premium .epistolary-editor__chip--next {
+  background: linear-gradient(168deg, #d4b46e 0%, #b8923e 100%);
+  border-color: rgba(74, 54, 20, 0.3);
+  color: #1a1510;
+}
+
 .katha-proto-layout--premium .epistolary-bubble {
   border-radius: 16px;
   padding: 14px 16px 12px;

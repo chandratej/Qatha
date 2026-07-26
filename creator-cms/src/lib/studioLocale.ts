@@ -592,6 +592,18 @@ export type StudioStringKey =
   | 'epistolaryEditor.roleNarrator'
   | 'epistolaryEditor.threadLabel'
   | 'epistolaryEditor.messageCount'
+  | 'epistolaryEditor.castTitle'
+  | 'epistolaryEditor.castHint'
+  | 'epistolaryEditor.castCount'
+  | 'epistolaryEditor.addCastMember'
+  | 'epistolaryEditor.removeCastMember'
+  | 'epistolaryEditor.castEmptyRole'
+  | 'epistolaryEditor.selectCharacter'
+  | 'epistolaryEditor.nameFromCast'
+  | 'epistolaryEditor.addAsCharacter'
+  | 'epistolaryEditor.removeMessage'
+  | 'epistolaryEditor.messagePlaceholderNamed'
+  | 'epistolaryEditor.quickAdd'
   | 'epistolaryEditor.saveDraft'
   | 'epistolaryEditor.saving'
   | 'epistolaryEditor.savedPrefix'
@@ -1554,6 +1566,18 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.roleNarrator': 'వర్ణనకర్త',
     'epistolaryEditor.threadLabel': 'సంభాషణ థ్రెడ్',
     'epistolaryEditor.messageCount': 'సందేశాలు',
+    'epistolaryEditor.castTitle': 'పాత్రల జట్టు',
+    'epistolaryEditor.castHint': 'పేర్లు ఒక్కసారి నమోదు చేయండి. సందేశంలో పాత్రను ఎంచుకుంటే పేరు స్వయంగా వస్తుంది — అనేక నాయకులు / విరోధులు సాధ్యమే.',
+    'epistolaryEditor.castCount': 'పాత్రలు',
+    'epistolaryEditor.addCastMember': 'జోడించు',
+    'epistolaryEditor.removeCastMember': 'పాత్రను తొలగించు',
+    'epistolaryEditor.castEmptyRole': 'ఇంకా ఎవరూ లేరు — జోడించండి',
+    'epistolaryEditor.selectCharacter': 'మాట్లాడే పాత్ర',
+    'epistolaryEditor.nameFromCast': 'పేరు జట్టు నుంచి — మార్చాలంటే పైన ఎడిట్ చేయండి',
+    'epistolaryEditor.addAsCharacter': 'సందేశం',
+    'epistolaryEditor.removeMessage': 'సందేశం తొలగించు',
+    'epistolaryEditor.messagePlaceholderNamed': '{name} ఏమి చెబుతారు…',
+    'epistolaryEditor.quickAdd': 'త్వరిత సందేశం',
     'epistolaryEditor.saveDraft': 'డ్రాఫ్ట్ సేవ్',
     'epistolaryEditor.saving': 'సేవ్ అవుతోంది…',
     'epistolaryEditor.savedPrefix': 'సేవ్ అయింది',
@@ -1561,7 +1585,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.cloudSynced': 'క్లౌడ్‌లో సేవ్ అయింది',
     'epistolaryEditor.cloudPending': 'స్థానిక డ్రాఫ్ట్ — క్లౌడ్ పెండింగ్',
     'epistolaryEditor.cloudError': 'క్లౌడ్ సేవ్ విఫలమైంది',
-    'epistolaryEditor.persistHint': 'సందేశాలు స్థానికంగా & క్లౌడ్‌లో స్వయంచాలకంగా సేవ్ అవుతాయి.',
+    'epistolaryEditor.persistHint': 'పాత్రలు & సందేశాలు స్థానికంగా & క్లౌడ్‌లో స్వయంచాలకంగా సేవ్ అవుతాయి. పేరు ఒక్కసారి — సందేశాల్లో డ్రాప్‌డౌన్ మాత్రమే.',
     'epistolaryEditor.previewLabel': 'పాఠకుల ప్రివ్యూ',
     'epistolaryEditor.previewMode': 'ప్రివ్యూ',
     'epistolaryEditor.editMode': 'ఎడిట్',
@@ -2513,6 +2537,18 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.roleNarrator': 'Narrator',
     'epistolaryEditor.threadLabel': 'Conversation thread',
     'epistolaryEditor.messageCount': 'messages',
+    'epistolaryEditor.castTitle': 'Story cast',
+    'epistolaryEditor.castHint': 'Name each character once. Pick them on a message — the name fills in automatically. Multiple protagonists and antagonists welcome.',
+    'epistolaryEditor.castCount': 'characters',
+    'epistolaryEditor.addCastMember': 'Add',
+    'epistolaryEditor.removeCastMember': 'Remove character',
+    'epistolaryEditor.castEmptyRole': 'None yet — add one',
+    'epistolaryEditor.selectCharacter': 'Speaking character',
+    'epistolaryEditor.nameFromCast': 'Name comes from cast — edit above to rename everywhere',
+    'epistolaryEditor.addAsCharacter': 'Message',
+    'epistolaryEditor.removeMessage': 'Remove message',
+    'epistolaryEditor.messagePlaceholderNamed': 'What does {name} say…',
+    'epistolaryEditor.quickAdd': 'Quick message as',
     'epistolaryEditor.saveDraft': 'Save draft',
     'epistolaryEditor.saving': 'Saving…',
     'epistolaryEditor.savedPrefix': 'Saved',
@@ -2520,7 +2556,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.cloudSynced': 'Saved to cloud',
     'epistolaryEditor.cloudPending': 'Local draft — cloud pending',
     'epistolaryEditor.cloudError': 'Cloud save failed',
-    'epistolaryEditor.persistHint': 'Messages auto-save locally and to cloud.',
+    'epistolaryEditor.persistHint': 'Cast & messages auto-save locally and to cloud. Name once — pick from the dropdown on every message.',
     'epistolaryEditor.previewLabel': 'Reader preview',
     'epistolaryEditor.previewMode': 'Preview',
     'epistolaryEditor.editMode': 'Edit',

@@ -4,8 +4,12 @@ import {
   saveEpistolaryDraft,
   loadBranchingDraft,
   saveBranchingDraft,
+  DEFAULT_EPISTOLARY_CAST,
+  inferCastFromBubbles,
+  linkBubblesToCast,
   type AlternateEditorKind,
   type EpistolaryBubble,
+  type EpistolaryCastMember,
   type BranchNode,
 } from './alternateEditorCache';
 
@@ -17,6 +21,7 @@ const SCENE_PREFIX: Record<AlternateEditorKind, string> = {
 interface CloudPayload {
   kind: AlternateEditorKind;
   bubbles?: EpistolaryBubble[];
+  cast?: EpistolaryCastMember[];
   nodes?: BranchNode[];
 }
 
@@ -25,21 +30,39 @@ export interface AlternateEditorLoadResult<T> {
   data: T;
   updated_at: number;
   source: 'cloud' | 'local' | 'default';
+  /** Epistolary cast when present (cloud/local) */
+  cast?: EpistolaryCastMember[];
+}
+
+export interface EpistolaryLoadResult extends AlternateEditorLoadResult<EpistolaryBubble[]> {
+  cast: EpistolaryCastMember[];
 }
 
 function sceneId(kind: AlternateEditorKind, chapter: number): string {
   return `${SCENE_PREFIX[kind]}-${chapter}`;
 }
 
-function serializePayload(kind: AlternateEditorKind, data: EpistolaryBubble[] | BranchNode[]): string {
+function serializePayload(
+  kind: AlternateEditorKind,
+  data: EpistolaryBubble[] | BranchNode[],
+  cast?: EpistolaryCastMember[],
+): string {
   const payload: CloudPayload =
     kind === 'epistolary'
-      ? { kind, bubbles: data as EpistolaryBubble[] }
+      ? { kind, bubbles: data as EpistolaryBubble[], cast: cast ?? [] }
       : { kind, nodes: data as BranchNode[] };
   return JSON.stringify(payload);
 }
 
-function parsePayload(kind: AlternateEditorKind, raw: string): EpistolaryBubble[] | BranchNode[] | null {
+interface ParsedEpistolary {
+  bubbles: EpistolaryBubble[];
+  cast?: EpistolaryCastMember[];
+}
+
+function parsePayload(
+  kind: AlternateEditorKind,
+  raw: string,
+): EpistolaryBubble[] | BranchNode[] | ParsedEpistolary | null {
   if (!raw.trim()) return null;
   // Strip accidental HTML wrappers from prose-editor misloads
   const cleaned = raw
@@ -58,13 +81,16 @@ function parsePayload(kind: AlternateEditorKind, raw: string): EpistolaryBubble[
         return parsed as BranchNode[];
       }
       if (kind === 'epistolary' && parsed.length > 0 && 'speaker' in (parsed[0] as object)) {
-        return parsed as EpistolaryBubble[];
+        return { bubbles: parsed as EpistolaryBubble[] };
       }
       return null;
     }
     if (parsed && typeof parsed === 'object') {
       if (kind === 'epistolary' && Array.isArray(parsed.bubbles)) {
-        return parsed.bubbles;
+        return {
+          bubbles: parsed.bubbles,
+          cast: Array.isArray(parsed.cast) ? parsed.cast : undefined,
+        };
       }
       if (kind === 'branching' && Array.isArray(parsed.nodes)) {
         return parsed.nodes;
@@ -74,7 +100,8 @@ function parsePayload(kind: AlternateEditorKind, raw: string): EpistolaryBubble[
         return (parsed as { nodes: BranchNode[] }).nodes;
       }
       if (kind === 'epistolary' && Array.isArray((parsed as { bubbles?: EpistolaryBubble[] }).bubbles)) {
-        return (parsed as { bubbles: EpistolaryBubble[] }).bubbles;
+        const p = parsed as { bubbles: EpistolaryBubble[]; cast?: EpistolaryCastMember[] };
+        return { bubbles: p.bubbles, cast: Array.isArray(p.cast) ? p.cast : undefined };
       }
     }
   } catch {
@@ -88,7 +115,12 @@ async function loadFromCloud(
   storyId: string,
   chapter: number,
   fallbackTitle: string,
-): Promise<{ title: string; data: EpistolaryBubble[] | BranchNode[]; updated_at: number } | null> {
+): Promise<{
+  title: string;
+  data: EpistolaryBubble[] | BranchNode[];
+  cast?: EpistolaryCastMember[];
+  updated_at: number;
+} | null> {
   try {
     const { chapter: data } = await api.getChapter(storyId, chapter);
     const sid = sceneId(kind, chapter);
@@ -100,15 +132,30 @@ async function loadFromCloud(
       data.content,
     ].filter((v): v is string => Boolean(v && String(v).trim()));
 
-    let parsed: EpistolaryBubble[] | BranchNode[] | null = null;
+    let bubbles: EpistolaryBubble[] | null = null;
+    let nodes: BranchNode[] | null = null;
+    let cast: EpistolaryCastMember[] | undefined;
     for (const raw of candidates) {
-      parsed = parsePayload(kind, raw);
-      if (parsed && parsed.length > 0) break;
+      const parsed = parsePayload(kind, raw);
+      if (!parsed) continue;
+      if (kind === 'epistolary') {
+        if (Array.isArray(parsed)) continue;
+        const epi = parsed as ParsedEpistolary;
+        if (epi.bubbles?.length) {
+          bubbles = epi.bubbles;
+          cast = epi.cast;
+          break;
+        }
+      } else if (Array.isArray(parsed) && parsed.length > 0) {
+        nodes = parsed as BranchNode[];
+        break;
+      }
     }
     const ts = Date.parse(data.last_saved_at || data.updated_at || '') || 0;
     return {
       title: data.title || fallbackTitle,
-      data: parsed ?? [],
+      data: kind === 'epistolary' ? (bubbles ?? []) : (nodes ?? []),
+      cast,
       updated_at: ts,
     };
   } catch {
@@ -138,24 +185,80 @@ export async function loadEpistolaryMerged(
   chapter: number,
   fallbackTitle: string,
   defaultBubbles: EpistolaryBubble[],
-): Promise<AlternateEditorLoadResult<EpistolaryBubble[]>> {
+  defaultCast: EpistolaryCastMember[] = DEFAULT_EPISTOLARY_CAST,
+): Promise<EpistolaryLoadResult> {
   const localRaw = loadEpistolaryDraft(storyId, chapter);
   const local = localRaw
-    ? { title: localRaw.title, data: localRaw.bubbles, updated_at: localRaw.updated_at }
+    ? {
+        title: localRaw.title,
+        data: localRaw.bubbles,
+        cast: localRaw.cast,
+        updated_at: localRaw.updated_at,
+      }
     : null;
   const cloud = await loadFromCloud('epistolary', storyId, chapter, fallbackTitle);
   const cloudTyped = cloud
-    ? { title: cloud.title, data: cloud.data as EpistolaryBubble[], updated_at: cloud.updated_at }
+    ? {
+        title: cloud.title,
+        data: cloud.data as EpistolaryBubble[],
+        cast: cloud.cast,
+        updated_at: cloud.updated_at,
+      }
     : null;
   const localTyped = local
-    ? { title: local.title, data: local.data, updated_at: local.updated_at }
+    ? {
+        title: local.title,
+        data: local.data,
+        cast: local.cast,
+        updated_at: local.updated_at,
+      }
     : null;
-  const result = pickNewer(cloudTyped, localTyped, fallbackTitle, defaultBubbles);
-  if (result.source === 'default') return result;
-  if (result.data.length === 0 && defaultBubbles.length > 0 && result.source !== 'cloud') {
-    return { ...result, data: defaultBubbles };
+
+  // Prefer newer source for both bubbles and cast
+  let title = fallbackTitle;
+  let bubbles = defaultBubbles;
+  let cast = defaultCast;
+  let updated_at = 0;
+  let source: EpistolaryLoadResult['source'] = 'default';
+
+  if (cloudTyped && localTyped) {
+    if (cloudTyped.updated_at >= localTyped.updated_at) {
+      title = cloudTyped.title;
+      bubbles = cloudTyped.data;
+      cast = cloudTyped.cast?.length ? cloudTyped.cast : localTyped.cast ?? [];
+      updated_at = cloudTyped.updated_at;
+      source = 'cloud';
+    } else {
+      title = localTyped.title;
+      bubbles = localTyped.data;
+      cast = localTyped.cast?.length ? localTyped.cast : cloudTyped.cast ?? [];
+      updated_at = localTyped.updated_at;
+      source = 'local';
+    }
+  } else if (cloudTyped) {
+    title = cloudTyped.title;
+    bubbles = cloudTyped.data;
+    cast = cloudTyped.cast ?? [];
+    updated_at = cloudTyped.updated_at;
+    source = 'cloud';
+  } else if (localTyped) {
+    title = localTyped.title;
+    bubbles = localTyped.data;
+    cast = localTyped.cast ?? [];
+    updated_at = localTyped.updated_at;
+    source = 'local';
   }
-  return result;
+
+  if (source !== 'default' && bubbles.length === 0 && defaultBubbles.length > 0 && source !== 'cloud') {
+    bubbles = defaultBubbles;
+  }
+
+  if (!cast.length) {
+    cast = bubbles.length ? inferCastFromBubbles(bubbles) : defaultCast.map((c) => ({ ...c }));
+  }
+  bubbles = linkBubblesToCast(bubbles, cast);
+
+  return { title, data: bubbles, cast, updated_at, source };
 }
 
 export async function loadBranchingMerged(
@@ -186,9 +289,9 @@ export async function loadBranchingMerged(
 export async function saveEpistolaryCloud(
   storyId: string,
   chapter: number,
-  draft: { title: string; bubbles: EpistolaryBubble[] },
+  draft: { title: string; bubbles: EpistolaryBubble[]; cast?: EpistolaryCastMember[] },
 ): Promise<{ saved: boolean; updated_at: number }> {
-  const content = serializePayload('epistolary', draft.bubbles);
+  const content = serializePayload('epistolary', draft.bubbles, draft.cast);
   const sid = sceneId('epistolary', chapter);
   const result = await api.saveDraft(storyId, {
     chapter_number: chapter,

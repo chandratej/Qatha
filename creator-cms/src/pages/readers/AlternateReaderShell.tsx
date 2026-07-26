@@ -52,7 +52,7 @@ export function AlternateReaderShell() {
     setLoading(true);
     const load = readerFormat === 'branching'
       ? loadBranchingMerged(storyId, chapter, `Chapter ${chapter}`, DEFAULT_NODES)
-      : loadEpistolaryMerged(storyId, chapter, `Chapter ${chapter}`, DEFAULT_BUBBLES);
+      : loadEpistolaryMerged(storyId, chapter, `Chapter ${chapter}`, DEFAULT_BUBBLES, []);
 
     load
       .then((merged) => {
