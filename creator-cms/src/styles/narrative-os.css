@@ -4,19 +4,19 @@
  */
 
 .narrative-os-app {
-  /* Soft paper — not tea-stain yellow; high ink contrast for long sessions */
-  --nos-paper: #fdfaf4;
-  --nos-paper-deep: #f0ebe2;
-  --nos-ink: #241f18;
-  --nos-ink-soft: #4a433a;
-  --nos-ink-faint: #8a8278;
+  /* Low-glare ivory paper (not near-white) + deep ink for multi-hour writing */
+  --nos-paper: #e8e0d0;
+  --nos-paper-deep: #ddd4c4;
+  --nos-ink: #1f1a14;
+  --nos-ink-soft: #3a342c;
+  --nos-ink-faint: #6b6358;
   --nos-brass: #a9812f;
-  --nos-brass-soft: #d7bd7e;
+  --nos-brass-soft: #c4a86a;
   --nos-oxblood: #7a3b36;
   --nos-sage: #62705c;
-  --nos-hairline: rgba(36, 31, 24, 0.1);
+  --nos-hairline: rgba(31, 26, 20, 0.12);
   --nos-line: var(--nos-hairline);
-  --nos-shadow: rgba(36, 31, 24, 0.07);
+  --nos-shadow: rgba(31, 26, 20, 0.08);
   --nos-spine-w: 5px;
   --paper: var(--nos-paper);
   --ink-faint: var(--nos-ink-faint);

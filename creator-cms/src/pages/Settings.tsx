@@ -280,8 +280,8 @@ export function Settings() {
                 </select>
               </label>
               <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
-                Paper mode uses soft off-white (not yellow sepia) with deep warm ink to reduce eye strain
-                over multi-hour sessions. Night mode keeps a warm low-blue canvas.
+                Paper mode uses low-glare warm ivory (not bright white or yellow tea-stain) with deep ink.
+                Night mode is a warm low-blue dark for evenings.
               </p>
               <label className="studio-settings-field">
                 <span>Interface text size — {uiScaleLabel(comfort.uiScale)}</span>

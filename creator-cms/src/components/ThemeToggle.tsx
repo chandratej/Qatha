@@ -19,7 +19,7 @@ export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProp
         onClick={toggleTheme}
         aria-pressed={isDark}
         aria-label={isDark ? 'Switch to paper (day) mode' : 'Switch to night mode'}
-        title={isDark ? 'Paper mode — soft daylight paper' : 'Night mode — low-glare dark'}
+        title={isDark ? 'Paper mode — low-glare warm ivory' : 'Night mode — low-glare dark'}
       >
         {isDark ? <Coffee size={16} /> : <Moon size={16} />}
       </button>
@@ -46,7 +46,7 @@ export function ThemeToggle({ compact = false, className = '' }: ThemeToggleProp
         <span className="theme-toggle__hint">
           {isDark
             ? 'Warm low-glare dark for late sessions'
-            : 'Soft paper white — designed for multi-hour writing'}
+            : 'Warm ivory paper — dimmer than white, easier for long writing'}
         </span>
       </span>
     </button>

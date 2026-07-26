@@ -92,26 +92,25 @@
   --katha-mode-accent: var(--katha-gold);
 }
 
-/* ── Creation Mode — Chapter Editor (eye-comfort first) ──
-   Prior sepia (#e8dfc8 / tea-stain canvas) caused yellow cast + low
-   ink contrast → fatigue. Paper mode uses soft off-white (Kindle /
-   iA Writer tradition) with deep warm charcoal ink for AA+ body text
-   without glare. */
+/* ── Creation Mode — Chapter Editor (low-glare paper) ──
+   Avoid near-white (#fdfaf4) pages — high luminance = eye strain under
+   room light. Target warm ivory ~L* 88–90 (Kindle “warm paper” range)
+   with deep ink for contrast without a yellow tea-stain cast. */
 [data-katha-mode='creation'] {
-  --katha-mode-bg: #f0ebe2;
-  --katha-mode-bg-warm: #e9e3d7;
-  --katha-mode-surface: #f7f3eb;
-  --katha-mode-surface-raised: #fbf8f2;
-  --katha-mode-canvas: #fdfaf4;
-  --katha-mode-border: rgba(36, 31, 24, 0.09);
-  --katha-mode-border-strong: rgba(36, 31, 24, 0.14);
-  --katha-mode-shadow-sm: 0 1px 3px rgba(36, 31, 24, 0.04);
-  --katha-mode-shadow: 0 2px 14px rgba(36, 31, 24, 0.06);
-  --katha-mode-shadow-lg: 0 8px 28px rgba(36, 31, 24, 0.08);
+  --katha-mode-bg: #ddd4c4;
+  --katha-mode-bg-warm: #d4cbb9;
+  --katha-mode-surface: #e6ddcc;
+  --katha-mode-surface-raised: #ebe3d4;
+  --katha-mode-canvas: #e8e0d0;
+  --katha-mode-border: rgba(36, 31, 24, 0.1);
+  --katha-mode-border-strong: rgba(36, 31, 24, 0.16);
+  --katha-mode-shadow-sm: 0 1px 3px rgba(36, 31, 24, 0.05);
+  --katha-mode-shadow: 0 2px 12px rgba(36, 31, 24, 0.07);
+  --katha-mode-shadow-lg: 0 8px 24px rgba(36, 31, 24, 0.09);
   --katha-mode-accent: var(--katha-gold-muted);
-  --katha-mode-ink: #241f18;
-  --katha-mode-ink-soft: #3a342c;
-  --katha-mode-ink-muted: #6b6358;
+  --katha-mode-ink: #1f1a14;
+  --katha-mode-ink-soft: #322c24;
+  --katha-mode-ink-muted: #5c554a;
 }
 
 /* ── Reading Mode — Reader App, Gateway Preview ── */
