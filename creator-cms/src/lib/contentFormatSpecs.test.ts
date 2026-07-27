@@ -19,7 +19,15 @@ describe('content format specs', () => {
       max: 2500,
       hardMax: 3000,
     });
-    expect(softWordTargetForContentType('short_story')).toBeNull();
+  });
+
+  it('short story has soft guidance without a hard max', () => {
+    // Format Spec: short_story is guided (1k–5k) but not hard-blocked like serialized chapters.
+    expect(softWordTargetForContentType('short_story')).toEqual({
+      min: 1000,
+      max: 5000,
+      hardMax: null,
+    });
   });
 
   it('discovery routes ≥20 as serialized', () => {

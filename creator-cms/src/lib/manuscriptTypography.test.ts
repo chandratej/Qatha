@@ -17,8 +17,14 @@ describe('manuscriptTypography', () => {
     expect(manuscriptScriptFromLocale('en')).toBe('latin');
   });
 
-  it('selects telugu line-height via comfort prefs', () => {
-    expect(editorLineHeight(2, 'telugu')).toBe(MANUSCRIPT_LINE_HEIGHT_TELUGU);
-    expect(editorLineHeight(2, 'latin')).toBe(MANUSCRIPT_LINE_HEIGHT_LATIN);
+  it('selects taller telugu line-height via comfort prefs than latin', () => {
+    // Canvas tokens are baseline CSS; comfort scale overlays for the editor.
+    // Scale 1 telugu matches the manuscript token (1.95).
+    expect(editorLineHeight(1, 'telugu')).toBe(MANUSCRIPT_LINE_HEIGHT_TELUGU);
+    expect(MANUSCRIPT_LINE_HEIGHT_TELUGU).toBeGreaterThan(MANUSCRIPT_LINE_HEIGHT_LATIN);
+    for (const scale of [1, 2, 3] as const) {
+      expect(editorLineHeight(scale, 'telugu')).toBeGreaterThan(editorLineHeight(scale, 'latin'));
+    }
   });
 });
+

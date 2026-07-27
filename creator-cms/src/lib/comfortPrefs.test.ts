@@ -14,10 +14,11 @@ describe('comfortPrefs', () => {
     localStorage.clear();
   });
 
-  it('returns defaults when storage is empty', () => {
+  it('returns senior-friendly defaults when storage is empty', () => {
+    // Product defaults: Comfort font (3) + Spacious leading (3) for multi-hour Telugu sessions.
     expect(loadComfortPrefs()).toEqual({
-      fontScale: 2,
-      lineHeightScale: 2,
+      fontScale: 3,
+      lineHeightScale: 3,
       breakReminderMinutes: 90,
       uiScale: 2,
       calmMotion: false,
@@ -70,17 +71,20 @@ describe('comfortPrefs', () => {
   });
 
   it('maps font scale to manuscript pixel sizes', () => {
-    expect(editorFontSizePx(1)).toBe(16);
-    expect(editorFontSizePx(2)).toBe(19);
-    expect(editorFontSizePx(5)).toBe(28);
+    // 20 + (scale - 2) * 2.5 — scale 2 ≈ 20px baseline
+    expect(editorFontSizePx(1)).toBe(17.5);
+    expect(editorFontSizePx(2)).toBe(20);
+    expect(editorFontSizePx(3)).toBe(22.5);
+    expect(editorFontSizePx(5)).toBe(27.5);
   });
 
   it('maps line height scale to comfort values', () => {
-    expect(editorLineHeight(1)).toBe(1.65);
-    expect(editorLineHeight(2)).toBe(1.75);
-    expect(editorLineHeight(3)).toBe(1.85);
-    expect(editorLineHeight(2, 'telugu')).toBe(1.95);
-    expect(editorLineHeight(3, 'telugu')).toBe(2.05);
+    expect(editorLineHeight(1)).toBe(1.7);
+    expect(editorLineHeight(2)).toBe(1.82);
+    expect(editorLineHeight(3)).toBe(1.95);
+    expect(editorLineHeight(1, 'telugu')).toBe(1.95);
+    expect(editorLineHeight(2, 'telugu')).toBe(2.05);
+    expect(editorLineHeight(3, 'telugu')).toBe(2.15);
   });
 
   it('parses break reminder options', () => {
@@ -90,5 +94,6 @@ describe('comfortPrefs', () => {
     expect(loadComfortPrefs().breakReminderMinutes).toBe(0);
     expect(breakReminderLabel(90)).toBe('Every 90 min');
     expect(fontScaleLabel(2)).toBe('Default');
+    expect(fontScaleLabel(3)).toBe('Comfort');
   });
 });
