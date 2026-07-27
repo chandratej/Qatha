@@ -108,9 +108,21 @@ export const SPI_WEIGHTS = [
   { id: 'policy_quality', label: 'Policy & Quality', weightPct: 5 },
 ] as const;
 
+/**
+ * Monetization eligibility (Format Spec v1 / BR-002 supersession).
+ * Unit floors are format-specific — see formatEligibility.ts.
+ * SPI banding (Performing+) only applies after the unit gate clears.
+ */
 export const MONETIZATION_ELIGIBILITY = {
   minStoryLengthConfigurable: true,
+  /** Default free sample for continuous formats (proven stories). Collections force 1. */
   minFreeChapters: 3,
+  /** Default continuous formats (serialized / chat / interactive). */
+  minPublishedUnitsForMonetization: 50,
+  /** Story Collection monetization floor (stories, not serial chapters). */
+  collectionMinPublishedUnitsForMonetization: 5,
+  /** Contest floor for continuous formats. */
+  minPublishedUnitsForContest: 25,
   qualityChecks: true,
   readerEngagement: true,
   stabilityWindowDays: STABILITY_WINDOW_DAYS,

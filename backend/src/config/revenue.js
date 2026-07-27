@@ -7,8 +7,20 @@
 // test required before this figure is finalized (Worklog/23 JUL 2026/katha-commission-
 // payout-pricing-model-prompt.md, Req 1.2) — do not treat it as WTP-validated. Kept as the
 // existing anchor rather than fabricated to a different number.
+/** Bronze anchor (Format Spec v1) — legacy single-price default remains ₹99. */
 export const SUBSCRIPTION_PRICE_INR = 99;
 export const SUBSCRIPTION_PRICE_PAISE = 9900;
+
+/**
+ * Reader tiers (Format Spec v1 §3) — volume + SPI gates live in packages/shared/readerTiers.ts.
+ * Prices are fixed ladder; Platform may range ₹249–299 via env.
+ */
+export const READER_TIER_PRICES_INR = Object.freeze({
+  bronze: 99,
+  silver: 149,
+  gold: 199,
+  platform: Number(process.env.KATHA_PLATFORM_TIER_INR) || 249,
+});
 
 /**
  * Store-cut absorption policy — DEC-028, Option 1 (recommended): the platform absorbs all
@@ -78,6 +90,7 @@ export function getRevenueConfig() {
     creator_share_pct: creatorSharePct,
     platform_share_pct: platformSharePct,
     split_label: `${creatorSharePct}/${platformSharePct}`,
+    /** @deprecated Prefer reader_tiers.bronze — kept for existing clients */
     subscription_price_inr: SUBSCRIPTION_PRICE_INR,
     subscription_price_paise: SUBSCRIPTION_PRICE_PAISE,
     reference_net_amount_paise: referenceNetAmountPaise,
@@ -85,6 +98,26 @@ export function getRevenueConfig() {
     creator_earnings_per_subscription_inr: creatorEarningsPerSub,
     payout_schedule: 'quarterly',
     currency: 'INR',
+    /** Format Spec v1 — tiered non-coin pricing (Bronze–Platform). */
+    reader_tiers: {
+      bronze: { id: 'bronze', price_inr: READER_TIER_PRICES_INR.bronze, min_words: 0, min_trust: 'performing' },
+      silver: { id: 'silver', price_inr: READER_TIER_PRICES_INR.silver, min_words: 200_000, min_trust: 'catalyst' },
+      gold: { id: 'gold', price_inr: READER_TIER_PRICES_INR.gold, min_words: 400_000, min_trust: 'anchor' },
+      platform: {
+        id: 'platform',
+        price_inr: READER_TIER_PRICES_INR.platform,
+        price_inr_range: [249, 299],
+        min_words: 600_000,
+        min_trust: 'apex',
+        requires_top_decile_apex: true,
+        excludes_collection: true,
+      },
+    },
+    monetization_unit_gates: {
+      default_contest_min_units: 25,
+      default_monetize_min_units: 50,
+      collection_monetize_min_units: 5,
+    },
     plans: {
       monthly: getPlanPricing('monthly'),
       quarterly: getPlanPricing('quarterly'),

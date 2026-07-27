@@ -42,6 +42,7 @@ import type { StoryData, ChapterListItem } from '../types/database';
 import { buildChapterShareUrl, resolveStorySlug } from '../lib/shareLinks';
 import { buildShareMessage, shareViaWhatsApp } from '../lib/socialShare';
 import { enqueuePublishJob, isLikelyOfflineError } from '../lib/publishQueue';
+import { isMissingOrDefaultCover } from '../lib/storyCover';
 import { backupSceneVersionCloud } from '../lib/cloudVersions';
 import { useAutosave } from '../hooks/useAutosave';
 import { useVersionHistory } from '../hooks/useVersionHistory';
@@ -1094,6 +1095,15 @@ export function ChapterEditor() {
       assertWordBandOrThrow(liveWordCount);
 
       if (!isDemo) {
+        // Cover is optional at create time; require a real cover before going live.
+        const { stories } = await api.getCreatorStories();
+        const storyRow = stories.find((s) => s.id === storyId);
+        if (isMissingOrDefaultCover(storyRow?.cover_url)) {
+          throw new Error(
+            'Add a real cover image before publishing. Open Stories → your story → upload cover (the default placeholder is not enough).',
+          );
+        }
+
         try {
           await cloudSaveDraft();
         } catch (draftErr) {
@@ -1222,14 +1232,24 @@ export function ChapterEditor() {
       }
       return;
     }
-    // Force serial band even if softWordTarget failed to resolve (except explicit exempt).
+    // Format Spec v1: use each format's soft/hard word band (not a global 1,500 serial floor).
+    if (softWordTarget) {
+      if (liveCount < softWordTarget.min) {
+        openWordBandBlock('below_min', liveCount);
+        return;
+      }
+      if (softWordTarget.hardMax != null && liveCount > softWordTarget.hardMax) {
+        openWordBandBlock('over_hard_max', liveCount);
+        return;
+      }
+    }
+    // Keep a serialized safety net if soft target failed to resolve on serials.
     const ct = (storyContentType || 'serialized_story').trim();
-    const exempt = ['short_story', 'flash_fiction', 'short_story_collection', 'epistolary_chat', 'interactive_branching'];
-    if (!exempt.includes(ct) && liveCount < 1500) {
+    if (ct === 'serialized_story' && !softWordTarget && liveCount < 1500) {
       openWordBandBlock('below_min', liveCount);
       return;
     }
-    if (!exempt.includes(ct) && liveCount > 3000) {
+    if (ct === 'serialized_story' && !softWordTarget && liveCount > 3000) {
       openWordBandBlock('over_hard_max', liveCount);
       return;
     }

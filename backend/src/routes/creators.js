@@ -167,11 +167,21 @@ creatorsRouter.get('/stories', async (req, res, next) => {
       return res.json({ stories, mock: true });
     }
 
-    const { data, error } = await supabase.from('stories')
-      .select('id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at')
+    // All of the creator's stories (drafts + live). is_published=false shells must
+    // appear so authors can finish writing and upload cover before first publish.
+    const fullSelect =
+      'id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at, content_type, trust_level, contest_won_at, reader_tier';
+    let { data, error } = await supabase.from('stories')
+      .select(fullSelect)
       .eq('author_id', creatorId)
-      .eq('is_published', true)
       .order('created_at', { ascending: false });
+
+    if (error && /column|schema cache|does not exist/i.test(error.message || '')) {
+      ({ data, error } = await supabase.from('stories')
+        .select('id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at')
+        .eq('author_id', creatorId)
+        .order('created_at', { ascending: false }));
+    }
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
 
@@ -881,7 +891,26 @@ creatorsRouter.delete('/schedule/:storyId/:chapterNumber', requireStoryRole('sto
 creatorsRouter.post('/stories', async (req, res, next) => {
   try {
     const creatorId = getAuthenticatedUserId(req);
-    const { title, description, genre, cover_url, release_schedule, release_day_of_week, release_time_of_day } = req.body;
+    const {
+      title,
+      description,
+      genre,
+      cover_url,
+      release_schedule,
+      release_day_of_week,
+      release_time_of_day,
+      content_type,
+      age_rating,
+      language,
+      story_status,
+      secondary_genres,
+      setting,
+      themes,
+    } = req.body || {};
+
+    if (!title || String(title).trim().length < 3) {
+      throw createAppError('VALIDATION_ERROR', 'Story title must be at least 3 characters.', 400);
+    }
 
     if (isMockMode()) {
       const { slugifyTitle } = await import('../lib/slugify.js');
@@ -890,11 +919,18 @@ creatorsRouter.post('/stories', async (req, res, next) => {
         author_id: creatorId,
         title,
         description,
-        genre,
-        cover_url,
+        genre: genre || 'romance',
+        cover_url: cover_url || null,
         release_schedule: release_schedule || 'irregular',
         release_day_of_week,
         release_time_of_day,
+        content_type: content_type || 'serialized_story',
+        age_rating: age_rating || 'all_ages',
+        language: language || 'te',
+        story_status: story_status || 'draft',
+        secondary_genres: secondary_genres || [],
+        setting: setting || null,
+        themes: themes || [],
         // Unpublished until first approved chapter (P1-06 — empty shells must not look live)
         is_published: false,
         chapter_count: 0,
@@ -914,13 +950,67 @@ creatorsRouter.post('/stories', async (req, res, next) => {
 
     const slug = await generateUniqueStorySlug(supabase, title);
 
-    const { data, error } = await supabase.from('stories').insert({
-      author_id: creatorId, title, description, genre, cover_url,
+    const insertPayload = {
+      author_id: creatorId,
+      title: String(title).trim(),
+      description: description ?? null,
+      genre: genre || 'romance',
+      cover_url: cover_url || null,
       release_schedule: release_schedule || 'irregular',
-      release_day_of_week, release_time_of_day, slug, is_published: false, chapter_count: 0,
-    }).select().single();
+      release_day_of_week: release_day_of_week ?? null,
+      release_time_of_day: release_time_of_day ?? null,
+      slug,
+      is_published: false,
+      chapter_count: 0,
+    };
+
+    // Optional columns (migration 014+) — omit silently if schema lags
+    if (content_type) insertPayload.content_type = content_type;
+    if (age_rating) insertPayload.age_rating = age_rating;
+    if (language) insertPayload.language = language;
+    if (story_status) insertPayload.story_status = story_status;
+    if (Array.isArray(secondary_genres) && secondary_genres.length) {
+      insertPayload.secondary_genres = secondary_genres;
+    }
+    if (setting) insertPayload.setting = setting;
+    if (Array.isArray(themes) && themes.length) insertPayload.themes = themes;
+
+    let { data, error } = await supabase.from('stories').insert(insertPayload).select('id, title, slug, cover_url, genre').single();
+
+    // Retry without optional columns if schema is partial
+    if (error && /column|schema cache|does not exist/i.test(error.message || '')) {
+      const base = {
+        author_id: creatorId,
+        title: insertPayload.title,
+        description: insertPayload.description,
+        genre: insertPayload.genre,
+        cover_url: insertPayload.cover_url,
+        release_schedule: insertPayload.release_schedule,
+        slug: insertPayload.slug,
+        is_published: false,
+        chapter_count: 0,
+      };
+      ({ data, error } = await supabase.from('stories').insert(base).select('id, title, slug, cover_url, genre').single());
+    }
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+
+    // Ensure owner membership even if ensure_story_owner_member trigger is broken/missing.
+    // Service role bypasses RLS — this is the durable create path for founders.
+    try {
+      await supabase.from('story_members').upsert(
+        {
+          story_id: data.id,
+          user_id: creatorId,
+          role: 'owner',
+          granted_by: creatorId,
+        },
+        { onConflict: 'story_id,user_id' },
+      );
+    } catch {
+      /* non-fatal — author_id still grants access via stories RLS */
+    }
+
     res.json({ story: data });
   } catch (err) {
     next(err);

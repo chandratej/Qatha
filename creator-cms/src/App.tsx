@@ -30,6 +30,7 @@ import { OnboardingGate } from './components/OnboardingGate';
 import { LegalConsentGate } from './components/LegalConsentGate';
 import { LegalPage } from './pages/LegalPage';
 import { Settings } from './pages/Settings';
+import { ReleaseChecklist } from './pages/ReleaseChecklist';
 import { Notifications } from './pages/Notifications';
 import { Schedule } from './pages/Schedule';
 import { PublishingCenter } from './pages/PublishingCenter';
@@ -164,6 +165,7 @@ function App() {
                     <Route path="/platform" element={<PlatformMap />} />
                   </Route>
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/release-checklist" element={<ReleaseChecklist />} />
                   <Route path="/notifications" element={<Notifications />} />
                 </Route>
                 <Route path="/stories/:storyId/seasons/:seasonId/chapters/:chapterNum" element={<ChapterEditor />} />

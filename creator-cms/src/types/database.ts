@@ -49,6 +49,9 @@ export interface StoryData {
   moderation_status?: 'draft' | 'pending_review' | 'published' | 'needs_revision';
   content_type?: string;
   language?: string;
+  trust_level?: string | null;
+  contest_won_at?: string | null;
+  reader_tier?: string | null;
 }
 
 export interface ChapterListItem {

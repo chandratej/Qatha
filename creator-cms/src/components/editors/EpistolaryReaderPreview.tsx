@@ -17,11 +17,17 @@ const TYPING_MS = 650;
 interface Props {
   chapterTitle: string;
   bubbles: EpistolaryBubble[];
+  sceneTitle?: string;
   variant?: 'panel' | 'fullscreen';
 }
 
-export function EpistolaryReaderPreview({ chapterTitle, bubbles, variant = 'panel' }: Props) {
-  const { t } = useLocale();
+export function EpistolaryReaderPreview({
+  chapterTitle,
+  bubbles,
+  sceneTitle,
+  variant = 'panel',
+}: Props) {
+  const { t, locale } = useLocale();
   const threadRef = useRef<HTMLDivElement>(null);
   const visible = bubbles.filter((b) => b.text.trim().length > 0);
   const [revealed, setRevealed] = useState(() => (visible.length > 0 ? 1 : 0));
@@ -59,27 +65,36 @@ export function EpistolaryReaderPreview({ chapterTitle, bubbles, variant = 'pane
   const rootClass = [
     'alternate-reader-preview',
     'epistolary-reader-preview',
+    'epistolary-reader-preview--v2',
     'epistolary-reader-preview--interactive',
     variant === 'fullscreen' ? 'epistolary-reader-preview--fullscreen' : '',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <aside className={rootClass} aria-label={t('epistolaryEditor.previewLabel')}>
+    <aside className={rootClass} aria-label={t('epistolaryEditor.previewLabel')} lang={locale === 'te' ? 'te' : 'en'}>
       {variant === 'panel' && (
-      <header className="alternate-reader-preview__head">
-        <StudioIllustration id="chat-thread" tone="maroon" size={48} />
-        <div>
-          <span className="katha-token-eyebrow">{t('epistolaryEditor.previewLabel')}</span>
-          <h2 className="alternate-reader-preview__title">{chapterTitle}</h2>
-        </div>
-        <button type="button" className="alternate-reader-preview__reset" onClick={reset} aria-label={t('epistolaryEditor.previewReset')}>
-          <RotateCcw size={14} aria-hidden />
-        </button>
-      </header>
+        <header className="alternate-reader-preview__head epi-preview__head">
+          <StudioIllustration id="chat-thread" tone="maroon" size={40} />
+          <div className="epi-preview__head-text">
+            <span className="katha-token-eyebrow">{t('epistolaryEditor.previewLabel')}</span>
+            <h2 className="alternate-reader-preview__title epi-preview__chapter">{chapterTitle}</h2>
+            {sceneTitle ? <p className="epi-preview__scene">{sceneTitle}</p> : null}
+          </div>
+          <button
+            type="button"
+            className="alternate-reader-preview__reset"
+            onClick={reset}
+            aria-label={t('epistolaryEditor.previewReset')}
+          >
+            <RotateCcw size={14} aria-hidden />
+          </button>
+        </header>
       )}
 
       <div
-        className="epistolary-reader-preview__device"
+        className="epistolary-reader-preview__device epi-preview__phone"
         role="button"
         tabIndex={0}
         onClick={advance}
@@ -91,15 +106,20 @@ export function EpistolaryReaderPreview({ chapterTitle, bubbles, variant = 'pane
         }}
         aria-label={canAdvance ? t('epistolaryEditor.previewTap') : undefined}
       >
-        <div className="epistolary-reader-preview__statusbar" aria-hidden>
+        <div className="epistolary-reader-preview__statusbar epi-preview__status" aria-hidden>
           <span>9:41</span>
+          <span className="epi-preview__notch" />
           <span className="epistolary-reader-preview__signal">●●●</span>
+        </div>
+
+        <div className="epi-preview__chat-head" aria-hidden>
+          <span className="epi-preview__chat-title">{chapterTitle || 'Katha'}</span>
         </div>
 
         {visible.length === 0 ? (
           <p className="alternate-reader-preview__empty">{t('epistolaryEditor.previewEmpty')}</p>
         ) : (
-          <div ref={threadRef} className="epistolary-reader-preview__thread">
+          <div ref={threadRef} className="epistolary-reader-preview__thread epi-preview__thread">
             {shown.map((bubble) => (
               <div
                 key={bubble.id}
@@ -124,7 +144,9 @@ export function EpistolaryReaderPreview({ chapterTitle, bubbles, variant = 'pane
             {isTyping && (
               <div className="epistolary-reader-typing" aria-live="polite">
                 <span className="epistolary-reader-typing__dots" aria-hidden>
-                  <span /><span /><span />
+                  <span />
+                  <span />
+                  <span />
                 </span>
                 <span className="epistolary-reader-typing__label">{t('epistolaryEditor.previewTyping')}</span>
               </div>
@@ -133,8 +155,13 @@ export function EpistolaryReaderPreview({ chapterTitle, bubbles, variant = 'pane
         )}
       </div>
 
-      <div className="alternate-reader-preview__controls">
-        <button type="button" className="katha-btn katha-btn--ghost katha-btn--sm" onClick={advance} disabled={!canAdvance}>
+      <div className="alternate-reader-preview__controls epi-preview__controls">
+        <button
+          type="button"
+          className="epi-preview__next"
+          onClick={advance}
+          disabled={!canAdvance}
+        >
           {t('epistolaryEditor.previewNext')}
         </button>
         <span className="alternate-reader-preview__progress">

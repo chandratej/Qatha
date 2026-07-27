@@ -75,19 +75,32 @@ export const DEFAULT_COMPETITION_RULES_V1: CompetitionRulesDocument = {
   acceptanceLabelTelugu: 'పోటీ నియమాల అంగీకారం',
   eligibility: {
     languages: ['te'],
-    contentTypes: ['serialized_story', 'short_story', 'short_story_collection'],
-    storyStatuses: ['draft', 'ongoing'],
-    minChapters: 50,
-    minWordsPerChapter: 2000,
+    contentTypes: [
+      'serialized_story',
+      'epistolary_chat',
+      'interactive_branching',
+      'short_story',
+      'short_story_collection',
+      'flash_fiction',
+      'interactive_flash',
+    ],
+    storyStatuses: ['draft', 'ongoing', 'completed'],
+    /** Continuous formats (serial / chat / interactive): ≥25 published units. */
+    minChapters: 25,
+    minWordsPerChapter: 1500,
     notes: [
       'Original Telugu manuscripts only — no machine-translated submissions.',
-      'Serialized stories must meet Debut Season chapter and word-count thresholds.',
+      'Serialized / Chat / Interactive Fiction: ≥25 published chapters for contest eligibility (Format Spec v1).',
+      'Short Story, Flash, Interactive Flash, and Collection pieces: no chapter-count floor — completed + moderated + word guidance; a story that already won may not re-enter.',
       'Stories under moderation review may register but cannot submit until approved.',
+      'No format is gated behind prior contest wins or magazine features.',
     ],
     notesTelugu: [
       'అసలు తెలుగు గ్రంథాలు మాత్రమే — మెషిన్ అనువాద సబ్మిషన్లు అనుమతించబడవు.',
-      'ధారావాహిక కథలు అవతరణ కాలం అధ్యాయం మరియు పదాల పరిమితులకు అనుగుణంగా ఉండాలి.',
+      'ధారావాహిక / చాట్ / ఇంటరాక్టివ్: పోటీకి ≥25 ప్రచురిత అధ్యాయాలు (Format Spec v1).',
+      'చిన్న కథ / ఫ్లాష్ / సంకలనం: chapter floor లేదు — complete + moderation + word guidance; గెలిచిన కథ re-entry కాదు.',
       'మోడరేషన్ రివ్యూలో ఉన్న కథలు నమోదు చేయవచ్చు కానీ ఆమోదం వరకు సబ్మిట్ చేయలేరు.',
+      'ఏ ఫార్మాట్‌నూ మునుపటి పోటీ గెలుపులు లేదా మ్యాగజైన్ ఫీచర్లు గేట్ చేయవు.',
     ],
   },
   judging: {

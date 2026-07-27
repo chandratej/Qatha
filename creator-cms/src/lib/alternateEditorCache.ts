@@ -19,15 +19,20 @@ export interface EpistolaryBubble {
   timestamp: string;
 }
 
+/** Scene break — chat fiction acts/locations/time jumps. */
+export interface EpistolaryScene {
+  id: string;
+  title: string;
+  bubbles: EpistolaryBubble[];
+}
+
 export interface BranchNode {
   id: string;
   title: string;
   body: string;
   choiceA: string;
   choiceB: string;
-  /** Target node id for choice A — null means end of path */
   choiceATarget?: string | null;
-  /** Target node id for choice B — null means end of path */
   choiceBTarget?: string | null;
 }
 
@@ -36,23 +41,78 @@ export type AlternateEditorKind = 'epistolary' | 'branching';
 export interface EpistolaryDraft {
   title: string;
   bubbles: EpistolaryBubble[];
-  /** Story cast — multi protag/antag/narrator; names auto-fill on messages */
   cast?: EpistolaryCastMember[];
+  scenes?: EpistolaryScene[];
   updated_at: number;
 }
 
+export interface BranchingDraft {
+  title: string;
+  nodes: BranchNode[];
+  updated_at: number;
+}
+
+/** Telugu-first sample cast (UTF-8). */
 export const DEFAULT_EPISTOLARY_CAST: EpistolaryCastMember[] = [
-  { id: 'cast-p1', role: 'protagonist', name: 'Ananya' },
-  { id: 'cast-a1', role: 'antagonist', name: 'Rohan' },
-  { id: 'cast-n1', role: 'narrator', name: 'Narrator' },
+  { id: 'cast-p1', role: 'protagonist', name: 'అనన్య' },
+  { id: 'cast-a1', role: 'antagonist', name: 'రోహన్' },
+  { id: 'cast-n1', role: 'narrator', name: 'కథకుడు' },
 ];
 
-/** Infer cast from bubble names when older drafts have no cast array. */
+export const DEFAULT_EPISTOLARY_BUBBLES: EpistolaryBubble[] = [
+  {
+    id: 'bubble-1',
+    speaker: 'protagonist',
+    speakerName: 'అనన్య',
+    castId: 'cast-p1',
+    text: 'ఈ రాత్రి నువ్వు వస్తున్నావా?',
+    timestamp: '9:41 PM',
+  },
+  {
+    id: 'bubble-2',
+    speaker: 'antagonist',
+    speakerName: 'రోహన్',
+    castId: 'cast-a1',
+    text: 'బహుశా. నువ్వు నిజంగా అంటేనే వస్తా.',
+    timestamp: '9:42 PM',
+  },
+];
+
+export function createDefaultEpistolaryScenes(
+  bubbles: EpistolaryBubble[] = DEFAULT_EPISTOLARY_BUBBLES,
+): EpistolaryScene[] {
+  return [
+    {
+      id: 'scene-1',
+      title: 'సీన్ 1',
+      bubbles: bubbles.map((b) => ({ ...b })),
+    },
+  ];
+}
+
+export function flattenEpistolaryScenes(scenes: EpistolaryScene[]): EpistolaryBubble[] {
+  return scenes.flatMap((s) => s.bubbles);
+}
+
+export function normalizeEpistolaryScenes(
+  scenes: EpistolaryScene[] | undefined,
+  bubbles: EpistolaryBubble[] | undefined,
+): EpistolaryScene[] {
+  if (scenes && scenes.length > 0) {
+    return scenes.map((s, i) => ({
+      id: s.id || `scene-${i + 1}`,
+      title: s.title?.trim() || `సీన్ ${i + 1}`,
+      bubbles: Array.isArray(s.bubbles) ? s.bubbles : [],
+    }));
+  }
+  return createDefaultEpistolaryScenes(bubbles?.length ? bubbles : DEFAULT_EPISTOLARY_BUBBLES);
+}
+
 export function inferCastFromBubbles(bubbles: EpistolaryBubble[]): EpistolaryCastMember[] {
   const byKey = new Map<string, EpistolaryCastMember>();
   for (const b of bubbles) {
-    const name = (b.speakerName || '').trim() || 'Character';
-    const key = b.castId || `${b.speaker}::${name.toLowerCase()}`;
+    const name = (b.speakerName || '').trim() || 'పాత్ర';
+    const key = b.castId || `${b.speaker}::${name}`;
     if (byKey.has(key)) continue;
     byKey.set(key, {
       id: b.castId || `cast-${b.speaker}-${byKey.size + 1}`,
@@ -64,7 +124,6 @@ export function inferCastFromBubbles(bubbles: EpistolaryBubble[]): EpistolaryCas
   return Array.from(byKey.values());
 }
 
-/** Attach castId on bubbles that only have role+name. */
 export function linkBubblesToCast(
   bubbles: EpistolaryBubble[],
   cast: EpistolaryCastMember[],
@@ -82,7 +141,7 @@ export function linkBubblesToCast(
     const byName = cast.find(
       (c) =>
         c.role === b.speaker &&
-        c.name.trim().toLowerCase() === (b.speakerName || '').trim().toLowerCase(),
+        c.name.trim() === (b.speakerName || '').trim(),
     );
     if (byName) {
       return { ...b, castId: byName.id, speaker: byName.role, speakerName: byName.name };
@@ -95,24 +154,40 @@ export function linkBubblesToCast(
   });
 }
 
-export function createCastMember(role: ChatSpeaker, existing: EpistolaryCastMember[]): EpistolaryCastMember {
+export function linkScenesToCast(
+  scenes: EpistolaryScene[],
+  cast: EpistolaryCastMember[],
+): EpistolaryScene[] {
+  return scenes.map((s) => ({
+    ...s,
+    bubbles: linkBubblesToCast(s.bubbles, cast),
+  }));
+}
+
+export function createCastMember(
+  role: ChatSpeaker,
+  existing: EpistolaryCastMember[],
+  name?: string,
+): EpistolaryCastMember {
   const count = existing.filter((c) => c.role === role).length + 1;
-  const defaults: Record<ChatSpeaker, string> = {
-    protagonist: count === 1 ? 'Protagonist' : `Protagonist ${count}`,
-    antagonist: count === 1 ? 'Antagonist' : `Antagonist ${count}`,
-    narrator: count === 1 ? 'Narrator' : `Narrator ${count}`,
+  const teDefaults: Record<ChatSpeaker, string> = {
+    protagonist: count === 1 ? 'నాయకుడు' : `నాయకుడు ${count}`,
+    antagonist: count === 1 ? 'విరోధి' : `విరోధి ${count}`,
+    narrator: count === 1 ? 'కథకుడు' : `కథకుడు ${count}`,
   };
   return {
     id: `cast-${role}-${Date.now()}-${count}`,
     role,
-    name: defaults[role],
+    name: (name && name.trim()) || teDefaults[role],
   };
 }
 
-export interface BranchingDraft {
-  title: string;
-  nodes: BranchNode[];
-  updated_at: number;
+export function createScene(index: number, title?: string): EpistolaryScene {
+  return {
+    id: `scene-${Date.now()}-${index}`,
+    title: title?.trim() || `సీన్ ${index}`,
+    bubbles: [],
+  };
 }
 
 function cacheKey(kind: AlternateEditorKind, storyId: string, chapter: number): string {
@@ -126,7 +201,7 @@ export function loadEpistolaryDraft(storyId: string, chapter: number): Epistolar
 export function saveEpistolaryDraft(
   storyId: string,
   chapter: number,
-  draft: Pick<EpistolaryDraft, 'title' | 'bubbles' | 'cast'>,
+  draft: Pick<EpistolaryDraft, 'title' | 'bubbles' | 'cast' | 'scenes'>,
   updatedAt?: number,
 ): void {
   saveDraft('epistolary', storyId, chapter, draft, updatedAt);

@@ -1,9 +1,7 @@
-/** Content formats — platform guidance (26 Jul 2026 content-format specs).
+/** Content formats — Katha Format Spec v1 (27 Jul 2026).
  *
- * Serialized Story numbers are market-validated (high confidence).
- * Short Story / Collection / Flash Fiction are first-draft placeholders —
- * surface as early guidance only, never as hard publish rules.
- * Interactive / Epistolary: no formal length specs yet (do not invent UI fields).
+ * Approved word/chapter guidance + monetization path notes.
+ * Soft targets guide the editor; hard max only where historically enforced (serialized).
  */
 
 export type ContentSpecConfidence = 'high' | 'placeholder' | 'none';
@@ -12,32 +10,27 @@ export interface ContentTypeDef {
   id: string;
   label: string;
   labelTelugu: string;
-  /** Soft chapter guidance (not a publish gate). */
+  /** Soft chapter guidance (not always a publish gate). */
   minChapters: number | null;
   maxChapters: number | null;
-  /** Soft words-per-chapter lower bound (Serialized uses softWordTarget). */
+  /** Soft words-per-chapter / piece lower bound. */
   minWordsPerChapter: number | null;
   maxWordsPerChapter: number | null;
-  /** Absolute word ceiling when set (Flash Fiction placeholder). */
+  /** Absolute word ceiling when set (Flash). */
   maxWords?: number | null;
-  /** Soft target band for editor indicator (Serialized only). */
+  /** Soft target band for editor indicator. */
   softWordTargetMin?: number | null;
   softWordTargetMax?: number | null;
   /** Hard word ceiling when set (Serialized publish rejects above this). */
   hardMaxWordsPerChapter?: number | null;
-  /** Suggested total chapters for a full serial arc. */
   suggestedTotalChaptersMin?: number | null;
   suggestedTotalChaptersMax?: number | null;
-  /** Soft pre-launch buffer for serials (not enforced). */
   suggestedLaunchChaptersMin?: number | null;
   suggestedLaunchChaptersMax?: number | null;
-  /** Soft update cadence copy. */
   updateCadenceGuide?: string | null;
-  /** Discovery floor: published chapters ≥ this → discovery_format serialized. */
   discoverySerializedFloor?: number | null;
   guideTelugu: string;
   guideEnglish: string;
-  /** Format-selection table copy (guidance only). */
   selectionGuideEnglish: string;
   selectionGuideTelugu: string;
   confidence: ContentSpecConfidence;
@@ -46,6 +39,8 @@ export interface ContentTypeDef {
   phase?: 'phase_1' | 'phase_2';
   /** When true, chapter editor must not show soft word targets. */
   hideSoftWordTarget?: boolean;
+  /** Non-monetized acquisition formats (flash / short / interactive flash). */
+  nonMonetized?: boolean;
 }
 
 export const CONTENT_TYPES = [
@@ -75,20 +70,21 @@ export const CONTENT_TYPES = [
     maxWordsPerChapter: 2500,
     softWordTargetMin: 1500,
     softWordTargetMax: 2500,
-    /** Hard ceiling for serialized chapters (words only — no character ceiling). */
     hardMaxWordsPerChapter: 3000,
     suggestedTotalChaptersMin: 50,
-    suggestedTotalChaptersMax: 200,
+    suggestedTotalChaptersMax: null,
     suggestedLaunchChaptersMin: 15,
     suggestedLaunchChaptersMax: 20,
     updateCadenceGuide: '3–5 chapters/week while the series is active',
     discoverySerializedFloor: 20,
-    guideTelugu: 'ప్రధాన ఆదాయ ఫార్మాట్. సిఫార్సు 1,500–2,500 పదాలు/అధ్యాయం; కనీసం 1,500 · గరిష్ఠ 3,000 పదాలు. వారానికి 3–5 అధ్యాయాలు సాధారణం.',
-    guideEnglish: 'Primary revenue format. Soft target 1,500–2,500 words per chapter; minimum 1,500 · hard max 3,000 words. Typical cadence 3–5 chapters/week.',
+    guideTelugu:
+      'ప్రధాన ఆదాయ ఫార్మాట్. 1,500–2,500 పదాలు/అధ్యాయం. లాంచ్‌కు 15–20 అధ్యాయాలు; పోటీ 25 · మానిటైజ్ 50.',
+    guideEnglish:
+      'Primary revenue format. 1,500–2,500 words/chapter. Launch ~15–20 chapters; contest at 25, monetize at 50.',
     selectionGuideEnglish:
-      'Serialized chapters: soft target 1,500–2,500 words, minimum 1,500 to publish, hard max 3,000 words. Aim for 15–20 chapters written before launch if you can; full arcs often run 50–200 chapters. Cadence ~3–5×/week.',
+      '1,500–2,500 words/chapter (hard max 3,000). Aim 15–20 chapters before launch; grows indefinitely. Contest ≥25 published chapters · monetize ≥50.',
     selectionGuideTelugu:
-      'ధారావాహిక: సిఫార్సు 1,500–2,500 పదాలు, publishకు కనీసం 1,500, గరిష్ఠ 3,000 పదాలు. సాధ్యమైతే లాంచ్‌కు 15–20 అధ్యాయాలు; పూర్తి ఆర్క్ 50–200. వారానికి ~3–5 అధ్యాయాలు.',
+      '1,500–2,500 పదాలు/అధ్యాయం (గరిష్ఠ 3,000). లాంచ్‌కు 15–20; అనంతం పెరుగుతుంది. పోటీ ≥25 · మానిటైజ్ ≥50.',
     confidence: 'high' as const,
     hideSoftWordTarget: false,
   },
@@ -96,35 +92,42 @@ export const CONTENT_TYPES = [
     id: 'short_story',
     label: 'Short Story',
     labelTelugu: 'చిన్న కథ',
-    maxChapters: 1,
+    maxChapters: 3,
     minChapters: 1,
-    minWordsPerChapter: 1500,
-    maxWordsPerChapter: 7500,
-    guideTelugu: 'ఒకే ముక్క (1 అధ్యాయం). 1,500–7,500 పదాలు — early guidance, మారవచ్చు.',
-    guideEnglish: 'Single piece (1 chapter). 1,500–7,500 words — early guidance, subject to change.',
+    minWordsPerChapter: 1000,
+    maxWordsPerChapter: 5000,
+    softWordTargetMin: 1000,
+    softWordTargetMax: 5000,
+    guideTelugu: '1,000–5,000 పదాలు మొత్తం, 1–3 భాగాలు. మానిటైజ్ కాదు — పోటీ/acquisition మాత్రమే.',
+    guideEnglish: '1,000–5,000 words total, 1–3 parts. Non-monetized — contest/acquisition fuel only.',
     selectionGuideEnglish:
-      'Early guidance (not market-validated yet): 1,500–7,500 words as one piece. Great for new-author testing and contests. Specs may change after alpha writers.',
+      '1,000–5,000 words total across 1–3 parts. Non-monetized by design — contests and discovery. Per-story no contest re-entry after a win.',
     selectionGuideTelugu:
-      'ప్రారంభ మార్గదర్శకం (ఇంకా market-validated కాదు): 1,500–7,500 పదాలు, ఒకే ముక్క. కొత్త రచయితలు / పోటీలకు. alpha తర్వాత మారవచ్చు.',
-    confidence: 'placeholder' as const,
-    hideSoftWordTarget: true,
+      'మొత్తం 1,000–5,000 పదాలు, 1–3 భాగాలు. మానిటైజ్ కాదు — పోటీలు/కనుగొనడం. గెలిచిన కథను మళ్లీ పోటీకి పెట్టరాదు.',
+    confidence: 'high' as const,
+    hideSoftWordTarget: false,
+    nonMonetized: true,
   },
   {
     id: 'short_story_collection',
-    label: 'Short Story Collection',
+    label: 'Story Collection',
     labelTelugu: 'కథా సంకలనం',
     maxChapters: null,
-    minChapters: 5,
-    minWordsPerChapter: 1500,
-    maxWordsPerChapter: 7500,
-    guideTelugu: 'కనీసం ~5 చిన్న కథలు ఒక టైటిల్/కవర్ కింద — early guidance.',
-    guideEnglish: 'Bundle ~5+ short pieces under one title/cover — early guidance.',
+    minChapters: 3,
+    minWordsPerChapter: 1000,
+    maxWordsPerChapter: 5000,
+    softWordTargetMin: 1000,
+    softWordTargetMax: 5000,
+    guideTelugu:
+      'ప్రతి కథ short story పరిధి. publishకు ≥3; మానిటైజ్ ≥5. కథ 1 ఎల్లప్పుడూ ఉచితం; 2+ paywall.',
+    guideEnglish:
+      'Each piece follows Short Story range. ≥3 to publish; monetize at 5. Story 1 permanently free; 2+ paywalled.',
     selectionGuideEnglish:
-      'Early guidance: about 5+ standalone pieces under one title/cover. Per-piece length follows Short Story guidance. Subject to change.',
+      'Anthology under one title. Min 3 stories to publish (common 3/5/7/10 — no cap). Monetize at 5 stories (SPI at collection level). Story 1 always free for readers. Contest: per-story, no re-entry after a win.',
     selectionGuideTelugu:
-      'ప్రారంభ మార్గదర్శకం: ఒక టైటిల్/కవర్ కింద ~5+ స్వతంత్ర కథలు. ప్రతి కథ short story మార్గదర్శకాన్ని అనుసరిస్తుంది. మారవచ్చు.',
-    confidence: 'placeholder' as const,
-    hideSoftWordTarget: true,
+      'ఒక టైటిల్ కింద సంకలనం. publishకు ≥3 (3/5/7/10 సాధారణం — పరిమితి లేదు). 5 కథల వద్ద మానిటైజ్. కథ 1 ఎప్పుడూ free. పోటీ: కథ వారీ, గెలుపు తర్వాత re-entry లేదు.',
+    confidence: 'high' as const,
+    hideSoftWordTarget: false,
   },
   {
     id: 'flash_fiction',
@@ -135,33 +138,40 @@ export const CONTENT_TYPES = [
     minWordsPerChapter: 300,
     maxWordsPerChapter: 1000,
     maxWords: 1000,
-    guideTelugu: '300–1,000 పదాలు, ఒకే ముక్క — shareability / contest fuel. Early guidance.',
-    guideEnglish: '300–1,000 words, single piece — shareability and contest fuel. Early guidance.',
+    softWordTargetMin: 300,
+    softWordTargetMax: 1000,
+    guideTelugu: '300–1,000 పదాలు, ఒకే ముక్క. మానిటైజ్ కాదు — free virality / పోటీ.',
+    guideEnglish: '300–1,000 words, single piece. Non-monetized — free virality and contests.',
     selectionGuideEnglish:
-      'Early guidance: 300–1,000 words, one piece. Not a revenue format — marketing and contests. Subject to change.',
+      '300–1,000 words, one piece (not chaptered). Non-monetized. Contest: word count + complete + moderated; no re-entry after a win.',
     selectionGuideTelugu:
-      'ప్రారంభ మార్గదర్శకం: 300–1,000 పదాలు, ఒకే ముక్క. ఆదాయ ఫార్మాట్ కాదు — share / పోటీలు. మారవచ్చు.',
-    confidence: 'placeholder' as const,
-    hideSoftWordTarget: true,
+      '300–1,000 పదాలు, ఒకే ముక్క. మానిటైజ్ కాదు. పోటీ: word count + complete + moderation; గెలుపు తర్వాత re-entry లేదు.',
+    confidence: 'high' as const,
+    hideSoftWordTarget: false,
+    nonMonetized: true,
   },
   {
     id: 'epistolary_chat',
-    label: 'Vernacular Chat-Fiction',
+    label: 'Chat-Fiction',
     labelTelugu: 'చాట్-కథ',
     maxChapters: null,
     minChapters: null,
-    minWordsPerChapter: null,
-    maxWordsPerChapter: null,
-    guideTelugu: 'ప్రయోగాత్మక ఫార్మాట్ — అధికారిక word/chapter specs ఇంకా లేవు.',
-    guideEnglish: 'Experimental format — no formal word/chapter specifications yet.',
+    minWordsPerChapter: 200,
+    maxWordsPerChapter: 500,
+    softWordTargetMin: 200,
+    softWordTargetMax: 500,
+    suggestedTotalChaptersMin: 25,
+    suggestedTotalChaptersMax: 50,
+    guideTelugu: '200–500 పదాలు/అధ్యాయం · 25–50 అధ్యాయాలు. పోటీ 25 · మానిటైజ్ 50.',
+    guideEnglish: '200–500 words/chapter · 25–50 chapters. Contest at 25, monetize at 50.',
     selectionGuideEnglish:
-      'Linear chat-style episodes. No official length specs yet — write naturally while we learn what resonates.',
+      'Chat-style episodes: 200–500 words/chapter, typically 25–50 chapters. Full path: contest ≥25 · monetize ≥50.',
     selectionGuideTelugu:
-      'లీనియర్ చాట్-స్టైల్ ఎపిసోడ్లు. అధికారిక length specs ఇంకా లేవు — సహజంగా రాయండి.',
-    confidence: 'none' as const,
+      'చాట్ ఎపిసోడ్లు: 200–500 పదాలు/అధ్యాయం, సాధారణంగా 25–50. పోటీ ≥25 · మానిటైజ్ ≥50.',
+    confidence: 'high' as const,
     moat: true,
     phase: 'phase_1' as const,
-    hideSoftWordTarget: true,
+    hideSoftWordTarget: false,
   },
   {
     id: 'interactive_branching',
@@ -169,18 +179,47 @@ export const CONTENT_TYPES = [
     labelTelugu: 'ఇంటరాక్టివ్ ఫిక్షన్',
     maxChapters: null,
     minChapters: null,
-    minWordsPerChapter: null,
-    maxWordsPerChapter: null,
-    guideTelugu: 'ప్రయోగాత్మక — branch count / per-branch length specs లేవు.',
-    guideEnglish: 'Experimental — no branch-count or per-branch length specs yet.',
+    minWordsPerChapter: 150,
+    maxWordsPerChapter: 500,
+    softWordTargetMin: 150,
+    softWordTargetMax: 500,
+    suggestedTotalChaptersMin: 25,
+    suggestedTotalChaptersMax: 50,
+    guideTelugu:
+      '150–500 పదాలు/branch node; chapter = reconvergent act. 25–50 chapters. పోటీ 25 · మానిటైజ్ 50.',
+    guideEnglish:
+      '150–500 words/branch node; chapter = one reconvergent story act. 25–50 chapters. Contest 25 · monetize 50.',
     selectionGuideEnglish:
-      'Reader-choice paths are experimental. No formal branch specs yet — do not treat any numbers as platform rules.',
+      'Reader-choice paths reconverge before the next chapter. ~150–500 words per branch node; 25–50 chapters. Contest ≥25 · monetize ≥50.',
     selectionGuideTelugu:
-      'పాఠకుల ఎంపిక మార్గాలు ప్రయోగాత్మకం. అధికారిక branch specs లేవు.',
-    confidence: 'none' as const,
+      'పాఠకుల ఎంపికలు తదుపరి అధ్యాయం ముందు కలుస్తాయి. ~150–500 పదాలు/node; 25–50 అధ్యాయాలు. పోటీ ≥25 · మానిటైజ్ ≥50.',
+    confidence: 'high' as const,
     moat: true,
     phase: 'phase_2' as const,
-    hideSoftWordTarget: true,
+    hideSoftWordTarget: false,
+  },
+  {
+    id: 'interactive_flash',
+    label: 'Interactive Flash Fiction',
+    labelTelugu: 'ఇంటరాక్టివ్ ఫ్లాష్ కథ',
+    maxChapters: 1,
+    minChapters: 1,
+    minWordsPerChapter: 300,
+    maxWordsPerChapter: 1000,
+    maxWords: 1000,
+    softWordTargetMin: 300,
+    softWordTargetMax: 1000,
+    guideTelugu: '300–1,000 పదాలు, 2–3 branch points, ఒకే ముక్క. మానిటైజ్ కాదు.',
+    guideEnglish: '300–1,000 words total, 2–3 branch/choice points, single piece. Non-monetized.',
+    selectionGuideEnglish:
+      'Interactive flash: 300–1,000 words, 2–3 choice points, not chaptered. Non-monetized (acquisition/contest). Contest needs 2–3 branches + no re-entry after a win.',
+    selectionGuideTelugu:
+      'ఇంటరాక్టివ్ ఫ్లాష్: 300–1,000 పదాలు, 2–3 ఎంపికలు, అధ్యాయాలు కాదు. మానిటైజ్ కాదు. పోటీకి 2–3 branches + గెలుపు తర్వాత re-entry లేదు.',
+    confidence: 'high' as const,
+    moat: true,
+    phase: 'phase_1' as const,
+    hideSoftWordTarget: false,
+    nonMonetized: true,
   },
 ] as const satisfies readonly ContentTypeDef[];
 
@@ -239,8 +278,8 @@ export function getContentTypeDef(id: string | null | undefined): ContentTypeDef
 }
 
 /**
- * Soft word target for chapter editor — Serialized Story only.
- * Returns null for placeholder formats and moat formats (no unvalidated soft bar).
+ * Soft word target for chapter editor when the format defines a band.
+ * Returns null only when hideSoftWordTarget or no soft band.
  */
 export function softWordTargetForContentType(id: string | null | undefined): {
   min: number;
@@ -273,13 +312,12 @@ export function discoveryFormatFromPublishedChapters(
   const n = Number(publishedChapterCount) || 0;
   const ct = contentTypeId || '';
 
-  if (ct === 'short_story' || ct === 'flash_fiction') return 'single';
+  if (ct === 'short_story' || ct === 'flash_fiction' || ct === 'interactive_flash') {
+    return 'single';
+  }
   if (ct === 'short_story_collection') return 'collection_eligible';
 
-  // Serialized (and default / novel legacy): 20+ chapters stay on serial shelf;
-  // shorter serials are collection-eligible at the discovery layer only.
   if (n >= DISCOVERY_SERIALIZED_CHAPTER_FLOOR) return 'serialized';
-  if (n <= 1 && (ct === 'short_story' || ct === 'flash_fiction')) return 'single';
   if (n < DISCOVERY_SERIALIZED_CHAPTER_FLOOR) return 'collection_eligible';
   return 'serialized';
 }

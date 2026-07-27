@@ -106,6 +106,45 @@ export {
 } from './story-trust';
 export type { StoryLifecycleId, StoryTrustLevelId } from './story-trust';
 
+/** Format Spec v1 — contest/monetize unit gates + reader tier ladder */
+export {
+  DEFAULT_CONTEST_MIN_UNITS,
+  DEFAULT_MONETIZE_MIN_UNITS,
+  COLLECTION_MONETIZE_MIN_UNITS,
+  COLLECTION_PUBLISH_MIN_UNITS,
+  formatEligibilityProfile,
+  isFormatMonetizable,
+  clearsMonetizationUnitGate,
+  evaluateContestEligibility,
+  freeUnitsForContentType,
+  labelForUnit,
+} from './formatEligibility';
+export type {
+  FormatMonetizationMode,
+  FormatEligibilityProfile,
+  ContestEligibilityInput,
+  ContestEligibilityResult,
+} from './formatEligibility';
+
+export {
+  FORMAT_WORD_MIDPOINT,
+  READER_TIERS,
+  wordMidpointForFormat,
+  cumulativeWordsFromUnits,
+  evaluateReaderTier,
+  trustBandForReaderTier,
+  readerTierById,
+  trustMeetsMin,
+  describeStoryMonetizationProgress,
+} from './readerTiers';
+export type {
+  ReaderTierId,
+  ReaderTierDef,
+  TierEligibilityInput,
+  TierEligibilityResult,
+  StoryMonetizationProgress,
+} from './readerTiers';
+
 export {
   computeSpi,
   trustLevelFromSpiScore,

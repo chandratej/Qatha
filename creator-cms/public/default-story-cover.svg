@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900" role="img" aria-label="Katha default story cover">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a1c14"/>
+      <stop offset="55%" stop-color="#4a1526"/>
+      <stop offset="100%" stop-color="#1a1510"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8d5a3"/>
+      <stop offset="100%" stop-color="#c4a052"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="900" fill="url(#bg)"/>
+  <rect x="36" y="36" width="528" height="828" rx="8" fill="none" stroke="url(#gold)" stroke-width="2" opacity="0.55"/>
+  <rect x="56" y="56" width="488" height="788" rx="4" fill="none" stroke="#c4a052" stroke-width="1" opacity="0.25"/>
+  <text x="300" y="420" text-anchor="middle" font-family="Georgia, 'Noto Serif Telugu', serif" font-size="120" fill="url(#gold)" opacity="0.95">క</text>
+  <text x="300" y="500" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="4" fill="#e8d5a3" opacity="0.75">KATHA</text>
+  <text x="300" y="540" text-anchor="middle" font-family="Georgia, 'Noto Serif Telugu', serif" font-size="18" fill="#d8c9a8" opacity="0.55">కథ · Story cover pending</text>
+</svg>

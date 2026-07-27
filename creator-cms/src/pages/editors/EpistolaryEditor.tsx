@@ -3,154 +3,135 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   BookOpen,
+  Clapperboard,
   Cloud,
   CloudOff,
   Eye,
   Loader2,
-  MessageCircle,
-  PenLine,
   Plus,
   Save,
+  Send,
   Trash2,
+  Upload,
   Users,
+  X,
 } from 'lucide-react';
 import { EpistolaryReaderPreview } from '../../components/editors/EpistolaryReaderPreview';
+import { TeluguTextField } from '../../components/TeluguTextField';
 import { useLocale } from '../../context/LocaleContext';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import type { StudioStringKey } from '../../lib/studioLocale';
-import { StudioGlyph } from '../../components/studio/StudioGlyph';
-import type { StudioGlyphId } from '../../components/studio/StudioGlyph';
 import type {
   ChatSpeaker,
   EpistolaryBubble,
   EpistolaryCastMember,
+  EpistolaryScene,
 } from '../../lib/alternateEditorCache';
 import {
   createCastMember,
+  createScene,
+  DEFAULT_EPISTOLARY_BUBBLES,
   DEFAULT_EPISTOLARY_CAST,
+  flattenEpistolaryScenes,
   saveEpistolaryDraft,
 } from '../../lib/alternateEditorCache';
-import { loadEpistolaryMerged, saveEpistolaryCloud } from '../../lib/alternateEditorSync';
+import {
+  loadEpistolaryMerged,
+  publishEpistolaryChapter,
+  saveEpistolaryCloud,
+} from '../../lib/alternateEditorSync';
 import '../../styles/editor-prototype.css';
 import '../../styles/editor-eye-comfort.css';
 
-const LOCAL_AUTOSAVE_MS = 800;
-const CLOUD_AUTOSAVE_MS = 2500;
+const LOCAL_AUTOSAVE_MS = 1200;
+const CLOUD_AUTOSAVE_MS = 3000;
 
-const SPEAKER_ROLE_KEYS: Record<ChatSpeaker, StudioStringKey> = {
+const ROLE_KEYS: Record<ChatSpeaker, StudioStringKey> = {
   protagonist: 'epistolaryEditor.roleProtagonist',
   antagonist: 'epistolaryEditor.roleAntagonist',
   narrator: 'epistolaryEditor.roleNarrator',
 };
 
-const SPEAKER_GLYPHS: Record<ChatSpeaker, StudioGlyphId> = {
-  protagonist: 'users',
-  antagonist: 'heart',
-  narrator: 'sparkles',
-};
+const DEFAULT_CAST = DEFAULT_EPISTOLARY_CAST.map((c) => ({ ...c }));
+const DEFAULT_BUBBLES = DEFAULT_EPISTOLARY_BUBBLES.map((b) => ({ ...b }));
 
-const DEFAULT_CAST: EpistolaryCastMember[] = DEFAULT_EPISTOLARY_CAST.map((c) => ({ ...c }));
+type SyncState = 'idle' | 'syncing' | 'synced' | 'local' | 'error';
 
-const DEFAULT_BUBBLES: EpistolaryBubble[] = [
-  {
-    id: 'bubble-1',
-    speaker: 'protagonist',
-    speakerName: 'Ananya',
-    castId: 'cast-p1',
-    text: 'Are you still coming tonight?',
-    timestamp: '9:41 PM',
-  },
-  {
-    id: 'bubble-2',
-    speaker: 'antagonist',
-    speakerName: 'Rohan',
-    castId: 'cast-a1',
-    text: 'Maybe. Depends on whether you actually mean it this time.',
-    timestamp: '9:42 PM',
-  },
-];
-
-type CloudSyncState = 'idle' | 'syncing' | 'synced' | 'local' | 'error';
-
-function nowTimestamp(): string {
+function nowTs(): string {
   return new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 }
 
-/** Pick a natural next speaker: alternate protag ↔ antag when possible. */
-function pickNextCastMember(
-  cast: EpistolaryCastMember[],
-  bubbles: EpistolaryBubble[],
-): EpistolaryCastMember {
-  if (cast.length === 0) {
-    return { id: 'cast-fallback', role: 'protagonist', name: 'Character' };
-  }
-  const last = bubbles[bubbles.length - 1];
-  if (!last) {
-    return cast.find((c) => c.role === 'protagonist') ?? cast[0]!;
-  }
-  const lastId = last.castId;
-  if (last.speaker === 'protagonist') {
-    return (
-      cast.find((c) => c.role === 'antagonist') ??
-      cast.find((c) => c.id !== lastId) ??
-      cast[0]!
-    );
-  }
-  if (last.speaker === 'antagonist') {
-    return (
-      cast.find((c) => c.role === 'protagonist') ??
-      cast.find((c) => c.id !== lastId) ??
-      cast[0]!
-    );
-  }
-  return cast.find((c) => c.role === 'protagonist') ?? cast.find((c) => c.id !== lastId) ?? cast[0]!;
+function initial(name: string): string {
+  const t = name.trim();
+  return t ? ([...t][0] ?? '·') : '·';
 }
 
-function bubbleFromCast(member: EpistolaryCastMember, index: number): EpistolaryBubble {
-  return {
-    id: `bubble-${Date.now()}-${index}`,
-    speaker: member.role,
-    speakerName: member.name,
-    castId: member.id,
-    text: '',
-    timestamp: nowTimestamp(),
-  };
+function nextSpeaker(cast: EpistolaryCastMember[], bubbles: EpistolaryBubble[]): EpistolaryCastMember {
+  if (!cast.length) return { id: 'x', role: 'protagonist', name: 'నాయకుడు' };
+  const last = bubbles[bubbles.length - 1];
+  if (!last) return cast.find((c) => c.role === 'protagonist') ?? cast[0]!;
+  if (last.speaker === 'protagonist') {
+    return cast.find((c) => c.role === 'antagonist') ?? cast.find((c) => c.id !== last.castId) ?? cast[0]!;
+  }
+  if (last.speaker === 'antagonist') {
+    return cast.find((c) => c.role === 'protagonist') ?? cast.find((c) => c.id !== last.castId) ?? cast[0]!;
+  }
+  return cast.find((c) => c.role === 'protagonist') ?? cast[0]!;
 }
 
 /**
- * Epistolary editor — chat-bubble shell with cast-first speaker names.
- * Route: /stories/:storyId/epistolary/:chapterNum
+ * Epistolary v4 — scene-based chat fiction studio.
+ * Telugu-first input, cast sheet, publish, delete confirm.
  */
 export function EpistolaryEditor() {
   const { storyId, chapterNum } = useParams<{ storyId: string; chapterNum: string }>();
   const navigate = useNavigate();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
+  const isTe = locale === 'te';
   const chapter = Number(chapterNum) || 1;
   const storyKey = storyId ?? '';
+  const defaultTitle = isTe ? `అధ్యాయం ${chapter}` : `Chapter ${chapter}`;
 
-  const [chapterTitle, setChapterTitle] = useState(`Chapter ${chapter}`);
+  const [chapterTitle, setChapterTitle] = useState(defaultTitle);
   const [cast, setCast] = useState<EpistolaryCastMember[]>(DEFAULT_CAST);
-  const [bubbles, setBubbles] = useState<EpistolaryBubble[]>(DEFAULT_BUBBLES);
+  const [scenes, setScenes] = useState<EpistolaryScene[]>([
+    { id: 'scene-1', title: 'సీన్ 1', bubbles: DEFAULT_BUBBLES },
+  ]);
+  const [activeSceneId, setActiveSceneId] = useState('scene-1');
+  const [activeCastId, setActiveCastId] = useState(DEFAULT_CAST[0]?.id ?? '');
+  const [composer, setComposer] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [cloudSync, setCloudSync] = useState<CloudSyncState>('idle');
-  const [previewMode, setPreviewMode] = useState(false);
+  const [sync, setSync] = useState<SyncState>('idle');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [castOpen, setCastOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<EpistolaryCastMember | null>(null);
+
   const localTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cloudTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cloudInFlight = useRef(false);
-  const focusTextRef = useRef<string | null>(null);
+  const cloudBusy = useRef(false);
+  const statusRef = useRef({ lastSaved: null as Date | null, sync: 'idle' as SyncState });
 
-  // Match regular story editor: creation mode + body scroll lock for long sessions.
+  const focusComposer = useCallback(() => {
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLTextAreaElement>('.epi-v4__compose-input')?.focus();
+    });
+  }, []);
+
+  const activeScene = scenes.find((s) => s.id === activeSceneId) ?? scenes[0];
+  const activeBubbles = activeScene?.bubbles ?? [];
+  const allBubbles = useMemo(() => flattenEpistolaryScenes(scenes), [scenes]);
+  const activeMember = cast.find((c) => c.id === activeCastId) ?? cast[0] ?? null;
+
   useEffect(() => {
-    const root = document.documentElement;
-    const prevOverflow = document.body.style.overflow;
     document.body.classList.add('epistolary-editor-body');
-    root.setAttribute('data-katha-editor', 'epistolary');
+    document.documentElement.setAttribute('data-katha-editor', 'epistolary');
     return () => {
       document.body.classList.remove('epistolary-editor-body');
-      root.removeAttribute('data-katha-editor');
-      document.body.style.overflow = prevOverflow;
+      document.documentElement.removeAttribute('data-katha-editor');
     };
   }, []);
 
@@ -158,17 +139,23 @@ export function EpistolaryEditor() {
     if (!storyKey) return;
     let cancelled = false;
     setLoading(true);
-    loadEpistolaryMerged(storyKey, chapter, `Chapter ${chapter}`, DEFAULT_BUBBLES, DEFAULT_CAST)
-      .then((merged) => {
+    loadEpistolaryMerged(storyKey, chapter, defaultTitle, DEFAULT_BUBBLES, DEFAULT_CAST)
+      .then((m) => {
         if (cancelled) return;
-        setChapterTitle(merged.title);
-        setCast(merged.cast.length ? merged.cast : DEFAULT_CAST.map((c) => ({ ...c })));
-        setBubbles(merged.data);
-        if (merged.updated_at > 0) setLastSaved(new Date(merged.updated_at));
-        setCloudSync(merged.source === 'cloud' ? 'synced' : merged.source === 'local' ? 'local' : 'idle');
+        setChapterTitle(m.title || defaultTitle);
+        setCast(m.cast.length ? m.cast : DEFAULT_CAST.map((c) => ({ ...c })));
+        setScenes(m.scenes);
+        setActiveSceneId(m.scenes[0]?.id ?? 'scene-1');
+        setActiveCastId(m.cast[0]?.id ?? DEFAULT_CAST[0]!.id);
+        if (m.updated_at > 0) {
+          const d = new Date(m.updated_at);
+          setLastSaved(d);
+          statusRef.current.lastSaved = d;
+        }
+        setSync(m.source === 'cloud' ? 'synced' : m.source === 'local' ? 'local' : 'idle');
       })
       .catch(() => {
-        if (!cancelled) setCloudSync('error');
+        if (!cancelled) setSync('error');
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -176,35 +163,47 @@ export function EpistolaryEditor() {
     return () => {
       cancelled = true;
     };
-  }, [storyKey, chapter]);
+  }, [storyKey, chapter, defaultTitle]);
 
   const persistLocal = useCallback(
-    (title: string, items: EpistolaryBubble[], castList: EpistolaryCastMember[]) => {
+    (title: string, nextScenes: EpistolaryScene[], nextCast: EpistolaryCastMember[]) => {
       if (!storyKey) return;
-      saveEpistolaryDraft(storyKey, chapter, { title, bubbles: items, cast: castList });
-      setLastSaved(new Date());
-      if (cloudSync === 'synced') setCloudSync('local');
+      const bubbles = flattenEpistolaryScenes(nextScenes);
+      saveEpistolaryDraft(storyKey, chapter, {
+        title,
+        bubbles,
+        cast: nextCast,
+        scenes: nextScenes,
+      });
+      const d = new Date();
+      statusRef.current.lastSaved = d;
+      statusRef.current.sync = statusRef.current.sync === 'synced' ? 'local' : statusRef.current.sync;
+      setLastSaved(d);
+      setSync((s) => (s === 'synced' ? 'local' : s));
     },
-    [storyKey, chapter, cloudSync],
+    [storyKey, chapter],
   );
 
   const persistCloud = useCallback(
-    async (title: string, items: EpistolaryBubble[], castList: EpistolaryCastMember[]) => {
-      if (!storyKey || cloudInFlight.current) return;
-      cloudInFlight.current = true;
-      setCloudSync('syncing');
+    async (title: string, nextScenes: EpistolaryScene[], nextCast: EpistolaryCastMember[]) => {
+      if (!storyKey || cloudBusy.current) return;
+      cloudBusy.current = true;
+      setSync('syncing');
       try {
         const result = await saveEpistolaryCloud(storyKey, chapter, {
           title,
-          bubbles: items,
-          cast: castList,
+          scenes: nextScenes,
+          cast: nextCast,
         });
-        setLastSaved(new Date(result.updated_at));
-        setCloudSync('synced');
+        const d = new Date(result.updated_at);
+        statusRef.current.lastSaved = d;
+        statusRef.current.sync = 'synced';
+        setLastSaved(d);
+        setSync('synced');
       } catch {
-        setCloudSync('error');
+        setSync('error');
       } finally {
-        cloudInFlight.current = false;
+        cloudBusy.current = false;
       }
     },
     [storyKey, chapter],
@@ -214,154 +213,191 @@ export function EpistolaryEditor() {
     if (!storyKey || loading) return;
     if (localTimer.current) clearTimeout(localTimer.current);
     localTimer.current = setTimeout(() => {
-      persistLocal(chapterTitle, bubbles, cast);
+      persistLocal(chapterTitle, scenes, cast);
     }, LOCAL_AUTOSAVE_MS);
     return () => {
       if (localTimer.current) clearTimeout(localTimer.current);
     };
-  }, [chapterTitle, bubbles, cast, storyKey, loading, persistLocal]);
+  }, [chapterTitle, scenes, cast, storyKey, loading, persistLocal]);
 
   useEffect(() => {
     if (!storyKey || loading) return;
     if (cloudTimer.current) clearTimeout(cloudTimer.current);
     cloudTimer.current = setTimeout(() => {
-      void persistCloud(chapterTitle, bubbles, cast);
+      void persistCloud(chapterTitle, scenes, cast);
     }, CLOUD_AUTOSAVE_MS);
     return () => {
       if (cloudTimer.current) clearTimeout(cloudTimer.current);
     };
-  }, [chapterTitle, bubbles, cast, storyKey, loading, persistCloud]);
+  }, [chapterTitle, scenes, cast, storyKey, loading, persistCloud]);
 
-  // Focus newly added message body
-  useEffect(() => {
-    if (!focusTextRef.current) return;
-    const id = focusTextRef.current;
-    focusTextRef.current = null;
-    const el = document.querySelector<HTMLTextAreaElement>(
-      `textarea[data-bubble-id="${CSS.escape(id)}"]`,
-    );
-    el?.focus();
-  }, [bubbles]);
-
-  const handleSaveDraft = useCallback(() => {
-    setSaving(true);
-    void persistCloud(chapterTitle, bubbles, cast).finally(() => setSaving(false));
-  }, [chapterTitle, bubbles, cast, persistCloud]);
-
-  const addBubble = useCallback(
-    (member?: EpistolaryCastMember) => {
-      setBubbles((prev) => {
-        const who = member ?? pickNextCastMember(cast, prev);
-        const next = bubbleFromCast(who, prev.length);
-        focusTextRef.current = next.id;
-        return [...prev, next];
-      });
+  const patchActiveScene = useCallback(
+    (fn: (scene: EpistolaryScene) => EpistolaryScene) => {
+      setScenes((prev) =>
+        prev.map((s) => (s.id === activeSceneId ? fn(s) : s)),
+      );
     },
-    [cast],
+    [activeSceneId],
   );
 
-  const assignBubbleCast = useCallback((bubbleId: string, member: EpistolaryCastMember) => {
-    setBubbles((prev) =>
-      prev.map((b) =>
-        b.id === bubbleId
-          ? {
-              ...b,
-              castId: member.id,
-              speaker: member.role,
-              speakerName: member.name,
-            }
-          : b,
-      ),
-    );
-  }, []);
+  const sendMessage = useCallback(() => {
+    const text = composer.trim();
+    if (!text || !activeMember || !activeScene) return;
+    const bubble: EpistolaryBubble = {
+      id: `bubble-${Date.now()}`,
+      speaker: activeMember.role,
+      speakerName: activeMember.name,
+      castId: activeMember.id,
+      text,
+      timestamp: nowTs(),
+    };
+    patchActiveScene((s) => ({ ...s, bubbles: [...s.bubbles, bubble] }));
+    setComposer('');
+    const next = nextSpeaker(cast, [...activeBubbles, bubble]);
+    setActiveCastId(next.id);
+    focusComposer();
+  }, [composer, activeMember, activeScene, patchActiveScene, cast, activeBubbles, focusComposer]);
 
-  const updateBubbleText = useCallback((id: string, text: string) => {
-    setBubbles((prev) => prev.map((b) => (b.id === id ? { ...b, text } : b)));
-  }, []);
+  const updateBubbleText = useCallback(
+    (id: string, text: string) => {
+      patchActiveScene((s) => ({
+        ...s,
+        bubbles: s.bubbles.map((b) => (b.id === id ? { ...b, text } : b)),
+      }));
+    },
+    [patchActiveScene],
+  );
 
-  const removeBubble = useCallback((id: string) => {
-    setBubbles((prev) => (prev.length <= 1 ? prev : prev.filter((b) => b.id !== id)));
-  }, []);
+  const assignBubble = useCallback(
+    (bubbleId: string, member: EpistolaryCastMember) => {
+      patchActiveScene((s) => ({
+        ...s,
+        bubbles: s.bubbles.map((b) =>
+          b.id === bubbleId
+            ? { ...b, castId: member.id, speaker: member.role, speakerName: member.name }
+            : b,
+        ),
+      }));
+    },
+    [patchActiveScene],
+  );
 
-  /** Rename / re-role a cast member and cascade names into all linked messages. */
-  const updateCastMember = useCallback((id: string, patch: Partial<Pick<EpistolaryCastMember, 'name' | 'role'>>) => {
+  const removeBubble = useCallback(
+    (id: string) => {
+      patchActiveScene((s) => ({
+        ...s,
+        bubbles: s.bubbles.length <= 1 ? s.bubbles : s.bubbles.filter((b) => b.id !== id),
+      }));
+    },
+    [patchActiveScene],
+  );
+
+  const updateCast = useCallback((id: string, patch: Partial<Pick<EpistolaryCastMember, 'name' | 'role'>>) => {
     setCast((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-    setBubbles((prev) =>
-      prev.map((b) => {
-        if (b.castId !== id) return b;
-        const nextName = patch.name !== undefined ? patch.name : b.speakerName;
-        const nextRole = patch.role !== undefined ? patch.role : b.speaker;
-        return { ...b, speakerName: nextName, speaker: nextRole };
-      }),
+    setScenes((prev) =>
+      prev.map((s) => ({
+        ...s,
+        bubbles: s.bubbles.map((b) => {
+          if (b.castId !== id) return b;
+          return {
+            ...b,
+            speakerName: patch.name !== undefined ? patch.name : b.speakerName,
+            speaker: patch.role !== undefined ? patch.role : b.speaker,
+          };
+        }),
+      })),
     );
   }, []);
 
-  const addCastMember = useCallback((role: ChatSpeaker) => {
-    setCast((prev) => [...prev, createCastMember(role, prev)]);
+  const addCast = useCallback((role: ChatSpeaker) => {
+    setCast((prev) => {
+      const m = createCastMember(role, prev);
+      setActiveCastId(m.id);
+      return [...prev, m];
+    });
   }, []);
 
-  const removeCastMember = useCallback((id: string) => {
+  const confirmDeleteCast = useCallback(() => {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setCast((prev) => {
       if (prev.length <= 1) return prev;
       const next = prev.filter((c) => c.id !== id);
       const fallback = next[0]!;
-      setBubbles((bubblesPrev) =>
-        bubblesPrev.map((b) =>
-          b.castId === id
-            ? {
-                ...b,
-                castId: fallback.id,
-                speaker: fallback.role,
-                speakerName: fallback.name,
-              }
-            : b,
-        ),
+      setScenes((scenesPrev) =>
+        scenesPrev.map((s) => ({
+          ...s,
+          // Remove messages belonging to deleted character (simultaneous with cast removal)
+          bubbles: s.bubbles.filter((b) => b.castId !== id),
+        })),
       );
+      setActiveCastId((cur) => (cur === id ? fallback.id : cur));
       return next;
+    });
+    setDeleteTarget(null);
+  }, [deleteTarget]);
+
+  const addScene = useCallback(() => {
+    setScenes((prev) => {
+      const s = createScene(prev.length + 1);
+      setActiveSceneId(s.id);
+      return [...prev, s];
     });
   }, []);
 
-  const castByRole = useMemo(() => {
-    const groups: Record<ChatSpeaker, EpistolaryCastMember[]> = {
-      protagonist: [],
-      antagonist: [],
-      narrator: [],
-    };
-    for (const m of cast) groups[m.role].push(m);
-    return groups;
-  }, [cast]);
-
-  const castLabel = useCallback(
-    (member: EpistolaryCastMember) => {
-      const roleLabel = t(SPEAKER_ROLE_KEYS[member.role]);
-      const sameRole = cast.filter((c) => c.role === member.role);
-      if (sameRole.length > 1) {
-        const idx = sameRole.findIndex((c) => c.id === member.id) + 1;
-        return `${member.name} · ${roleLabel} ${idx}`;
-      }
-      return `${member.name} · ${roleLabel}`;
+  const removeScene = useCallback(
+    (id: string) => {
+      setScenes((prev) => {
+        if (prev.length <= 1) return prev;
+        const next = prev.filter((s) => s.id !== id);
+        if (activeSceneId === id) setActiveSceneId(next[0]!.id);
+        return next;
+      });
     },
-    [cast, t],
+    [activeSceneId],
   );
 
-  const savedTimeLabel = lastSaved
-    ? lastSaved.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
-    : null;
+  const renameScene = useCallback((id: string, title: string) => {
+    setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, title } : s)));
+  }, []);
 
-  const syncLabel = (() => {
-    if (cloudSync === 'syncing') return t('epistolaryEditor.cloudSyncing');
-    if (cloudSync === 'synced') return t('epistolaryEditor.cloudSynced');
-    if (cloudSync === 'local') return t('epistolaryEditor.cloudPending');
-    if (cloudSync === 'error') return t('epistolaryEditor.cloudError');
-    return null;
-  })();
+  const handleSave = useCallback(() => {
+    setSaving(true);
+    void persistCloud(chapterTitle, scenes, cast).finally(() => setSaving(false));
+  }, [chapterTitle, scenes, cast, persistCloud]);
+
+  const handlePublish = useCallback(async () => {
+    if (!storyKey) return;
+    if (!allBubbles.some((b) => b.text.trim())) {
+      setPublishMsg(t('epistolaryEditor.publishEmpty'));
+      return;
+    }
+    setPublishing(true);
+    setPublishMsg(null);
+    try {
+      await persistCloud(chapterTitle, scenes, cast);
+      await publishEpistolaryChapter(storyKey, chapter, {
+        title: chapterTitle,
+        cast,
+        scenes,
+      });
+      setPublishMsg(t('epistolaryEditor.publishSuccess'));
+      setSync('synced');
+    } catch (e) {
+      setPublishMsg(e instanceof Error ? e.message : t('epistolaryEditor.publishError'));
+    } finally {
+      setPublishing(false);
+    }
+  }, [storyKey, allBubbles, chapterTitle, scenes, cast, chapter, persistCloud, t]);
+
+  const msgCountForCast = useCallback(
+    (id: string) => allBubbles.filter((b) => b.castId === id).length,
+    [allBubbles],
+  );
 
   if (loading) {
     return (
-      <div
-        className="katha-proto-layout katha-proto-layout--premium katha-proto-layout--calm26 epistolary-editor epistolary-editor--v2 wc-page-enter"
-        data-katha-mode="creation"
-      >
+      <div className="epi-v4" data-katha-mode="creation" lang={isTe ? 'te' : 'en'}>
         <p className="cms-loading cms-loading--inline">{t('common.loading')}</p>
       </div>
     );
@@ -369,293 +405,369 @@ export function EpistolaryEditor() {
 
   return (
     <div
-      className={`katha-proto-layout katha-proto-layout--premium katha-proto-layout--calm26 epistolary-editor epistolary-editor--v2 epistolary-editor--split${previewMode ? ' epistolary-editor--preview-focus' : ''} wc-page-enter`}
+      className={`epi-v4${previewOpen ? ' epi-v4--preview' : ''}${castOpen ? ' epi-v4--cast' : ''}`}
       data-katha-mode="creation"
+      lang={isTe ? 'te' : 'en'}
     >
-      <header className="katha-editor-chrome epistolary-editor__chrome">
-        <div className="katha-editor-chrome__row katha-editor-chrome__row--primary">
-          <div className="katha-editor-chrome__leading">
-            <button
-              type="button"
-              className="katha-icon-btn"
-              onClick={() => navigate(`/stories/${storyId}`)}
-              aria-label={t('epistolaryEditor.back')}
-            >
-              <ArrowLeft size={18} aria-hidden />
-            </button>
-            <span className="epistolary-editor__badge">
-              <MessageCircle size={14} aria-hidden />
-              {t('epistolaryEditor.badge')}
-            </span>
-          </div>
-          <div className="katha-editor-doc-actions">
-            <button type="button" className="katha-btn katha-btn--ghost" onClick={() => addBubble()}>
-              <Plus size={16} aria-hidden />
-              {t('epistolaryEditor.addMessage')}
-            </button>
-            <Link
-              to={`/stories/${storyId}/read/epistolary/${chapter}`}
-              className="katha-btn katha-btn--ghost"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <BookOpen size={16} aria-hidden />
-              {t('epistolaryEditor.openReader')}
-            </Link>
-            <button
-              type="button"
-              className="katha-btn katha-btn--ghost epistolary-editor__mode-toggle"
-              onClick={() => setPreviewMode((v) => !v)}
-              aria-pressed={previewMode}
-            >
-              {previewMode ? <PenLine size={16} aria-hidden /> : <Eye size={16} aria-hidden />}
-              {previewMode ? t('epistolaryEditor.editMode') : t('epistolaryEditor.previewMode')}
-            </button>
-            <ThemeToggle compact />
-            <button
-              type="button"
-              className="katha-btn katha-btn--ghost"
-              disabled={saving || cloudSync === 'syncing'}
-              onClick={handleSaveDraft}
-            >
-              {saving || cloudSync === 'syncing' ? (
-                <Loader2 size={16} className="cms-loading__spin" aria-hidden />
-              ) : (
-                <Save size={16} aria-hidden />
-              )}
-              {saving || cloudSync === 'syncing'
-                ? t('epistolaryEditor.saving')
-                : t('epistolaryEditor.saveDraft')}
-            </button>
-          </div>
+      {/* ── Top bar ── */}
+      <header className="epi-v4__bar">
+        <div className="epi-v4__bar-left">
+          <button
+            type="button"
+            className="epi-v4__icon-btn"
+            onClick={() => navigate(`/stories/${storyId}`)}
+            aria-label={t('epistolaryEditor.back')}
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <span className="epi-v4__badge">{t('epistolaryEditor.badge')}</span>
         </div>
-        <div className="katha-editor-chrome__row katha-editor-chrome__row--meta">
-          <input
-            className="katha-inline-title-input epistolary-editor__title"
-            value={chapterTitle}
-            onChange={(e) => setChapterTitle(e.target.value)}
-            aria-label={t('epistolaryEditor.chapterTitle')}
-          />
-          <span className="katha-editor-doc-meta__sep" aria-hidden>
-            ·
-          </span>
-          <span className="input-hint">
-            {bubbles.length} {t('epistolaryEditor.messageCount')}
-          </span>
-          <span className="katha-editor-doc-meta__sep" aria-hidden>
-            ·
-          </span>
-          <span className="input-hint">
-            {cast.length} {t('epistolaryEditor.castCount')}
-          </span>
-          {savedTimeLabel && (
-            <>
-              <span className="katha-editor-doc-meta__sep" aria-hidden>
-                ·
+
+        <TeluguTextField
+          className="epi-v4__title"
+          value={chapterTitle}
+          onChange={setChapterTitle}
+          phonetic
+          lang="te"
+          aria-label={t('epistolaryEditor.chapterTitle')}
+          placeholder={t('epistolaryEditor.chapterTitlePlaceholder')}
+        />
+
+        <div className="epi-v4__bar-right">
+          <span className="epi-v4__sync" title={sync}>
+            {sync === 'syncing' && <Loader2 size={13} className="cms-loading__spin" />}
+            {sync === 'synced' && <Cloud size={13} />}
+            {(sync === 'local' || sync === 'error') && <CloudOff size={13} />}
+            {lastSaved && (
+              <span>
+                {t('epistolaryEditor.savedPrefix')}{' '}
+                {lastSaved.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
               </span>
-              <span className="alternate-editor__autosave">
-                {t('epistolaryEditor.savedPrefix')} {savedTimeLabel}
-              </span>
-            </>
-          )}
-          {syncLabel && (
-            <>
-              <span className="katha-editor-doc-meta__sep" aria-hidden>
-                ·
-              </span>
-              <span className={`alternate-editor__sync alternate-editor__sync--${cloudSync}`}>
-                {cloudSync === 'syncing' && <Loader2 size={12} className="cms-loading__spin" aria-hidden />}
-                {cloudSync === 'synced' && <Cloud size={12} aria-hidden />}
-                {(cloudSync === 'local' || cloudSync === 'error') && <CloudOff size={12} aria-hidden />}
-                {syncLabel}
-              </span>
-            </>
-          )}
+            )}
+          </span>
+
+          <button
+            type="button"
+            className={`epi-v4__chip-btn${castOpen ? ' is-on' : ''}`}
+            onClick={() => setCastOpen((v) => !v)}
+          >
+            <Users size={15} />
+            {t('epistolaryEditor.castTitle')}
+            <span className="epi-v4__count">{cast.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`epi-v4__icon-btn${previewOpen ? ' is-on' : ''}`}
+            onClick={() => setPreviewOpen((v) => !v)}
+            aria-pressed={previewOpen}
+            title={t('epistolaryEditor.previewMode')}
+          >
+            <Eye size={16} />
+          </button>
+
+          <Link
+            to={`/stories/${storyId}/read/epistolary/${chapter}`}
+            className="epi-v4__icon-btn"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={t('epistolaryEditor.openReader')}
+          >
+            <BookOpen size={16} />
+          </Link>
+
+          <ThemeToggle compact />
+
+          <button
+            type="button"
+            className="epi-v4__ghost"
+            disabled={saving || sync === 'syncing'}
+            onClick={handleSave}
+          >
+            {saving ? <Loader2 size={14} className="cms-loading__spin" /> : <Save size={14} />}
+            {t('epistolaryEditor.saveDraft')}
+          </button>
+
+          <button
+            type="button"
+            className="epi-v4__publish"
+            disabled={publishing}
+            onClick={() => void handlePublish()}
+          >
+            {publishing ? <Loader2 size={14} className="cms-loading__spin" /> : <Upload size={14} />}
+            {t('epistolaryEditor.publish')}
+          </button>
         </div>
       </header>
 
-      <div className="epistolary-editor__split">
-        <main className="epistolary-editor__thread" aria-label="Chat thread">
-          {/* ── Cast panel: define names once ── */}
-          <section className="epistolary-cast" aria-labelledby="epistolary-cast-title">
-            <div className="epistolary-cast__head">
-              <span className="epistolary-cast__title" id="epistolary-cast-title">
-                <Users size={15} aria-hidden />
-                {t('epistolaryEditor.castTitle')}
-              </span>
-              <p className="epistolary-cast__hint input-hint">{t('epistolaryEditor.castHint')}</p>
-            </div>
+      {publishMsg && (
+        <div className="epi-v4__toast" role="status">
+          {publishMsg}
+          <button type="button" onClick={() => setPublishMsg(null)} aria-label="Close">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
-            <div className="epistolary-cast__groups">
-              {(['protagonist', 'antagonist', 'narrator'] as ChatSpeaker[]).map((role) => (
-                <div key={role} className={`epistolary-cast__group epistolary-cast__group--${role}`}>
-                  <div className="epistolary-cast__group-head">
-                    <span className="epistolary-cast__role-label">
-                      <StudioGlyph id={SPEAKER_GLYPHS[role]} variant="soft" size={14} />
-                      {t(SPEAKER_ROLE_KEYS[role])}
-                      <span className="epistolary-cast__role-count">{castByRole[role].length}</span>
-                    </span>
-                    <button
-                      type="button"
-                      className="epistolary-cast__add-role"
-                      onClick={() => addCastMember(role)}
-                      title={t('epistolaryEditor.addCastMember')}
-                    >
-                      <Plus size={14} aria-hidden />
-                      {t('epistolaryEditor.addCastMember')}
-                    </button>
-                  </div>
-                  <ul className="epistolary-cast__list">
-                    {castByRole[role].map((member) => (
-                      <li key={member.id} className="epistolary-cast__item">
-                        <input
-                          className="epistolary-cast__name"
-                          value={member.name}
-                          onChange={(e) => updateCastMember(member.id, { name: e.target.value })}
-                          aria-label={`${t(SPEAKER_ROLE_KEYS[role])} ${t('epistolaryEditor.speakerName')}`}
-                          placeholder={t('epistolaryEditor.speakerName')}
-                        />
-                        <button
-                          type="button"
-                          className="epistolary-cast__msg-btn"
-                          onClick={() => addBubble(member)}
-                          title={t('epistolaryEditor.addAsCharacter')}
-                        >
-                          <MessageCircle size={14} aria-hidden />
-                          {t('epistolaryEditor.addAsCharacter')}
-                        </button>
-                        <button
-                          type="button"
-                          className="epistolary-cast__remove"
-                          onClick={() => removeCastMember(member.id)}
-                          disabled={cast.length <= 1}
-                          aria-label={t('epistolaryEditor.removeCastMember')}
-                          title={t('epistolaryEditor.removeCastMember')}
-                        >
-                          <Trash2 size={14} aria-hidden />
-                        </button>
-                      </li>
-                    ))}
-                    {castByRole[role].length === 0 && (
-                      <li className="epistolary-cast__empty input-hint">{t('epistolaryEditor.castEmptyRole')}</li>
-                    )}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <div className="epistolary-editor__thread-head">
-            <span className="katha-token-eyebrow">{t('epistolaryEditor.threadLabel')}</span>
-            <span className="epistolary-editor__message-count">
-              {bubbles.length} {t('epistolaryEditor.messageCount')}
-            </span>
+      <div className="epi-v4__main">
+        {/* ── Scenes rail ── */}
+        <aside className="epi-v4__scenes" aria-label={t('epistolaryEditor.scenesLabel')}>
+          <div className="epi-v4__scenes-head">
+            <Clapperboard size={14} />
+            <span>{t('epistolaryEditor.scenesLabel')}</span>
           </div>
-          <p className="epistolary-editor__persist-hint input-hint" role="note">
-            {t('epistolaryEditor.persistHint')}
-          </p>
-
-          <div className="wc-stagger-children">
-            {bubbles.map((bubble) => {
-              const member =
-                cast.find((c) => c.id === bubble.castId) ??
-                cast.find((c) => c.role === bubble.speaker) ??
-                cast[0];
-              const selectValue = member?.id ?? bubble.castId ?? '';
-              return (
-                <article
-                  key={bubble.id}
-                  className={`epistolary-bubble epistolary-bubble--${bubble.speaker}`}
-                >
-                  <header className="epistolary-bubble__head">
-                    <span className="epistolary-bubble__avatar-ring" aria-hidden>
-                      <StudioGlyph id={SPEAKER_GLYPHS[bubble.speaker]} variant="soft" size={16} />
-                    </span>
-                    <div className="epistolary-bubble__meta">
-                      {/* Character dropdown — name auto-fills from cast */}
-                      <select
-                        className="epistolary-bubble__cast-select"
-                        value={selectValue}
-                        onChange={(e) => {
-                          const next = cast.find((c) => c.id === e.target.value);
-                          if (next) assignBubbleCast(bubble.id, next);
-                        }}
-                        aria-label={t('epistolaryEditor.selectCharacter')}
-                      >
-                        {cast.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {castLabel(c)}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="epistolary-bubble__name-display" title={t('epistolaryEditor.nameFromCast')}>
-                        {bubble.speakerName}
-                      </span>
-                      <span className={`epistolary-bubble__role-chip epistolary-bubble__role-chip--${bubble.speaker}`}>
-                        {t(SPEAKER_ROLE_KEYS[bubble.speaker])}
-                      </span>
-                      <time className="epistolary-bubble__time">{bubble.timestamp}</time>
-                      <button
-                        type="button"
-                        className="epistolary-bubble__delete"
-                        onClick={() => removeBubble(bubble.id)}
-                        disabled={bubbles.length <= 1}
-                        aria-label={t('epistolaryEditor.removeMessage')}
-                        title={t('epistolaryEditor.removeMessage')}
-                      >
-                        <Trash2 size={14} aria-hidden />
-                      </button>
-                    </div>
-                  </header>
-                  <textarea
-                    className="epistolary-bubble__body"
-                    data-bubble-id={bubble.id}
-                    value={bubble.text}
-                    onChange={(e) => updateBubbleText(bubble.id, e.target.value)}
-                    placeholder={
-                      bubble.speakerName
-                        ? t('epistolaryEditor.messagePlaceholderNamed').replace(
-                            '{name}',
-                            bubble.speakerName,
-                          )
-                        : t('epistolaryEditor.messagePlaceholder')
-                    }
-                    rows={2}
-                  />
-                </article>
-              );
-            })}
-          </div>
-
-          <div className="epistolary-editor__quick-add">
-            <span className="epistolary-editor__quick-add-label input-hint">
-              {t('epistolaryEditor.quickAdd')}
-            </span>
-            <div className="epistolary-editor__quick-add-chips">
-              {cast.map((member) => (
+          <ul className="epi-v4__scene-list">
+            {scenes.map((s, i) => (
+              <li
+                key={s.id}
+                className={`epi-v4__scene-item${s.id === activeSceneId ? ' is-active' : ''}`}
+              >
                 <button
-                  key={member.id}
                   type="button"
-                  className={`epistolary-editor__chip epistolary-editor__chip--${member.role}`}
-                  onClick={() => addBubble(member)}
+                  className="epi-v4__scene-select"
+                  onClick={() => setActiveSceneId(s.id)}
+                  aria-current={s.id === activeSceneId ? 'true' : undefined}
                 >
-                  <Plus size={12} aria-hidden />
-                  {member.name}
+                  <span className="epi-v4__scene-num">{i + 1}</span>
+                </button>
+                <TeluguTextField
+                  className="epi-v4__scene-title"
+                  value={s.title}
+                  onChange={(v) => renameScene(s.id, v)}
+                  onFocus={() => setActiveSceneId(s.id)}
+                  phonetic
+                  lang="te"
+                  aria-label={t('epistolaryEditor.sceneTitle')}
+                />
+                <span className="epi-v4__scene-count">{s.bubbles.length}</span>
+                {scenes.length > 1 && (
+                  <button
+                    type="button"
+                    className="epi-v4__scene-del"
+                    onClick={() => removeScene(s.id)}
+                    aria-label={t('epistolaryEditor.removeScene')}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          <button type="button" className="epi-v4__add-scene" onClick={addScene}>
+            <Plus size={14} />
+            {t('epistolaryEditor.addScene')}
+          </button>
+        </aside>
+
+        {/* ── Writing stage ── */}
+        <section className="epi-v4__stage">
+          <p className="epi-v4__pride">{t('epistolaryEditor.prideLine')}</p>
+
+          <div className="epi-v4__thread">
+            {activeBubbles.length === 0 && (
+              <p className="epi-v4__empty">{t('epistolaryEditor.emptyScene')}</p>
+            )}
+            {activeBubbles.map((b) => (
+              <article key={b.id} className={`epi-v4__msg epi-v4__msg--${b.speaker}`}>
+                <div className="epi-v4__msg-meta">
+                  <select
+                    className="epi-v4__msg-who"
+                    value={b.castId && cast.some((c) => c.id === b.castId) ? b.castId : cast[0]?.id}
+                    onChange={(e) => {
+                      const m = cast.find((c) => c.id === e.target.value);
+                      if (m) assignBubble(b.id, m);
+                    }}
+                  >
+                    {cast.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <time>{b.timestamp}</time>
+                  <button
+                    type="button"
+                    className="epi-v4__msg-del"
+                    onClick={() => removeBubble(b.id)}
+                    disabled={activeBubbles.length <= 1 && scenes.length === 1}
+                    aria-label={t('epistolaryEditor.removeMessage')}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                <TeluguTextField
+                  multiline
+                  className="epi-v4__msg-body"
+                  value={b.text}
+                  onChange={(v) => updateBubbleText(b.id, v)}
+                  phonetic
+                  lang="te"
+                  rows={2}
+                  placeholder={t('epistolaryEditor.messagePlaceholderNamed').replace(
+                    '{name}',
+                    b.speakerName,
+                  )}
+                />
+              </article>
+            ))}
+          </div>
+
+          <footer className="epi-v4__composer">
+            <div className="epi-v4__who-row">
+              {cast.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`epi-v4__who-pill epi-v4__who-pill--${m.role}${m.id === activeCastId ? ' is-on' : ''}`}
+                  onClick={() => {
+                    setActiveCastId(m.id);
+                    focusComposer();
+                  }}
+                >
+                  <span className="epi-v4__who-av">{initial(m.name)}</span>
+                  {m.name}
                 </button>
               ))}
+            </div>
+            <div className="epi-v4__compose-box">
+              <TeluguTextField
+                multiline
+                className="epi-v4__compose-input"
+                value={composer}
+                onChange={setComposer}
+                phonetic
+                lang="te"
+                rows={2}
+                placeholder={
+                  activeMember
+                    ? t('epistolaryEditor.composerPlaceholder').replace('{name}', activeMember.name)
+                    : t('epistolaryEditor.messagePlaceholder')
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as KeyboardEvent).isComposing) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+              />
               <button
                 type="button"
-                className="epistolary-editor__chip epistolary-editor__chip--next"
-                onClick={() => addBubble()}
+                className="epi-v4__send"
+                onClick={sendMessage}
+                disabled={!composer.trim() || !activeMember}
+                aria-label={t('epistolaryEditor.sendMessage')}
               >
-                <Plus size={12} aria-hidden />
-                {t('epistolaryEditor.addMessage')}
+                <Send size={18} />
+              </button>
+            </div>
+            <p className="epi-v4__compose-hint">{t('epistolaryEditor.composerHint')}</p>
+          </footer>
+        </section>
+
+        {/* ── Preview ── */}
+        {previewOpen && (
+          <EpistolaryReaderPreview
+            chapterTitle={chapterTitle}
+            bubbles={activeBubbles}
+            sceneTitle={activeScene?.title}
+          />
+        )}
+      </div>
+
+      {/* ── Cast sheet (not a permanent bloat bar) ── */}
+      {castOpen && (
+        <div className="epi-v4__cast-backdrop" role="presentation" onClick={() => setCastOpen(false)}>
+          <div
+            className="epi-v4__cast-sheet"
+            role="dialog"
+            aria-label={t('epistolaryEditor.castTitle')}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="epi-v4__cast-head">
+              <div>
+                <h2>{t('epistolaryEditor.castTitle')}</h2>
+                <p>{t('epistolaryEditor.castHintShort')}</p>
+              </div>
+              <button type="button" className="epi-v4__icon-btn" onClick={() => setCastOpen(false)}>
+                <X size={18} />
+              </button>
+            </header>
+
+            <ul className="epi-v4__cast-list">
+              {cast.map((m) => (
+                <li key={m.id} className={`epi-v4__cast-row epi-v4__cast-row--${m.role}`}>
+                  <span className="epi-v4__cast-av">{initial(m.name)}</span>
+                  <div className="epi-v4__cast-fields">
+                    <TeluguTextField
+                      className="epi-v4__cast-name"
+                      value={m.name}
+                      onChange={(v) => updateCast(m.id, { name: v })}
+                      phonetic
+                      lang="te"
+                      placeholder={t('epistolaryEditor.speakerNamePlaceholder')}
+                      aria-label={t('epistolaryEditor.speakerName')}
+                    />
+                    <select
+                      value={m.role}
+                      onChange={(e) => updateCast(m.id, { role: e.target.value as ChatSpeaker })}
+                      aria-label={t('epistolaryEditor.speakerRole')}
+                    >
+                      {(Object.keys(ROLE_KEYS) as ChatSpeaker[]).map((r) => (
+                        <option key={r} value={r}>
+                          {t(ROLE_KEYS[r])}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="epi-v4__cast-msgs">
+                      {msgCountForCast(m.id)} {t('epistolaryEditor.messageCount')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="epi-v4__cast-del"
+                    disabled={cast.length <= 1}
+                    onClick={() => setDeleteTarget(m)}
+                    aria-label={t('epistolaryEditor.removeCastMember')}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="epi-v4__cast-add-row">
+              {(Object.keys(ROLE_KEYS) as ChatSpeaker[]).map((role) => (
+                <button key={role} type="button" onClick={() => addCast(role)}>
+                  <Plus size={14} />
+                  {t(ROLE_KEYS[role])}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete character confirm ── */}
+      {deleteTarget && (
+        <div className="epi-v4__modal-backdrop" role="presentation">
+          <div className="epi-v4__modal" role="alertdialog" aria-modal="true" aria-labelledby="cast-del-title">
+            <h3 id="cast-del-title">{t('epistolaryEditor.deleteCastTitle')}</h3>
+            <p>
+              {t('epistolaryEditor.deleteCastBody')
+                .replace('{name}', deleteTarget.name)
+                .replace('{count}', String(msgCountForCast(deleteTarget.id)))}
+            </p>
+            <div className="epi-v4__modal-actions">
+              <button type="button" className="epi-v4__ghost" onClick={() => setDeleteTarget(null)}>
+                {t('epistolaryEditor.deleteCastCancel')}
+              </button>
+              <button type="button" className="epi-v4__danger" onClick={confirmDeleteCast}>
+                {t('epistolaryEditor.deleteCastConfirm')}
               </button>
             </div>
           </div>
-        </main>
-        <EpistolaryReaderPreview chapterTitle={chapterTitle} bubbles={bubbles} />
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -109,7 +109,12 @@ export const api = {
     useSupabaseDirect()
       ? sb.sbGetChapter(storyId, chapterNumber)
       : request<{ chapter: ChapterDraftData }>(`/creators/stories/${storyId}/chapters/${chapterNumber}`),
-  createStory: (body: {
+  /**
+   * Always create via Node API (service role) so story_members owner bootstrap
+   * is not blocked by recursive client RLS. Direct Supabase path remains as
+   * offline/dev fallback when the API is unreachable.
+   */
+  createStory: async (body: {
     title: string;
     description?: string;
     genre: string;
@@ -123,10 +128,27 @@ export const api = {
     setting?: string;
     themes?: string[];
     tags?: string[];
-  }) =>
-    useSupabaseDirect()
-      ? sb.sbCreateStory(body)
-      : request<{ story: { id: string } }>('/creators/stories', { method: 'POST', body: JSON.stringify(body) }),
+  }) => {
+    try {
+      return await request<{ story: { id: string } }>('/creators/stories', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      });
+    } catch (apiErr) {
+      // Fall back to direct only when API is down — not when API reports a policy error
+      const msg = apiErr instanceof Error ? apiErr.message : '';
+      if (msg.toLowerCase().includes('infinite recursion') || msg.toLowerCase().includes('story_members')) {
+        throw apiErr;
+      }
+      if (!useSupabaseDirect()) throw apiErr;
+      try {
+        return await sb.sbCreateStory(body);
+      } catch (directErr) {
+        // Prefer the more actionable message (RLS recursion guidance lives on direct path)
+        throw directErr instanceof Error ? directErr : apiErr;
+      }
+    }
+  },
   updateStory: (storyId: string, body: {
     title?: string;
     description?: string;

@@ -5,6 +5,7 @@
 import { randomUUID } from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { isMockMode } from '../lib/mockMode.js';
+import { assertContestSubmissionAllowed } from './contestWinStore.js';
 
 const DEFAULT_SPLIT = { platformPct: 15, organizerPct: 10, taxPct: 18 };
 
@@ -361,7 +362,7 @@ export async function listRegistrationsForUser(userId) {
   return regs.map((reg) => enrichRegistration(reg, subByReg.get(reg.id) || null));
 }
 
-export async function submitToEvent(userId, eventId, { story_id, story_title }) {
+export async function submitToEvent(userId, eventId, { story_id, story_title, branch_point_count }) {
   if (!story_id) throw new Error('story_id required');
 
   const event = await getEventById(eventId);
@@ -373,6 +374,9 @@ export async function submitToEvent(userId, eventId, { story_id, story_title }) 
   if (reg.payment_status === 'pending' || reg.payment_status === 'failed') {
     throw new Error('Complete entry payment first');
   }
+
+  // Format Spec v1 — per-story no-reentry + continuous unit floors
+  await assertContestSubmissionAllowed(story_id, { branch_point_count });
 
   const now = new Date().toISOString();
 

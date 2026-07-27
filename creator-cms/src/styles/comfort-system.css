@@ -309,3 +309,311 @@ input[type='radio'] {
     border: 1px solid CanvasText;
   }
 }
+
+/* ── Portal-wide Telugu typography + form ergonomics ─────────────────
+   Editor eye-comfort previously only helped manuscript surfaces.
+   Senior creators need the same legible Telugu stack on Create Story,
+   Profile, Dashboard, Settings — especially free-text fields. */
+:root {
+  --font-telugu: 'Noto Serif Telugu', 'Noto Sans Telugu', 'Literata', Georgia, serif;
+  --font-ui-telugu: 'Noto Sans Telugu', 'Noto Serif Telugu', 'Outfit', system-ui, sans-serif;
+  --katha-font-reading: 'Noto Serif Telugu', 'Noto Sans Telugu', 'Literata', Georgia, serif;
+}
+
+html,
+body,
+.app-viewport {
+  font-family: var(--font-ui-telugu), var(--font-ui), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings / story titles: display + Telugu-capable serif stack */
+h1, h2, h3,
+.studio-page-header__title,
+.sv21__title,
+.cs-v21__hero h1,
+.cms-panel__title,
+.profile-card__name {
+  font-family: var(--katha-font-display), var(--font-telugu), Georgia, serif;
+}
+
+/* Free-text fields: solid ink, Telugu fonts, no gradient text tricks */
+input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='submit']):not([type='button']),
+textarea,
+select,
+.cms-input,
+.cms-textarea,
+.cms-select,
+.cs-v21__title-input,
+.cs-v21__textarea,
+.cs-v21__field input,
+.cs-v21__field textarea,
+.cs-v21__field select,
+.katha-telugu-field {
+  font-family: var(--font-telugu), var(--font-ui), Georgia, serif;
+  color: var(--ink, #14110d);
+  -webkit-text-fill-color: unset;
+  caret-color: var(--katha-maroon, #6b2338);
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+}
+
+[data-theme='dark'] input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='submit']):not([type='button']),
+[data-theme='dark'] textarea,
+[data-theme='dark'] select,
+[data-theme='dark'] .cms-input,
+[data-theme='dark'] .cms-textarea,
+[data-theme='dark'] .cms-select,
+[data-theme='dark'] .cs-v21__title-input,
+[data-theme='dark'] .cs-v21__textarea,
+[data-theme='dark'] .cs-v21__field input,
+[data-theme='dark'] .cs-v21__field textarea,
+[data-theme='dark'] .cs-v21__field select,
+[data-theme='dark'] .katha-telugu-field {
+  color: var(--ink, #f4efe4);
+  -webkit-text-fill-color: unset;
+  caret-color: #c4a060;
+}
+
+/* Placeholders stay muted but never transparent-fill */
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-muted, #8a847c);
+  -webkit-text-fill-color: var(--ink-muted, #8a847c);
+  opacity: 1;
+}
+
+/* Create-story title: large Telugu-first measure */
+.cs-v21__title-input,
+.cs-v21__title-input.katha-telugu-field {
+  font-family: var(--font-telugu), 'Fraunces', Georgia, serif !important;
+  font-size: clamp(1.45rem, 2.8vw, 1.95rem);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.cs-v21__textarea,
+.cs-v21__textarea.katha-telugu-field {
+  min-height: 5.5rem;
+  line-height: 1.65 !important;
+  font-size: 1.05rem;
+}
+
+/* Profile / form panels: clearer labels and spacing for older eyes */
+.profile-form .input-group > span,
+.cs-v21__field > label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-soft, #38342e);
+  letter-spacing: 0.01em;
+}
+
+.profile-form .cms-input,
+.profile-form .cms-textarea {
+  font-size: 1.05rem;
+  min-height: 2.75rem;
+  padding: 12px 14px;
+}
+
+.profile-form .cms-textarea {
+  min-height: 7rem;
+  line-height: 1.65;
+}
+
+.profile-genre-chip {
+  font-family: var(--font-ui-telugu), var(--font-ui), sans-serif;
+  font-size: 0.95rem;
+  padding: 0.45rem 0.85rem;
+}
+
+/* Chips / metadata on create story */
+.cs-v21__chip {
+  font-family: var(--font-ui-telugu), var(--font-ui), sans-serif;
+}
+
+/* Soften pure-white form surfaces in light mode (less glare) */
+html:not([data-theme='dark']) .cms-input,
+html:not([data-theme='dark']) .cms-textarea,
+html:not([data-theme='dark']) .cms-select,
+html:not([data-theme='dark']) .cs-v21__field input:not(.cs-v21__title-input),
+html:not([data-theme='dark']) .cs-v21__field textarea,
+html:not([data-theme='dark']) .cs-v21__field select {
+  background: color-mix(in srgb, var(--surface, #f7f2e8) 92%, #ebe3d4);
+}
+
+/* ── Release checklist ─────────────────────────────────────────────── */
+.release-checklist .rcl-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px 16px;
+  align-items: end;
+  margin-bottom: 16px;
+  padding: 18px;
+}
+
+.release-checklist .rcl-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.release-checklist .rcl-summary {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border-left: 4px solid var(--gold, #c4a052);
+}
+
+.release-checklist .rcl-summary--ready {
+  border-left-color: var(--accent-sage, #6b8570);
+}
+
+.release-checklist .rcl-summary--blocked {
+  border-left-color: #a33a3a;
+}
+
+.release-checklist .rcl-summary__gate {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: var(--katha-font-display), var(--font-telugu), serif;
+}
+
+.release-checklist .rcl-summary__meta,
+.release-checklist .rcl-summary__critical {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.release-checklist .rcl-summary__critical {
+  color: #8a3030;
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+.release-checklist .rcl-summary__bar {
+  margin-top: 12px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(36, 31, 24, 0.08);
+  overflow: hidden;
+}
+
+.release-checklist .rcl-summary__bar > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #c4a052, #8a6b32);
+  border-radius: inherit;
+  transition: width 0.2s ease;
+}
+
+.release-checklist .rcl-notes {
+  display: block;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+
+.release-checklist .rcl-section {
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+
+.release-checklist .rcl-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.release-checklist .rcl-item {
+  border: 1px solid var(--border, rgba(36, 31, 24, 0.1));
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--surface, #fff) 94%, #ebe3d4);
+}
+
+.release-checklist .rcl-item--pass {
+  border-color: color-mix(in srgb, #6b8570 45%, transparent);
+}
+
+.release-checklist .rcl-item--fail {
+  border-color: color-mix(in srgb, #a33a3a 45%, transparent);
+}
+
+.release-checklist .rcl-item__head {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.release-checklist .rcl-item__label {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
+.release-checklist .rcl-item__hint {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.release-checklist .rcl-critical-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(163, 58, 58, 0.12);
+  color: #8a3030;
+  vertical-align: middle;
+}
+
+.release-checklist .rcl-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.release-checklist .rcl-status-btn {
+  border: 1px solid var(--border, rgba(36, 31, 24, 0.14));
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+
+.release-checklist .rcl-status-btn.is-active {
+  background: rgba(196, 160, 82, 0.18);
+  border-color: rgba(138, 107, 50, 0.45);
+  color: var(--ink);
+}
+
+.release-checklist .rcl-status-btn--fail.is-active {
+  background: rgba(163, 58, 58, 0.12);
+  border-color: rgba(163, 58, 58, 0.4);
+  color: #8a3030;
+}
+
+.release-checklist .rcl-item__note {
+  font-size: 0.9rem;
+}
+
+.release-checklist .rcl-icon--pass { color: #6b8570; }
+.release-checklist .rcl-icon--fail { color: #a33a3a; }
+.release-checklist .rcl-icon--skip { color: var(--ink-muted); }
+.release-checklist .rcl-icon--pending { color: var(--ink-faint); }

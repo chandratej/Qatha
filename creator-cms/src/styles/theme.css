@@ -62,9 +62,10 @@
   --radius-md: var(--katha-radius-md);
   --radius-lg: var(--katha-radius-lg);
   --spacing-unit: var(--katha-space-unit);
-  --font-ui: var(--katha-font-ui);
+  --font-ui: var(--katha-font-ui), var(--katha-font-ui-telugu), system-ui, sans-serif;
   --font-reading: var(--katha-font-display), var(--katha-font-reading);
-  --font-telugu: var(--katha-font-reading);
+  /* Explicit Telugu stack — never rely on Latin-only faces alone */
+  --font-telugu: 'Noto Serif Telugu', 'Noto Sans Telugu', var(--katha-font-reading), Georgia, serif;
   --transition: var(--katha-duration) var(--katha-ease);
   --line-height-body: 1.7;
   --line-height-relaxed: 1.8;

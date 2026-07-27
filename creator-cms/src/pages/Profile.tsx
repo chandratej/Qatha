@@ -4,23 +4,27 @@ import { Award, BookOpen, PenLine, Save, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { api } from '../lib/api';
-import { BRAND, GENRES } from '../lib/constants';
+import { BRAND } from '../lib/constants';
 import { getAuthorLevelBadge, getNextAuthorLevelBadge } from '../lib/creatorBadge';
-import { effectiveCreatorSharePct, trustLevelForReaders } from '../lib/platformConstants';
+import { effectiveCreatorSharePct, trustLevelForReaders, PRD_GENRES } from '../lib/platformConstants';
 import { loadCreatorProfile, saveCreatorProfile } from '../lib/profilePrefs';
 import { formatCompact } from '../lib/dashboardFormat';
 import { StudioPageHeader } from '../components/studio/StudioPageHeader';
 import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
 import type { StoryTrustLevelId } from '../lib/platformConstants';
 import { useLocale } from '../context/LocaleContext';
+import { TeluguTextField } from '../components/TeluguTextField';
+
+const PROFILE_GENRES = PRD_GENRES.filter((g) => !('mapsTo' in g && g.mapsTo));
 
 export function Profile() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { user } = useAuth();
   const { data: dash } = useApi(() => api.getDashboard().catch(() => null));
   const { data: repData } = useApi(() => api.getCreatorReputation().catch(() => null));
   const [profile, setProfile] = useState(() => loadCreatorProfile(user?.display_name || 'Creator'));
   const [saved, setSaved] = useState(false);
+  const te = locale === 'te';
 
   const totalReads = dash?.stories?.reduce((s, x) => s + x.total_readers, 0) ?? 0;
   const publishedStories = dash?.stories?.length ?? 0;
@@ -44,7 +48,11 @@ export function Profile() {
   const toggleGenre = (id: string) => {
     setProfile((p) => ({
       ...p,
-      genres: p.genres.includes(id) ? p.genres.filter((g) => g !== id) : [...p.genres, id].slice(0, 4),
+      genres: p.genres.includes(id)
+        ? p.genres.filter((g) => g !== id)
+        : p.genres.length >= 6
+          ? p.genres
+          : [...p.genres, id],
     }));
   };
 
@@ -92,31 +100,62 @@ export function Profile() {
           <div className="profile-form__grid">
             <label className="input-group">
               <span>{t('profile.penName')}</span>
-              <input className="cms-input" value={profile.penName} onChange={(e) => setProfile({ ...profile, penName: e.target.value })} required />
+              <TeluguTextField
+                className="cms-input katha-telugu-field"
+                value={profile.penName}
+                onChange={(penName) => setProfile({ ...profile, penName })}
+                required
+                phonetic={te}
+                lang={te ? 'te' : 'en'}
+              />
             </label>
             <label className="input-group">
               <span>{t('profile.tagline')}</span>
-              <input className="cms-input" value={profile.tagline} onChange={(e) => setProfile({ ...profile, tagline: e.target.value })} placeholder="e.g. Fantasy & romance serialist" />
+              <TeluguTextField
+                className="cms-input katha-telugu-field"
+                value={profile.tagline}
+                onChange={(tagline) => setProfile({ ...profile, tagline })}
+                placeholder={te ? 'ఉదా: ప్రేమ & కుటుంబ కథలు' : 'e.g. Fantasy & romance serialist'}
+                phonetic={te}
+                lang={te ? 'te' : 'en'}
+              />
             </label>
             <label className="input-group profile-form__full">
               <span>{t('profile.bio')}</span>
-              <textarea className="cms-input cms-textarea" rows={4} value={profile.bio} onChange={(e) => setProfile({ ...profile, bio: e.target.value })} placeholder="Tell readers what makes your stories special…" />
+              <TeluguTextField
+                multiline
+                className="cms-input cms-textarea katha-telugu-field"
+                rows={4}
+                value={profile.bio}
+                onChange={(bio) => setProfile({ ...profile, bio })}
+                placeholder={te ? 'పాఠకులకు మీ కథలు ప్రత్యేకం ఎందుకో చెప్పండి…' : 'Tell readers what makes your stories special…'}
+                phonetic={te}
+                lang={te ? 'te' : 'en'}
+              />
             </label>
             <label className="input-group">
               <span>{t('profile.website')}</span>
-              <input className="cms-input" type="url" value={profile.website} onChange={(e) => setProfile({ ...profile, website: e.target.value })} placeholder="https://" />
+              <input className="cms-input" type="url" value={profile.website} onChange={(e) => setProfile({ ...profile, website: e.target.value })} placeholder="https://" lang="en" inputMode="url" />
             </label>
             <label className="input-group">
               <span>{t('profile.socialHandle')}</span>
-              <input className="cms-input" value={profile.twitter} onChange={(e) => setProfile({ ...profile, twitter: e.target.value })} placeholder="@yourhandle" />
+              <input className="cms-input" value={profile.twitter} onChange={(e) => setProfile({ ...profile, twitter: e.target.value })} placeholder="@yourhandle" lang="en" />
             </label>
           </div>
 
-          <h3 className="cms-panel__title" style={{ marginTop: 24 }}><BookOpen size={18} aria-hidden /> Genres you write</h3>
+          <h3 className="cms-panel__title" style={{ marginTop: 24 }}>
+            <BookOpen size={18} aria-hidden /> {te ? 'మీరు రాసే జానర్లు (6 వరకు)' : 'Genres you write (up to 6)'}
+          </h3>
           <div className="profile-genres">
-            {GENRES.map((g) => (
-              <button key={g.id} type="button" className={`profile-genre-chip${profile.genres.includes(g.id) ? ' profile-genre-chip--active' : ''}`} onClick={() => toggleGenre(g.id)}>
-                {g.label}
+            {PROFILE_GENRES.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className={`profile-genre-chip${profile.genres.includes(g.id) ? ' profile-genre-chip--active' : ''}`}
+                onClick={() => toggleGenre(g.id)}
+                lang={te ? 'te' : 'en'}
+              >
+                {te ? g.labelTelugu : g.label}
               </button>
             ))}
           </div>

@@ -57,6 +57,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     { id: 'p', label: 'Profile', icon: User, run: () => navigate('/profile') },
     { id: 'c', label: 'Community', icon: Users, run: () => navigate('/community') },
     { id: 'set', label: 'Settings', icon: Settings, run: () => navigate('/settings') },
+    { id: 'rcl', label: 'Release checklist', icon: Settings, run: () => navigate('/release-checklist') },
   ], [navigate]);
   const filtered = items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase()));
 

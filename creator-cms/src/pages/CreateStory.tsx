@@ -25,6 +25,8 @@ import {
   saveCreateStoryDraft,
   clearCreateStoryDraft,
 } from '../lib/createStoryDraft';
+import { TeluguTextField } from '../components/TeluguTextField';
+import { defaultStoryCoverUrl } from '../lib/storyCover';
 
 const CONTENT_TYPE_ICONS: Record<string, typeof BookOpen> = {
   serialized_story: BookOpen,
@@ -33,6 +35,7 @@ const CONTENT_TYPE_ICONS: Record<string, typeof BookOpen> = {
   flash_fiction: Zap,
   epistolary_chat: MessageCircle,
   interactive_branching: GitBranch,
+  interactive_flash: GitBranch,
 };
 
 function contentTypeSubtitle(ct: ContentTypeDef, locale: string): string {
@@ -103,8 +106,19 @@ export function CreateStory() {
       setTitle(draft.title);
       setDescription(draft.description);
       setContentType(draft.contentType);
-      setGenre(draft.genre);
-      setSecondaryGenres(draft.secondaryGenres);
+      // Map legacy genre aliases (family_drama → drama, suspense → thriller)
+      const genreMeta = PRD_GENRES.find((g) => g.id === draft.genre);
+      const resolvedGenre =
+        genreMeta && 'mapsTo' in genreMeta && genreMeta.mapsTo
+          ? String(genreMeta.mapsTo)
+          : draft.genre;
+      setGenre(resolvedGenre);
+      setSecondaryGenres(
+        draft.secondaryGenres.map((id) => {
+          const g = PRD_GENRES.find((item) => item.id === id);
+          return g && 'mapsTo' in g && g.mapsTo ? String(g.mapsTo) : id;
+        }),
+      );
       setAgeRating(draft.ageRating);
       setLanguage(draft.language);
       setStoryStatus(draft.storyStatus);
@@ -140,11 +154,19 @@ export function CreateStory() {
     : contentType;
   const formatSub = selectedContentType ? contentTypeSubtitle(selectedContentType, locale) : '';
 
+  /** Primary catalog — hide legacy aliases that map into another PRD genre */
+  const primaryGenres = useMemo(
+    () => PRD_GENRES.filter((g) => !('mapsTo' in g && g.mapsTo)),
+    [],
+  );
+
   const genreLabel = (id: string) => {
     const g = PRD_GENRES.find((item) => item.id === id);
     if (!g) return id;
     return locale === 'te' ? g.labelTelugu : g.label;
   };
+
+  const useTeluguPhonetic = locale === 'te' || language === 'te';
 
   const toggleSecondaryGenre = (id: string) => {
     setSecondaryGenres((prev) =>
@@ -175,15 +197,15 @@ export function CreateStory() {
   const canAdvanceStep1 = title.trim().length >= 3;
 
   const handleSubmit = async () => {
-    if (!coverFile) {
-      setError(t('createStory.coverRequired'));
-      setStep(2);
-      return;
-    }
     setSubmitting(true);
     setError(null);
     try {
-      const { url: cover_url } = await api.uploadImage(coverFile);
+      // Cover is optional at creation — default placeholder until publish time.
+      let cover_url = defaultStoryCoverUrl();
+      if (coverFile) {
+        const uploaded = await api.uploadImage(coverFile);
+        cover_url = uploaded.url;
+      }
       const { story } = await api.createStory({
         title,
         description,
@@ -243,15 +265,16 @@ export function CreateStory() {
 
           <div className="cs-v21__field">
             <label htmlFor="story-title">{t('createStory.storyTitle')}</label>
-            <input
+            <TeluguTextField
               id="story-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value.slice(0, PAYWALL.maxStoryTitleChars))}
+              onChange={(v) => setTitle(v.slice(0, PAYWALL.maxStoryTitleChars))}
               placeholder={t('createStory.storyTitlePlaceholderV21')}
               required
               minLength={3}
-              className="cs-v21__title-input"
-              lang={locale === 'te' ? 'te' : undefined}
+              className="cs-v21__title-input katha-telugu-field"
+              phonetic={useTeluguPhonetic}
+              lang={useTeluguPhonetic ? 'te' : 'en'}
             />
             <span className="cs-v21__counter">{title.length} / {PAYWALL.maxStoryTitleChars}</span>
           </div>
@@ -261,13 +284,16 @@ export function CreateStory() {
               {t('createStory.descriptionOneLine')}{' '}
               <span style={{ fontWeight: 400, color: 'var(--cs-muted)' }}>({t('createStory.optional')})</span>
             </label>
-            <textarea
+            <TeluguTextField
               id="description"
-              className="cs-v21__textarea"
+              multiline
+              className="cs-v21__textarea katha-telugu-field"
               value={description}
-              onChange={(e) => setDescription(e.target.value.slice(0, PAYWALL.maxStoryDescChars))}
+              onChange={(v) => setDescription(v.slice(0, PAYWALL.maxStoryDescChars))}
               placeholder={t('createStory.descriptionPlaceholderV21')}
               rows={2}
+              phonetic={useTeluguPhonetic}
+              lang={useTeluguPhonetic ? 'te' : 'en'}
             />
           </div>
 
@@ -291,7 +317,7 @@ export function CreateStory() {
                   ? selectedContentType.selectionGuideTelugu
                   : selectedContentType.selectionGuideEnglish}
               </p>
-              {selectedContentType.confidence === 'placeholder' && (
+              {(selectedContentType.confidence as string) === 'placeholder' && (
                 <p className="cs-v21__format-guide-flag">
                   {locale === 'te'
                     ? 'Early guidance — alpha రచయితల డేటా తర్వాత మారవచ్చు. Publishకు నియమం కాదు.'
@@ -301,8 +327,8 @@ export function CreateStory() {
               {selectedContentType.confidence === 'high' && (
                 <p className="cs-v21__format-guide-flag">
                   {locale === 'te'
-                    ? 'మార్కెట్-validated సూచనలు — మీ కథ, మీరు రాసినట్లు రాయండి. Word count publishను block చేయదు.'
-                    : 'Market-validated guidance — this is your story, write it your way. Word count never blocks publish.'}
+                    ? 'Format Spec v1 సూచనలు — మీ కథ, మీరు రాసినట్లు రాయండి. Soft targets publishను block చేయవు (hard max మాత్రమే).'
+                    : 'Format Spec v1 guidance — this is your story. Soft targets never block publish (hard max only where set).'}
                 </p>
               )}
             </div>
@@ -326,7 +352,7 @@ export function CreateStory() {
                     <span>
                       {label}
                       {isMoat && <span className="cs-v21__type-badge" style={{ marginLeft: 6 }}>{t('createStory.formatBadge')}</span>}
-                      {ct.confidence === 'placeholder' && (
+                      {(ct.confidence as string) === 'placeholder' && (
                         <span className="cs-v21__type-badge cs-v21__type-badge--soft" style={{ marginLeft: 6 }}>
                           {locale === 'te' ? 'ప్రారంభం' : 'early'}
                         </span>
@@ -381,7 +407,7 @@ export function CreateStory() {
               <div className="cs-v21__field">
                 <label htmlFor="primary-genre">{t('createStory.primaryGenre')}</label>
                 <select id="primary-genre" value={genre} onChange={(e) => setGenre(e.target.value)}>
-                  {PRD_GENRES.map((g) => (
+                  {primaryGenres.map((g) => (
                     <option key={g.id} value={g.id}>{locale === 'te' ? g.labelTelugu : g.label}</option>
                   ))}
                 </select>
@@ -417,7 +443,15 @@ export function CreateStory() {
           </section>
 
           <section className="cs-v21__section">
-            <h2>{t('createStory.coverImage')}</h2>
+            <h2>
+              {t('createStory.coverImage')}{' '}
+              <span style={{ fontWeight: 400, color: 'var(--cs-muted)', fontSize: '0.9rem' }}>
+                ({t('createStory.optional')})
+              </span>
+            </h2>
+            <p className="input-hint" style={{ marginTop: 0, marginBottom: 10 }}>
+              {t('createStory.coverHint')}
+            </p>
             <label className="cs-v21__cover cs-v21__cover--inline" aria-label={t('createStory.coverUpload')}>
               {coverPreview ? (
                 <img src={coverPreview} alt="" />
@@ -425,7 +459,7 @@ export function CreateStory() {
                 <>
                   <ImageIcon size={28} strokeWidth={1.5} aria-hidden />
                   <span>{t('createStory.coverDragHint')}</span>
-                  <span className="cs-v21__cover-meta">{t('createStory.coverPlaceholder')}</span>
+                  <span className="cs-v21__cover-meta">{t('createStory.coverOptionalAtCreate')}</span>
                 </>
               )}
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleCoverUpload} className="cs-v21__cover-input" />
@@ -437,7 +471,7 @@ export function CreateStory() {
             <div className="cs-v21__advanced-body">
               <h3>{t('createStory.secondaryGenres')}</h3>
               <div className="cs-v21__chips">
-                {PRD_GENRES.filter((g) => g.id !== genre).map((g) => (
+                {primaryGenres.filter((g) => g.id !== genre).map((g) => (
                   <button key={g.id} type="button" className={`cs-v21__chip${secondaryGenres.includes(g.id) ? ' cs-v21__chip--active' : ''}`} onClick={() => toggleSecondaryGenre(g.id)}>
                     {genreLabel(g.id)}
                   </button>
@@ -446,11 +480,27 @@ export function CreateStory() {
               <div className="cs-v21__meta-grid">
                 <div className="cs-v21__field">
                   <label htmlFor="setting">{t('createStory.setting')}</label>
-                  <input id="setting" value={setting} onChange={(e) => setSetting(e.target.value)} placeholder={t('createStory.settingPlaceholder')} />
+                  <TeluguTextField
+                    id="setting"
+                    className="katha-telugu-field"
+                    value={setting}
+                    onChange={setSetting}
+                    placeholder={t('createStory.settingPlaceholder')}
+                    phonetic={useTeluguPhonetic}
+                    lang={useTeluguPhonetic ? 'te' : 'en'}
+                  />
                 </div>
                 <div className="cs-v21__field">
                   <label htmlFor="themes">{t('createStory.themes')}</label>
-                  <input id="themes" value={themes} onChange={(e) => setThemes(e.target.value)} placeholder={t('createStory.themesPlaceholder')} />
+                  <TeluguTextField
+                    id="themes"
+                    className="katha-telugu-field"
+                    value={themes}
+                    onChange={setThemes}
+                    placeholder={t('createStory.themesPlaceholder')}
+                    phonetic={useTeluguPhonetic}
+                    lang={useTeluguPhonetic ? 'te' : 'en'}
+                  />
                 </div>
               </div>
               <div className="cs-v21__field">
@@ -510,7 +560,9 @@ export function CreateStory() {
             </div>
             <div className="cs-v21__review-row">
               <span className="cs-v21__review-label">{t('createStory.coverImage')}</span>
-              <span className="cs-v21__review-value">{coverFile ? coverFile.name : t('createStory.coverMissing')}</span>
+              <span className="cs-v21__review-value">
+                {coverFile ? coverFile.name : t('createStory.coverDefaultUntilPublish')}
+              </span>
             </div>
           </div>
 

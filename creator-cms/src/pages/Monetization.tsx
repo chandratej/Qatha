@@ -18,7 +18,9 @@ import {
   nextQuarterlyPayoutDate,
   sumLifetimePayouts,
   sumQuarterEarnings,
+  tierBadgeLabel,
 } from '../lib/payouts';
+import { READER_TIERS } from '../../../packages/shared/readerTiers';
 import '../styles/payouts-v2.css';
 
 /**
@@ -100,12 +102,6 @@ export function Monetization() {
         </div>
       </div>
 
-      <div className="payv2-section-head">
-        <h2 lang={te ? 'te' : undefined}>
-          {te ? 'కథల వారీగా ఆదాయం' : 'Earnings by story'}
-        </h2>
-      </div>
-
       {loading && (
         <p className="payv2-history-empty" role="status">
           {te ? 'లోడ్ అవుతోంది…' : 'Loading…'}
@@ -126,16 +122,16 @@ export function Monetization() {
               <span className="payv2-path-step-num" aria-hidden>2</span>
               <span>
                 {te
-                  ? 'పాఠకుల నమ్మకంతో "Performing" స్థాయికి చేరండి'
-                  : 'Reach the Performing trust tier with readers'}
+                  ? 'యూనిట్ గేట్: సీరియల్ 50 అధ్యాయాలు / సంకలనం 5 కథలు'
+                  : 'Unit gate: serial 50 chapters · collection 5 stories'}
               </span>
             </li>
             <li>
               <span className="payv2-path-step-num" aria-hidden>3</span>
               <span>
                 {te
-                  ? `ప్రతి క్వార్టర్ ${BASE_CREATOR_SHARE_PCT}% వాటా — Apex వద్ద 60% వరకు`
-                  : `Earn ${BASE_CREATOR_SHARE_PCT}% each quarter — rising to 60% at Apex`}
+                  ? `Performing + టైర్ లాడర్ — Bronze ₹99 నుండి Platform ₹249+`
+                  : `Performing + tier ladder — Bronze ₹99 up to Platform ₹249+`}
               </span>
             </li>
           </ol>
@@ -148,36 +144,102 @@ export function Monetization() {
       )}
 
       {!loading && rows.length > 0 && (
-        <ul className="payv2-story-list">
-          {rows.map((row) => {
-            const trust = STORY_TRUST_LEVELS.find((l) => l.id === row.trustLevel)!;
-            return (
-              <li key={row.id} className="payv2-story-row">
-                <div>
-                  <p className="payv2-story-name" lang={te ? 'te' : undefined}>{row.title}</p>
-                  <p className="payv2-story-meta" lang={te ? 'te' : undefined}>
+        <>
+          <div className="payv2-section-head">
+            <h2 lang={te ? 'te' : undefined}>
+              {te ? 'టైర్ & తదుపరి గేట్' : 'Your tier & next gate'}
+            </h2>
+          </div>
+          <p className="payv2-tier-lead" lang={te ? 'te' : undefined}>
+            {te
+              ? 'పాఠకుల టైర్ = SPI బ్యాండ్ + పదాల వాల్యూమ్. మానిటైజ్‌కు ముందు యూనిట్ గేట్ (సీరియల్ 50 / సంకలనం 5).'
+              : 'Reader tier = SPI band + word volume. Unit gate first (serial 50 chapters · collection 5 stories).'}
+          </p>
+          <ul className="payv2-tier-grid" aria-label={te ? 'కథల టైర్ పురోగతి' : 'Story tier progress'}>
+            {rows.map((row) => {
+              const p = row.progress;
+              const trust = STORY_TRUST_LEVELS.find((l) => l.id === row.trustLevel);
+              return (
+                <li
+                  key={`tier-${row.id}`}
+                  className={`payv2-tier-card${p.currentTier ? ' payv2-tier-card--live' : ''}${!p.formatMonetizable ? ' payv2-tier-card--muted' : ''}`}
+                >
+                  <div className="payv2-tier-card__top">
+                    <p className="payv2-tier-card__title" lang="te">{row.title}</p>
+                    <span className={`payv2-tier-badge payv2-tier-badge--${p.currentTier || 'none'}`}>
+                      {tierBadgeLabel(p.currentTier, te)}
+                    </span>
+                  </div>
+                  <p className="payv2-tier-card__headline" lang={te ? 'te' : undefined}>
+                    {p.headline}
+                  </p>
+                  <p className="payv2-tier-card__detail" lang={te ? 'te' : undefined}>
+                    {p.detail}
+                  </p>
+                  <div className="payv2-tier-card__meta">
                     <span>
                       {row.chapterCount}{' '}
-                      {te
-                        ? (row.chapterCount === 1 ? 'అధ్యాయం ప్రచురించారు' : 'అధ్యాయాలు ప్రచురించారు')
-                        : (row.chapterCount === 1 ? 'chapter published' : 'chapters published')}
+                      {te ? 'యూనిట్లు' : 'units'}
+                      {p.unitGateRequired != null
+                        ? ` · ${te ? 'గేట్' : 'gate'} ${p.unitGateRequired}`
+                        : ''}
                     </span>
-                    <span className="payv2-trust-tag">
-                      <span aria-hidden>{trust.glyph}</span>
-                      {trust.label}
+                    <span>
+                      {trust?.glyph} {trust?.label || row.trustLevel}
                     </span>
-                  </p>
-                </div>
-                <div className="payv2-story-earn">
-                  <p className="payv2-story-earn-value">{formatInr(row.quarterEarningsInr)}</p>
-                  <p className="payv2-story-earn-label" lang={te ? 'te' : undefined}>
-                    {te ? 'ఈ క్వార్టర్' : 'This quarter'}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                    <span>
+                      ~{p.cumulativeWords.toLocaleString()} {te ? 'పదాలు' : 'words'}
+                    </span>
+                  </div>
+                  {p.nextTier && (
+                    <p className="payv2-tier-card__next">
+                      {te ? 'తదుపరి' : 'Next'}: {tierBadgeLabel(p.nextTier, te)}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="payv2-section-head">
+            <h2 lang={te ? 'te' : undefined}>
+              {te ? 'కథల వారీగా ఆదాయం' : 'Earnings by story'}
+            </h2>
+          </div>
+          <ul className="payv2-story-list">
+            {rows.map((row) => {
+              const trust = STORY_TRUST_LEVELS.find((l) => l.id === row.trustLevel)!;
+              return (
+                <li key={row.id} className="payv2-story-row">
+                  <div>
+                    <p className="payv2-story-name" lang={te ? 'te' : undefined}>{row.title}</p>
+                    <p className="payv2-story-meta" lang={te ? 'te' : undefined}>
+                      <span>
+                        {row.chapterCount}{' '}
+                        {te
+                          ? (row.chapterCount === 1 ? 'అధ్యాయం ప్రచురించారు' : 'అధ్యాయాలు ప్రచురించారు')
+                          : (row.chapterCount === 1 ? 'chapter published' : 'chapters published')}
+                      </span>
+                      <span className="payv2-trust-tag">
+                        <span aria-hidden>{trust.glyph}</span>
+                        {trust.label}
+                      </span>
+                      <span className="payv2-trust-tag">
+                        {tierBadgeLabel(row.readerTier, te)}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="payv2-story-earn">
+                    <p className="payv2-story-earn-value">{formatInr(row.quarterEarningsInr)}</p>
+                    <p className="payv2-story-earn-label" lang={te ? 'te' : undefined}>
+                      {te ? 'ఈ క్వార్టర్' : 'This quarter'}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
 
       <div className="payv2-next" role="status">
@@ -255,9 +317,23 @@ export function Monetization() {
           >
             <p className="payv2-how-lead">
               {te
-                ? 'మీ ఆదాయ వాటా మీ కథ యొక్క Story Trust స్థాయిపై ఆధారపడి పెరుగుతుంది — పాఠక విలువ ద్వారా సంపాదించినది.'
-                : 'Your revenue share grows with each story’s Story Trust level — earned through reader value, not publishing alone.'}
+                ? 'మీ ఆదాయ వాటా Story Trust (SPI) + పదాల వాల్యూమ్ టైర్‌పై ఆధారపడి పెరుగుతుంది. ముందు యూనిట్ గేట్, తర్వాత టైర్.'
+                : 'Your share grows with Story Trust (SPI) and the volume-weighted reader tier. Unit gate first, then tier ladder.'}
             </p>
+            <div className="payv2-tier-ladder-mini">
+              {READER_TIERS.map((t) => (
+                <div key={t.id} className="payv2-tier-ladder-mini__row">
+                  <strong>{te ? t.labelTelugu : t.label}</strong>
+                  <span>₹{t.priceInr}/mo</span>
+                  <span className="payv2-tier-ladder-mini__need">
+                    {t.minTrustLevel}
+                    {t.minCumulativeWords > 0
+                      ? ` · ≥${(t.minCumulativeWords / 1000).toFixed(0)}k ${te ? 'పదాలు' : 'words'}`
+                      : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
             {STORY_TRUST_LEVELS.map((level) => {
               const isCurrent = level.id === authorTopTier;
               const isGate = level.id === 'performing';

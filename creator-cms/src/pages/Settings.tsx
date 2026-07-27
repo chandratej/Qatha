@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  User, Database, LogOut, Smartphone, Coffee, Settings2, FlaskConical, IndianRupee, Download,
+  User, Database, LogOut, Smartphone, Coffee, Settings2, FlaskConical, IndianRupee, Download, ClipboardList,
 } from 'lucide-react';
 import {
   loadComfortPrefs,
@@ -226,6 +226,23 @@ export function Settings() {
                 <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-soft)' }}>{payoutMsg}</p>
               )}
             </div>
+          </div>
+        </section>
+
+        <section className="cms-panel studio-settings-section">
+          <div className="studio-settings-section__head">
+            <ClipboardList size={18} aria-hidden />
+            <h3>Release checklist</h3>
+          </div>
+          <div className="studio-settings-section__body">
+            <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55 }}>
+              After each deploy: smoke + sanity board. Mark pass/fail and export a report before shipping.
+              Full MVP1 soft-launch board (ops + reader + go/no-go):{' '}
+              <code style={{ fontSize: '0.8em' }}>docs/MVP1_LAUNCH_CHECKLIST.md</code>
+            </p>
+            <Link to="/release-checklist" className="katha-cta katha-cta--soft">
+              <ClipboardList size={16} aria-hidden /> Open release checklist
+            </Link>
           </div>
         </section>
 

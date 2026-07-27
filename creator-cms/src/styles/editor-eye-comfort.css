@@ -248,6 +248,41 @@ html:not([data-theme='dark']) [data-katha-mode='creation'] .katha-proto-editor-c
   color: #14110d !important;
 }
 
+/* Never paint -webkit-text-fill on free-text fields — it can break Telugu IME caret/composition */
+html:not([data-theme='dark']) .epistolary-editor input,
+html:not([data-theme='dark']) .epistolary-editor textarea,
+html:not([data-theme='dark']) .epistolary-editor .epi-msg__body,
+html:not([data-theme='dark']) .epistolary-editor .epi-composer__input,
+html:not([data-theme='dark']) .epistolary-editor .epi-cast-chip__name,
+html:not([data-theme='dark']) .epistolary-editor .epi-chrome__title,
+html:not([data-theme='dark']) .katha-telugu-field,
+html:not([data-theme='dark']) .cs-v21__title-input,
+html:not([data-theme='dark']) .cs-v21__textarea,
+html:not([data-theme='dark']) .cs-v21__field input,
+html:not([data-theme='dark']) .cs-v21__field textarea,
+html:not([data-theme='dark']) .profile-form input,
+html:not([data-theme='dark']) .profile-form textarea,
+html:not([data-theme='dark']) .cms-input,
+html:not([data-theme='dark']) .cms-textarea {
+  -webkit-text-fill-color: unset !important;
+  color: #14110d !important;
+  caret-color: #5a1d2e;
+}
+
+[data-theme='dark'] .katha-telugu-field,
+[data-theme='dark'] .cs-v21__title-input,
+[data-theme='dark'] .cs-v21__textarea,
+[data-theme='dark'] .cs-v21__field input,
+[data-theme='dark'] .cs-v21__field textarea,
+[data-theme='dark'] .profile-form input,
+[data-theme='dark'] .profile-form textarea,
+[data-theme='dark'] .cms-input,
+[data-theme='dark'] .cms-textarea {
+  -webkit-text-fill-color: unset !important;
+  color: #f4efe4 !important;
+  caret-color: #c4a060;
+}
+
 /* Primary gold CTAs: dark ink on solid gold (cream-on-muted-gold fails) */
 html:not([data-theme='dark']) .btn-primary,
 html:not([data-theme='dark']) [data-katha-mode='creation'] .btn-primary,
@@ -462,7 +497,7 @@ html:not([data-theme='dark']) .narrative-os-app .nos-publish__cta {
 html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__name,
 html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__body {
   color: #14110d !important;
-  -webkit-text-fill-color: #14110d;
+  -webkit-text-fill-color: unset !important;
 }
 
 html:not([data-theme='dark']) .epistolary-editor .epistolary-bubble__role {
@@ -484,9 +519,19 @@ html:not([data-theme='dark']) [data-katha-mode='creation'] textarea,
 html:not([data-theme='dark']) [data-katha-mode='creation'] select,
 html:not([data-theme='dark']) [data-katha-mode='creation'] .cms-input {
   color: #14110d !important;
-  -webkit-text-fill-color: #14110d;
+  /* leave -webkit-text-fill unset so complex-script IME (Telugu) paints correctly */
   background: color-mix(in srgb, var(--surface-elevated, #ebe3d4) 85%, #fff);
   border-color: rgba(28, 22, 16, 0.22);
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] input:not(.epi-msg__body):not(.epi-composer__input):not(textarea),
+html:not([data-theme='dark']) [data-katha-mode='creation'] select,
+html:not([data-theme='dark']) [data-katha-mode='creation'] .cms-input {
+  -webkit-text-fill-color: #14110d;
+}
+
+html:not([data-theme='dark']) [data-katha-mode='creation'] textarea {
+  -webkit-text-fill-color: unset;
 }
 
 html:not([data-theme='dark']) [data-katha-mode='creation'] input::placeholder,
@@ -857,11 +902,25 @@ body.epistolary-editor-body {
   line-height: 1.9 !important;
 }
 
-/* Telugu epistolary — extra leading (matches serial manuscript) */
+/* Telugu epistolary — extra leading + proper complex-script stack */
 html[lang='te'] .epistolary-editor .epistolary-bubble__body,
-.epistolary-editor .epistolary-bubble__body:lang(te) {
+.epistolary-editor .epistolary-bubble__body:lang(te),
+html[lang='te'] .epistolary-editor .epi-msg__body,
+.epistolary-editor .epi-msg__body:lang(te),
+html[lang='te'] .epistolary-editor .epi-composer__input,
+.epistolary-editor .epi-composer__input:lang(te) {
   line-height: 2.05 !important;
   letter-spacing: 0.015em !important;
+  font-family: 'Noto Serif Telugu', 'Noto Sans Telugu', var(--font-telugu), 'Literata', Georgia, serif !important;
+}
+
+.epistolary-editor .epi-chrome__title,
+.epistolary-editor .epi-cast-chip__name,
+.epistolary-editor .epi-msg__body,
+.epistolary-editor .epi-composer__input {
+  font-family: 'Noto Serif Telugu', 'Noto Sans Telugu', var(--font-telugu, 'Noto Serif Telugu'), 'Literata', Georgia, serif;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  text-rendering: optimizeLegibility;
 }
 
 /* Reduce motion on bubble hover for calm writing */

@@ -124,6 +124,140 @@
   color: var(--pay-text);
 }
 
+/* Format Spec v1 — tier progress cards */
+.payv2-tier-lead {
+  margin: -8px 0 14px;
+  font-size: 0.84rem;
+  color: var(--pay-text-2);
+  line-height: 1.5;
+}
+
+.payv2-tier-grid {
+  list-style: none;
+  margin: 0 0 1.75rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.payv2-tier-card {
+  border: 1px solid var(--pay-border);
+  border-radius: var(--pay-radius-lg);
+  background: var(--pay-surface);
+  padding: 14px 16px;
+}
+
+.payv2-tier-card--live {
+  border-color: color-mix(in srgb, var(--pay-gold) 45%, var(--pay-border));
+  box-shadow: 0 1px 0 rgba(184, 134, 59, 0.12);
+}
+
+.payv2-tier-card--muted {
+  opacity: 0.88;
+}
+
+.payv2-tier-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.payv2-tier-card__title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1rem;
+  font-family: var(--font-reading, 'Noto Serif Telugu', Georgia, serif);
+  line-height: 1.35;
+}
+
+.payv2-tier-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--pay-surface-1);
+  color: var(--pay-text-2);
+  white-space: nowrap;
+}
+
+.payv2-tier-badge--bronze {
+  background: rgba(180, 120, 60, 0.16);
+  color: #7a4e1e;
+}
+
+.payv2-tier-badge--silver {
+  background: rgba(140, 150, 165, 0.22);
+  color: #3d4654;
+}
+
+.payv2-tier-badge--gold {
+  background: var(--pay-gold-light);
+  color: #6b4a14;
+}
+
+.payv2-tier-badge--platform {
+  background: rgba(122, 46, 46, 0.12);
+  color: var(--pay-maroon);
+}
+
+.payv2-tier-card__headline {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--pay-text);
+}
+
+.payv2-tier-card__detail {
+  margin: 0 0 10px;
+  font-size: 0.84rem;
+  color: var(--pay-text-2);
+  line-height: 1.45;
+}
+
+.payv2-tier-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.78rem;
+  color: var(--pay-text-3);
+}
+
+.payv2-tier-card__next {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--pay-maroon);
+}
+
+.payv2-tier-ladder-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: var(--pay-radius);
+  background: var(--pay-surface-1);
+  border: 1px solid var(--pay-border);
+}
+
+.payv2-tier-ladder-mini__row {
+  display: grid;
+  grid-template-columns: 1fr auto minmax(0, 1.4fr);
+  gap: 8px;
+  font-size: 0.8rem;
+  align-items: baseline;
+}
+
+.payv2-tier-ladder-mini__need {
+  color: var(--pay-text-3);
+  text-align: right;
+}
+
 /* Per-story rows */
 .payv2-story-list {
   list-style: none;

@@ -39,7 +39,10 @@ const PLATFORM_CATEGORIES: PlatformCategory[] = [
       prdId: 'Vol_03-01',
       title: 'Content types & metadata',
       items: [
-        'Novel', 'Serialized Story', 'Short Story', 'Short Story Collection', 'Flash Fiction', 'Kids Stories',
+        'Serialized Story', 'Story Collection', 'Short Story', 'Flash Fiction',
+        'Chat-Fiction', 'Interactive Fiction', 'Interactive Flash Fiction',
+        'Contest ≥25 / Monetize ≥50 (serial path); Collection monetize @5; non-monetized short/flash',
+        'Reader tiers: Bronze ₹99 · Silver ₹149 · Gold ₹199 · Platform ₹249–299 (SPI + word volume)',
         'Primary + secondary genres (14)', 'Age rating', 'Language', 'Story status', 'Setting', 'Themes', 'Tags',
       ],
       status: 'partial',
@@ -55,6 +58,13 @@ const PLATFORM_CATEGORIES: PlatformCategory[] = [
       { prdId: 'Vol_01-05', title: 'Story Trust levels', items: STORY_TRUST_LEVELS.map((lvl) => `${lvl.glyph} ${lvl.label}`), status: 'partial', link: '/monetization' },
       { prdId: 'Vol_06-06', title: 'Story Performance Index (SPI)', items: SPI_WEIGHTS.map((w) => `${w.label} (${w.weightPct}%)`), status: 'planned', link: '/monetization' },
       { prdId: 'Vol_06-05', title: 'Patron tiers', items: PATRON_TIERS.map((p) => p.label), status: 'planned', link: '/monetization' },
+      {
+        prdId: 'Format Spec v1',
+        title: 'Reader subscription tiers (volume + SPI)',
+        items: ['Bronze ₹99', 'Silver ₹149 (≥200k words)', 'Gold ₹199 (≥400k)', 'Platform ₹249–299 (≥600k + top-decile Apex; no Collection)'],
+        status: 'partial',
+        link: '/monetization',
+      },
     ],
   },
   {

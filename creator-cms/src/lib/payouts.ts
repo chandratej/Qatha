@@ -1,6 +1,7 @@
 /**
  * Creator payouts — quarterly cadence and per-story earnings view models.
  * Amounts are whole rupees everywhere (no mixed float precision).
+ * Format Spec v1: attach reader-tier progress (unit gate + SPI + volume).
  */
 
 import {
@@ -8,6 +9,11 @@ import {
   trustLevelForReaders,
   type StoryTrustLevelId,
 } from '../../../packages/shared/story-trust';
+import {
+  describeStoryMonetizationProgress,
+  type StoryMonetizationProgress,
+  type ReaderTierId,
+} from '../../../packages/shared/readerTiers';
 
 export type PayoutStatus = 'paid' | 'processing' | 'failed';
 
@@ -17,8 +23,12 @@ export interface StoryEarningsRow {
   chapterCount: number;
   totalReaders: number;
   trustLevel: StoryTrustLevelId;
+  contentTypeId: string;
   /** This quarter earnings in whole INR */
   quarterEarningsInr: number;
+  /** Format Spec v1 ladder progress */
+  progress: StoryMonetizationProgress;
+  readerTier: ReaderTierId | null;
 }
 
 export interface PayoutHistoryRow {
@@ -78,21 +88,39 @@ export function buildStoryEarningsRows(
     chapter_count?: number;
     total_readers?: number;
     moderation_status?: string | null;
+    content_type?: string | null;
     /** Optional live quarter earnings when API provides them */
     quarter_earnings_inr?: number;
+    trust_level?: string | null;
+    is_top_decile_apex?: boolean;
+    avg_words_per_unit?: number | null;
   }>,
 ): StoryEarningsRow[] {
   const rows = stories
     .filter((s) => (s.moderation_status || 'draft') === 'published' || (s.chapter_count ?? 0) > 0)
     .map((s) => {
       const readers = s.total_readers ?? 0;
+      const chapterCount = s.chapter_count ?? 0;
+      const contentTypeId = s.content_type || 'serialized_story';
+      const trustLevel = (s.trust_level as StoryTrustLevelId)
+        || trustLevelForReaders(readers);
+      const progress = describeStoryMonetizationProgress({
+        contentTypeId,
+        trustLevel,
+        publishedUnits: chapterCount,
+        isTopDecileApex: s.is_top_decile_apex,
+        avgWordsPerUnit: s.avg_words_per_unit,
+      });
       return {
         id: s.id,
         title: s.title,
-        chapterCount: s.chapter_count ?? 0,
+        chapterCount,
         totalReaders: readers,
-        trustLevel: trustLevelForReaders(readers),
+        trustLevel,
+        contentTypeId,
         quarterEarningsInr: Math.round(s.quarter_earnings_inr ?? 0),
+        progress,
+        readerTier: progress.currentTier,
       };
     });
 
@@ -108,7 +136,20 @@ export function buildStoryEarningsRows(
 }
 
 export function anyStoryMonetizationEligible(rows: StoryEarningsRow[]): boolean {
-  return rows.some((r) => isMonetizationEligible(r.trustLevel));
+  return rows.some(
+    (r) => r.progress.unitGateMet && isMonetizationEligible(r.trustLevel) && r.progress.formatMonetizable,
+  );
+}
+
+export function tierBadgeLabel(tier: ReaderTierId | null, te: boolean): string {
+  if (!tier) return te ? 'ఇంకా టైర్ లేదు' : 'No tier yet';
+  const map: Record<ReaderTierId, { en: string; te: string }> = {
+    bronze: { en: 'Bronze · ₹99', te: 'కాంస్య · ₹99' },
+    silver: { en: 'Silver · ₹149', te: 'వెండి · ₹149' },
+    gold: { en: 'Gold · ₹199', te: 'స్వర్ణ · ₹199' },
+    platform: { en: 'Platform · ₹249+', te: 'ప్లాట్‌ఫామ్ · ₹249+' },
+  };
+  return te ? map[tier].te : map[tier].en;
 }
 
 export function sumQuarterEarnings(rows: StoryEarningsRow[]): number {

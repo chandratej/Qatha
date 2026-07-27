@@ -15,6 +15,7 @@ import {
   acceptsRegistration,
   escrowSplit,
 } from '../services/eventsStore.js';
+import { confirmEventWinners, stampContestWin } from '../services/contestWinStore.js';
 import { createAppError } from '../middleware/errorHandler.js';
 
 export const eventsRouter = Router();
@@ -97,6 +98,48 @@ eventsRouter.post('/:id/submit', requireAuth(), async (req, res, next) => {
     const userId = getAuthenticatedUserId(req);
     const result = await submitToEvent(userId, req.params.id, req.body || {});
     res.status(201).json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/**
+ * Confirm contest winners and stamp stories.contest_won_at (Format Spec v1 no-reentry).
+ * Body: { winners: [{ registration_id, story_id?, rank, label?, amount_inr? }] }
+ */
+eventsRouter.post('/:id/winners', requireAuth(), async (req, res, next) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const event = await getEventById(req.params.id);
+    if (!event) throw createAppError('NOT_FOUND', 'Event not found', 404);
+    // Organizer may confirm; platform-seeded events (organizer_id=platform) allow any auth user in MVP.
+    const isOrganizer = event.organizer_id === userId;
+    const isPlatformEvent = !event.organizer_id || event.organizer_id === 'platform';
+    if (!isOrganizer && !isPlatformEvent) {
+      throw createAppError('FORBIDDEN', 'Only the event organizer can confirm winners', 403);
+    }
+    const winners = req.body?.winners;
+    if (!Array.isArray(winners) || winners.length === 0) {
+      throw createAppError('BAD_REQUEST', 'winners array required', 400);
+    }
+    const result = await confirmEventWinners(req.params.id, winners, { actorId: userId });
+    res.status(200).json(result);
+  } catch (err) {
+    next(err instanceof Error && !err.status ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Stamp a single story win (ops / tests). Body: { story_id, rank? } */
+eventsRouter.post('/:id/stamp-win', requireAuth(), async (req, res, next) => {
+  try {
+    const storyId = req.body?.story_id;
+    if (!storyId) throw createAppError('BAD_REQUEST', 'story_id required', 400);
+    const result = await stampContestWin({
+      storyId,
+      eventId: req.params.id,
+      rank: req.body?.rank ?? 1,
+    });
+    res.json(result);
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }

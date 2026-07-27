@@ -196,20 +196,38 @@ export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
   const user = await requireUser();
   const caps = getSchemaCapabilities();
 
-  const baseStorySelect = 'id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at';
-  const { data, error } = caps.storySlug
-    ? await supabase
-      .from('stories')
-      .select(`${baseStorySelect}, slug`)
-      .eq('author_id', user.id)
-      .eq('is_published', true)
-      .order('created_at', { ascending: false })
-    : await supabase
-      .from('stories')
-      .select(baseStorySelect)
-      .eq('author_id', user.id)
-      .eq('is_published', true)
-      .order('created_at', { ascending: false });
+  // Drafts + live — creators need unpublished shells in the library.
+  const baseStorySelect =
+    'id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at, content_type, trust_level, contest_won_at, reader_tier';
+  let data: Record<string, unknown>[] | null = null;
+  let error: PostgrestError | null = null;
+
+  {
+    const primary = caps.storySlug
+      ? await supabase
+          .from('stories')
+          .select(`${baseStorySelect}, slug`)
+          .eq('author_id', user.id)
+          .order('created_at', { ascending: false })
+      : await supabase
+          .from('stories')
+          .select(baseStorySelect)
+          .eq('author_id', user.id)
+          .order('created_at', { ascending: false });
+    data = (primary.data as Record<string, unknown>[] | null) ?? null;
+    error = primary.error;
+  }
+
+  // Pre-migration 046 / partial schema: drop optional columns and retry
+  if (error && /column|schema cache|does not exist/i.test(error.message || '')) {
+    const fallback =
+      'id, title, genre, description, chapter_count, total_readers, cover_url, is_published, release_schedule, created_at';
+    const fb = caps.storySlug
+      ? await supabase.from('stories').select(`${fallback}, slug`).eq('author_id', user.id).order('created_at', { ascending: false })
+      : await supabase.from('stories').select(fallback).eq('author_id', user.id).order('created_at', { ascending: false });
+    data = (fb.data as Record<string, unknown>[] | null) ?? null;
+    error = fb.error;
+  }
 
   if (error) throw new Error(error.message);
 
@@ -221,7 +239,12 @@ export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
 
     const [{ data: chapters }, { data: drafts }] = await Promise.all([chaptersQuery, draftsQuery]);
     return {
-      ...s,
+      ...(s as object),
+      id: String(s.id),
+      title: String(s.title ?? ''),
+      genre: String(s.genre ?? 'romance'),
+      chapter_count: Number(s.chapter_count) || 0,
+      total_readers: Number(s.total_readers) || 0,
       moderation_status: deriveStoryModerationStatus([
         ...(chapters || []),
         ...(drafts || []).map((d) => ({
@@ -245,7 +268,7 @@ const STORY_OPTIONAL_MIGRATION_COLS = [
   'slug',
 ] as const;
 
-const MOAT_CONTENT_TYPES = new Set(['epistolary_chat', 'interactive_branching']);
+const MOAT_CONTENT_TYPES = new Set(['epistolary_chat', 'interactive_branching', 'interactive_flash']);
 
 function stripStoryOptionalCols(payload: Record<string, unknown>): Record<string, unknown> {
   const next = { ...payload };
@@ -256,10 +279,18 @@ function stripStoryOptionalCols(payload: Record<string, unknown>): Record<string
 function formatStoryInsertError(
   error: PostgrestError,
   requestedContentType?: string,
+  requestedGenre?: string,
 ): string {
-  const msg = (error.message || '').toLowerCase();
+  const raw = error.message || '';
+  const msg = raw.toLowerCase();
+  if (msg.includes('infinite recursion') && msg.includes('story_members')) {
+    return 'Could not create story: database policy loop on story_members. Apply supabase/migrations/045_fix_story_members_rls_genres.sql in the Supabase SQL editor, then try again.';
+  }
   if (isInvalidEnumError(error) && requestedContentType && MOAT_CONTENT_TYPES.has(requestedContentType)) {
     return 'Signature formats (chat-fiction / branching) need migration 038 in Supabase. Choose Serialized Story, or run supabase/migrations/038_interactive_content_types.sql in the SQL editor.';
+  }
+  if (isInvalidEnumError(error) && (msg.includes('genre') || requestedGenre)) {
+    return `Genre "${requestedGenre || 'selected'}" is not enabled on this database yet. Apply migration 045 (genre enum expansion) in Supabase, or pick Romance / Family Drama / Suspense for now.`;
   }
   if (msg.includes('char_length') && msg.includes('title')) {
     return 'Story title must be between 3 and 100 characters.';
@@ -267,7 +298,7 @@ function formatStoryInsertError(
   if (msg.includes('char_length') && msg.includes('description')) {
     return 'Description must be 300 characters or fewer.';
   }
-  return error.message || 'Could not create story';
+  return raw || 'Could not create story';
 }
 
 export async function sbCreateStory(body: {
@@ -347,10 +378,14 @@ export async function sbCreateStory(body: {
   }
 
   if (error && isInvalidEnumError(error) && body.content_type && MOAT_CONTENT_TYPES.has(body.content_type)) {
-    throw new Error(formatStoryInsertError(error, body.content_type));
+    throw new Error(formatStoryInsertError(error, body.content_type, body.genre));
   }
 
-  if (error || !data) throw new Error(error ? formatStoryInsertError(error, body.content_type) : 'Could not create story');
+  if (error || !data) {
+    throw new Error(
+      error ? formatStoryInsertError(error, body.content_type, body.genre) : 'Could not create story',
+    );
+  }
   return { story: { id: data.id } };
 }
 

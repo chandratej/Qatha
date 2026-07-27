@@ -42,13 +42,23 @@ export function isProvenTrustLevel(trustLevel) {
 
 /**
  * Pure derivation — no I/O. `overrideCount` (per-story manual override) always wins.
+ * Format Spec v1: Story Collection forces freeUnits=1 (story 1 permanently free).
  */
 export function deriveFreeChapterCount({
   trustLevel,
   authorHasProvenStory = false,
   overrideCount = null,
   cohort = null,
+  contentType = null,
 } = {}) {
+  // Collection paywall: story 1 free forever; story 2+ gated (Format Spec §2).
+  if (contentType === 'short_story_collection') {
+    if (Number.isFinite(overrideCount) && overrideCount > 0) {
+      return { count: Math.floor(overrideCount), source: 'override' };
+    }
+    return { count: 1, source: 'collection_story1_free' };
+  }
+
   if (Number.isFinite(overrideCount) && overrideCount > 0) {
     return { count: Math.floor(overrideCount), source: 'override' };
   }
@@ -98,6 +108,7 @@ export async function resolveFreeChapterCountForStory(story) {
   return deriveFreeChapterCount({
     trustLevel,
     authorHasProvenStory,
+    contentType: story.content_type || null,
     overrideCount: story.free_chapter_count,
     cohort: story.free_chapter_cohort,
   });
