@@ -1,4 +1,4 @@
-# Keep monorepo CMS deploys lean (packages/shared must remain included)
+# Monorepo CMS deploy — MUST keep packages/shared (TypeScript imports).
 **/node_modules
 **/.git
 **/dist
@@ -6,7 +6,8 @@
 **/test-results
 **/.turbo
 **/.cache
-backend
+# Heavy non-CMS trees
+backend/node_modules
 reader-app
 gateway
 founder-os
@@ -14,7 +15,6 @@ logs
 terminals
 mcps
 supabase/functions
-scripts
 **/*.log
 **/.env
 **/.env.*
@@ -27,3 +27,4 @@ creator-cms/e2e
 **/.dart_tool
 **/android/.gradle
 **/ios/Pods
+# Do NOT ignore packages/ or creator-cms/src
