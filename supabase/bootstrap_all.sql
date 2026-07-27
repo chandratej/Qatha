@@ -1,6 +1,12 @@
 ﻿-- Katha: combined database bootstrap
 -- Generated: 2026-07-07 00:44
 -- Paste into Supabase Dashboard -> SQL Editor -> Run
+--
+-- NOTE: This dump is historical (through early migrations, ~001–010). It does
+-- NOT include later migrations such as 045 story_members RLS, 046 format/contest,
+-- or 047 external_safe. After bootstrap (or on existing projects), apply ordered
+-- files under supabase/migrations/ or the matching supabase/apply_manual/*.sql.
+-- external_safe (047): see EXTERNAL_DATA_SAFETY.md and apply_manual/06_047_external_safe.sql.
 
 -- ============================================================
 -- 001_initial_schema.sql

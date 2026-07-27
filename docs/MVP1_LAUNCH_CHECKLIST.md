@@ -34,6 +34,7 @@
 | `ops.migrations_core` | Migrations **015–044** applied on hosted Supabase | Ops | Yes | No missing-column / invalid-enum on core paths | ✅ | Prod stories/SPI paths live; partial schema retries remain in code |
 | `ops.migrations_045` | Migration **045** applied (`story_members` RLS + genres) | Ops | Yes | No infinite recursion; helpers exist | ✅ | RPC `is_story_author` / `is_story_member` / `is_story_owner_member` OK via service role 2026-07-27 |
 | `ops.migrations_046` | Migration **046** applied (Format Spec columns) | Ops | Yes* | `contest_won_at` / `reader_tier` / `branch_point_count` selectable | ✅ | Verified PostgREST select on hosted project |
+| `ops.migrations_047` | Migration **047** `external_safe` applied | Ops | No | Schema + masked views + NOLOGIN role | ☐ | Paste `supabase/apply_manual/06_047_external_safe.sql` in SQL Editor (no `exec_sql` RPC). See `EXTERNAL_DATA_SAFETY.md` |
 | `ops.deploy_api` | Backend redeployed (Render) | Ops | Yes | `/api/health` OK; create-story service-role path | ✅ | Live commit `a15faf7` · `mock_mode=false` · `payments_ready=true` |
 | `ops.deploy_cms` | Creator CMS redeployed (Vercel) | Ops | Yes | Production serves latest UI | ✅ | https://katha-creator-cms.vercel.app · monorepo `packages/shared` fix (vendor + ensure script) · `release-checklist` in bundle |
 | `ops.env_cms` | CMS env: Supabase + `VITE_API_URL`, `MOCK_MODE=false` | Ops | Yes | Real auth + API | ✅ | Local/prod: `VITE_MOCK_MODE=false`, API → Render; prod hard-blocks mock even if flag set |

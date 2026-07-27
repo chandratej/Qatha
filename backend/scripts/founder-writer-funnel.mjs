@@ -10,7 +10,15 @@
  * creator-cms (see src/lib/analyticsEvents.ts), so retention is derived from
  * real usage, not a new tracking pixel.
  *
- * Usage: node scripts/founder-writer-funnel.mjs [--json]
+ * EXTERNAL DATA SAFETY (see EXTERNAL_DATA_SAFETY.md):
+ * - Default / --json output NEVER includes raw email or other contact PII.
+ * - Pass --include-pii only for founder-internal use; never paste that JSON
+ *   into Grok/Claude/ChatGPT or any external LLM.
+ *
+ * Usage:
+ *   node scripts/founder-writer-funnel.mjs
+ *   node scripts/founder-writer-funnel.mjs --json
+ *   node scripts/founder-writer-funnel.mjs --json --include-pii   # internal only
  * Requires: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SECRET_KEY) in backend/.env
  */
 
@@ -31,6 +39,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const INCLUDE_PII = process.argv.includes('--include-pii');
+const AS_JSON = process.argv.includes('--json');
 
 function daysBetween(a, b) {
   if (!a || !b) return null;
@@ -50,13 +60,23 @@ async function main() {
     process.exit(1);
   }
 
+  if (INCLUDE_PII) {
+    console.error(
+      '[founder-writer-funnel] WARNING: --include-pii enabled. Output may contain emails. '
+      + 'Do NOT paste into external LLMs (see EXTERNAL_DATA_SAFETY.md).',
+    );
+  }
+
   const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
+  // Profiles: only pull email when founder explicitly opts into PII.
+  const profileSelect = INCLUDE_PII ? 'id, email, created_at' : 'id, created_at';
 
   const [{ data: creators, error: cErr }, { data: profiles, error: pErr },
     { data: stories, error: sErr }, { data: chapters, error: chErr },
     { data: events, error: eErr }] = await Promise.all([
     supabase.from('creators').select('id, pen_name, created_at'),
-    supabase.from('profiles').select('id, email, created_at'),
+    supabase.from('profiles').select(profileSelect),
     supabase.from('stories').select('id, author_id, created_at'),
     supabase.from('chapters').select('id, story_id, status, created_at, published_at'),
     supabase.from('analytics_events').select('user_id, event, created_at'),
@@ -75,7 +95,6 @@ async function main() {
     if (!storiesByAuthor.has(s.author_id)) storiesByAuthor.set(s.author_id, []);
     storiesByAuthor.get(s.author_id).push(s);
   }
-  const storyById = new Map(stories.map((s) => [s.id, s]));
   const eventsByUser = new Map();
   for (const e of events) {
     if (!e.user_id) continue;
@@ -90,6 +109,7 @@ async function main() {
     const authorChapters = chapters.filter((c) => authorStoryIds.has(c.story_id));
     const published = authorChapters.filter((c) => c.status === 'published' && c.published_at);
     const userEvents = eventsByUser.get(cr.id) || [];
+    const profile = profileById.get(cr.id);
 
     const signupAt = cr.created_at;
     const firstStoryAt = authorStories.map((s) => s.created_at).sort()[0] || null;
@@ -100,10 +120,9 @@ async function main() {
     const activeDays = new Set(userEvents.map((e) => e.created_at.slice(0, 10))).size;
     const lastActiveDaysAgo = lastEventAt ? Math.round((now.getTime() - new Date(lastEventAt).getTime()) / DAY_MS) : null;
 
-    return {
+    const row = {
       creator_id: cr.id,
       pen_name: cr.pen_name,
-      email: profileById.get(cr.id)?.email || null,
       signup_at: signupAt,
       first_story_at: firstStoryAt,
       first_chapter_drafted_at: firstChapterDraftedAt,
@@ -118,6 +137,12 @@ async function main() {
       active_7d: lastActiveDaysAgo != null && lastActiveDaysAgo <= 7,
       active_30d: lastActiveDaysAgo != null && lastActiveDaysAgo <= 30,
     };
+
+    if (INCLUDE_PII) {
+      row.email = profile?.email || null;
+    }
+
+    return row;
   }).sort((a, b) => new Date(a.signup_at) - new Date(b.signup_at));
 
   const total = rows.length;
@@ -127,6 +152,8 @@ async function main() {
 
   const summary = {
     generated_at: now.toISOString(),
+    pii_included: INCLUDE_PII,
+    external_llm_safe: !INCLUDE_PII,
     cohort_size: total,
     funnel: {
       signed_up: total,
@@ -146,7 +173,7 @@ async function main() {
     writers: rows,
   };
 
-  if (process.argv.includes('--json')) {
+  if (AS_JSON) {
     console.log(JSON.stringify(summary, null, 2));
   } else {
     console.log(`[founder-writer-funnel] Cohort size: ${total}`);
@@ -155,7 +182,8 @@ async function main() {
     console.log(`[founder-writer-funnel] draft -> publish: ${reachedPublish}/${reachedDraft} (${summary.conversion_pct.draft_to_publish}%)`);
     console.log(`[founder-writer-funnel] median days signup->first publish: ${summary.median_days_signup_to_first_publish ?? 'n/a'}`);
     console.log(`[founder-writer-funnel] active in last 7d: ${summary.active_7d}/${total}, 30d: ${summary.active_30d}/${total}`);
-    console.log('[founder-writer-funnel] Run with --json for full per-writer data.');
+    console.log(`[founder-writer-funnel] pii_included=${INCLUDE_PII} external_llm_safe=${!INCLUDE_PII}`);
+    console.log('[founder-writer-funnel] Run with --json for full per-writer data (redacted unless --include-pii).');
   }
 }
 
