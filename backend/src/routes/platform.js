@@ -532,10 +532,25 @@ platformRouter.post('/peer-reviews', async (req, res, next) => {
   }
 });
 
+/**
+ * Scope author lists to JWT subject only.
+ * query.author_id is ignored for non-staff (closes IDOR / client-spoof of author scope).
+ * Moderators/admins may pass author_id for support tooling.
+ * Exported for unit tests (Part 2.1 identity spoof / IDOR verification).
+ */
+export function resolveAuthorScope(req) {
+  const sessionId = getAuthenticatedUserId(req);
+  const role = req.auth?.role || 'creator';
+  const isStaff = role === 'admin' || role === 'moderator';
+  const requested = req.query?.author_id ? String(req.query.author_id) : null;
+  if (isStaff && requested) return requested;
+  return sessionId;
+}
+
 platformRouter.get('/peer-reviews', async (req, res, next) => {
   try {
     seedPeerReviewMockIfEmpty();
-    const authorId = (req.query.author_id || getAuthenticatedUserId(req)) ?? undefined;
+    const authorId = resolveAuthorScope(req);
     const requests = await listPeerReviewRequests(authorId);
     res.json({ requests });
   } catch (err) {
@@ -545,7 +560,7 @@ platformRouter.get('/peer-reviews', async (req, res, next) => {
 
 platformRouter.get('/peer-reviews/author-feedback', async (req, res, next) => {
   try {
-    const authorId = (req.query.author_id || getAuthenticatedUserId(req)) ?? undefined;
+    const authorId = resolveAuthorScope(req);
     const bundles = await getAuthorReviewFeedback(authorId);
     res.json({ bundles });
   } catch (err) {

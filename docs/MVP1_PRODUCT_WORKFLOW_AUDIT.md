@@ -94,3 +94,11 @@ File: `D:\Katha_Enterprise\MVP\backend\src\routes\creators.js`
 
 Still require humans even if code is clean: Razorpay Dashboard webhook 2xx, father/senior creator dry-run, reader APK Option B QA, founder go/no-go.
 See docs/MVP1_LAUNCH_CHECKLIST.md.
+
+## Identity spoof follow-up (workflow katha-identity-spoof-verify)
+
+**Header-based identity (SVC-AUTH-06):** confirmed closed — JWT only; tests pass.
+
+**Additional finding (IDOR, medium):** `GET /peer-reviews` and `GET /peer-reviews/author-feedback` accepted `query.author_id` for any authenticated user.
+
+**Fix:** `resolveAuthorScope()` — non-staff always scoped to JWT `sub`; only admin/moderator may pass `author_id`. Tests in `platformAuthorScope.test.js` (4/4 pass).
