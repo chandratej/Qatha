@@ -887,8 +887,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 maxLength: 500,
                 decoration: InputDecoration(
                   hintText: isPraise
-                      ? 'What did you love about this chapter?'
-                      : 'What did you think of this chapter?',
+                      ? AppLocalizations.of(ctx)!.readerFeedbackHintPraise
+                      : AppLocalizations.of(ctx)!.readerFeedbackHintPrivate,
                   border: const OutlineInputBorder(),
                 ),
               ),
@@ -902,9 +902,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                           final text = controller.text.trim();
                           if (text.length < 3) {
                             ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'Please write at least a few words.',
+                                  AppLocalizations.of(ctx)!.readerFeedbackMinWords,
                                 ),
                               ),
                             );
@@ -1012,14 +1012,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
               ),
               const SizedBox(height: 12),
               SegmentedButton<String>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: 'hate_controversial',
-                    label: Text('Hate / harmful content'),
+                    label: Text(AppLocalizations.of(ctx)!.readerReportHate),
                   ),
                   ButtonSegment(
                     value: 'copyright',
-                    label: Text('Copyright'),
+                    label: Text(AppLocalizations.of(ctx)!.readerReportCopyright),
                   ),
                 ],
                 selected: {category},
@@ -1029,8 +1029,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
               const SizedBox(height: 12),
               if (category == 'copyright')
                 Text(
-                  'Copyright claims go through a separate notice process — please use '
-                  'the web copyright-claim form so we can collect the required details.',
+                  AppLocalizations.of(ctx)!.readerReportCopyrightHint,
                   style: Theme.of(ctx).textTheme.labelMedium,
                 )
               else ...[
@@ -1038,9 +1037,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   controller: controller,
                   maxLines: 4,
                   maxLength: 500,
-                  decoration: const InputDecoration(
-                    hintText: 'What\'s the issue? (10+ characters)',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(ctx)!.readerReportReasonHint,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -1053,9 +1052,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             final text = controller.text.trim();
                             if (text.length < 10) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text(
-                                    'Provide a reason (10+ characters).',
+                                    AppLocalizations.of(ctx)!.readerReportReasonMin,
                                   ),
                                 ),
                               );

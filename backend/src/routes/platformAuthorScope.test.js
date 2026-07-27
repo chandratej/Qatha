@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveAuthorScope } from './platform.js';
+import { resolveAuthorScope, resolveReviewerSlotScope } from './platform.js';
 
 describe('resolveAuthorScope (peer-review author lists)', () => {
   it('ignores query.author_id for normal creators (uses JWT subject)', () => {
@@ -33,5 +33,25 @@ describe('resolveAuthorScope (peer-review author lists)', () => {
       query: {},
     };
     assert.equal(resolveAuthorScope(req), 'admin-1');
+  });
+});
+
+describe('resolveReviewerSlotScope (reviewer slot spoof)', () => {
+  it('allows staff to pass reviewer_slot', async () => {
+    const req = {
+      auth: { userId: 'mod-1', role: 'moderator' },
+      query: { reviewer_slot: 'slot-99' },
+      body: {},
+    };
+    assert.equal(await resolveReviewerSlotScope(req), 'slot-99');
+  });
+
+  it('allows staff to pass reviewer_slot via body', async () => {
+    const req = {
+      auth: { userId: 'admin-1', role: 'admin' },
+      query: {},
+      body: { reviewer_slot: 'slot-body' },
+    };
+    assert.equal(await resolveReviewerSlotScope(req), 'slot-body');
   });
 });

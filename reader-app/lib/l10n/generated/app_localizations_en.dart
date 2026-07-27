@@ -286,6 +286,32 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get readerFeedbackHintPraise =>
+      'What did you love about this chapter?';
+
+  @override
+  String get readerFeedbackHintPrivate => 'What did you think of this chapter?';
+
+  @override
+  String get readerFeedbackMinWords => 'Please write at least a few words.';
+
+  @override
+  String get readerReportHate => 'Hate / harmful content';
+
+  @override
+  String get readerReportCopyright => 'Copyright';
+
+  @override
+  String get readerReportCopyrightHint =>
+      'Copyright claims use a separate notice process on the web form so we can collect required details.';
+
+  @override
+  String get readerReportReasonHint => 'What\'s the issue? (10+ characters)';
+
+  @override
+  String get readerReportReasonMin => 'Provide a reason (10+ characters).';
+
+  @override
   String get maturityGeneral => 'General';
 
   @override

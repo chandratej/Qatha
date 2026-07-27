@@ -596,6 +596,54 @@ abstract class AppLocalizations {
   /// **'Open offline chapter {number}'**
   String readerOpenOfflineChapter(int number);
 
+  /// No description provided for @readerFeedbackHintPraise.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you love about this chapter?'**
+  String get readerFeedbackHintPraise;
+
+  /// No description provided for @readerFeedbackHintPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'What did you think of this chapter?'**
+  String get readerFeedbackHintPrivate;
+
+  /// No description provided for @readerFeedbackMinWords.
+  ///
+  /// In en, this message translates to:
+  /// **'Please write at least a few words.'**
+  String get readerFeedbackMinWords;
+
+  /// No description provided for @readerReportHate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hate / harmful content'**
+  String get readerReportHate;
+
+  /// No description provided for @readerReportCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright'**
+  String get readerReportCopyright;
+
+  /// No description provided for @readerReportCopyrightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright claims use a separate notice process on the web form so we can collect required details.'**
+  String get readerReportCopyrightHint;
+
+  /// No description provided for @readerReportReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s the issue? (10+ characters)'**
+  String get readerReportReasonHint;
+
+  /// No description provided for @readerReportReasonMin.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide a reason (10+ characters).'**
+  String get readerReportReasonMin;
+
   /// No description provided for @maturityGeneral.
   ///
   /// In en, this message translates to:

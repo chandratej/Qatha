@@ -290,6 +290,32 @@ class AppLocalizationsTe extends AppLocalizations {
   }
 
   @override
+  String get readerFeedbackHintPraise => 'ఈ అధ్యాయంలో మీకు ఏమి నచ్చింది?';
+
+  @override
+  String get readerFeedbackHintPrivate =>
+      'ఈ అధ్యాయం గురించి మీ అభిప్రాయం ఏమిటి?';
+
+  @override
+  String get readerFeedbackMinWords => 'కనీసం కొన్ని పదాలు రాయండి.';
+
+  @override
+  String get readerReportHate => 'ద్వేషం / హానికరమైన కంటెంట్';
+
+  @override
+  String get readerReportCopyright => 'కాపీరైట్';
+
+  @override
+  String get readerReportCopyrightHint =>
+      'కాపీరైట్ క్లెయిమ్‌లు వెబ్ ఫారం ద్వారా వేరే ప్రక్రియ — అవసరమైన వివరాల కోసం.';
+
+  @override
+  String get readerReportReasonHint => 'సమస్య ఏమిటి? (10+ అక్షరాలు)';
+
+  @override
+  String get readerReportReasonMin => 'కారణం ఇవ్వండి (10+ అక్షరాలు).';
+
+  @override
   String get maturityGeneral => 'సాధారణం';
 
   @override

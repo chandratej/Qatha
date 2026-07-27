@@ -391,10 +391,11 @@ platformRouter.post('/reviewer-onboarding/certify', async (req, res, next) => {
 
 platformRouter.get('/reviewer-dashboard/stats', async (req, res, next) => {
   try {
-    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const stats = await getReviewerDashboardStats(slot);
     res.json({ stats });
   } catch (err) {
+    if (err?.status) return next(err);
     next(err instanceof Error ? createAppError('INTERNAL_ERROR', err.message, 500) : err);
   }
 });
@@ -547,6 +548,41 @@ export function resolveAuthorScope(req) {
   return sessionId;
 }
 
+/**
+ * Scope reviewer operations to the caller's pool_slot from onboarding.
+ * Client-supplied reviewer_slot is ignored for non-staff (closes slot-spoof IDOR).
+ * Staff may pass reviewer_slot for support tooling.
+ * Exported for unit tests.
+ */
+export async function resolveReviewerSlotScope(req) {
+  const sessionId = getAuthenticatedUserId(req);
+  const role = req.auth?.role || 'creator';
+  const isStaff = role === 'admin' || role === 'moderator';
+  const requestedRaw = req.query?.reviewer_slot ?? req.body?.reviewer_slot;
+  const requested = requestedRaw != null && String(requestedRaw).trim()
+    ? String(requestedRaw).trim()
+    : null;
+  if (isStaff && requested) return requested;
+
+  try {
+    const onboarding = await getReviewerOnboarding(sessionId);
+    return onboarding?.pool_slot || null;
+  } catch {
+    return null;
+  }
+}
+
+function requireReviewerSlot(slot) {
+  if (!slot) {
+    throw createAppError(
+      'FORBIDDEN',
+      'No reviewer pool slot for this account. Complete reviewer onboarding first.',
+      403,
+    );
+  }
+  return slot;
+}
+
 platformRouter.get('/peer-reviews', async (req, res, next) => {
   try {
     seedPeerReviewMockIfEmpty();
@@ -571,7 +607,7 @@ platformRouter.get('/peer-reviews/author-feedback', async (req, res, next) => {
 platformRouter.get('/peer-reviews/reviewer-feedback', async (req, res, next) => {
   try {
     seedPeerReviewMockIfEmpty();
-    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const bundles = await getReviewerFeedbackBundles(slot);
     res.json({ bundles });
   } catch (err) {
@@ -582,7 +618,7 @@ platformRouter.get('/peer-reviews/reviewer-feedback', async (req, res, next) => 
 platformRouter.get('/peer-reviews/assignments', async (req, res, next) => {
   try {
     seedPeerReviewMockIfEmpty();
-    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const assignments = await listAssignmentsForSlot(slot);
     res.json({ assignments });
   } catch (err) {
@@ -594,9 +630,17 @@ platformRouter.get('/peer-reviews/assignments/:assignmentId', async (req, res, n
   try {
     const assignment = await getAssignmentById(req.params.assignmentId);
     if (!assignment) throw createAppError('NOT_FOUND', 'Assignment not found', 404);
-    const requests = await listPeerReviewRequests();
-    const request = requests.find((r) => r.id === assignment.request_id);
+    const request = await getPeerReviewRequestById(assignment.request_id);
     if (!request) throw createAppError('NOT_FOUND', 'Review request not found', 404);
+    const userId = getAuthenticatedUserId(req);
+    const role = req.auth?.role || 'creator';
+    const isStaff = role === 'admin' || role === 'moderator';
+    const isAuthor = request.author_id === userId;
+    const slot = await resolveReviewerSlotScope(req);
+    const isReviewer = slot && assignment.reviewer_slot === slot;
+    if (!isStaff && !isAuthor && !isReviewer) {
+      throw createAppError('FORBIDDEN', 'Not allowed to view this assignment', 403);
+    }
     res.json({ assignment, request });
   } catch (err) {
     next(err);
@@ -605,7 +649,7 @@ platformRouter.get('/peer-reviews/assignments/:assignmentId', async (req, res, n
 
 platformRouter.get('/peer-reviews/assignments/:assignmentId/draft', async (req, res, next) => {
   try {
-    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const result = await getReviewDraft(req.params.assignmentId, slot);
     res.json(result);
   } catch (err) {
@@ -615,7 +659,7 @@ platformRouter.get('/peer-reviews/assignments/:assignmentId/draft', async (req, 
 
 platformRouter.put('/peer-reviews/assignments/:assignmentId/draft', async (req, res, next) => {
   try {
-    const slot = String(req.body.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const { draft } = req.body || {};
     if (!draft || typeof draft !== 'object') {
       throw createAppError('BAD_REQUEST', 'draft payload required', 400);
@@ -629,7 +673,7 @@ platformRouter.put('/peer-reviews/assignments/:assignmentId/draft', async (req, 
 
 platformRouter.get('/peer-reviews/assignments/:assignmentId/manuscript', async (req, res, next) => {
   try {
-    const slot = String(req.query.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const assignment = await getAssignmentById(req.params.assignmentId);
     if (!assignment) throw createAppError('NOT_FOUND', 'Assignment not found', 404);
     if (assignment.reviewer_slot !== slot) {
@@ -646,7 +690,7 @@ platformRouter.get('/peer-reviews/assignments/:assignmentId/manuscript', async (
 
 platformRouter.post('/peer-reviews/assignments/:assignmentId/start', async (req, res, next) => {
   try {
-    const slot = String(req.body.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const assignment = await transitionAssignment(req.params.assignmentId, slot, 'open_workspace');
     res.json({ assignment });
   } catch (err) {
@@ -656,7 +700,7 @@ platformRouter.post('/peer-reviews/assignments/:assignmentId/start', async (req,
 
 platformRouter.post('/peer-reviews/assignments/:assignmentId/accept', async (req, res, next) => {
   try {
-    const slot = String(req.body.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const assignment = await transitionAssignment(req.params.assignmentId, slot, 'accept');
     res.json({ assignment });
   } catch (err) {
@@ -666,7 +710,7 @@ platformRouter.post('/peer-reviews/assignments/:assignmentId/accept', async (req
 
 platformRouter.post('/peer-reviews/assignments/:assignmentId/decline', async (req, res, next) => {
   try {
-    const slot = String(req.body.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const assignment = await transitionAssignment(req.params.assignmentId, slot, 'decline');
     res.json({ assignment });
   } catch (err) {
@@ -676,7 +720,7 @@ platformRouter.post('/peer-reviews/assignments/:assignmentId/decline', async (re
 
 platformRouter.post('/peer-reviews/assignments/:assignmentId/submit', async (req, res, next) => {
   try {
-    const slot = String(req.body.reviewer_slot || 'slot-1');
+    const slot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const { review_summary, structured_comments, majority_decision } = req.body || {};
     if (!majority_decision?.trim() && !review_summary?.majority_decision?.trim()) {
       throw createAppError('BAD_REQUEST', 'Council decision required before submit', 400);
@@ -893,8 +937,7 @@ platformRouter.post('/peer-reviews/:requestId/cancel', async (req, res, next) =>
 
 platformRouter.get('/assignments/:assignmentId/advisory-suggestions', async (req, res, next) => {
   try {
-    const reviewerSlot = String(req.query.reviewer_slot || '');
-    if (!reviewerSlot) throw createAppError('BAD_REQUEST', 'reviewer_slot required', 400);
+    const reviewerSlot = requireReviewerSlot(await resolveReviewerSlotScope(req));
     const result = await ensureAdvisorySuggestions(req.params.assignmentId, reviewerSlot);
     res.json({
       suggestions: result.suggestions,
