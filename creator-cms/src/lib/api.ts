@@ -17,7 +17,9 @@ export type {
   ScheduledPublishItem,
 } from '../types/database';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+import { resolveStudioApiBase } from '../config/api_config';
+
+const API_BASE = resolveStudioApiBase();
 
 /** Wave B: auto-enable Supabase direct when not in mock mode (set VITE_USE_SUPABASE_DIRECT=false to force Node). */
 export function useSupabaseDirect(): boolean {
@@ -632,7 +634,8 @@ async function uploadImageViaNode(file: File): Promise<{ url: string }> {
 
 export async function checkHealth() {
   if (useSupabaseDirect()) return sb.sbCheckHealth();
-  const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+  // API_BASE is .../api — health is at origin /health on Render (or /api/health depending on mount).
+  const base = API_BASE.replace(/\/api\/?$/, '') || API_BASE;
   const res = await fetch(`${base}/health`);
   return res.json();
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Scale } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { resolveStudioApiBase } from '../config/api_config';
 import { api } from '../lib/api';
 import {
   CREATOR_AGREEMENT_VERSION,
@@ -52,16 +53,8 @@ export function LegalConsentGate() {
     (async () => {
       try {
         if (token) {
-          // Never fall back to localhost in production builds — missing VITE_API_URL must fail closed.
-          const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '');
-          if (!apiBase) {
-            if (!cancelled) {
-              setError('Studio API URL is not configured (VITE_API_URL).');
-              setNeedsConsent(true);
-              setReady(true);
-            }
-            return;
-          }
+          // Production default lives in resolveStudioApiBase (never localhost in PROD).
+          const apiBase = resolveStudioApiBase();
           const res = await fetch(`${apiBase}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });

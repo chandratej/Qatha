@@ -4,11 +4,12 @@
  */
 
 import type { EscrowSplitResult } from '../business/escrow';
+import { resolveStudioApiBase } from '../config/api_config';
 import { isMockMode } from './supabase';
 import type { PlatformNotification } from './notificationsLocal';
 import type { ReviewerOnboardingRecord } from './reviewerOnboarding';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE = resolveStudioApiBase();
 
 let _authToken: string | null = null;
 
