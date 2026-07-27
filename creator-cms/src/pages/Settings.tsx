@@ -50,6 +50,7 @@ export function Settings() {
   const [legalName, setLegalName] = useState('');
   const [taxId, setTaxId] = useState('');
   const [payoutMsg, setPayoutMsg] = useState<string | null>(null);
+  const [payoutMsgTone, setPayoutMsgTone] = useState<'success' | 'error' | null>(null);
   const [payoutSaving, setPayoutSaving] = useState(false);
 
   const updateComfort = (patch: Parameters<typeof saveComfortPrefs>[0]) => {
@@ -76,6 +77,7 @@ export function Settings() {
   const handleSavePayout = async () => {
     setPayoutSaving(true);
     setPayoutMsg(null);
+    setPayoutMsgTone(null);
     try {
       await api.updatePayoutProfile({
         payout_upi: payoutUpi.trim() || null,
@@ -83,8 +85,10 @@ export function Settings() {
         tax_id: taxId.trim() || null,
       });
       trackCreatorEvent('payout_profile_saved');
+      setPayoutMsgTone('success');
       setPayoutMsg('Payout details saved. Quarterly reviews verify UPI before transfer.');
     } catch (e) {
+      setPayoutMsgTone('error');
       setPayoutMsg(e instanceof Error ? e.message : 'Could not save payout details');
     } finally {
       setPayoutSaving(false);
@@ -118,6 +122,7 @@ export function Settings() {
       URL.revokeObjectURL(url);
       trackCreatorEvent('earnings_csv_export');
     } catch (e) {
+      setPayoutMsgTone('error');
       setPayoutMsg(e instanceof Error ? e.message : 'Export failed');
     }
   };
@@ -223,7 +228,19 @@ export function Settings() {
                 </button>
               </div>
               {payoutMsg && (
-                <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-soft)' }}>{payoutMsg}</p>
+                <p
+                  role={payoutMsgTone === 'error' ? 'alert' : 'status'}
+                  style={{
+                    margin: 0,
+                    fontSize: '0.8125rem',
+                    fontWeight: 500,
+                    color: payoutMsgTone === 'error'
+                      ? 'var(--katha-ember, #8B3A62)'
+                      : 'var(--accent-sage, #5f7a5a)',
+                  }}
+                >
+                  {payoutMsg}
+                </p>
               )}
             </div>
           </div>

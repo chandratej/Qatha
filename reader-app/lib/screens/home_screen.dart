@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
-import '../core/config/app_config.dart';
 import '../core/models/story.dart';
 import '../core/providers/app_state.dart';
 import '../core/services/api_service.dart';
@@ -30,12 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   String? _selectedGenre;
 
-  static const _genres = [
-    (id: null, label: 'All'),
-    (id: 'romance', label: 'Romance'),
-    (id: 'family_drama', label: 'Family'),
-    (id: 'suspense', label: 'Suspense'),
-  ];
+  static const _genreIds = <String?>[null, 'romance', 'family_drama', 'suspense'];
 
   @override
   void initState() {
@@ -68,9 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      final msg = e is ApiException
-          ? e.userMessage
-          : 'Could not reach story API at ${AppConfig.apiBase}';
+      final l10n = AppLocalizations.of(context)!;
+      final msg = e is ApiException ? e.userMessage : l10n.errorNoConnection;
       setState(() {
         _trending = [];
         _newReleases = [];
@@ -111,16 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
             )
           : _error != null
               ? ErrorState(
-                  message:
-                      '$_error\n\nAPI: ${AppConfig.apiBase}\nStart backend (port 3001), publish in Creator Studio, then retry.',
+                  message: l10n.errorSomethingWrong,
                   onRetry: _load,
                 )
               : isEmpty
                   ? ErrorState(
-                      message:
-                          'No published stories from the database yet.\n\n'
-                          'In Creator Studio: create a story → write a chapter → Publish.\n'
-                          'API: ${AppConfig.apiBase}',
+                      message: l10n.homeEmptyCatalog,
                       onRetry: _load,
                     )
                   : RefreshIndicator(
@@ -254,15 +243,24 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 40,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: _genres.length,
+                itemCount: _genreIds.length,
                 separatorBuilder: (context, index) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
-                  final g = _genres[i];
-                  final selected = _selectedGenre == g.id;
+                  final id = _genreIds[i];
+                  final selected = _selectedGenre == id;
+                  final label = id == null
+                      ? l10n.genreFilterAll
+                      : id == 'romance'
+                          ? l10n.genreRomance
+                          : id == 'family_drama'
+                              ? l10n.genreFamilyShort
+                              : id == 'suspense'
+                                  ? l10n.genreSuspense
+                                  : id;
                   return FilterChip(
-                    label: Text(g.id == null ? l10n.genreFilterAll : g.label),
+                    label: Text(label),
                     selected: selected,
-                    onSelected: (_) => _selectGenre(g.id),
+                    onSelected: (_) => _selectGenre(id),
                     selectedColor: KathaColors.gold.withValues(alpha: 0.2),
                     checkmarkColor: KathaColors.goldDark,
                     labelStyle: TextStyle(

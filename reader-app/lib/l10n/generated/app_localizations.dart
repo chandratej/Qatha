@@ -416,6 +416,186 @@ abstract class AppLocalizations {
   /// **'Something went wrong. Please try again.'**
   String get errorSomethingWrong;
 
+  /// No description provided for @homeEmptyCatalog.
+  ///
+  /// In en, this message translates to:
+  /// **'No stories to show yet. Pull to refresh in a moment.'**
+  String get homeEmptyCatalog;
+
+  /// No description provided for @genreRomance.
+  ///
+  /// In en, this message translates to:
+  /// **'Romance'**
+  String get genreRomance;
+
+  /// No description provided for @genreFamilyDrama.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Drama'**
+  String get genreFamilyDrama;
+
+  /// No description provided for @genreSuspense.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspense'**
+  String get genreSuspense;
+
+  /// No description provided for @genreFamilyShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get genreFamilyShort;
+
+  /// No description provided for @readerAuthGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in failed. Please try again.'**
+  String get readerAuthGenericError;
+
+  /// No description provided for @readerAuthInvalidCode.
+  ///
+  /// In en, this message translates to:
+  /// **'That code did not work. Check and try again.'**
+  String get readerAuthInvalidCode;
+
+  /// No description provided for @readerAuthEmailSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send the sign-in code. Try again.'**
+  String get readerAuthEmailSendFailed;
+
+  /// No description provided for @paymentFailedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment could not be completed. Please try again.'**
+  String get paymentFailedGeneric;
+
+  /// No description provided for @readerEndOfStoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve finished this story'**
+  String get readerEndOfStoryTitle;
+
+  /// No description provided for @readerEndOfStorySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for reading. Discover more Telugu stories on the home shelf.'**
+  String get readerEndOfStorySubtitle;
+
+  /// No description provided for @readerBackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get readerBackTooltip;
+
+  /// No description provided for @readerFeedbackTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback to the author'**
+  String get readerFeedbackTooltip;
+
+  /// No description provided for @readerFeedbackTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback for the author'**
+  String get readerFeedbackTitle;
+
+  /// No description provided for @readerPraiseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Praise for the author'**
+  String get readerPraiseTitle;
+
+  /// No description provided for @readerFeedbackPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private feedback'**
+  String get readerFeedbackPrivate;
+
+  /// No description provided for @readerPraise.
+  ///
+  /// In en, this message translates to:
+  /// **'Praise'**
+  String get readerPraise;
+
+  /// No description provided for @readerFeedbackPrivateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always private. Never shown to other readers.'**
+  String get readerFeedbackPrivateHint;
+
+  /// No description provided for @readerPraiseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only visible to the author — they choose whether to show it publicly as a testimonial.'**
+  String get readerPraiseHint;
+
+  /// No description provided for @readerFeedbackSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send feedback'**
+  String get readerFeedbackSend;
+
+  /// No description provided for @readerPraiseSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send praise'**
+  String get readerPraiseSend;
+
+  /// No description provided for @readerFeedbackThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you — your feedback was sent to the author.'**
+  String get readerFeedbackThanks;
+
+  /// No description provided for @readerFeedbackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not send feedback. Try again.'**
+  String get readerFeedbackFailed;
+
+  /// No description provided for @readerReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this story'**
+  String get readerReportTitle;
+
+  /// No description provided for @readerReportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports go to Katha\'s moderation team, not the author. We review carefully and never take a story down on a single report.'**
+  String get readerReportBody;
+
+  /// No description provided for @readerReportSubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit report'**
+  String get readerReportSubmit;
+
+  /// No description provided for @readerReportThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Report submitted — thank you for helping keep Katha safe.'**
+  String get readerReportThanks;
+
+  /// No description provided for @readerReportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit the report. Try again.'**
+  String get readerReportFailed;
+
+  /// No description provided for @readerReportInstead.
+  ///
+  /// In en, this message translates to:
+  /// **'Report this story instead'**
+  String get readerReportInstead;
+
+  /// No description provided for @readerOpenOfflineChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open offline chapter {number}'**
+  String readerOpenOfflineChapter(int number);
+
   /// No description provided for @maturityGeneral.
   ///
   /// In en, this message translates to:

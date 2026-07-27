@@ -12,6 +12,16 @@ export const CREATOR_AGREEMENT_SUMMARY =
   'No coins. No ads. No follower gates. Payouts via licensed payment partners. ' +
   'Grievance officer: grievance@katha.in';
 
+export const CREATOR_AGREEMENT_SUMMARY_TE =
+  'మీ IP మీదే. కథ ప్లాట్‌ఫామ్‌పై హోస్ట్/మానిటైజ్ చేయడానికి పరిమిత లైసెన్స్ పొందుతుంది. ' +
+  'రెవెన్యూ షేర్ Story Trust లాడర్ (Performing వద్ద 40% → Apex వద్ద 60% వరకు). ' +
+  'కాయిన్లు లేవు. యాడ్స్ లేవు. ఫాలోయర్ గేట్లు లేవు. చెల్లింపులు లైసెన్స్ ఉన్న పార్టనర్ల ద్వారా. ' +
+  'గ్రీవెన్స్: grievance@katha.in';
+
 export const DPDP_CONSENT_SUMMARY =
   'I agree to Katha processing my account, device, reading/usage, and (if I am a creator) ' +
   'payout data as described in the Privacy Policy, to provide the service and comply with law.';
+
+export const DPDP_CONSENT_SUMMARY_TE =
+  'నేను కథ సేవ అందించడం మరియు చట్టానికి అనుగుణంగా, ప్రైవసీ పాలసీలో వివరించిన విధంగా ' +
+  'నా ఖాతా, పరికరం, చదివే/ఉపయోగ డేటా, మరియు (రచయిత అయితే) చెల్లింపు డేటా ప్రాసెస్ చేయడానికి అంగీకరిస్తున్నాను.';

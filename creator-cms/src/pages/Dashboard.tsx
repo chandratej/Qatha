@@ -20,6 +20,8 @@ import { useCreatorPersona } from '../hooks/useCreatorPersona';
 
 function statusBadgeClass(status?: string) {
   if (status === 'published') return 'sv21__badge sv21__badge--published';
+  if (status === 'pending_review') return 'sv21__badge sv21__badge--review';
+  if (status === 'needs_revision') return 'sv21__badge sv21__badge--revision';
   return 'sv21__badge sv21__badge--draft';
 }
 
@@ -31,7 +33,7 @@ function statusLabel(status: string | undefined, t: (k: import('../lib/studioLoc
 }
 
 export function Dashboard() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { user, isMockMode } = useAuth();
   const { persona, lifecycleStage, loading: personaLoading } = useCreatorPersona();
   const navigate = useNavigate();
@@ -287,13 +289,15 @@ export function Dashboard() {
       </div>
 
       {sortedStories.length === 0 ? (
-        <div className="sv21__empty">
-          <BookOpen size={26} aria-hidden />
-          <p>{t('stories.emptyShelfText')}</p>
+        <StudioEmptyState
+          icon={BookOpen}
+          title={t('stories.emptyShelfText')}
+          titleTe={locale === 'te' ? t('stories.emptyShelfText') : undefined}
+        >
           <Link to="/stories/new" className="sv21__cta" style={{ marginTop: 12 }}>
             {t('stories.createFirst')}
           </Link>
-        </div>
+        </StudioEmptyState>
       ) : (
         <div className="sv21__list">
           {sortedStories.map((story, i) => {

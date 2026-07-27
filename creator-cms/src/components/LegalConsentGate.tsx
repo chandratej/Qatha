@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Scale } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLocale } from '../context/LocaleContext';
 import { resolveStudioApiBase } from '../config/api_config';
 import { api } from '../lib/api';
 import {
   CREATOR_AGREEMENT_VERSION,
   DPDP_PRIVACY_VERSION,
   CREATOR_AGREEMENT_SUMMARY,
+  CREATOR_AGREEMENT_SUMMARY_TE,
   DPDP_CONSENT_SUMMARY,
+  DPDP_CONSENT_SUMMARY_TE,
 } from '../../../packages/shared/creatorAgreement';
 
 const LOCAL_KEY = 'katha_creator_legal_consent_v1';
@@ -24,6 +27,8 @@ function expectedLocalValue() {
  */
 export function LegalConsentGate() {
   const { user, token, isMockMode } = useAuth();
+  const { locale } = useLocale();
+  const te = locale === 'te';
   const [ready, setReady] = useState(false);
   const [needsConsent, setNeedsConsent] = useState(false);
   const [dpdp, setDpdp] = useState(false);
@@ -91,7 +96,11 @@ export function LegalConsentGate() {
 
   const submit = async () => {
     if (!dpdp || !agreement) {
-      setError('Please accept both the Privacy Policy and Creator Agreement to continue.');
+      setError(
+        te
+          ? 'కొనసాగడానికి ప్రైవసీ పాలసీ మరియు క్రియేటర్ అగ్రిమెంట్ రెండింటినీ అంగీకరించండి.'
+          : 'Please accept both the Privacy Policy and Creator Agreement to continue.',
+      );
       return;
     }
     setSubmitting(true);
@@ -117,13 +126,16 @@ export function LegalConsentGate() {
       }
     } catch (e) {
       // Fail closed: do not treat localStorage as durable DPDP / Creator Agreement.
-      // Backend already soft-degrades schema lag; true errors must surface and retry.
       const message =
         e instanceof Error
           ? e.message
-          : 'Could not save consent. Please try again.';
+          : te
+            ? 'సమ్మతి సేవ్ కాలేదు. మళ్లీ ప్రయత్నించండి.'
+            : 'Could not save consent. Please try again.';
       setError(
-        `${message} Studio unlocks only after consent is recorded on the server.`,
+        te
+          ? `${message} సర్వర్‌లో సమ్మతి నమోదు అయిన తర్వాతే Studio తెరుస్తుంది.`
+          : `${message} Studio unlocks only after consent is recorded on the server.`,
       );
       console.warn(
         '[LegalConsentGate] API consent failed — Studio remains locked until retry succeeds.',
@@ -137,11 +149,14 @@ export function LegalConsentGate() {
   if (!ready) {
     return (
       <div className="cms-loading-shell" aria-busy="true" style={{ padding: '2rem', textAlign: 'center' }}>
-        Loading…
+        {te ? 'లోడ్ అవుతోంది…' : 'Loading…'}
       </div>
     );
   }
   if (!user || !needsConsent) return <Outlet />;
+
+  const dpdpSummary = te ? DPDP_CONSENT_SUMMARY_TE : DPDP_CONSENT_SUMMARY;
+  const agreementSummary = te ? CREATOR_AGREEMENT_SUMMARY_TE : CREATOR_AGREEMENT_SUMMARY;
 
   return (
     <div className="cms-auth-page cms-auth-page--v2">
@@ -149,10 +164,12 @@ export function LegalConsentGate() {
         <div className="cms-auth-card__brand">
           <Scale size={28} aria-hidden />
           <h1 className="cms-auth-card__logo" style={{ fontSize: '1.5rem' }}>
-            Legal essentials
+            {te ? 'చట్టపరమైన అవసరాలు' : 'Legal essentials'}
           </h1>
           <p className="cms-auth-card__tagline-telugu">
-            DPDP consent + Creator Agreement — required before publishing on Katha
+            {te
+              ? 'ప్రైవసీ సమ్మతి + క్రియేటర్ అగ్రిమెంట్ — ప్రచురణకు ముందు అవసరం'
+              : 'Privacy consent + Creator Agreement — required before publishing on Katha'}
           </p>
         </div>
 
@@ -162,8 +179,11 @@ export function LegalConsentGate() {
         >
           <input type="checkbox" checked={dpdp} onChange={(e) => setDpdp(e.target.checked)} />
           <span>
-            <strong>Privacy (DPDP)</strong> — {DPDP_CONSENT_SUMMARY}{' '}
-            <Link to="/legal#privacy">Privacy Policy</Link>
+            <strong>{te ? 'ప్రైవసీ (DPDP)' : 'Privacy (DPDP)'}</strong>
+            {' — '}
+            {te ? 'నేను అంగీకరిస్తున్నాను: ' : 'I accept: '}
+            {dpdpSummary}{' '}
+            <Link to="/legal#privacy">{te ? 'ప్రైవసీ పాలసీ' : 'Privacy Policy'}</Link>
             <span style={{ display: 'block', fontSize: 12, opacity: 0.7 }}>
               Version {DPDP_PRIVACY_VERSION}
             </span>
@@ -180,8 +200,11 @@ export function LegalConsentGate() {
             onChange={(e) => setAgreement(e.target.checked)}
           />
           <span>
-            <strong>Creator Agreement</strong> — {CREATOR_AGREEMENT_SUMMARY}{' '}
-            <Link to="/legal#creator-agreement">Full agreement</Link>
+            <strong>{te ? 'క్రియేటర్ అగ్రిమెంట్' : 'Creator Agreement'}</strong>
+            {' — '}
+            {te ? 'నేను అంగీకరిస్తున్నాను: ' : 'I accept: '}
+            {agreementSummary}{' '}
+            <Link to="/legal#creator-agreement">{te ? 'పూర్తి అగ్రిమెంట్' : 'Full agreement'}</Link>
             <span style={{ display: 'block', fontSize: 12, opacity: 0.7 }}>
               Version {CREATOR_AGREEMENT_VERSION}
             </span>
@@ -189,10 +212,10 @@ export function LegalConsentGate() {
         </label>
 
         <p style={{ marginTop: 16, fontSize: 13, opacity: 0.8 }}>
-          Grievance officer:{' '}
+          {te ? 'గ్రీవెన్స్ ఆఫీసర్: ' : 'Grievance officer: '}
           <a href="mailto:grievance@katha.in">grievance@katha.in</a>
           {' · '}
-          <Link to="/legal">Legal & transparency</Link>
+          <Link to="/legal">{te ? 'చట్టం & పారదర్శకత' : 'Legal & transparency'}</Link>
         </p>
 
         {error && (
@@ -208,7 +231,13 @@ export function LegalConsentGate() {
           disabled={submitting || !dpdp || !agreement}
           onClick={() => void submit()}
         >
-          {submitting ? 'Saving…' : 'Accept & continue to Creator Studio'}
+          {submitting
+            ? te
+              ? 'సేవ్ అవుతోంది…'
+              : 'Saving…'
+            : te
+              ? 'అంగీకరించి Creator Studioకి వెళ్ళండి'
+              : 'Accept & continue to Creator Studio'}
         </button>
       </div>
     </div>

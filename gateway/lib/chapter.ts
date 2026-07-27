@@ -55,12 +55,31 @@ export async function getChapterReadContext(
 
 /** Normalize Quill/editor HTML for reader preview — fixes overflow and scene spacing. */
 export function normalizeChapterHtml(html: string): string {
-  return html
+  let out = html
     .replace(/&nbsp;/g, ' ')
     .replace(/\u00a0/g, ' ')
     .replace(/<p>\s*<br\s*\/?>\s*<\/p>/gi, '')
     .replace(/(<hr[^>]*scene-break[^>]*\/?>)\s*/gi, '$1')
     .trim();
+
+  // Disable decorative drop-cap when the first paragraph opens with a digit
+  // (e.g. "1920ల కాలంలో…") so ::first-letter does not turn "1" into a giant
+  // capital and leave "920ల…" orphaned.
+  out = out.replace(/<p(\s[^>]*)?>/i, (match, attrs = '') => {
+    const rest = out.slice(match.length);
+    const plain = rest
+      .replace(/<[^>]+>/g, '')
+      .replace(/&[a-z]+;/gi, ' ')
+      .trimStart();
+    if (/^\d/.test(plain)) {
+      if (/\bdata-no-dropcap\b/i.test(attrs || '')) return match;
+      const a = attrs || '';
+      return `<p${a} data-no-dropcap="true">`;
+    }
+    return match;
+  });
+
+  return out;
 }
 
 export function splitParagraphs(content: string): string[] {

@@ -11,7 +11,7 @@ function statusStamp(story: StoryData, t: (k: StudioStringKey) => string) {
   const s = story.moderation_status || 'draft';
   if (s === 'published') return { label: t('stories.statusPublished'), className: 'sv21__card-stamp sv21__chip--published' };
   if (s === 'pending_review') return { label: t('stories.statusPendingReview'), className: 'sv21__card-stamp sv21__badge--review' };
-  if (s === 'needs_revision') return { label: t('stories.statusNeedsRevision'), className: 'sv21__card-stamp sv21__badge--review' };
+  if (s === 'needs_revision') return { label: t('stories.statusNeedsRevision'), className: 'sv21__card-stamp sv21__badge--revision' };
   return { label: t('stories.draft'), className: 'sv21__card-stamp sv21__chip--draft' };
 }
 

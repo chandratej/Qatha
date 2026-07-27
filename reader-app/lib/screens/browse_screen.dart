@@ -20,7 +20,6 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
   late TabController _tabController;
 
   final _genres = ['romance', 'family_drama', 'suspense'];
-  final _labels = ['Romance', 'Family Drama', 'Suspense'];
   final Map<String, DiscoverFeed?> _feeds = {};
   final Map<String, bool> _loading = {};
   final Map<String, String?> _errors = {};
@@ -64,7 +63,7 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
         setState(() {
           _errors[genre] = e is ApiException
               ? e.userMessage
-              : 'Cannot reach story API. Is the backend running on port 3001?';
+              : AppLocalizations.of(context)!.errorNoConnection;
           _loading[genre] = false;
         });
       }
@@ -159,7 +158,11 @@ class _BrowseScreenState extends State<BrowseScreen> with SingleTickerProviderSt
                   labelColor: KathaColors.gold,
                   unselectedLabelColor: KathaTheme.mutedInk(context),
                   indicatorColor: KathaColors.gold,
-                  tabs: _labels.map((l) => Tab(text: l)).toList(),
+                  tabs: [
+                    Tab(text: AppLocalizations.of(context)!.genreRomance),
+                    Tab(text: AppLocalizations.of(context)!.genreFamilyDrama),
+                    Tab(text: AppLocalizations.of(context)!.genreSuspense),
+                  ],
                 ),
             ],
           ),

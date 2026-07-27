@@ -184,6 +184,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorSomethingWrong => 'Something went wrong. Please try again.';
 
   @override
+  String get homeEmptyCatalog =>
+      'No stories to show yet. Pull to refresh in a moment.';
+
+  @override
+  String get genreRomance => 'Romance';
+
+  @override
+  String get genreFamilyDrama => 'Family Drama';
+
+  @override
+  String get genreSuspense => 'Suspense';
+
+  @override
+  String get genreFamilyShort => 'Family';
+
+  @override
+  String get readerAuthGenericError => 'Sign-in failed. Please try again.';
+
+  @override
+  String get readerAuthInvalidCode =>
+      'That code did not work. Check and try again.';
+
+  @override
+  String get readerAuthEmailSendFailed =>
+      'Could not send the sign-in code. Try again.';
+
+  @override
+  String get paymentFailedGeneric =>
+      'Payment could not be completed. Please try again.';
+
+  @override
+  String get readerEndOfStoryTitle => 'You\'ve finished this story';
+
+  @override
+  String get readerEndOfStorySubtitle =>
+      'Thanks for reading. Discover more Telugu stories on the home shelf.';
+
+  @override
+  String get readerBackTooltip => 'Back';
+
+  @override
+  String get readerFeedbackTooltip => 'Send feedback to the author';
+
+  @override
+  String get readerFeedbackTitle => 'Feedback for the author';
+
+  @override
+  String get readerPraiseTitle => 'Praise for the author';
+
+  @override
+  String get readerFeedbackPrivate => 'Private feedback';
+
+  @override
+  String get readerPraise => 'Praise';
+
+  @override
+  String get readerFeedbackPrivateHint =>
+      'Always private. Never shown to other readers.';
+
+  @override
+  String get readerPraiseHint =>
+      'Only visible to the author — they choose whether to show it publicly as a testimonial.';
+
+  @override
+  String get readerFeedbackSend => 'Send feedback';
+
+  @override
+  String get readerPraiseSend => 'Send praise';
+
+  @override
+  String get readerFeedbackThanks =>
+      'Thank you — your feedback was sent to the author.';
+
+  @override
+  String get readerFeedbackFailed => 'Could not send feedback. Try again.';
+
+  @override
+  String get readerReportTitle => 'Report this story';
+
+  @override
+  String get readerReportBody =>
+      'Reports go to Katha\'s moderation team, not the author. We review carefully and never take a story down on a single report.';
+
+  @override
+  String get readerReportSubmit => 'Submit report';
+
+  @override
+  String get readerReportThanks =>
+      'Report submitted — thank you for helping keep Katha safe.';
+
+  @override
+  String get readerReportFailed => 'Could not submit the report. Try again.';
+
+  @override
+  String get readerReportInstead => 'Report this story instead';
+
+  @override
+  String readerOpenOfflineChapter(int number) {
+    return 'Open offline chapter $number';
+  }
+
+  @override
   String get maturityGeneral => 'General';
 
   @override

@@ -95,6 +95,20 @@ class Story {
     }
   }
 
+  /// Localized genre chip — prefer over [genreLabel] in UI.
+  String genreLabelFor(dynamic l10n) {
+    switch (genre) {
+      case 'romance':
+        return l10n.genreRomance as String;
+      case 'family_drama':
+        return l10n.genreFamilyDrama as String;
+      case 'suspense':
+        return l10n.genreSuspense as String;
+      default:
+        return genre;
+    }
+  }
+
   String get readersLabel {
     if (totalReaders >= 1000) {
       return '${(totalReaders / 1000).toStringAsFixed(1)}K readers';

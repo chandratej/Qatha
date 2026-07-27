@@ -12,6 +12,7 @@ Grounded in `Worklog/27_JUL_2026/Katha_Master_Workflow_Implementation_Prompt.md`
 | `/katha-external-data-safety` | external_safe + standing rule | 2.2 / 3 | `{ "fix_mode": "fix" }` |
 | `/katha-ops-verification` | Migrations / dry-run / tests | 2.3 | `{}` |
 | `/mvp1-product-workflow-audit` | Creator→reader path audit | MVP1 eng | `{ "fix_mode": "fix" }` |
+| `/katha-product-smoke-ux` | Product smoke + UI/UX/CSS/comfort/ergonomics | QA / pre-launch | `{ "surface": "creator-cms", "fix_mode": "report_only" }` |
 
 ## Intent values for master router
 
@@ -44,3 +45,4 @@ Each workflow was smoke-checked with `validate_only: true` (metadata + compile +
 | external-data-safety | 1–2 |
 | ops-verification | 2 |
 | mvp1-product-workflow-audit | ≤25 (capped) |
+| product-smoke-ux | ~6–16 (1 smoke + 4 visual + ≤10 verify + optional fix) |

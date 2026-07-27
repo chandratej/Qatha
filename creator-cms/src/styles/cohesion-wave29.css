@@ -45,7 +45,8 @@
   gap: 8px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--cs-faint);
+  /* --cs-faint (#c9bfa9) was ~2:1 on cream — labels looked invisible */
+  color: var(--cs-muted);
 }
 
 .cs-v21__progress-step--active {
@@ -62,6 +63,7 @@
   font-size: 0.6875rem;
   font-weight: 700;
   background: var(--cs-line);
+  color: var(--cs-ink);
 }
 
 .cs-v21__progress-step--active .cs-v21__progress-dot {
@@ -330,8 +332,14 @@
 
 .cs-v21__error {
   margin: 0;
-  color: #b42318;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #b42318 28%, transparent);
+  background: color-mix(in srgb, #b42318 8%, var(--cs-surface, #fff));
+  color: #8f1d18;
   font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
 .cs-v21__side {

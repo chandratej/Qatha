@@ -111,7 +111,7 @@ class ApiService {
     } catch (e) {
       throw ApiException(
         code: 'NETWORK_OFFLINE',
-        userMessage: 'Cannot reach story API ($baseUrl). Is the backend running?',
+        userMessage: 'Cannot reach stories right now. Check your connection and try again.',
         action: 'RETRY',
       );
     }
@@ -119,7 +119,7 @@ class ApiService {
       final err = _parseError(res);
       throw ApiException(
         code: err.code,
-        userMessage: '${err.userMessage} (GET $uri → ${res.statusCode})',
+        userMessage: err.userMessage,
         action: err.action,
       );
     }

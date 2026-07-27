@@ -79,20 +79,21 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
       final result = await _auth.signInWithGoogle();
       await _completeSession(result);
     } catch (e) {
-      final raw = e.toString().replaceFirst('Exception: ', '');
+      final raw = e.toString();
       final missingGoogle = raw.contains('GOOGLE_WEB_CLIENT_ID_MISSING') ||
           raw.contains('no ID token') ||
           raw.contains('GOOGLE_WEB_CLIENT_ID');
       if (!mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       if (missingGoogle) {
         setState(() {
           _emailStep = true;
-          _error = AppLocalizations.of(context)!.readerAuthGoogleFailedUseEmail;
+          _error = l10n.readerAuthGoogleFailedUseEmail;
           _loading = false;
         });
         return;
       }
-      setState(() => _error = raw);
+      setState(() => _error = l10n.readerAuthGenericError);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -104,7 +105,8 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
       await _auth.sendEmailMagicLink(_emailController.text.trim());
       setState(() => _emailSent = true);
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (!mounted) return;
+      setState(() => _error = AppLocalizations.of(context)!.readerAuthEmailSendFailed);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -119,7 +121,8 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
       );
       await _completeSession(result);
     } catch (e) {
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      if (!mounted) return;
+      setState(() => _error = AppLocalizations.of(context)!.readerAuthInvalidCode);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -136,7 +139,7 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
             height: 52,
             child: FilledButton.icon(
               onPressed: _loading ? null : _signInWithGoogle,
-              icon: const Icon(Icons.g_mobiledata, size: 28),
+              icon: const _GoogleGIcon(),
               label: Text(l10n.buttonSignInWithGoogle),
               style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
             ),
@@ -370,6 +373,30 @@ class _ReaderAuthScreenState extends State<ReaderAuthScreen> {
                 textAlign: TextAlign.center,
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+/// Simple multicolor Google "G" mark (Material Icons has no official G).
+class _GoogleGIcon extends StatelessWidget {
+  const _GoogleGIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            height: 1,
+            color: Color(0xFF4285F4),
+            fontFamily: 'Roboto',
           ),
         ),
       ),

@@ -482,7 +482,7 @@ platformRouter.patch('/notification-preferences', async (req, res, next) => {
   }
 });
 
-platformRouter.get('/peer-reviews/council-audit', async (_req, res, next) => {
+platformRouter.get('/peer-reviews/council-audit', requireRole('moderator', 'admin'), async (_req, res, next) => {
   try {
     const entries = await getCouncilAuditQueue();
     res.json({ entries });
@@ -491,7 +491,7 @@ platformRouter.get('/peer-reviews/council-audit', async (_req, res, next) => {
   }
 });
 
-platformRouter.post('/peer-reviews/:requestId/council-audit/clear', async (req, res, next) => {
+platformRouter.post('/peer-reviews/:requestId/council-audit/clear', requireRole('moderator', 'admin'), async (req, res, next) => {
   try {
     const request = await clearCouncilAudit(req.params.requestId);
     res.json({ request });
@@ -766,7 +766,8 @@ platformRouter.post('/moderation-cases', async (req, res, next) => {
   }
 });
 
-platformRouter.get('/moderation-cases', async (req, res, next) => {
+// Staff-only: any authenticated creator must not enumerate the platform moderation queue.
+platformRouter.get('/moderation-cases', requireRole('moderator', 'admin'), async (req, res, next) => {
   try {
     const status = req.query.status ? String(req.query.status) : undefined;
     const caseType = req.query.case_type ? String(req.query.case_type) : undefined;

@@ -30,13 +30,20 @@ export function useAutosave({
 
       try {
         if (triggerCloudSave) {
-          await triggerCloudSave();
+          // Cap cloud wait so the save chip never sticks on "Saving…" forever
+          await Promise.race([
+            triggerCloudSave(),
+            new Promise<void>((_, reject) => {
+              window.setTimeout(() => reject(new Error('Cloud save timed out')), 12_000);
+            }),
+          ]);
         }
         setLastSaved(new Date());
       } catch (e) {
         console.warn('Draft cloud sync failed:', e);
+      } finally {
+        setSaving(false);
       }
-      setSaving(false);
     }, 1200);
   }, [charCount, triggerLocalSave, triggerCloudSave, enabled]);
 

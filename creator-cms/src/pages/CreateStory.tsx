@@ -484,7 +484,11 @@ export function CreateStory() {
             </p>
           </div>
 
-          {error && <p className="cs-v21__error">{error}</p>}
+          {error && (
+            <p className="cs-v21__error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+          )}
 
           <div className="cs-v21__actions cs-v21__actions--inline">
             <button type="button" className="cs-v21__draft-btn" onClick={() => { void handleSaveDraft(); }}>
@@ -524,7 +528,11 @@ export function CreateStory() {
               <div className="cs-v21__field">
                 <label htmlFor="age-rating">{t('createStory.ageRating')}</label>
                 <select id="age-rating" value={ageRating} onChange={(e) => setAgeRating(e.target.value)}>
-                  {AGE_RATINGS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+                  {AGE_RATINGS.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {locale === 'te' && 'labelTelugu' in a ? (a as { labelTelugu: string }).labelTelugu : a.label}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="cs-v21__field">
@@ -545,7 +553,11 @@ export function CreateStory() {
               <div className="cs-v21__field">
                 <label htmlFor="completion-status">{t('createStory.completionStatus')}</label>
                 <select id="completion-status" value={storyStatus} onChange={(e) => setStoryStatus(e.target.value)}>
-                  {STORY_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  {STORY_STATUSES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {locale === 'te' && 'labelTelugu' in s ? (s as { labelTelugu: string }).labelTelugu : s.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -626,7 +638,11 @@ export function CreateStory() {
             </div>
           </details>
 
-          {error && <p className="cs-v21__error">{error}</p>}
+          {error && (
+            <p className="cs-v21__error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+          )}
 
           <div className="cs-v21__actions cs-v21__actions--inline">
             <button type="button" className="cs-v21__draft-btn" onClick={() => setStep(1)}>
@@ -680,7 +696,11 @@ export function CreateStory() {
             {draftFlash ? t('createStory.draftSaved') : draftSavedAt ? t('createStory.autoSaved') : t('createStory.autoSaving')}
           </p>
 
-          {error && <p className="cs-v21__error">{error}</p>}
+          {error && (
+            <p className="cs-v21__error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+          )}
 
           <div className="cs-v21__actions cs-v21__actions--inline">
             <button type="button" className="cs-v21__draft-btn" onClick={() => setStep(2)}>

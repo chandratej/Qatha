@@ -8,6 +8,8 @@ class ErrorState extends StatelessWidget {
   final VoidCallback? onAction;
   final VoidCallback? onRetry;
   final List<int>? offlineChapters;
+  /// When set, offline chapter numbers become tappable.
+  final ValueChanged<int>? onOpenOfflineChapter;
 
   const ErrorState({
     super.key,
@@ -16,6 +18,7 @@ class ErrorState extends StatelessWidget {
     this.onAction,
     this.onRetry,
     this.offlineChapters,
+    this.onOpenOfflineChapter,
   });
 
   @override
@@ -55,11 +58,26 @@ class ErrorState extends StatelessWidget {
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                   const SizedBox(height: 8),
-                  ...offlineChapters!.map(
-                    (n) => Text(
-                      l10n.errorChapterNumber(n),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: offlineChapters!.map((n) {
+                      final label = onOpenOfflineChapter != null
+                          ? l10n.readerOpenOfflineChapter(n)
+                          : l10n.errorChapterNumber(n);
+                      if (onOpenOfflineChapter == null) {
+                        return Text(
+                          l10n.errorChapterNumber(n),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        );
+                      }
+                      return ActionChip(
+                        label: Text(label),
+                        onPressed: () => onOpenOfflineChapter!(n),
+                        backgroundColor: KathaColors.gold.withValues(alpha: 0.15),
+                      );
+                    }).toList(),
                   ),
                 ],
                 const SizedBox(height: 24),

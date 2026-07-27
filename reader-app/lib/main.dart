@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState, AuthUser;
 import 'core/config/app_config.dart';
@@ -24,6 +25,9 @@ import 'core/utils/motion.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Offline-first: Telugu is bundled under assets/fonts. Do not hit Google
+  // Fonts CDN at runtime (failed-fetch retry loops when offline).
+  GoogleFonts.config.allowRuntimeFetching = false;
   // Never block app start on Supabase reachability — a cold-start network
   // blip or bad config would otherwise crash boot before Flutter renders
   // anything. AuthState/ApiService fall back to cached prefs when

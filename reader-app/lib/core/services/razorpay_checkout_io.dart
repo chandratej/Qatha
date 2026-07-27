@@ -75,7 +75,7 @@ class KathaRazorpayCheckout {
     try {
       _razorpay!.open(options);
     } catch (e) {
-      return RazorpayPaymentResult.failed(e.toString());
+      return RazorpayPaymentResult.failed('Payment could not be started. Please try again.');
     }
 
     return _pending!.future.timeout(

@@ -241,18 +241,18 @@ export const CORE_CONTENT_TYPES = CREATABLE_CONTENT_TYPES.filter(
 export type MoatContentTypeId = (typeof MOAT_CONTENT_TYPES)[number]['id'];
 
 export const STORY_STATUSES = [
-  { id: 'draft', label: 'Draft' },
-  { id: 'ongoing', label: 'Ongoing' },
-  { id: 'completed', label: 'Completed' },
+  { id: 'draft', label: 'Draft', labelTelugu: 'డ్రాఫ్ట్' },
+  { id: 'ongoing', label: 'Ongoing', labelTelugu: 'కొనసాగుతోంది' },
+  { id: 'completed', label: 'Completed', labelTelugu: 'పూర్తయింది' },
 ] as const;
 
 export type StoryStatusId = (typeof STORY_STATUSES)[number]['id'];
 
 export const AGE_RATINGS = [
-  { id: 'all_ages', label: 'All Ages', minAge: 0 },
-  { id: 'teen', label: 'Teen (13+)', minAge: 13 },
-  { id: 'young_adult', label: 'Young Adult (16+)', minAge: 16 },
-  { id: 'mature', label: 'Mature (18+)', minAge: 18 },
+  { id: 'all_ages', label: 'All Ages', labelTelugu: 'అన్ని వయసులు', minAge: 0 },
+  { id: 'teen', label: 'Teen (13+)', labelTelugu: 'టీన్ (13+)', minAge: 13 },
+  { id: 'young_adult', label: 'Young Adult (16+)', labelTelugu: 'యంగ్ అడల్ట్ (16+)', minAge: 16 },
+  { id: 'mature', label: 'Mature (18+)', labelTelugu: 'మెచ్యూర్ (18+)', minAge: 18 },
 ] as const;
 
 export type AgeRatingId = (typeof AGE_RATINGS)[number]['id'];

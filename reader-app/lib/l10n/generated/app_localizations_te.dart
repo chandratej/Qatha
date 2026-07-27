@@ -185,6 +185,111 @@ class AppLocalizationsTe extends AppLocalizations {
       'ఏదో తప్పు జరిగింది. దయచేసి మళ్ళీ ప్రయత్నించండి.';
 
   @override
+  String get homeEmptyCatalog =>
+      'ఇంకా కథలు లేవు. కాసేపటి తర్వాత రిఫ్రెష్ చేయండి.';
+
+  @override
+  String get genreRomance => 'రొమాన్స్';
+
+  @override
+  String get genreFamilyDrama => 'కుటుంబ నాటకం';
+
+  @override
+  String get genreSuspense => 'సస్పెన్స్';
+
+  @override
+  String get genreFamilyShort => 'కుటుంబం';
+
+  @override
+  String get readerAuthGenericError =>
+      'సైన్-ఇన్ విఫలమైంది. మళ్ళీ ప్రయత్నించండి.';
+
+  @override
+  String get readerAuthInvalidCode =>
+      'ఆ కోడ్ పని చేయలేదు. తనిఖీ చేసి మళ్ళీ ప్రయత్నించండి.';
+
+  @override
+  String get readerAuthEmailSendFailed =>
+      'సైన్-ఇన్ కోడ్ పంపలేకపోయాం. మళ్ళీ ప్రయత్నించండి.';
+
+  @override
+  String get paymentFailedGeneric =>
+      'చెల్లింపు పూర్తి కాలేదు. మళ్ళీ ప్రయత్నించండి.';
+
+  @override
+  String get readerEndOfStoryTitle => 'ఈ కథ ముగిసింది';
+
+  @override
+  String get readerEndOfStorySubtitle =>
+      'చదివినందుకు ధన్యవాదాలు. హోమ్‌లో మరిన్ని తెలుగు కథలు చూడండి.';
+
+  @override
+  String get readerBackTooltip => 'వెనక్కి';
+
+  @override
+  String get readerFeedbackTooltip => 'రచయితకు అభిప్రాయం పంపండి';
+
+  @override
+  String get readerFeedbackTitle => 'రచయితకు అభిప్రాయం';
+
+  @override
+  String get readerPraiseTitle => 'రచయితకు ప్రశంస';
+
+  @override
+  String get readerFeedbackPrivate => 'ప్రైవేట్ అభిప్రాయం';
+
+  @override
+  String get readerPraise => 'ప్రశంస';
+
+  @override
+  String get readerFeedbackPrivateHint =>
+      'ఎల్లప్పుడూ ప్రైవేట్. ఇతర పాఠకులకు కనిపించదు.';
+
+  @override
+  String get readerPraiseHint =>
+      'రచయితకు మాత్రమే కనిపిస్తుంది — వారు బహిరంగంగా చూపించాలనుకుంటేనే.';
+
+  @override
+  String get readerFeedbackSend => 'అభిప్రాయం పంపండి';
+
+  @override
+  String get readerPraiseSend => 'ప్రశంస పంపండి';
+
+  @override
+  String get readerFeedbackThanks =>
+      'ధన్యవాదాలు — మీ అభిప్రాయం రచయితకు పంపబడింది.';
+
+  @override
+  String get readerFeedbackFailed =>
+      'అభిప్రాయం పంపలేకపోయాం. మళ్ళీ ప్రయత్నించండి.';
+
+  @override
+  String get readerReportTitle => 'ఈ కథను రిపోర్ట్ చేయండి';
+
+  @override
+  String get readerReportBody =>
+      'రిపోర్టులు కథ మోడరేషన్ బృందానికి వెళ్తాయి, రచయితకు కాదు. ఒకే రిపోర్టుతో కథను తొలగించం.';
+
+  @override
+  String get readerReportSubmit => 'రిపోర్ట్ సమర్పించండి';
+
+  @override
+  String get readerReportThanks =>
+      'రిపోర్ట్ సమర్పించబడింది — కథను సురక్షితంగా ఉంచడంలో సహాయానికి ధన్యవాదాలు.';
+
+  @override
+  String get readerReportFailed =>
+      'రిపోర్ట్ సమర్పించలేకపోయాం. మళ్ళీ ప్రయత్నించండి.';
+
+  @override
+  String get readerReportInstead => 'బదులుగా ఈ కథను రిపోర్ట్ చేయండి';
+
+  @override
+  String readerOpenOfflineChapter(int number) {
+    return 'ఆఫ్‌లైన్ అధ్యాయం $number తెరవండి';
+  }
+
+  @override
   String get maturityGeneral => 'సాధారణం';
 
   @override

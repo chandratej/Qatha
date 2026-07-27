@@ -217,9 +217,10 @@
   font-weight: 600;
 }
 
+/* Error/danger — distinct from brand maroon status chips */
 .badge-error {
-  background: rgba(107, 35, 56, 0.1);
-  color: var(--katha-maroon);
+  background: rgba(180, 35, 24, 0.12);
+  color: #9b1c1c;
   font-weight: 600;
 }
 

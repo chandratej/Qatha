@@ -248,15 +248,22 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 9px 0 10px;
+  padding: 10px 0 11px;
+  min-height: 52px;
   border: none;
   background: none;
-  color: var(--text-muted, #9c8f7a);
-  font-size: 0.625rem;
-  font-weight: 500;
+  color: var(--ink-muted, #3f3a32);
+  font-size: 0.75rem;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   font-family: inherit;
+  line-height: 1.15;
+}
+
+[data-ui-scale='3'] .app-mobile-tabbar__tab,
+[data-ui-scale='4'] .app-mobile-tabbar__tab {
+  font-size: 0.8125rem;
 }
 
 .app-mobile-tabbar__tab--active {

@@ -347,6 +347,9 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                           storyId: story.id,
                           storyTitle: story.title,
                           chapterNumber: ch.chapterNumber,
+                          totalChapters: story.chapterCount > 0
+                              ? story.chapterCount
+                              : _detail?.chapters.length,
                         ),
                       ),
                     ),
@@ -369,6 +372,9 @@ class _StoryDetailScreenState extends State<StoryDetailScreen> {
                   storyId: story.id,
                   storyTitle: story.title,
                   chapterNumber: 1,
+                  totalChapters: story.chapterCount > 0
+                      ? story.chapterCount
+                      : _detail?.chapters.length,
                 ),
               ),
             ),

@@ -24,12 +24,15 @@ class ReaderScreen extends StatefulWidget {
   final String storyId;
   final String storyTitle;
   final int chapterNumber;
+  /// Total published chapters when known — enables end-of-story (not paywall) on Next.
+  final int? totalChapters;
 
   const ReaderScreen({
     super.key,
     required this.storyId,
     required this.storyTitle,
     required this.chapterNumber,
+    this.totalChapters,
   });
 
   @override
@@ -184,6 +187,23 @@ class _ReaderScreenState extends State<ReaderScreen> {
       );
     } on ApiException catch (e) {
       if (mounted) {
+        // Past last published chapter → end-of-story, not a generic paywall/error.
+        final looksMissing = e.code == 'NOT_FOUND' ||
+            e.code == 'CHAPTER_NOT_FOUND' ||
+            (e.userMessage.toLowerCase().contains('not found') &&
+                e.code != 'PAYWALL_REQUIRED' &&
+                e.code != 'OTP_REQUIRED');
+        if (looksMissing && widget.chapterNumber > 1) {
+          setState(() {
+            _loading = false;
+            _error = null;
+            _apiError = null;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showEndOfStory();
+          });
+          return;
+        }
         setState(() {
           _apiError = e;
           _loading = false;
@@ -375,6 +395,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           message: _error!,
           offlineChapters: _cache.getCachedChapterNumbers(widget.storyId),
           onRetry: _loadChapter,
+          onOpenOfflineChapter: (n) => _navigateChapter(n),
         ),
       );
     }
@@ -409,6 +430,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   child: IconButton(
                     icon: Icon(Icons.arrow_back, color: ink),
                     onPressed: () => Navigator.pop(context),
+                    tooltip: l10n.readerBackTooltip,
                   ),
                 ),
                 actions: [
@@ -430,7 +452,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     child: IconButton(
                       icon: Icon(Icons.rate_review_outlined, color: ink),
                       onPressed: _showFeedbackSheet,
-                      tooltip: 'Send feedback to the author',
+                      tooltip: l10n.readerFeedbackTooltip,
                     ),
                   ),
                   _ChromeFade(
@@ -593,7 +615,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 onPrevious: widget.chapterNumber > 1
                     ? () => _navigateChapter(widget.chapterNumber - 1)
                     : null,
-                onNext: () => _navigateChapter(widget.chapterNumber + 1),
+                onNext: _canGoNext
+                    ? () => _navigateChapter(widget.chapterNumber + 1)
+                    : _showEndOfStory,
+                nextIsEnd: !_canGoNext,
               ),
             ),
           ),
@@ -602,7 +627,64 @@ class _ReaderScreenState extends State<ReaderScreen> {
     );
   }
 
+  bool get _canGoNext {
+    final total = widget.totalChapters;
+    if (total != null && total > 0) {
+      return widget.chapterNumber < total;
+    }
+    // Unknown total — still try next; API may return end-of-story 404.
+    return true;
+  }
+
+  void _showEndOfStory() {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+        decoration: BoxDecoration(
+          color: Theme.of(ctx).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.auto_stories_outlined, size: 40, color: KathaColors.gold),
+            const SizedBox(height: 12),
+            Text(
+              l10n.readerEndOfStoryTitle,
+              style: Theme.of(ctx).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.readerEndOfStorySubtitle,
+              style: Theme.of(ctx).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).popUntil((r) => r.isFirst);
+              },
+              style: FilledButton.styleFrom(backgroundColor: KathaColors.gold),
+              child: Text(l10n.buttonDone),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _navigateChapter(int chapter) {
+    final total = widget.totalChapters;
+    if (total != null && total > 0 && chapter > total) {
+      _showEndOfStory();
+      return;
+    }
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -610,6 +692,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           storyId: widget.storyId,
           storyTitle: widget.storyTitle,
           chapterNumber: chapter,
+          totalChapters: widget.totalChapters,
         ),
       ),
     );
@@ -764,19 +847,27 @@ class _ReaderScreenState extends State<ReaderScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isPraise ? 'Praise for the author' : 'Feedback for the author',
+                isPraise
+                    ? AppLocalizations.of(ctx)!.readerPraiseTitle
+                    : AppLocalizations.of(ctx)!.readerFeedbackTitle,
                 style: Theme.of(ctx).textTheme.titleLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                'Chapter ${widget.chapterNumber} · ${widget.storyTitle}',
+                '${AppLocalizations.of(ctx)!.errorChapterNumber(widget.chapterNumber)} · ${widget.storyTitle}',
                 style: Theme.of(ctx).textTheme.labelMedium,
               ),
               const SizedBox(height: 12),
               SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Private feedback')),
-                  ButtonSegment(value: true, label: Text('Praise')),
+                segments: [
+                  ButtonSegment(
+                    value: false,
+                    label: Text(AppLocalizations.of(ctx)!.readerFeedbackPrivate),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    label: Text(AppLocalizations.of(ctx)!.readerPraise),
+                  ),
                 ],
                 selected: {isPraise},
                 onSelectionChanged: (s) =>
@@ -785,8 +876,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
               const SizedBox(height: 4),
               Text(
                 isPraise
-                    ? 'Only visible to the author — they choose whether to show it publicly as a testimonial.'
-                    : 'Always private. Never shown to other readers.',
+                    ? AppLocalizations.of(ctx)!.readerPraiseHint
+                    : AppLocalizations.of(ctx)!.readerFeedbackPrivateHint,
                 style: Theme.of(ctx).textTheme.labelMedium,
               ),
               const SizedBox(height: 12),
@@ -833,9 +924,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  isPraise
-                                      ? 'Thank you — your praise was sent to the author.'
-                                      : 'Thank you — your feedback was sent to the author.',
+                                  AppLocalizations.of(context)!
+                                      .readerFeedbackThanks,
                                 ),
                               ),
                             );
@@ -849,9 +939,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             setSheetState(() => submitting = false);
                             if (!ctx.mounted) return;
                             ScaffoldMessenger.of(ctx).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'Could not send feedback. Try again.',
+                                  AppLocalizations.of(ctx)!.readerFeedbackFailed,
                                 ),
                               ),
                             );
@@ -866,7 +956,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : Text(isPraise ? 'Send praise' : 'Send feedback'),
+                      : Text(
+                          isPraise
+                              ? AppLocalizations.of(ctx)!.readerPraiseSend
+                              : AppLocalizations.of(ctx)!.readerFeedbackSend,
+                        ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -877,7 +971,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     Navigator.pop(ctx);
                     _showReportSheet();
                   },
-                  child: const Text('Report this story instead'),
+                  child: Text(AppLocalizations.of(ctx)!.readerReportInstead),
                 ),
               ),
             ],
@@ -907,12 +1001,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Report this story', style: Theme.of(ctx).textTheme.titleLarge),
+              Text(
+                AppLocalizations.of(ctx)!.readerReportTitle,
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
               const SizedBox(height: 8),
               Text(
-                'Reports go to Katha\'s moderation team, not the author. '
-                'The story keeps earning while it\'s reviewed — nothing is taken '
-                'down on a single report.',
+                AppLocalizations.of(ctx)!.readerReportBody,
                 style: Theme.of(ctx).textTheme.labelMedium,
               ),
               const SizedBox(height: 12),
@@ -976,9 +1071,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               if (!ctx.mounted) return;
                               Navigator.pop(ctx);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text(
-                                    'Report submitted — thank you for helping keep Katha safe.',
+                                    AppLocalizations.of(context)!
+                                        .readerReportThanks,
                                   ),
                                 ),
                               );
@@ -992,9 +1088,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               setSheetState(() => submitting = false);
                               if (!ctx.mounted) return;
                               ScaffoldMessenger.of(ctx).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text(
-                                    'Could not submit the report. Try again.',
+                                    AppLocalizations.of(ctx)!.readerReportFailed,
                                   ),
                                 ),
                               );
@@ -1009,7 +1105,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Submit report'),
+                        : Text(AppLocalizations.of(ctx)!.readerReportSubmit),
                   ),
                 ),
               ],
@@ -1233,9 +1329,11 @@ class _ReaderScreenState extends State<ReaderScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.paymentFailedGeneric),
+          ),
+        );
       }
     } finally {
       checkoutUi.dispose();
@@ -1282,12 +1380,14 @@ class _ChapterNavBar extends StatelessWidget {
   final ReadingTone tone;
   final VoidCallback? onPrevious;
   final VoidCallback onNext;
+  final bool nextIsEnd;
 
   const _ChapterNavBar({
     required this.currentChapter,
     required this.tone,
     this.onPrevious,
     required this.onNext,
+    this.nextIsEnd = false,
   });
 
   @override
@@ -1328,8 +1428,8 @@ class _ChapterNavBar extends StatelessWidget {
           Expanded(
             child: FilledButton.icon(
               onPressed: onNext,
-              icon: const Icon(Icons.arrow_forward, size: 18),
-              label: Text(l10n.buttonNext),
+              icon: Icon(nextIsEnd ? Icons.flag_outlined : Icons.arrow_forward, size: 18),
+              label: Text(nextIsEnd ? l10n.buttonDone : l10n.buttonNext),
               style: FilledButton.styleFrom(
                 backgroundColor: KathaColors.gold,
                 foregroundColor: Colors.white,

@@ -242,7 +242,15 @@ body {
   word-break: break-word;
 }
 
-.chapter-body p:first-of-type::first-letter {
+/*
+ * Drop-cap only for alphabetic openings (Latin or Telugu letters).
+ * Numeric chapter openings like "1920ల కాలంలో…" must not style only "1"
+ * (would leave "920ల…" orphaned). :not() with :lang is limited; use
+ * :has() guard is imperfect — instead disable first-letter when the
+ * paragraph's text starts with a digit via a class applied in ChapterReader,
+ * and also use a safer CSS default: only apply drop-cap when not data-no-dropcap.
+ */
+.chapter-body p:first-of-type:not([data-no-dropcap])::first-letter {
   font-family: var(--font-display);
   font-size: 2.6em;
   font-weight: 600;

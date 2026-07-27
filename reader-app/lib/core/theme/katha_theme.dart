@@ -3,6 +3,42 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Katha Brand Identity System v1.0 — sync with packages/shared/brand-tokens.css
 
+/// Bundled Telugu stack (assets/fonts/NotoSansTelugu-*.ttf). Used when
+/// GoogleFonts runtime fetch is disabled for offline-first reading.
+TextStyle _bundledTelugu({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? height,
+  double? letterSpacing,
+}) {
+  return TextStyle(
+    fontFamily: 'NotoSansTelugu',
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+}
+
+TextStyle _teluguStyle({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? height,
+  double? letterSpacing,
+}) {
+  // Prefer bundled face always — avoid CDN dependency even if fetch is re-enabled.
+  return _bundledTelugu(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    height: height,
+    letterSpacing: letterSpacing,
+  );
+}
+
 class KathaColors {
   static const gold = Color(0xFFC4A052);
   static const goldLight = Color(0xFFE8D5A3);
@@ -140,7 +176,7 @@ class KathaTheme {
     bool highContrast = false,
   }) {
     return TextTheme(
-      displayLarge: GoogleFonts.notoSansTelugu(
+      displayLarge: _teluguStyle(
         fontSize: baseSize + 12,
         fontWeight: FontWeight.w600,
         color: color,
@@ -157,7 +193,7 @@ class KathaTheme {
         fontWeight: FontWeight.w600,
         color: color,
       ),
-      bodyLarge: GoogleFonts.notoSansTelugu(
+      bodyLarge: _teluguStyle(
         fontSize: baseSize + 2,
         color: color,
         height:
@@ -184,7 +220,7 @@ class KathaTheme {
   }) {
     // Material Design 3 + Minimalist: generous line height for Telugu long-form comfort
     final size = 18.0 + (fontScale - 2) * 3;
-    return GoogleFonts.notoSansTelugu(
+    return _teluguStyle(
       fontSize: size,
       height: lineHeight,
       color: readingInk(tone),

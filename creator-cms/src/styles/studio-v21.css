@@ -124,6 +124,12 @@
 .sv21__badge--published { background: var(--sv21-success-bg); color: var(--sv21-success-text); }
 .sv21__badge--draft { background: var(--sv21-surface-1); color: var(--sv21-ink-soft); }
 .sv21__badge--review { background: var(--sv21-gold-light); color: var(--sv21-gold); }
+/* Distinct from pending review — action required from the author */
+.sv21__badge--revision {
+  background: color-mix(in srgb, var(--katha-ember, #8B3A62) 14%, var(--sv21-surface-0, #fff));
+  color: var(--katha-ember, #8B3A62);
+  font-weight: 600;
+}
 .sv21__badge--registered { background: var(--sv21-surface-1); color: var(--sv21-maroon); }
 .sv21__badge--open { background: var(--sv21-success-bg); color: var(--sv21-success-text); }
 

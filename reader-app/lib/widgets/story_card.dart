@@ -101,7 +101,7 @@ class StoryCard extends StatelessWidget {
                           runSpacing: 4,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            _chip(context, story.genreLabel),
+                            _chip(context, story.genreLabelFor(l10n)),
                             if (story.isMatureThemed)
                               _chip(context, l10n.maturityMature, muted: true),
                             Text(
