@@ -292,7 +292,6 @@ export function Dashboard() {
         <StudioEmptyState
           icon={BookOpen}
           title={t('stories.emptyShelfText')}
-          titleTe={locale === 'te' ? t('stories.emptyShelfText') : undefined}
         >
           <Link to="/stories/new" className="sv21__cta" style={{ marginTop: 12 }}>
             {t('stories.createFirst')}

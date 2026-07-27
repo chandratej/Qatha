@@ -78,13 +78,14 @@
   --katha-elevation-4: 0 16px 48px rgba(26, 24, 20, 0.12), 0 4px 12px rgba(26, 24, 20, 0.06);
 }
 
-/* ── Management Mode — Dashboard, Stories, Analytics, Settings ── */
+/* ── Management Mode — Dashboard, Stories, Analytics, Settings ──
+   Warm paper (not pure white) — same low-glare philosophy as creation mode. */
 :root,
 [data-katha-mode='management'] {
-  --katha-mode-bg: #faf8f5;
-  --katha-mode-bg-warm: #f5f0e8;
-  --katha-mode-surface: #ffffff;
-  --katha-mode-surface-raised: #f8f6f2;
+  --katha-mode-bg: #f5f0e8;
+  --katha-mode-bg-warm: #efe8dc;
+  --katha-mode-surface: #f7f2e8;
+  --katha-mode-surface-raised: #faf6ef;
   --katha-mode-border: rgba(26, 24, 20, 0.08);
   --katha-mode-border-strong: rgba(26, 24, 20, 0.14);
   --katha-mode-shadow-sm: var(--katha-elevation-1);

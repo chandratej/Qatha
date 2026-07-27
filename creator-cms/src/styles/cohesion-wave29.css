@@ -167,7 +167,7 @@
 .cs-v21__counter {
   align-self: flex-end;
   font-size: 0.75rem;
-  color: var(--cs-faint);
+  color: var(--cs-muted);
 }
 
 .cs-v21__section h2 {
@@ -476,13 +476,18 @@
   align-items: center;
   gap: 8px;
   padding: 12px 22px;
-  border: none;
+  border: 1px solid rgba(92, 69, 32, 0.4);
   border-radius: 10px;
-  background: var(--cs-maroon);
-  color: #fff;
+  background: linear-gradient(168deg, #d4b46e 0%, #b8923e 55%, #8a6b32 100%);
+  color: #1a1510;
   font-size: 0.9375rem;
   font-weight: 600;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.cs-v21__continue-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .cs-v21__continue-btn:disabled {
@@ -672,4 +677,11 @@
     flex-direction: column;
     align-items: stretch;
   }
+}
+.cs-v21__phonetic-hint {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--cs-muted, #8a7f6e);
+  line-height: 1.4;
 }

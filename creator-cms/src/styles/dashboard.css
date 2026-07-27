@@ -1974,6 +1974,29 @@
   line-height: var(--line-height-body);
 }
 
+/* Auth / form alert surface — border + tint (not color-only) */
+.cms-error-banner,
+.cms-auth-error.cms-error-text {
+  display: block;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--katha-error, #9a4a52) 28%, transparent);
+  background: color-mix(in srgb, var(--katha-error, #9a4a52) 10%, var(--premium-surface, #f7f2e8));
+  color: #8f1d18;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.4;
+}
+
+[data-theme='dark'] .cms-error-banner,
+[data-theme='dark'] .cms-auth-error.cms-error-text {
+  color: #f0c0c4;
+  background: color-mix(in srgb, var(--katha-error, #9a4a52) 18%, #1a1a1e);
+  border-color: color-mix(in srgb, var(--katha-error, #9a4a52) 40%, transparent);
+}
+
 .cms-inline-form {
   display: flex;
   gap: 10px;

@@ -31,8 +31,80 @@ import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { NotificationPreferencesPanel } from '../components/settings/NotificationPreferencesPanel';
 import { useLocale } from '../context/LocaleContext';
 
+/** Extra Settings strings (keeps studioLocale churn small; te-first for senior creators). */
+const SX = {
+  en: {
+    storyTrustLine: (pct: number) =>
+      `Story Trust share: ${pct}% base (up to 60% at Apex) · Quarterly payouts`,
+    noCoinsNote: 'No coins, no tips — literary earnings only.',
+    legalNamePh: 'Full legal name',
+    exportCsv: 'Export earnings CSV',
+    releaseTitle: 'Release checklist',
+    releaseLead: 'After each deploy: smoke + sanity board. Mark pass/fail before shipping.',
+    releaseOpen: 'Open release checklist',
+    labsLead:
+      'Tags admin and the platform map stay off by default. Literary Council reviews and Events stay in core nav.',
+    enableLabs: 'Enable Labs surfaces',
+    labsOnHint: 'Tags and Platform map are now available in Community and the command palette.',
+    theme: 'Theme',
+    themeSystem: 'Match system — follows your device day/night schedule',
+    themeLight: 'Paper (soft daylight) — best for daytime writing',
+    themeDark: 'Night (low glare) — best for evenings',
+    themeHint:
+      'Paper mode uses low-glare warm ivory with deep ink. Night mode is a warm low-blue dark for evenings.',
+    uiSize: 'Interface text size',
+    scaleCompact: 'Compact',
+    scaleDefault: 'Default',
+    scaleComfort: 'Comfort — recommended for long sessions',
+    scaleLarge: 'Large',
+    calmMotion: 'Calm motion — reduce animation across the studio',
+    highContrast: 'High contrast — stronger text and panel borders (glare / tired eyes)',
+    writingDefaults:
+      'Defaults favour longer sessions: larger type and spacious line height. Adjust anytime — preferences stay on this device.',
+    writingLead:
+      'Tune the chapter editor for long sessions. Text size matches the reader app scale. Break reminders appear only while you are editing with this tab open.',
+  },
+  te: {
+    storyTrustLine: (pct: number) =>
+      `Story Trust షేర్: ${pct}% బేస్ (Apex వద్ద 60% వరకు) · త్రైమాసిక చెల్లింపులు`,
+    noCoinsNote: 'కాయిన్లు లేవు, టిప్స్ లేవు — సాహిత్య ఆదాయం మాత్రమే.',
+    legalNamePh: 'పూర్తి చట్టపరమైన పేరు',
+    exportCsv: 'ఆదాయాల CSV ఎగుమతి',
+    releaseTitle: 'రిలీజ్ చెక్‌లిస్ట్',
+    releaseLead: 'ప్రతి డిప్లాయ్ తర్వాత: స్మోక్ + శానిటీ బోర్డ్. షిప్ చేయడానికి ముందు pass/fail గుర్తు పెట్టండి.',
+    releaseOpen: 'రిలీజ్ చెక్‌లిస్ట్ తెరవండి',
+    labsLead:
+      'Tags అడ్మిన్ మరియు ప్లాట్‌ఫామ్ మ్యాప్ డిఫాల్ట్‌గా ఆఫ్. Literary Council రివ్యూలు మరియు ఈవెంట్‌లు కోర్ నావ్‌లో ఉంటాయి.',
+    enableLabs: 'Labs ఉపరితలాలను ఆన్ చేయండి',
+    labsOnHint: 'Tags మరియు Platform map ఇప్పుడు Community మరియు కమాండ్ పాలెట్‌లో అందుబాటులో ఉన్నాయి.',
+    theme: 'థీమ్',
+    themeSystem: 'సిస్టమ్‌తో సరిపోల్చండి — పరికర పగలు/రాత్రి షెడ్యూల్',
+    themeLight: 'పేపర్ (సాఫ్ట్ డేలైట్) — పగటి రచనకు మంచిది',
+    themeDark: 'నైట్ (తక్కువ గ్లేర్) — సాయంత్రాలకు మంచిది',
+    themeHint:
+      'పేపర్ మోడ్ వెచ్చని ఐవరీ + లోతైన ఇంక్. నైట్ మోడ్ వెచ్చని లో-బ్లూ డార్క్.',
+    uiSize: 'ఇంటర్‌ఫేస్ టెక్స్ట్ సైజు',
+    scaleCompact: 'కాంపాక్ట్',
+    scaleDefault: 'డిఫాల్ట్',
+    scaleComfort: 'కంఫర్ట్ — దీర్ఘ సెషన్లకు సిఫార్సు',
+    scaleLarge: 'పెద్దది',
+    calmMotion: 'కామ్ మోషన్ — స్టూడియో అంతటా యానిమేషన్ తగ్గించండి',
+    highContrast: 'హై కాంట్రాస్ట్ — బలమైన టెక్స్ట్ మరియు ప్యానెల్ బార్డర్లు',
+    writingDefaults:
+      'డిఫాల్ట్‌లు దీర్ఘ సెషన్లకు: పెద్ద టైప్ + విశాల లైన్ ఎత్తు. ఎప్పుడైనా మార్చండి — ఈ పరికరంపైనే సేవ్.',
+    writingLead:
+      'చాప్టర్ ఎడిటర్‌ను దీర్ఘ సెషన్లకు అమర్చండి. టెక్స్ట్ సైజు రీడర్ యాప్ స్కేల్‌తో సరిపోతుంది. బ్రేక్ రిమైండర్లు ఎడిట్ చేస్తున్నప్పుడు మాత్రమే.',
+  },
+} as const;
+
+function sx(locale: string, key: keyof typeof SX.en, pct?: number): string {
+  const pack = locale === 'te' ? SX.te : SX.en;
+  const v = pack[key];
+  return typeof v === 'function' ? v(pct ?? 40) : v;
+}
+
 export function Settings() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { user, logout, isMockMode } = useAuth();
   const { themePref, setTheme } = useTheme();
   const navigate = useNavigate();
@@ -159,15 +231,15 @@ export function Settings() {
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <User size={18} aria-hidden />
-            <h3>Creator profile</h3>
+            <h3>{t('settings.profile')}</h3>
           </div>
           <div className="studio-settings-section__body">
             <p style={{ margin: '0 0 8px', color: 'var(--ink)' }}>
-              <strong>{user?.display_name || 'Creator'}</strong>
+              <strong>{user?.display_name || t('settings.profile')}</strong>
             </p>
             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--ink-muted)' }}>{user?.phone || '—'}</p>
             <p style={{ margin: '12px 0 0', fontSize: '0.8125rem', color: 'var(--ink-soft)' }}>
-              Story Trust share: {BRAND.creatorSharePct}% base (up to 60% at Apex) · Quarterly payouts
+              {sx(locale, 'storyTrustLine', BRAND.creatorSharePct)}
             </p>
           </div>
         </section>
@@ -175,26 +247,26 @@ export function Settings() {
         <section className="cms-panel studio-settings-section" aria-labelledby="payout-settings-title">
           <div className="studio-settings-section__head">
             <IndianRupee size={18} aria-hidden />
-            <h3 id="payout-settings-title">Payout readiness</h3>
+            <h3 id="payout-settings-title">{t('settings.payout')}</h3>
           </div>
           <div className="studio-settings-section__body">
             <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>
-              Quarterly Story Trust payouts require a verified UPI ID and legal name matching your tax records.
-              No coins, no tips — literary earnings only.
+              {t('settings.payoutLead')}{' '}
+              {sx(locale, 'noCoinsNote')}
             </p>
             <div style={{ display: 'grid', gap: 12 }}>
               <label className="studio-settings-field">
-                <span>Legal name (as on UPI / PAN)</span>
+                <span>{t('settings.legalName')}</span>
                 <input
                   className="cms-input"
                   value={legalName}
                   onChange={(e) => setLegalName(e.target.value)}
-                  placeholder="Full legal name"
+                  placeholder={sx(locale, 'legalNamePh')}
                   autoComplete="name"
                 />
               </label>
               <label className="studio-settings-field">
-                <span>UPI ID</span>
+                <span>{t('settings.upi')}</span>
                 <input
                   className="cms-input"
                   value={payoutUpi}
@@ -204,7 +276,7 @@ export function Settings() {
                 />
               </label>
               <label className="studio-settings-field">
-                <span>PAN / tax ID (optional until first payout)</span>
+                <span>{t('settings.taxId')}</span>
                 <input
                   className="cms-input"
                   value={taxId}
@@ -221,10 +293,10 @@ export function Settings() {
                   onClick={() => { void handleSavePayout(); }}
                   disabled={payoutSaving}
                 >
-                  {payoutSaving ? 'Saving…' : 'Save payout details'}
+                  {payoutSaving ? t('settings.saving') : t('settings.savePayout')}
                 </button>
                 <button type="button" className="btn btn-secondary" onClick={() => { void handleExportEarnings(); }}>
-                  <Download size={16} aria-hidden /> Export earnings CSV
+                  <Download size={16} aria-hidden /> {sx(locale, 'exportCsv')}
                 </button>
               </div>
               {payoutMsg && (
@@ -249,16 +321,14 @@ export function Settings() {
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <ClipboardList size={18} aria-hidden />
-            <h3>Release checklist</h3>
+            <h3>{sx(locale, 'releaseTitle')}</h3>
           </div>
           <div className="studio-settings-section__body">
             <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55 }}>
-              After each deploy: smoke + sanity board. Mark pass/fail and export a report before shipping.
-              Full MVP1 soft-launch board (ops + reader + go/no-go):{' '}
-              <code style={{ fontSize: '0.8em' }}>docs/MVP1_LAUNCH_CHECKLIST.md</code>
+              {sx(locale, 'releaseLead')}
             </p>
             <Link to="/release-checklist" className="katha-cta katha-cta--soft">
-              <ClipboardList size={16} aria-hidden /> Open release checklist
+              <ClipboardList size={16} aria-hidden /> {sx(locale, 'releaseOpen')}
             </Link>
           </div>
         </section>
@@ -266,15 +336,14 @@ export function Settings() {
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <FlaskConical size={18} aria-hidden />
-            <h3>Studio Labs</h3>
+            <h3>{t('settings.labs')}</h3>
           </div>
           <div className="studio-settings-section__body">
             <p style={{ margin: '0 0 12px', fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55 }}>
-              Tags admin and the platform map stay off by default (DEC-007). Literary Council reviews
-              and Events are always in core nav — trust and contests are not experiments.
+              {sx(locale, 'labsLead')}
             </p>
             <label className="studio-settings-row" style={{ cursor: 'pointer' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>Enable Labs surfaces</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>{sx(locale, 'enableLabs')}</span>
               <input
                 type="checkbox"
                 checked={labsOn}
@@ -283,12 +352,12 @@ export function Settings() {
                   setStudioLabsEnabled(next);
                   setLabsOn(next);
                 }}
-                aria-label="Enable Studio Labs"
+                aria-label={sx(locale, 'enableLabs')}
               />
             </label>
             {labsOn && (
               <p style={{ margin: '8px 0 0', fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
-                Tags and Platform map are now available in Community and command palette.
+                {sx(locale, 'labsOnHint')}
               </p>
             )}
           </div>
@@ -296,39 +365,38 @@ export function Settings() {
 
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
-            <h3>Appearance</h3>
+            <h3>{t('settings.appearance')}</h3>
           </div>
           <div className="studio-settings-section__body">
             <div style={{ display: 'grid', gap: 16 }}>
               <label className="studio-settings-field">
-                <span>Theme</span>
+                <span>{sx(locale, 'theme')}</span>
                 <select
                   className="cms-input"
                   value={themePref}
                   onChange={(e) => setTheme(e.target.value as CmsThemePref)}
-                  aria-label="Theme preference"
+                  aria-label={sx(locale, 'theme')}
                 >
-                  <option value="system">Match system — follows your device day/night schedule</option>
-                  <option value="light">Paper (soft daylight) — best for daytime writing</option>
-                  <option value="dark">Night (low glare) — best for evenings</option>
+                  <option value="system">{sx(locale, 'themeSystem')}</option>
+                  <option value="light">{sx(locale, 'themeLight')}</option>
+                  <option value="dark">{sx(locale, 'themeDark')}</option>
                 </select>
               </label>
               <p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
-                Paper mode uses low-glare warm ivory (not bright white or yellow tea-stain) with deep ink.
-                Night mode is a warm low-blue dark for evenings.
+                {sx(locale, 'themeHint')}
               </p>
               <label className="studio-settings-field">
-                <span>Interface text size — {uiScaleLabel(comfort.uiScale)}</span>
+                <span>{sx(locale, 'uiSize')} — {uiScaleLabel(comfort.uiScale)}</span>
                 <select
                   className="cms-input"
                   value={comfort.uiScale}
                   onChange={(e) => updateComfort({ uiScale: Number(e.target.value) as UiScale })}
-                  aria-label="Interface text size"
+                  aria-label={sx(locale, 'uiSize')}
                 >
-                  <option value={1}>Compact</option>
-                  <option value={2}>Default</option>
-                  <option value={3}>Comfort — recommended for long sessions</option>
-                  <option value={4}>Large</option>
+                  <option value={1}>{sx(locale, 'scaleCompact')}</option>
+                  <option value={2}>{sx(locale, 'scaleDefault')}</option>
+                  <option value={3}>{sx(locale, 'scaleComfort')}</option>
+                  <option value={4}>{sx(locale, 'scaleLarge')}</option>
                 </select>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer' }}>
@@ -337,7 +405,7 @@ export function Settings() {
                   checked={comfort.calmMotion}
                   onChange={(e) => updateComfort({ calmMotion: e.target.checked })}
                 />
-                <span>Calm motion — reduce animation across the studio</span>
+                <span>{sx(locale, 'calmMotion')}</span>
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.875rem', cursor: 'pointer' }}>
                 <input
@@ -345,7 +413,7 @@ export function Settings() {
                   checked={comfort.highContrast}
                   onChange={(e) => updateComfort({ highContrast: e.target.checked })}
                 />
-                <span>High contrast — stronger text and panel borders (glare / tired eyes)</span>
+                <span>{sx(locale, 'highContrast')}</span>
               </label>
             </div>
           </div>
@@ -354,16 +422,14 @@ export function Settings() {
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <Coffee size={18} aria-hidden />
-            <h3>Writing comfort (editor)</h3>
+            <h3>{t('settings.comfort')}</h3>
             <p style={{ margin: '0 0 12px', fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45 }}>
-              Defaults favour longer sessions: larger type and spacious line height. Adjust anytime —
-              preferences stay on this device.
+              {sx(locale, 'writingDefaults')}
             </p>
           </div>
           <div className="studio-settings-section__body">
             <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', marginBottom: 16, lineHeight: 1.55 }}>
-              Tune the chapter editor for long sessions. Text size matches the reader app scale. Break reminders
-              appear only while you are actively editing with this tab open.
+              {sx(locale, 'writingLead')}
             </p>
             <div style={{ display: 'grid', gap: 16 }}>
               <label className="studio-settings-field">

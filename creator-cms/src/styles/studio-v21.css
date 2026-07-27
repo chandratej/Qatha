@@ -5,8 +5,8 @@
 
 .sv21 {
   --sv21-bg: #faf7f0;
-  --sv21-surface: #ffffff;
-  --sv21-surface-1: #f5f0e6;
+  --sv21-surface: #f7f2e8;
+  --sv21-surface-1: #f0e9dc;
   --sv21-border: #e5dfd0;
   --sv21-border-strong: #d8cfb8;
   --sv21-ink: #2b221a;
@@ -88,30 +88,41 @@
   max-width: 60ch;
 }
 
-/* Buttons */
+/* Buttons — gold primary (aligned with .btn-primary / .katha-cta) for one main-action language.
+   Maroon reserved for publish-critical chrome elsewhere (e.g. .katha-cta--maroon). */
 .sv21__cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--sv21-maroon);
-  color: #fff;
-  border: none;
+  background: linear-gradient(168deg, #d4b46e 0%, #b8923e 55%, #8a6b32 100%);
+  color: #1a1510;
+  border: 1px solid rgba(92, 69, 32, 0.4);
   padding: 10px 18px;
   border-radius: var(--sv21-radius);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   font-family: inherit;
-  transition: background 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
-.sv21__cta:hover { background: var(--sv21-maroon-dark); color: #fff; }
+.sv21__cta:hover {
+  color: #1a1510;
+  transform: translateY(-1px);
+  box-shadow: var(--katha-gold-glow, 0 4px 16px rgba(196, 160, 82, 0.35)), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
 .sv21__cta--soft {
-  background: var(--sv21-surface);
-  color: var(--sv21-maroon);
-  border: 1px solid var(--sv21-border-strong);
+  background: var(--sv21-surface, #f7f2e8);
+  color: #1a1510;
+  border: 1px solid var(--sv21-border-strong, rgba(26, 24, 20, 0.14));
+  box-shadow: none;
+  font-weight: 600;
 }
-.sv21__cta--soft:hover { background: var(--sv21-surface-1); }
+.sv21__cta--soft:hover {
+  background: color-mix(in srgb, var(--katha-gold, #c4a052) 12%, var(--sv21-surface, #f7f2e8));
+  transform: none;
+}
 .sv21__cta--sm { font-size: 13px; padding: 7px 12px; }
 
 /* Badges */

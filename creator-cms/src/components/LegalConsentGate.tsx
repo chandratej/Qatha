@@ -168,8 +168,8 @@ export function LegalConsentGate() {
           </h1>
           <p className="cms-auth-card__tagline-telugu">
             {te
-              ? 'ప్రైవసీ సమ్మతి + క్రియేటర్ అగ్రిమెంట్ — ప్రచురణకు ముందు అవసరం'
-              : 'Privacy consent + Creator Agreement — required before publishing on Katha'}
+              ? 'ప్రైవసీ సమ్మతి + క్రియేటర్ అగ్రిమెంట్ — స్టూడియో తెరవడానికి రెండూ అవసరం'
+              : 'Privacy consent + Creator Agreement — required to unlock Creator Studio'}
           </p>
         </div>
 
@@ -185,7 +185,7 @@ export function LegalConsentGate() {
             {dpdpSummary}{' '}
             <Link to="/legal#privacy">{te ? 'ప్రైవసీ పాలసీ' : 'Privacy Policy'}</Link>
             <span style={{ display: 'block', fontSize: 12, opacity: 0.7 }}>
-              Version {DPDP_PRIVACY_VERSION}
+              {te ? 'వెర్షన్' : 'Version'} {DPDP_PRIVACY_VERSION}
             </span>
           </span>
         </label>
@@ -206,7 +206,7 @@ export function LegalConsentGate() {
             {agreementSummary}{' '}
             <Link to="/legal#creator-agreement">{te ? 'పూర్తి అగ్రిమెంట్' : 'Full agreement'}</Link>
             <span style={{ display: 'block', fontSize: 12, opacity: 0.7 }}>
-              Version {CREATOR_AGREEMENT_VERSION}
+              {te ? 'వెర్షన్' : 'Version'} {CREATOR_AGREEMENT_VERSION}
             </span>
           </span>
         </label>
@@ -219,7 +219,7 @@ export function LegalConsentGate() {
         </p>
 
         {error && (
-          <p role="alert" style={{ color: '#8B3A62', marginTop: 12 }}>
+          <p className="cms-error-banner" role="alert" aria-live="assertive" style={{ marginTop: 12 }}>
             {error}
           </p>
         )}
@@ -236,7 +236,7 @@ export function LegalConsentGate() {
               ? 'సేవ్ అవుతోంది…'
               : 'Saving…'
             : te
-              ? 'అంగీకరించి Creator Studioకి వెళ్ళండి'
+              ? 'అంగీకరించి స్టూడియోకి వెళ్ళండి'
               : 'Accept & continue to Creator Studio'}
         </button>
       </div>

@@ -383,6 +383,13 @@ export function CreateStory() {
               phonetic={useTeluguPhonetic}
               lang={useTeluguPhonetic ? 'te' : 'en'}
             />
+            {useTeluguPhonetic && (
+              <p className="cs-v21__phonetic-hint" role="note">
+                {locale === 'te'
+                  ? 'ఫొనెటిక్ ఆన్: ఇంగ్లీష్ అక్షరాలు టైప్ చేస్తే తెలుగు వస్తుంది (ఉదా. amma → అమ్మ).'
+                  : 'Phonetic on: type Latin letters to get Telugu (e.g. amma → అమ్మ).'}
+              </p>
+            )}
             <span className="cs-v21__counter">{title.length} / {PAYWALL.maxStoryTitleChars}</span>
           </div>
 

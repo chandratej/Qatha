@@ -185,6 +185,12 @@ export function Login() {
           )}
         </div>
 
+        {error && (
+          <p className="cms-error-text cms-auth-error" role="alert" aria-live="assertive">
+            {error}
+          </p>
+        )}
+
         {mode === 'choose' && (
           <div className="cms-auth-actions">
             <button
@@ -274,7 +280,6 @@ export function Login() {
           </form>
         )}
 
-        {error && <p className="cms-error-text cms-auth-error" role="alert">{error}</p>}
       </div>
     </div>
   );

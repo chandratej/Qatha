@@ -194,9 +194,10 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Positioning only — surface chrome lives on .cms-error-banner / dashboard.css */
 .cms-auth-error {
-  margin-top: 16px;
-  text-align: center;
+  margin-top: 0;
+  margin-bottom: 14px;
 }
 
 .cms-auth-card__brand--onboarding {
