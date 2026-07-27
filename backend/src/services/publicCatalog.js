@@ -208,6 +208,10 @@ export async function listPublicStories({
 }
 
 export async function getPublicStoryDetail(storyId) {
+  // Reject malformed UUIDs before PostgREST (avoids 500 "invalid input syntax for type uuid")
+  const { isUuid } = await import('../lib/uuid.js');
+  if (!isUuid(storyId)) return null;
+
   const counts = await publishedChapterCounts();
   const publishedCount = counts.get(storyId) || 0;
 
@@ -217,7 +221,12 @@ export async function getPublicStoryDetail(storyId) {
     .eq('id', storyId)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    // Defensive: treat invalid uuid / not-found-style errors as missing story
+    const msg = String(error.message || error.details || '');
+    if (/invalid input syntax|uuid/i.test(msg)) return null;
+    throw error;
+  }
   if (!story) return null;
 
   // Allow opening if it has published chapters even when is_published lagging
@@ -303,12 +312,20 @@ export async function listDiscoverByGenre(genre) {
 
 async function repairStoryCatalogFlags(counts) {
   try {
-    for (const [storyId, n] of counts.entries()) {
-      await supabase
-        .from('stories')
-        .update({ is_published: true, chapter_count: n })
-        .eq('id', storyId)
-        .or(`is_published.eq.false,chapter_count.neq.${n}`);
+    // Parallel batch (chunked) instead of serial N+1 updates
+    const entries = [...counts.entries()];
+    const CHUNK = 25;
+    for (let i = 0; i < entries.length; i += CHUNK) {
+      const slice = entries.slice(i, i + CHUNK);
+      await Promise.all(
+        slice.map(([storyId, n]) =>
+          supabase
+            .from('stories')
+            .update({ is_published: true, chapter_count: n })
+            .eq('id', storyId)
+            .or(`is_published.eq.false,chapter_count.neq.${n}`),
+        ),
+      );
     }
   } catch (e) {
     console.warn('[publicCatalog] repair skipped:', e?.message);

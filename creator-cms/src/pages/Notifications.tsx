@@ -30,7 +30,10 @@ export function Notifications() {
   const [busy, setBusy] = useState(false);
 
   const { data, loading, error, mutate } = useApi(
-    () => platformApi.getNotifications(userId).then((r) => r.notifications.map(normalizePlatformNotification)),
+    () =>
+      import('../lib/notificationClient')
+        .then((m) => m.fetchNotificationsShared(userId))
+        .then((list) => list.map(normalizePlatformNotification)),
     [userId],
   );
 
@@ -40,6 +43,8 @@ export function Notifications() {
 
   const handleMarkRead = useCallback(async (id: string) => {
     await platformApi.markNotificationRead(id);
+    const { invalidateNotificationsCache } = await import('../lib/notificationClient');
+    invalidateNotificationsCache();
     mutate();
   }, [mutate]);
 
@@ -47,6 +52,8 @@ export function Notifications() {
     setBusy(true);
     try {
       await platformApi.markAllNotificationsRead(userId);
+      const { invalidateNotificationsCache } = await import('../lib/notificationClient');
+      invalidateNotificationsCache();
       mutate();
     } finally {
       setBusy(false);

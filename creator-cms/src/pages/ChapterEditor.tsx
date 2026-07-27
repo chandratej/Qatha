@@ -368,21 +368,26 @@ export function ChapterEditor() {
 
   const charCount = useMemo(() => getPlainCharCountFromScenes(scenes), [scenes]);
   const htmlCharCount = scenes.reduce((sum, s) => sum + (s.content?.length || 0), 0);
+
+  /** Baseline from refs (what cloud actually wrote), not a possibly-stale React fingerprint. */
+  const markCleanAfterAutosave = useCallback(() => {
+    flushEditor();
+    const fp = JSON.stringify({
+      title: chapterTitleRef.current,
+      scenes: scenesRef.current,
+    });
+    dirtyBaselineRef.current = fp;
+    setDirty(false);
+  }, [flushEditor]);
+
   const { saving, lastSaved, setLastSaved } = useAutosave({
     charCount: htmlCharCount,
     triggerLocalSave: persistDraft,
     triggerCloudSave: isDemo ? undefined : cloudSaveDraft,
     enabled: !isChapterImmutable,
+    onSaved: markCleanAfterAutosave,
   });
   const { saveSceneVersion } = useVersionHistory(chapterKey);
-
-  // Mark clean after successful autosave
-  useEffect(() => {
-    if (lastSaved && !saving) {
-      dirtyBaselineRef.current = contentFingerprint;
-      setDirty(false);
-    }
-  }, [lastSaved, saving]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let cancelled = false;

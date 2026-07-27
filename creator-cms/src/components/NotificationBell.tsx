@@ -21,10 +21,11 @@ export function NotificationBell() {
     () => api.getMilestones().catch(() => ({ milestones: [] })),
   );
   const { data: platformData, mutate: mutatePlatform } = useApi(
-    () => platformApi
-      .getNotifications(userId)
-      .then((r) => r.notifications.map(normalizePlatformNotification))
-      .catch(() => [] as ReturnType<typeof normalizePlatformNotification>[]),
+    () =>
+      import('../lib/notificationClient')
+        .then((m) => m.fetchNotificationsShared(userId))
+        .then((list) => list.map(normalizePlatformNotification))
+        .catch(() => [] as ReturnType<typeof normalizePlatformNotification>[]),
     [userId],
   );
   const [open, setOpen] = useState(false);

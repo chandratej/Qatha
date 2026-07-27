@@ -350,20 +350,17 @@ creatorsRouter.get('/stories/:storyId/chapters/:chapterNumber', requireStoryRole
     if (draft) return res.json({ chapter: { ...draft, status: 'draft' } });
     if (published) return res.json({ chapter: published });
 
-    if (!published) {
-      return res.json({
-        chapter: {
-          story_id: storyId,
-          chapter_number: num,
-          title: `Chapter ${num}`,
-          content: '',
-          content_delta: { scenes: [{ id: 'scene-1', title: 'Opening Scene', content: '<p>Start writing…</p>' }] },
-          status: 'draft',
-        },
-      });
-    }
-
-    res.json({ chapter });
+    // No draft and no published row — return empty shell for first edit
+    return res.json({
+      chapter: {
+        story_id: storyId,
+        chapter_number: num,
+        title: `Chapter ${num}`,
+        content: '',
+        content_delta: { scenes: [{ id: 'scene-1', title: 'Opening Scene', content: '<p>Start writing…</p>' }] },
+        status: 'draft',
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -1158,7 +1155,7 @@ creatorsRouter.patch('/me/payout', async (req, res, next) => {
 
     if (payout_upi != null && payout_upi !== '') {
       const upi = String(payout_upi).trim();
-      if (!/^[\w.\-]{2,}@[\w]{2,}$/i.test(upi)) {
+      if (!/^[\w.-]{2,}@[\w]{2,}$/i.test(upi)) {
         throw createAppError('INTERNAL_ERROR', 'Invalid UPI ID format (e.g. name@upi)', 400);
       }
     }

@@ -127,6 +127,11 @@ storiesRouter.get('/discover/:genre', async (req, res, next) => {
 
 storiesRouter.get('/:id', async (req, res, next) => {
   try {
+    const { isUuid } = await import('../lib/uuid.js');
+    if (!isUuid(req.params.id) && !isMockMode()) {
+      throw createAppError('BAD_REQUEST', 'Invalid story id', 400);
+    }
+    // Mock mode allows non-uuid seed ids (story-001, etc.)
     if (isMockMode()) {
       const story = getPublicStoryById(req.params.id);
       if (!story) throw createAppError('CHAPTER_NOT_FOUND', 'Story not found', 404);
@@ -169,6 +174,10 @@ storiesRouter.get('/:id', async (req, res, next) => {
 /** Author-curated public testimonials — never an aggregate score. */
 storiesRouter.get('/:id/praise', async (req, res, next) => {
   try {
+    const { isUuid } = await import('../lib/uuid.js');
+    if (!isUuid(req.params.id) && !isMockMode()) {
+      throw createAppError('BAD_REQUEST', 'Invalid story id', 400);
+    }
     const praise = await listPublicPraise(req.params.id);
     res.json({ praise });
   } catch (err) {
@@ -184,6 +193,10 @@ storiesRouter.get('/:id/praise', async (req, res, next) => {
  */
 storiesRouter.post('/:id/report', requireAuth(), async (req, res, next) => {
   try {
+    const { isUuid } = await import('../lib/uuid.js');
+    if (!isUuid(req.params.id)) {
+      throw createAppError('BAD_REQUEST', 'Invalid story id', 400);
+    }
     const reporterId = getAuthenticatedUserId(req);
     const { category, reason } = req.body || {};
     const result = await createContentReport(req.params.id, reporterId, { category, reason });

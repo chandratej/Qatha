@@ -462,10 +462,12 @@ html:not([data-theme='dark']) .narrative-os-app .bn-item span {
   opacity: 1 !important;
 }
 
+/* Active phase pill: ink fill + paper label (never ink-on-ink) */
 html:not([data-theme='dark']) .narrative-os-app .bn-item.active,
 html:not([data-theme='dark']) .narrative-os-app .bn-item.active span {
-  color: #14110d !important;
-  -webkit-text-fill-color: #14110d;
+  color: #f4efe4 !important;
+  -webkit-text-fill-color: #f4efe4;
+  background: #14110d !important;
   font-weight: 700 !important;
 }
 
@@ -777,9 +779,13 @@ html:not([data-theme='dark']) button:not([class*='theme']):not(.nos-skip-link) {
   color: var(--nos-ink-soft);
 }
 
-[data-theme='dark'] .narrative-os-app .bn-item.active {
-  color: var(--nos-ink);
-  font-weight: 600;
+/* Dark active pill uses light fill (nos-ink) — label must be dark paper, not same ink */
+[data-theme='dark'] .narrative-os-app .bn-item.active,
+[data-theme='dark'] .narrative-os-app .bn-item.active span {
+  color: #14110d !important;
+  -webkit-text-fill-color: #14110d;
+  background: var(--nos-ink, #f4efe4) !important;
+  font-weight: 700 !important;
 }
 
 [data-theme='dark'] .narrative-os-app .statusbar {

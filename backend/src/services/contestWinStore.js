@@ -160,15 +160,26 @@ export async function confirmEventWinners(eventId, winners, { actorId } = {}) {
     return { event_id: eventId, winners: results, mock: true, actor_id: actorId || null };
   }
 
+  // Prefetch existing prizes + submissions once (avoid N+1 per winner)
+  const ranks = winners.map((w) => Number(w.rank)).filter((r) => Number.isFinite(r));
+  const regIds = winners.map((w) => w.registration_id).filter(Boolean);
+
+  const [{ data: existingPrizes }, { data: submissions }] = await Promise.all([
+    ranks.length
+      ? supabase.from('event_prizes').select('id, rank, label').eq('event_id', eventId).in('rank', ranks)
+      : Promise.resolve({ data: [] }),
+    regIds.length
+      ? supabase.from('event_submissions').select('registration_id, story_id').in('registration_id', regIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const prizeByRank = new Map((existingPrizes || []).map((p) => [Number(p.rank), p]));
+  const storyByReg = new Map((submissions || []).map((s) => [s.registration_id, s.story_id]));
+
+  // Sequential stamps still needed (contest_won_at uniqueness), but DB lookups are batched above.
   for (const w of winners) {
     const rank = Number(w.rank);
-    // Upsert prize row
-    const { data: existingPrize } = await supabase
-      .from('event_prizes')
-      .select('id')
-      .eq('event_id', eventId)
-      .eq('rank', rank)
-      .maybeSingle();
+    const existingPrize = prizeByRank.get(rank);
 
     if (existingPrize) {
       await supabase
@@ -190,15 +201,9 @@ export async function confirmEventWinners(eventId, winners, { actorId } = {}) {
       });
     }
 
-    // Resolve story_id from submission if not provided
     let storyId = w.story_id || null;
     if (!storyId && w.registration_id) {
-      const { data: sub } = await supabase
-        .from('event_submissions')
-        .select('story_id')
-        .eq('registration_id', w.registration_id)
-        .maybeSingle();
-      storyId = sub?.story_id || null;
+      storyId = storyByReg.get(w.registration_id) || null;
     }
 
     let stamp = null;

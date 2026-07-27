@@ -68,13 +68,16 @@ export async function notifyNewChapter(storyId, chapterId) {
     .order('last_read_at', { ascending: false })
     .limit(500);
 
-  for (const reader of readers || []) {
-    const { data: user } = await supabase
-      .from('profiles')
-      .select('fcm_token, notification_preferences')
-      .eq('id', reader.user_id)
-      .single();
+  const userIds = [...new Set((readers || []).map((r) => r.user_id).filter(Boolean))];
+  if (userIds.length === 0) return;
 
+  // One profiles query instead of N+1 per reader
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, fcm_token, notification_preferences')
+    .in('id', userIds);
+
+  for (const user of profiles || []) {
     if (!user?.notification_preferences?.new_chapters) continue;
 
     await sendPush(
@@ -95,13 +98,15 @@ async function notifyExpiringSubscriptions() {
     .eq('status', 'active')
     .lte('ends_at', threeDaysFromNow.toISOString());
 
-  for (const sub of subs || []) {
-    const { data: user } = await supabase
-      .from('profiles')
-      .select('fcm_token, notification_preferences')
-      .eq('id', sub.user_id)
-      .single();
+  const userIds = [...new Set((subs || []).map((s) => s.user_id).filter(Boolean))];
+  if (userIds.length === 0) return;
 
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, fcm_token, notification_preferences')
+    .in('id', userIds);
+
+  for (const user of profiles || []) {
     if (!user?.notification_preferences?.subscription_reminders) continue;
 
     await sendPush(
@@ -149,24 +154,28 @@ async function notifyScheduledReleases() {
     .eq('release_schedule', 'weekly')
     .eq('release_day_of_week', dayOfWeek);
 
-  for (const story of stories || []) {
-    if (!story.release_time_of_day) continue;
+  const dueStories = (stories || []).filter((story) => {
+    if (!story.release_time_of_day) return false;
     const releaseHour = parseInt(story.release_time_of_day.split(':')[0], 10);
-    if (releaseHour !== hourFromNow) continue;
+    return releaseHour === hourFromNow;
+  });
 
+  for (const story of dueStories) {
     const { data: readers } = await supabase
       .from('reading_progress')
       .select('user_id')
       .eq('story_id', story.id)
       .limit(100);
 
-    for (const reader of readers || []) {
-      const { data: user } = await supabase
-        .from('profiles')
-        .select('fcm_token')
-        .eq('id', reader.user_id)
-        .single();
+    const userIds = [...new Set((readers || []).map((r) => r.user_id).filter(Boolean))];
+    if (userIds.length === 0) continue;
 
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, fcm_token')
+      .in('id', userIds);
+
+    for (const user of profiles || []) {
       await sendPush(
         user?.fcm_token,
         `New chapter from ${story.title}!`,
@@ -190,17 +199,22 @@ async function notifyStreakReminders() {
     .eq('last_read_date', yesterdayStr)
     .gt('current_streak', 0);
 
-  for (const streak of streaks || []) {
-    const { data: user } = await supabase
-      .from('profiles')
-      .select('fcm_token')
-      .eq('id', streak.user_id)
-      .single();
+  const userIds = [...new Set((streaks || []).map((s) => s.user_id).filter(Boolean))];
+  if (userIds.length === 0) return;
 
-    if (!user?.fcm_token) continue;
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, fcm_token')
+    .in('id', userIds);
+
+  const tokenByUser = new Map((profiles || []).map((p) => [p.id, p.fcm_token]));
+
+  for (const streak of streaks || []) {
+    const token = tokenByUser.get(streak.user_id);
+    if (!token) continue;
 
     await sendPush(
-      user.fcm_token,
+      token,
       'Keep your streak alive! 🔥',
       `You're on a ${streak.current_streak}-day reading streak. Read a chapter now to keep it going!`
     );

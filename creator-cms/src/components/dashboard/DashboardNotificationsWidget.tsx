@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { useApi } from '../../hooks/useApi';
-import { platformApi } from '../../lib/platformApi';
 import { useAuth } from '../../context/AuthContext';
 import { normalizePlatformNotification, relativeTime } from '../../lib/notificationFeed';
 
@@ -11,7 +10,10 @@ export function DashboardNotificationsWidget() {
   const userId = user?.id || 'anonymous-creator';
 
   const { data } = useApi(
-    () => platformApi.getNotifications(userId).then((r) => r.notifications.map(normalizePlatformNotification)),
+    () =>
+      import('../../lib/notificationClient')
+        .then((m) => m.fetchNotificationsShared(userId))
+        .then((list) => list.map(normalizePlatformNotification)),
     [userId],
   );
 
