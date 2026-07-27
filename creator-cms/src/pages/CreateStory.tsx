@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   BookOpen, FileText, Library, Zap, MessageCircle, GitBranch,
@@ -24,6 +24,7 @@ import {
   loadCreateStoryDraft,
   saveCreateStoryDraft,
   clearCreateStoryDraft,
+  type CreateStoryDraftInput,
 } from '../lib/createStoryDraft';
 import { TeluguTextField } from '../components/TeluguTextField';
 import { defaultStoryCoverUrl } from '../lib/storyCover';
@@ -98,6 +99,10 @@ export function CreateStory() {
   const [allTags, setAllTags] = useState<{ slug: string; label: string }[]>([]);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [draftFlash, setDraftFlash] = useState(false);
+  /** Server unpublished shell id created by wizard Save Draft / autosave */
+  const serverStoryIdRef = useRef<string | null>(null);
+  const syncChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const skipAutosaveRef = useRef(true);
 
   useEffect(() => {
     platformApi.getTags().then((r) => setAllTags(r.tags.map((tag) => ({ slug: tag.slug, label: tag.label }))));
@@ -127,21 +132,127 @@ export function CreateStory() {
       setSelectedTags(draft.selectedTags);
       setSchedule(draft.schedule);
       setDraftSavedAt(draft.savedAt);
+      if (draft.storyId) {
+        serverStoryIdRef.current = draft.storyId;
+      }
     }
+    // Avoid creating a server row from the initial hydrate tick
+    window.setTimeout(() => {
+      skipAutosaveRef.current = false;
+    }, 0);
   }, []);
 
-  const persistDraft = useCallback(() => {
-    saveCreateStoryDraft({
-      title, description, contentType, genre, secondaryGenres,
-      ageRating, language, storyStatus, setting, themes, selectedTags, schedule,
-    });
-    setDraftSavedAt(Date.now());
-  }, [title, description, contentType, genre, secondaryGenres, ageRating, language, storyStatus, setting, themes, selectedTags, schedule]);
+  const draftFields = useCallback((): CreateStoryDraftInput => ({
+    title,
+    description,
+    contentType,
+    genre,
+    secondaryGenres,
+    ageRating,
+    language,
+    storyStatus,
+    setting,
+    themes,
+    selectedTags,
+    schedule,
+    storyId: serverStoryIdRef.current,
+  }), [
+    title, description, contentType, genre, secondaryGenres,
+    ageRating, language, storyStatus, setting, themes, selectedTags, schedule,
+  ]);
 
+  const persistLocalDraft = useCallback(() => {
+    saveCreateStoryDraft(draftFields());
+    setDraftSavedAt(Date.now());
+  }, [draftFields]);
+
+  /** Create or update unpublished story shell so it appears on Stories / Dashboard. */
+  const syncServerDraft = useCallback(async (opts?: { coverUrl?: string }): Promise<string | null> => {
+    const trimmed = title.trim();
+    if (trimmed.length < 3) {
+      persistLocalDraft();
+      return serverStoryIdRef.current;
+    }
+
+    const run = async (): Promise<string | null> => {
+      let cover_url = opts?.coverUrl;
+      if (!cover_url && coverFile) {
+        const uploaded = await api.uploadImage(coverFile);
+        cover_url = uploaded.url;
+      }
+
+      let id = serverStoryIdRef.current;
+      if (id) {
+        try {
+          await api.updateStory(id, {
+            title: trimmed,
+            description,
+            genre,
+            release_schedule: schedule,
+            ...(cover_url ? { cover_url } : {}),
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : '';
+          // Only recreate when the shell is gone; other errors must not fork a duplicate.
+          if (/not found|404|unauthorized|forbidden|403/i.test(msg)) {
+            id = null;
+            serverStoryIdRef.current = null;
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      if (!id) {
+        const { story } = await api.createStory({
+          title: trimmed,
+          description,
+          genre,
+          release_schedule: schedule,
+          cover_url: cover_url || defaultStoryCoverUrl(),
+          content_type: contentType,
+          age_rating: ageRating,
+          language,
+          story_status: storyStatus || 'draft',
+          secondary_genres: secondaryGenres,
+          setting: setting || undefined,
+          themes: themes.split(',').map((item) => item.trim()).filter(Boolean),
+          tags: selectedTags,
+        });
+        id = story.id;
+        serverStoryIdRef.current = id;
+      }
+
+      saveCreateStoryDraft({ ...draftFields(), storyId: id });
+      setDraftSavedAt(Date.now());
+      return id;
+    };
+
+    const next = syncChainRef.current.then(run, run);
+    syncChainRef.current = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }, [
+    title, description, genre, schedule, coverFile, contentType, ageRating,
+    language, storyStatus, secondaryGenres, setting, themes, selectedTags,
+    draftFields, persistLocalDraft,
+  ]);
+
+  // Local + server autosave (debounced). Server row only when title is valid.
   useEffect(() => {
-    const timer = window.setTimeout(persistDraft, 1200);
+    if (skipAutosaveRef.current) return;
+    const timer = window.setTimeout(() => {
+      persistLocalDraft();
+      if (title.trim().length >= 3) {
+        void syncServerDraft().catch(() => {
+          /* autosave stays best-effort; manual Save Draft surfaces errors */
+        });
+      }
+    }, 1200);
     return () => window.clearTimeout(timer);
-  }, [persistDraft]);
+  }, [persistLocalDraft, syncServerDraft, title]);
 
   const tagResults = searchTags(allTags, tagSearch).slice(0, 12);
   const selectedContentType = useMemo(
@@ -188,10 +299,16 @@ export function CreateStory() {
     }
   };
 
-  const handleSaveDraft = () => {
-    persistDraft();
-    setDraftFlash(true);
-    window.setTimeout(() => setDraftFlash(false), 2000);
+  const handleSaveDraft = async () => {
+    setError(null);
+    try {
+      await syncServerDraft();
+      setDraftFlash(true);
+      window.setTimeout(() => setDraftFlash(false), 2000);
+    } catch (err) {
+      persistLocalDraft();
+      setError(err instanceof Error ? err.message : t('common.error'));
+    }
   };
 
   const canAdvanceStep1 = title.trim().length >= 3;
@@ -200,29 +317,19 @@ export function CreateStory() {
     setSubmitting(true);
     setError(null);
     try {
-      // Cover is optional at creation — default placeholder until publish time.
-      let cover_url = defaultStoryCoverUrl();
+      // Cover optional at create — only pass when user uploaded (create path still defaults).
+      let coverOpts: { coverUrl?: string } | undefined;
       if (coverFile) {
         const uploaded = await api.uploadImage(coverFile);
-        cover_url = uploaded.url;
+        coverOpts = { coverUrl: uploaded.url };
       }
-      const { story } = await api.createStory({
-        title,
-        description,
-        genre,
-        release_schedule: schedule,
-        cover_url,
-        content_type: contentType,
-        age_rating: ageRating,
-        language,
-        story_status: storyStatus,
-        secondary_genres: secondaryGenres,
-        setting: setting || undefined,
-        themes: themes.split(',').map((item) => item.trim()).filter(Boolean),
-        tags: selectedTags,
-      });
+      // Reuse shell from wizard Save Draft / autosave so we do not create a duplicate.
+      const storyId = await syncServerDraft(coverOpts);
+      if (!storyId) {
+        throw new Error(t('common.error'));
+      }
       clearCreateStoryDraft();
-      navigate(chapterEditorPath(story.id, 1, { contentType, language }));
+      navigate(chapterEditorPath(storyId, 1, { contentType, language }));
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
@@ -377,8 +484,10 @@ export function CreateStory() {
             </p>
           </div>
 
+          {error && <p className="cs-v21__error">{error}</p>}
+
           <div className="cs-v21__actions cs-v21__actions--inline">
-            <button type="button" className="cs-v21__draft-btn" onClick={handleSaveDraft}>
+            <button type="button" className="cs-v21__draft-btn" onClick={() => { void handleSaveDraft(); }}>
               <Cloud size={16} aria-hidden />
               {draftFlash ? t('createStory.draftSaved') : t('createStory.saveDraft')}
             </button>

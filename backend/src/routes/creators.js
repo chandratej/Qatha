@@ -17,6 +17,28 @@ import {
 import { createAppError } from '../middleware/errorHandler.js';
 import { getAuthenticatedUserId } from '../middleware/authenticate.js';
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
+
+/** Creator-facing messages for common story insert failures (Format Spec / RLS). */
+function formatStoryCreateError(error, genre) {
+  const raw = error?.message || 'Could not create story';
+  const msg = raw.toLowerCase();
+  if (msg.includes('infinite recursion') && msg.includes('story_members')) {
+    return 'Could not create story: database policy loop on story_members. Apply migration 045 in Supabase SQL editor.';
+  }
+  if (msg.includes('invalid input value for enum') || error?.code === '22P02') {
+    if (msg.includes('genre') || genre) {
+      return `Genre "${genre || 'selected'}" is not enabled on this database yet. Apply migration 045 (genre enum), or pick Romance for now.`;
+    }
+    if (msg.includes('content_type') || msg.includes('interactive')) {
+      return 'That story format needs a database migration (038/046). Choose Serialized Story, or apply pending migrations.';
+    }
+    return 'Invalid story field for this database schema. Apply pending Supabase migrations (045–046).';
+  }
+  if (msg.includes('char_length') && msg.includes('title')) {
+    return 'Story title must be between 3 and 100 characters.';
+  }
+  return raw;
+}
 import { moderateChapterForSchedule } from '../services/moderation/index.js';
 import { generateUniqueStorySlug } from '../lib/slugify.js';
 import { notifyChapterScheduled, notifyCollaborationTask } from '../services/notificationsStore.js';
@@ -993,7 +1015,7 @@ creatorsRouter.post('/stories', async (req, res, next) => {
       ({ data, error } = await supabase.from('stories').insert(base).select('id, title, slug, cover_url, genre').single());
     }
 
-    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    if (error) throw createAppError('INTERNAL_ERROR', formatStoryCreateError(error, genre), 500);
 
     // Ensure owner membership even if ensure_story_owner_member trigger is broken/missing.
     // Service role bypasses RLS — this is the durable create path for founders.

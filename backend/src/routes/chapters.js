@@ -16,7 +16,12 @@ import { getOrLockSampleFreeChapterCountWithSource } from '../services/freeChapt
 import { moderateChapter, moderateContent, riskScoreFromResult } from '../services/moderation/index.js';
 import { generateUniqueStorySlug } from '../lib/slugify.js';
 import { notifyNewChapter } from '../services/notifications.js';
-import { requireAuth, requireAuthOrMockLegacyUser, getAuthenticatedUserId } from '../middleware/authenticate.js';
+import {
+  requireAuth,
+  requireAuthOrMockLegacyUser,
+  requireCreatorConsent,
+  getAuthenticatedUserId,
+} from '../middleware/authenticate.js';
 import { requireStoryRole } from '../middleware/requireStoryRole.js';
 import { assertChapterEditable } from '../services/chapterImmutability.js';
 import { invalidatePublicStoryCache } from './stories.js';
@@ -130,7 +135,7 @@ chaptersRouter.get('/:storyId/:chapterNumber', requireAuth({ optional: true }), 
   }
 });
 
-chaptersRouter.post('/:storyId/draft', requireAuth(), requireStoryRole('story.edit'), async (req, res, next) => {
+chaptersRouter.post('/:storyId/draft', requireAuth(), requireCreatorConsent(), requireStoryRole('story.edit'), async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const creatorId = getAuthenticatedUserId(req);
@@ -206,7 +211,7 @@ chaptersRouter.post('/:storyId/draft', requireAuth(), requireStoryRole('story.ed
   }
 });
 
-chaptersRouter.post('/:storyId/publish', requireAuth(), requireStoryRole('story.publish'), async (req, res, next) => {
+chaptersRouter.post('/:storyId/publish', requireAuth(), requireCreatorConsent(), requireStoryRole('story.publish'), async (req, res, next) => {
   try {
     const { storyId } = req.params;
     const creatorId = getAuthenticatedUserId(req);

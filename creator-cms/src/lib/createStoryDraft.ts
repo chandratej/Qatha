@@ -13,8 +13,12 @@ export interface CreateStoryDraft {
   themes: string;
   selectedTags: string[];
   schedule: string;
+  /** Server story shell id once Save Draft / autosave has created a row */
+  storyId?: string | null;
   savedAt: number;
 }
+
+export type CreateStoryDraftInput = Omit<CreateStoryDraft, 'savedAt'>;
 
 export function loadCreateStoryDraft(): CreateStoryDraft | null {
   try {
@@ -26,7 +30,7 @@ export function loadCreateStoryDraft(): CreateStoryDraft | null {
   }
 }
 
-export function saveCreateStoryDraft(draft: Omit<CreateStoryDraft, 'savedAt'>): void {
+export function saveCreateStoryDraft(draft: CreateStoryDraftInput): void {
   try {
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, savedAt: Date.now() }));
   } catch {

@@ -46,6 +46,8 @@ export interface StoryData {
   is_published?: boolean;
   release_schedule?: string;
   slug?: string | null;
+  /** Present on creator list API (`fullSelect` / supabase select); used for Recent sort. */
+  created_at?: string;
   moderation_status?: 'draft' | 'pending_review' | 'published' | 'needs_revision';
   content_type?: string;
   language?: string;

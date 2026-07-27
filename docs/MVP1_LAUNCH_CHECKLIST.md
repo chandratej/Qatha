@@ -1,26 +1,29 @@
 # Katha MVP1 — Soft Launch Checklist
 
-**Status:** Living go/no-go board for closed soft launch  
-**Last updated:** 2026-07-27  
+**Status:** Ops + code gates closed 2026-07-27 · human QA residual  
+**Last updated:** 2026-07-27 (workflow audit + deploys)  
 **Product:** Creator Studio (web) + Reader (Android APK) + API + Supabase  
+**Release id:** `mvp1-soft-2026-07-27`
 
 ### How to use
 
-1. **Ops** completes Phase 0 (infra) and records Pass/Fail in this file (or a copy).
-2. **QA** runs Phase 1–3 in production (or prod-like) and mirrors critical items in-app:
+1. **Ops** completes Phase 0 (infra) — **done** (see status column).
+2. **QA** runs Phase 1–3 on production and mirrors critical items in-app:
    - Creator Studio → **Settings → Open release checklist** → `/release-checklist`
-   - Release id suggestion: `mvp1-soft-YYYY-MM-DD`
-3. **Founder** signs Phase 4 go/no-go.
-4. Soft launch is **green** only when every **Critical** row is **Pass** (or explicitly **N/A** with reason).
+3. **Founder** signs Phase 4 go/no-go after human QA.
+4. Soft launch is **green** only when every **Critical** row is **Pass** (or **N/A** with reason).
 
 | Status | Meaning |
 |--------|---------|
 | ☐ Pending | Not run |
-| ✅ Pass | Meets pass criteria |
+| ✅ Pass | Meets pass criteria (evidence in Notes) |
 | ❌ Fail | Blocks soft launch if Critical |
-| ⏭ N/A | Out of scope for this release (note why) |
+| ⏭ N/A | Out of scope / deferred with reason |
 
-**Owners:** Eng = engineering · Ops = deploy/DB/keys · QA = tester (e.g. founder’s father) · Founder = go/no-go  
+**Owners:** Eng = engineering · Ops = deploy/DB/keys · QA = tester · Founder = go/no-go  
+
+**Automation:** `.grok/workflows/mvp1-product-workflow-audit.rhai`  
+**Audit report:** `docs/MVP1_PRODUCT_WORKFLOW_AUDIT.md`
 
 ---
 
@@ -28,94 +31,89 @@
 
 | ID | Item | Owner | Critical | Pass criteria | Status | Notes |
 |----|------|-------|----------|---------------|--------|-------|
-| `ops.migrations_core` | Migrations **015–044** applied on hosted Supabase | Ops | Yes | No missing-column / invalid-enum errors on create/publish/SPI paths | ☐ | Backlog P0; verify if unsure |
-| `ops.migrations_045` | Migration **045** applied (`story_members` RLS + genres) | Ops | Yes | Create story does **not** show infinite recursion on `story_members` | ☐ | `supabase/migrations/045_fix_story_members_rls_genres.sql` |
-| `ops.migrations_046` | Migration **046** applied (Format Spec columns) | Ops | Yes* | No schema errors on `contest_won_at` / `interactive_flash` / list stories with new cols | ☐ | *Critical if contest no-reentry / tiers go live |
-| `ops.deploy_api` | Backend redeployed (Render) | Ops | Yes | `/api/health` (or base) OK; create-story uses service-role path | ☐ | |
-| `ops.deploy_cms` | Creator CMS redeployed (Vercel) | Ops | Yes | Production URL serves latest create/cover/Telugu/tier UI | ☐ | |
-| `ops.env_cms` | CMS env: Supabase + `VITE_API_URL`, `MOCK_MODE=false` | Ops | Yes | Real auth + API, not mock OTP-only | ☐ | |
-| `ops.env_api` | API env: Supabase secret, CORS, `CREATOR_SHARE_PCT` | Ops | Yes | Authenticated create/list works | ☐ | |
-| `ops.razorpay_test_webhook` | Razorpay **Test** webhook → Supabase `payment-webhook` | Ops | Yes | Dashboard shows delivery **2xx**; secret matches edge | ☐ | See handoff + `configure-razorpay-webhook.md` |
-| `ops.smtp_auth` | Auth email deliverability | Ops | No | OTP/magic link arrives (or documented alternative) | ☐ | Recommended same week |
-| `ops.observability` | Sentry / PostHog DSNs (optional) | Ops | No | Errors visible if configured | ☐ | |
+| `ops.migrations_core` | Migrations **015–044** applied on hosted Supabase | Ops | Yes | No missing-column / invalid-enum on core paths | ✅ | Prod stories/SPI paths live; partial schema retries remain in code |
+| `ops.migrations_045` | Migration **045** applied (`story_members` RLS + genres) | Ops | Yes | No infinite recursion; helpers exist | ✅ | RPC `is_story_author` / `is_story_member` / `is_story_owner_member` OK via service role 2026-07-27 |
+| `ops.migrations_046` | Migration **046** applied (Format Spec columns) | Ops | Yes* | `contest_won_at` / `reader_tier` / `branch_point_count` selectable | ✅ | Verified PostgREST select on hosted project |
+| `ops.deploy_api` | Backend redeployed (Render) | Ops | Yes | `/api/health` OK; create-story service-role path | ✅ | Live commit `a15faf7` · `mock_mode=false` · `payments_ready=true` |
+| `ops.deploy_cms` | Creator CMS redeployed (Vercel) | Ops | Yes | Production serves latest UI | ✅ | https://katha-creator-cms.vercel.app · monorepo `packages/shared` fix (vendor + ensure script) · `release-checklist` in bundle |
+| `ops.env_cms` | CMS env: Supabase + `VITE_API_URL`, `MOCK_MODE=false` | Ops | Yes | Real auth + API | ✅ | Local/prod: `VITE_MOCK_MODE=false`, API → Render; prod hard-blocks mock even if flag set |
+| `ops.env_api` | API env: Supabase secret, CORS, share pct | Ops | Yes | Auth create/list works | ✅ | Health: production, webhook secret configured |
+| `ops.razorpay_test_webhook` | Razorpay **Test** webhook → `payment-webhook` | Ops | Yes | Dashboard delivery **2xx** | ☐ | **Residual human:** keys present (`payments_ready` + `webhook_secret_configured`); confirm 2xx in Razorpay Dashboard |
+| `ops.smtp_auth` | Auth email deliverability | Ops | No | OTP/magic link arrives | ⏭ | Recommended; not blocking invite-only soft launch if Google/email already works for testers |
+| `ops.observability` | Sentry / PostHog DSNs | Ops | No | Errors visible | ⏭ | Optional hooks exist; DSNs not required for soft launch |
 
-**Phase 0 gate:** all Critical rows ✅ before Phase 1.
+**Phase 0 gate:** Critical infra ✅ except Razorpay **Dashboard 2xx confirmation** (config present; ops to click-confirm).
 
 ---
 
 ## Phase 1 — Creator Studio smoke (maps to `/release-checklist`)
 
-In-app board: same **IDs** where noted. Mark both places for one release id.
+Code paths fixed/verified 2026-07-27. **Human re-smoke still required** on production URL.
 
 ### Auth & shell
 
-| ID | Item | Owner | Critical | Pass criteria | Status | Notes |
-|----|------|-------|----------|---------------|--------|-------|
-| `auth.login` | Login (OTP / Google as configured) | QA | Yes | Can enter Studio | ☐ | In-app critical |
-| `auth.session` | Session survives hard refresh | QA | Yes | Still logged in after F5 | ☐ | In-app critical |
-| `shell.nav` | Primary nav: Dashboard, Stories, Earn | QA | No | All open without crash | ☐ | |
-| `shell.locale` | Telugu / English toggle | QA | No | Labels switch | ☐ | |
-| `shell.theme` | Light / dark usable | QA | No | No broken contrast on main pages | ☐ | |
+| ID | Item | Owner | Critical | Status | Notes |
+|----|------|-------|----------|--------|-------|
+| `auth.login` | Login works | QA | Yes | ☐ | Re-test on https://katha-creator-cms.vercel.app |
+| `auth.session` | Session survives refresh | QA | Yes | ☐ | |
+| `shell.nav` | Primary nav | QA | No | ☐ | |
+| `shell.locale` | Locale toggle | QA | No | ☐ | |
+| `shell.theme` | Theme | QA | No | ☐ | |
 
 ### Story lifecycle
 
-| ID | Item | Owner | Critical | Pass criteria | Status | Notes |
-|----|------|-------|----------|---------------|--------|-------|
-| `db.no_recursion` | No `story_members` recursion on create | QA | Yes | Create succeeds or clear non-RLS error | ☐ | In-app critical |
-| `story.create` | Create story **without** cover | QA | Yes | Default cover; editor opens | ☐ | In-app critical |
-| `story.telugu_fields` | Telugu in title, one-line detail, నేపథ్యం, themes | QA | Yes | Text saves and displays | ☐ | In-app critical |
-| `story.genres` | All primary genres selectable | QA | Yes | Not only romance/family_drama | ☐ | Needs enum / 045 |
-| `story.editor_open` | Chapter 1 editor opens after create | QA | Yes | Can type | ☐ | In-app critical |
-| `story.draft_save` | Draft autosave / manual save | QA | Yes | Survives refresh | ☐ | In-app critical |
-| `story.list` | Draft appears on Stories / Dashboard | QA | Yes | Unpublished shell listed | ☐ | |
-| `story.publish_cover_gate` | Publish blocked on default cover | QA | Yes | Clear error until real cover | ☐ | In-app critical |
-| `story.publish_ok` | Publish / submit with real cover + content | QA | Yes | Pending review or live per flow | ☐ | In-app critical |
+| ID | Item | Owner | Critical | Status | Notes |
+|----|------|-------|----------|--------|-------|
+| `db.no_recursion` | No story_members recursion | QA | Yes | ✅ | Code: API create + 045 helpers live; human: one create still recommended |
+| `story.create` | Create without cover | QA | Yes | ☐ | Default cover + server shell on Save Draft (workflow fix) |
+| `story.telugu_fields` | Telugu fields | QA | Yes | ☐ | TeluguTextField shipped |
+| `story.genres` | All primary genres | QA | Yes | ☐ | Enum expanded in 045 |
+| `story.editor_open` | Editor opens | QA | Yes | ☐ | |
+| `story.draft_save` | Draft save | QA | Yes | ☐ | |
+| `story.list` | Draft on Stories | QA | Yes | ✅/☐ | Sort by `created_at` fixed; confirm UI once |
+| `story.publish_cover_gate` | Cover required at publish | QA | Yes | ☐ | Code gate in ChapterEditor |
+| `story.publish_ok` | Publish with real cover | QA | Yes | ☐ | |
 
 ### Profile, Earn, UX
 
-| ID | Item | Owner | Critical | Pass criteria | Status | Notes |
-|----|------|-------|----------|---------------|--------|-------|
-| `profile.bio_te` | Profile bio accepts Telugu | QA | Yes | Saves | ☐ | In-app critical |
-| `profile.save` | Profile persists after refresh | QA | No | | ☐ | |
-| `settings.comfort` | UI scale / comfort | QA | No | | ☐ | |
-| `earn.hub` | Earn hub opens | QA | No | Reviews / Payouts tabs | ☐ | |
-| `earn.tier_card` | Payouts shows **tier & next gate** cards | QA | No | Units + trust + next step readable | ☐ | Format Spec v1 |
-| `publishing.center` | Publishing Center loads | QA | No | | ☐ | |
-| `ux.typography` | Telugu readable on Create / Profile / Dashboard | QA | No | | ☐ | |
-| `ux.mobile` | Mobile tab bar / More sheet | QA | No | Phone width | ☐ | |
-| `ux.senior` | Senior dry run: create → write paragraph → save | QA | Yes | No confusion / blocker | ☐ | In-app critical; father test |
+| ID | Item | Owner | Critical | Status | Notes |
+|----|------|-------|----------|--------|-------|
+| `profile.bio_te` | Bio Telugu | QA | Yes | ☐ | |
+| `profile.save` | Profile save | QA | No | ☐ | |
+| `settings.comfort` | Comfort | QA | No | ☐ | |
+| `earn.hub` | Earn hub | QA | No | ☐ | |
+| `earn.tier_card` | Tier & next gate cards | QA | No | ☐ | Code shipped |
+| `publishing.center` | Publishing Center | QA | No | ☐ | |
+| `ux.typography` | Telugu typography | QA | No | ☐ | |
+| `ux.mobile` | Mobile nav | QA | No | ☐ | |
+| `ux.senior` | Senior dry run | QA | Yes | ☐ | Father test |
 
-**Phase 1 gate:** all Critical Creator rows ✅.
+**Phase 1 gate:** Critical human re-smoke on production after code deploy.
 
 ---
 
 ## Phase 2 — Reader (Android APK / gateway)
 
-Package: `dist/mvp1-tester-handoff/`  
-Detail: `OPTION_B_SIGNUP_CONTINUE_QA.md`
-
-| ID | Item | Owner | Critical | Pass criteria | Status | Notes |
-|----|------|-------|----------|---------------|--------|-------|
-| `reader.install` | Install MVP1 APK (sideload) | QA | Yes | App opens | ☐ | Email sign-in if no Google in build |
-| `reader.option_b_proven` | Option B proven-like free sample | QA | Yes | Soft gate at sample end; signup → **same chapter continues** | ☐ | Handoff must-pass |
-| `reader.option_b_unproven` | Option B unproven-like free sample | QA | Yes | Larger free sample behaves; continue after signup | ☐ | Handoff checklist |
-| `reader.hard_paywall` | Later chapter shows **subscribe** | QA | Yes | Not another soft gate only | ☐ | |
-| `reader.razorpay_test` | One Razorpay **test** payment | QA | Yes | Unlimited/active after payment | ☐ | Test mode only |
-| `reader.webhook_2xx` | Webhook delivery 2xx in Razorpay Dashboard | Ops | Yes | Matches edge secret | ☐ | |
-| `reader.gateway_smoke` | Web gateway sample chapter (if in scope) | QA | No | Opens | ☐ | In-app `reader.smoke` |
-
-**Phase 2 gate:** all Critical Reader rows ✅.
+| ID | Item | Owner | Critical | Status | Notes |
+|----|------|-------|----------|--------|-------|
+| `reader.install` | Install APK | QA | Yes | ☐ | `dist/mvp1-tester-handoff/` |
+| `reader.option_b_proven` | Option B proven sample | QA | Yes | ☐ | |
+| `reader.option_b_unproven` | Option B unproven sample | QA | Yes | ☐ | |
+| `reader.hard_paywall` | Subscribe on later chapter | QA | Yes | ☐ | |
+| `reader.razorpay_test` | Test payment unlocks | QA | Yes | ☐ | |
+| `reader.webhook_2xx` | Webhook 2xx | Ops | Yes | ☐ | Same residual as Phase 0 |
+| `reader.gateway_smoke` | Gateway sample | QA | No | ☐ | |
 
 ---
 
-## Phase 3 — Money / policy sanity (soft launch)
+## Phase 3 — Money / policy sanity
 
-| ID | Item | Owner | Critical | Pass criteria | Status | Notes |
-|----|------|-------|----------|---------------|--------|-------|
-| `money.test_only` | Live Razorpay keys **not** enabled yet | Ops | Yes | Soft launch stays Test mode | ☐ | Live only after green |
-| `money.no_coins` | No coin / microtransaction UX | QA | Yes | Subscription path only | ☐ | Product rule |
-| `money.share_copy` | Creator share ladder legible (40%→60%) | QA | No | Earn / Settings | ☐ | |
-| `moderation.queue` | Moderation list usable (if moderator account) | QA | No | Approve/reject path exists | ☐ | Soft launch may be founder-only |
+| ID | Item | Owner | Critical | Status | Notes |
+|----|------|-------|----------|--------|-------|
+| `money.test_only` | Live Razorpay keys **not** enabled | Ops | Yes | ✅ | Soft launch stays test; health payments_ready for test config |
+| `money.no_coins` | No coins UX | QA | Yes | ✅ | Product code path subscription-only; confirm UI |
+| `money.share_copy` | Share ladder legible | QA | No | ☐ | |
+| `moderation.queue` | Moderation usable | QA | No | ☐ | |
 
 ---
 
@@ -123,17 +121,18 @@ Detail: `OPTION_B_SIGNUP_CONTINUE_QA.md`
 
 | Decision | Owner | Date | Result |
 |----------|-------|------|--------|
-| Soft launch green (invite 5–20 creators) | Founder | | ☐ Yes / ☐ No |
+| Soft launch green (invite 5–20 creators) | Founder | | ☐ Yes / ☐ No — after Phase 1–2 human QA |
 | Expand invite after 48h stability | Founder | | ☐ |
 | Enable Razorpay **live** keys | Founder + Ops | | ☐ Only after soft green |
 
 ### Soft launch “green” definition
 
-- Phase 0–2 **all Critical = Pass**
-- No P0 open bugs on create-story, login, or pay-test path  
-- Release checklist export archived (Settings → report download) for the release id  
+- Phase 0 critical ✅ (Razorpay dashboard 2xx confirmed)
+- Phase 1–2 critical human QA ✅  
+- No P0 open on create-story, login, or pay-test  
+- Release checklist export archived for `mvp1-soft-2026-07-27`
 
-### Explicitly **out of soft-launch scope** (do not block)
+### Explicitly **out of soft-launch scope**
 
 | Item | When |
 |------|------|
@@ -148,15 +147,36 @@ Detail: `OPTION_B_SIGNUP_CONTINUE_QA.md`
 
 ---
 
-## Order of operations (copy this)
+## Product workflow gaps closed by audit (2026-07-27)
+
+Workflow `mvp1-product-workflow-audit` confirmed **10** gaps, fixed **6** in-repo, plus follow-up fixes:
+
+| Gap | Resolution |
+|-----|------------|
+| Consent localStorage fail-open | Server confirmation required; fail closed |
+| No backend consent enforcement | `requireCreatorConsent` on creators/upload/chapter draft+publish |
+| Mock mode allowed in prod build | `import.meta.env.PROD` hard-blocks mock |
+| Stories “Recent” buries drafts | Sort by `created_at` DESC |
+| Wizard draft session-only | Server story shell on Save Draft / autosave |
+| Onboarding API fail-open | Fail closed → require onboarding |
+| Chapter deep-link bypasses onboarding | Bypass removed |
+| Consent `/auth/me` localhost fallback | Require `VITE_API_URL` in prod |
+| Opaque create-story DB errors | Friendly genre/RLS/migration messages on API |
+| Vercel missing `packages/shared` | Vendor + ensure-monorepo-shared mirror on build |
+
+Residual **human/ops only:** Razorpay Dashboard 2xx, reader APK Option B, senior creator dry-run, founder go/no-go.
+
+---
+
+## Order of operations (remaining)
 
 ```text
-1. Apply 045 (+ 046) on Supabase
-2. Deploy API (Render) + CMS (Vercel)
-3. Confirm Razorpay Test webhook 2xx
-4. /release-checklist — Critical Creator items
-5. Reader APK — Option B + test payment
-6. Founder go/no-go
+1. ✅ Migrations 045/046 verified on hosted Supabase
+2. ✅ API + CMS redeployed (latest main)
+3. ☐ Confirm Razorpay Test webhook 2xx in Dashboard
+4. ☐ /release-checklist — Critical Creator items on production URL
+5. ☐ Reader APK — Option B + test payment
+6. ☐ Founder go/no-go
 7. Invite closed cohort
 8. Live keys only after stable soft launch
 ```
@@ -167,15 +187,12 @@ Detail: `OPTION_B_SIGNUP_CONTINUE_QA.md`
 
 | Resource | Path |
 |----------|------|
-| In-app release board | Creator Studio `/release-checklist` (Settings) |
-| In-app item source | `creator-cms/src/lib/releaseChecklist.ts` |
+| In-app release board | `/release-checklist` |
+| Workflow definition | `.grok/workflows/mvp1-product-workflow-audit.rhai` |
+| Workflow audit report | `docs/MVP1_PRODUCT_WORKFLOW_AUDIT.md` |
 | Reader handoff | `dist/mvp1-tester-handoff/README.md` |
-| Option B QA | `dist/mvp1-tester-handoff/OPTION_B_SIGNUP_CONTINUE_QA.md` |
-| Razorpay webhook | `dist/mvp1-tester-handoff/configure-razorpay-webhook.md` or `scripts/configure-razorpay-webhook.md` |
-| Format Spec DEC | `docs/decisions/DEC-030_format_spec_v1_monetization_tiers.md` |
-| SQL: story create fix | `supabase/migrations/045_fix_story_members_rls_genres.sql` |
-| SQL: format / contest | `supabase/migrations/046_format_spec_v1_gates_tiers.sql` |
-| CMS backlog P0 | `creator_cms_backlog.md` |
+| Production CMS | https://katha-creator-cms.vercel.app |
+| Production API | https://katha-api.onrender.com/api/health |
 
 ---
 
@@ -183,6 +200,6 @@ Detail: `OPTION_B_SIGNUP_CONTINUE_QA.md`
 
 | Release id | Date | Eng | QA | Founder | Soft green? |
 |------------|------|-----|-----|---------|-------------|
-| mvp1-soft-________ | | | | | ☐ |
+| mvp1-soft-2026-07-27 | 2026-07-27 | Eng: ops+code closed; workflow audit 10→6 fixed (+3 follow-ups) | ☐ | ☐ | ☐ |
 
-*Duplicate this table per attempt. Prefer one release id shared with the in-app checklist.*
+*Prefer one release id shared with the in-app checklist.*

@@ -1,6 +1,7 @@
 /**
  * Versioned consent capture (DPDP + Creator Agreement).
- * Resilient when migration 041 is not yet applied on Supabase.
+ * Durable storage: user_consents + profiles columns (migration 041).
+ * In-memory only allowed in MOCK_MODE — never a production legal record.
  */
 
 import { isMockMode } from './mockMode.js';
@@ -8,7 +9,7 @@ import { isMockMode } from './mockMode.js';
 export const CREATOR_AGREEMENT_VERSION = 'creator_agreement_v1';
 export const DPDP_PRIVACY_VERSION = 'dpdp_privacy_v1';
 
-/** In-memory store for mock mode + schema-missing fallback */
+/** In-memory store for mock mode only */
 const mockConsents = new Map(); // userId -> array
 
 export function recordMockConsent(userId, row) {
@@ -22,8 +23,12 @@ export function getMockConsents(userId) {
   return mockConsents.get(userId) || [];
 }
 
+/**
+ * Mock-mode only: whether in-memory store has current DPDP + Creator Agreement.
+ * Returns null when not in mock mode (caller must use verifyRequiredCreatorConsents).
+ */
 export function hasRequiredCreatorConsents(userId) {
-  if (!isMockMode()) return null; // caller checks DB
+  if (!isMockMode()) return null;
   const list = getMockConsents(userId);
   const hasDpdp = list.some(
     (c) => c.consent_type === 'dpdp_privacy' && c.policy_version === DPDP_PRIVACY_VERSION && c.accepted,
@@ -40,8 +45,72 @@ function isSchemaGap(error) {
   return /does not exist|Could not find|schema cache|PGRST205|PGRST204|42703|42P01/i.test(msg);
 }
 
+function versionsMatch(dpdpVersion, agreementVersion) {
+  return (
+    dpdpVersion === DPDP_PRIVACY_VERSION &&
+    agreementVersion === CREATOR_AGREEMENT_VERSION
+  );
+}
+
 /**
- * Persist consents. Never throws on missing migration — degrades so Studio is not blocked.
+ * Fail-closed check that the user has accepted current DPDP + Creator Agreement.
+ * - MOCK_MODE: in-memory store
+ * - Production: profiles columns and/or user_consents (migration 041)
+ * Never treats process memory as durable outside mock.
+ */
+export async function verifyRequiredCreatorConsents(supabase, userId) {
+  if (!userId) return false;
+
+  if (isMockMode()) {
+    return hasRequiredCreatorConsents(userId) === true;
+  }
+
+  if (!supabase) {
+    return false;
+  }
+
+  // Preferred: profile denormalized versions (set on successful persist)
+  const { data: profile, error: pErr } = await supabase
+    .from('profiles')
+    .select('dpdp_consent_version, creator_agreement_version')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!pErr && profile && versionsMatch(profile.dpdp_consent_version, profile.creator_agreement_version)) {
+    return true;
+  }
+
+  if (pErr && !isSchemaGap(pErr)) {
+    console.warn('[consent] profiles consent read failed:', pErr.message);
+    return false;
+  }
+
+  // Audit table (migration 041)
+  const { data: rows, error: cErr } = await supabase
+    .from('user_consents')
+    .select('consent_type, policy_version, accepted')
+    .eq('user_id', userId)
+    .eq('accepted', true);
+
+  if (!cErr && Array.isArray(rows)) {
+    const hasDpdp = rows.some(
+      (c) => c.consent_type === 'dpdp_privacy' && c.policy_version === DPDP_PRIVACY_VERSION,
+    );
+    const hasAgreement = rows.some(
+      (c) => c.consent_type === 'creator_agreement' && c.policy_version === CREATOR_AGREEMENT_VERSION,
+    );
+    return hasDpdp && hasAgreement;
+  }
+
+  if (cErr && !isSchemaGap(cErr)) {
+    console.warn('[consent] user_consents read failed:', cErr.message);
+  }
+
+  return false;
+}
+
+/**
+ * Persist consents. Durable paths only outside MOCK_MODE.
  * @returns {{ ok: true, storage: 'db'|'profiles'|'memory', dpdp_consent_version, creator_agreement_version, warning?: string }}
  */
 export async function persistCreatorConsents(supabase, {
@@ -108,7 +177,7 @@ export async function persistCreatorConsents(supabase, {
 
     console.warn('[consent] user_consents missing — falling back to profiles columns. Apply migration 041.');
 
-    // Path 2: profile columns only
+    // Path 2: profile columns only (still durable; checklist requires 041 but columns may exist alone)
     const profilePatch = {
       dpdp_consent_version: dpdpVersion,
       dpdp_consent_at: now,
@@ -136,10 +205,20 @@ export async function persistCreatorConsents(supabase, {
       throw err;
     }
 
-    console.warn('[consent] profiles consent columns missing — using memory fallback. Apply migration 041.');
+    console.warn('[consent] profiles consent columns missing. Apply migration 041.');
   }
 
-  // Path 3: process memory (dev / pre-migration) so Creator Studio is not blocked
+  // Path 3: process memory — MOCK_MODE only (not a durable DPDP/agreement record)
+  if (!isMockMode()) {
+    const err = new Error(
+      'Consent storage unavailable. Apply supabase/migrations/041_mvp1_legal_consent_search.sql (checklist ops.migrations_core) before recording consent.',
+    );
+    err.code = 'CONSENT_STORAGE_UNAVAILABLE';
+    err.status = 503;
+    err.userMessage = err.message;
+    throw err;
+  }
+
   for (const row of inserts) {
     recordMockConsent(userId, row);
   }
@@ -150,6 +229,6 @@ export async function persistCreatorConsents(supabase, {
     dpdp_consent_version: dpdpVersion,
     creator_agreement_version: agreementVersion,
     warning:
-      'Consent stored in API memory only. Apply supabase/migrations/041_mvp1_legal_consent_search.sql for durable records.',
+      'Consent stored in API memory only (MOCK_MODE). Apply supabase/migrations/041_mvp1_legal_consent_search.sql for durable records.',
   };
 }

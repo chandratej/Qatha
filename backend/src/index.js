@@ -23,7 +23,7 @@ import { platformRouter } from './routes/platform.js';
 import { shareRouter } from './routes/share.js';
 import { getLaunchOfferConfig } from './services/launchOffer.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { requireAuth } from './middleware/authenticate.js';
+import { requireAuth, requireCreatorConsent } from './middleware/authenticate.js';
 import { scheduleNotifications } from './services/notifications.js';
 import { isMockMode } from './lib/mockMode.js';
 import { deprecationHeaders } from './middleware/deprecation.js';
@@ -175,7 +175,7 @@ app.post('/api/ops/spi-recompute', async (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/stories', storiesRouter);
 app.use('/api/chapters', chaptersRouter);
-app.use('/api/creators', requireAuth(), creatorsRouter);
+app.use('/api/creators', requireAuth(), requireCreatorConsent(), creatorsRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
 // Copyright claim POST is public (rights holders are not logged-in readers) — P1-05.
 // Mount before the auth-gated moderation router so /copyright-claims is reachable.
@@ -185,7 +185,7 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/waitlist', waitlistRouter);
 app.use('/api/config', configRouter);
 app.use('/api/engagement', engagementRouter);
-app.use('/api/upload', requireAuth(), uploadRouter);
+app.use('/api/upload', requireAuth(), requireCreatorConsent(), uploadRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/platform', platformRouter);
 app.use('/api/versions', versionsRouter);

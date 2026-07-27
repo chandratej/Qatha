@@ -39,4 +39,10 @@ describe('checkOnboardingRequired', () => {
     await expect(checkOnboardingRequired()).resolves.toBe(false);
     expect(localStorage.getItem(ONBOARDING_KEY)).toBe('true');
   });
+
+  it('returns true (require onboarding) when stories fetch fails', async () => {
+    vi.mocked(api.getCreatorStories).mockRejectedValueOnce(new Error('network'));
+    await expect(checkOnboardingRequired()).resolves.toBe(true);
+    expect(localStorage.getItem(ONBOARDING_KEY)).toBeNull();
+  });
 });

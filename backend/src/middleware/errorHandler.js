@@ -19,6 +19,14 @@ const ERROR_MAP = {
     userMessage: 'Sign in to continue reading.',
     action: 'SHOW_OTP_GATE',
   },
+  CONSENT_REQUIRED: {
+    userMessage: 'Accept the Privacy Policy and Creator Agreement to continue.',
+    action: 'SHOW_LEGAL_CONSENT',
+  },
+  CONSENT_STORAGE_UNAVAILABLE: {
+    userMessage: 'Legal consent storage is not ready. Please try again later.',
+    action: 'RETRY',
+  },
   CREATOR_BANNED: {
     userMessage: 'This creator is no longer on Katha.',
     action: 'SUGGEST_SIMILAR_CREATORS',

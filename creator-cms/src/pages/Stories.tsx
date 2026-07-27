@@ -38,7 +38,10 @@ export function Stories() {
     return [...statusFiltered].sort((a, b) => {
       if (sortFilter === 'reads') return b.total_readers - a.total_readers;
       if (sortFilter === 'title') return a.title.localeCompare(b.title, 'te');
-      return b.chapter_count - a.chapter_count;
+      // Recent: newest shells first (created_at DESC). chapter_count DESC buried drafts.
+      const bt = Date.parse(b.created_at || '') || 0;
+      const at = Date.parse(a.created_at || '') || 0;
+      return bt - at;
     });
   }, [data?.stories, search, statusFilter, sortFilter]);
 

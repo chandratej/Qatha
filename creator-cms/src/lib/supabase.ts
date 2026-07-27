@@ -4,9 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 // Creator CMS: register with Google/email; WhatsApp OTP at publish (JIT) via whatsapp-otp hook.
 // Readers use Google + email magic link — phone/WhatsApp OTP is JIT at paywall only.
 //
-// Mock mode (for creator-cms demo without real Supabase):
-//   - Set VITE_MOCK_MODE=true, or leave placeholder URL/keys.
+// Mock mode (dev/demo only — hard-blocked in production builds):
+//   - Set VITE_MOCK_MODE=true, or leave placeholder URL/keys (non-PROD only).
 //   - OTP is always 123456. No network calls to Supabase.
+//   - import.meta.env.PROD always forces isMockMode=false (ignores VITE_MOCK_MODE).
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://your-project.supabase.co';
 const supabasePublishableKey =
@@ -37,9 +38,12 @@ function hasPlaceholderConfig(): boolean {
 }
 
 const explicitMock = envFlag('VITE_MOCK_MODE');
-/** ARC-02: production builds never auto-fallback to mock */
-export const isMockMode =
-  explicitMock !== null ? explicitMock : import.meta.env.PROD ? false : hasPlaceholderConfig();
+/** ARC-02: production builds hard-block mock (no OTP 123456 / demo user even if VITE_MOCK_MODE=true) */
+export const isMockMode = import.meta.env.PROD
+  ? false
+  : explicitMock !== null
+    ? explicitMock
+    : hasPlaceholderConfig();
 
 /**
  * PKCE OAuth: we exchange `?code=` ourselves in AuthContext.

@@ -23,6 +23,7 @@ export async function checkOnboardingRequired(): Promise<boolean> {
     const hasChapters = results.some((r) => r.chapters.length > 0);
     return !hasChapters;
   } catch {
-    return false;
+    // Fail closed: unknown creator state must not skip the funnel (matches Login finishLogin).
+    return true;
   }
 }

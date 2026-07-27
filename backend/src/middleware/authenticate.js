@@ -1,4 +1,9 @@
 import { isMockMode } from '../lib/mockMode.js';
+import {
+  verifyRequiredCreatorConsents,
+  DPDP_PRIVACY_VERSION,
+  CREATOR_AGREEMENT_VERSION,
+} from '../lib/consent.js';
 import { createSupabaseClient, getSupabase } from '../lib/supabase.js';
 import { getPublishableKey } from '../lib/supabaseKeys.js';
 import { createAppError } from './errorHandler.js';
@@ -101,4 +106,38 @@ export function getAuthenticatedUserId(req) {
     throw createAppError('OTP_REQUIRED', 'Authentication required', 401);
   }
   return req.auth.userId;
+}
+
+/**
+ * Legal Wave 0 — after requireAuth, block creator studio APIs until
+ * current DPDP + Creator Agreement versions are recorded (durable outside MOCK_MODE).
+ * Do not mount on POST /auth/consent or GET /auth/me.
+ */
+export function requireCreatorConsent() {
+  return async (req, res, next) => {
+    try {
+      if (!req.auth?.userId) {
+        return next(createAppError('OTP_REQUIRED', 'Authentication required', 401));
+      }
+      const ok = await verifyRequiredCreatorConsents(getSupabase(), req.auth.userId);
+      if (!ok) {
+        return next(
+          createAppError(
+            'CONSENT_REQUIRED',
+            'Accept DPDP privacy consent and Creator Agreement before using Creator Studio APIs. POST /api/auth/consent with { dpdp: true, creator_agreement: true }.',
+            403,
+            {
+              required: {
+                dpdp_privacy: DPDP_PRIVACY_VERSION,
+                creator_agreement: CREATOR_AGREEMENT_VERSION,
+              },
+            },
+          ),
+        );
+      }
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
 }

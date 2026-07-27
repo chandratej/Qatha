@@ -87,7 +87,12 @@ export function Dashboard() {
   const continueStory = useMemo(() => {
     const stories = storiesData?.stories ?? [];
     if (!stories.length) return null;
-    return [...stories].sort((a, b) => b.chapter_count - a.chapter_count)[0];
+    // Prefer most recently created so new draft shells surface (not chapter_count).
+    return [...stories].sort((a, b) => {
+      const bt = Date.parse(b.created_at || '') || 0;
+      const at = Date.parse(a.created_at || '') || 0;
+      return bt - at;
+    })[0];
   }, [storiesData]);
 
   const debutProgress = debutData?.progress;
@@ -158,7 +163,14 @@ export function Dashboard() {
   const wordProgress = Math.min(100, Math.round((productivity.wordsToday / wordGoal) * 100));
   const stories = storiesData?.stories ?? [];
   const sortedStories = useMemo(
-    () => [...stories].sort((a, b) => b.chapter_count - a.chapter_count).slice(0, 5),
+    () =>
+      [...stories]
+        .sort((a, b) => {
+          const bt = Date.parse(b.created_at || '') || 0;
+          const at = Date.parse(a.created_at || '') || 0;
+          return bt - at;
+        })
+        .slice(0, 5),
     [stories],
   );
 

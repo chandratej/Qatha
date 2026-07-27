@@ -1,6 +1,15 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseMockToken, resolveAuthFromRequest } from './authenticate.js';
+import {
+  parseMockToken,
+  resolveAuthFromRequest,
+  requireCreatorConsent,
+} from './authenticate.js';
+import {
+  recordMockConsent,
+  DPDP_PRIVACY_VERSION,
+  CREATOR_AGREEMENT_VERSION,
+} from '../lib/consent.js';
 
 describe('authenticate middleware', () => {
   it('parseMockToken extracts userId and issuedAt', () => {
@@ -44,5 +53,53 @@ describe('authenticate middleware', () => {
     const auth = await resolveAuthFromRequest(req);
     assert.equal(auth?.userId, 'demo-creator-001');
     assert.notEqual(auth?.userId, 'attacker-id');
+  });
+});
+
+describe('requireCreatorConsent middleware', () => {
+  let prevMock;
+  before(() => {
+    prevMock = process.env.MOCK_MODE;
+    process.env.MOCK_MODE = 'true';
+  });
+  after(() => {
+    if (prevMock === undefined) delete process.env.MOCK_MODE;
+    else process.env.MOCK_MODE = prevMock;
+  });
+
+  it('returns CONSENT_REQUIRED when creator has not accepted current versions', async () => {
+    const mw = requireCreatorConsent();
+    const req = { auth: { userId: `no-consent-${Date.now()}` } };
+    let err = null;
+    await mw(req, {}, (e) => {
+      err = e || null;
+    });
+    assert.ok(err);
+    assert.equal(err.code, 'CONSENT_REQUIRED');
+    assert.equal(err.status, 403);
+  });
+
+  it('allows request after mock DPDP + Creator Agreement recorded', async () => {
+    const userId = `with-consent-${Date.now()}`;
+    recordMockConsent(userId, {
+      consent_type: 'dpdp_privacy',
+      policy_version: DPDP_PRIVACY_VERSION,
+      accepted: true,
+    });
+    recordMockConsent(userId, {
+      consent_type: 'creator_agreement',
+      policy_version: CREATOR_AGREEMENT_VERSION,
+      accepted: true,
+    });
+    const mw = requireCreatorConsent();
+    const req = { auth: { userId } };
+    let called = false;
+    let err = null;
+    await mw(req, {}, (e) => {
+      if (e) err = e;
+      else called = true;
+    });
+    assert.equal(err, null);
+    assert.equal(called, true);
   });
 });

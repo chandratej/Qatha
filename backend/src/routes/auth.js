@@ -266,7 +266,8 @@ authRouter.get('/me', requireAuth(), async (req, res, next) => {
  * POST /api/auth/consent
  * Body: { dpdp: true, creator_agreement?: true, user_agent?: string }
  * Records versioned DPDP (+ optional Creator Agreement) consent.
- * Degrades if migration 041 is not applied (still returns 200 so Studio is usable).
+ * Durable outside MOCK_MODE (user_consents / profiles — migration 041).
+ * No in-memory legal fallback in production (checklist ops.migrations_core).
  */
 authRouter.post('/consent', requireAuth(), async (req, res, next) => {
   try {
@@ -326,45 +327,6 @@ authRouter.post('/consent', requireAuth(), async (req, res, next) => {
 
     res.json(result);
   } catch (err) {
-    // Last resort: never leave the legal gate stuck on a 500 for schema lag
-    if (err?.status >= 500 || !err?.status) {
-      console.error('[auth/consent]', err?.message || err);
-      try {
-        const userId = getAuthenticatedUserId(req);
-        const { recordMockConsent, DPDP_PRIVACY_VERSION, CREATOR_AGREEMENT_VERSION } =
-          await import('../lib/consent.js');
-        const { creator_agreement } = req.body || {};
-        const agreementOk =
-          creator_agreement === true ||
-          creator_agreement === 'true' ||
-          creator_agreement === 1 ||
-          creator_agreement === '1';
-        if (userId) {
-          recordMockConsent(userId, {
-            consent_type: 'dpdp_privacy',
-            policy_version: DPDP_PRIVACY_VERSION,
-            accepted: true,
-          });
-          if (agreementOk) {
-            recordMockConsent(userId, {
-              consent_type: 'creator_agreement',
-              policy_version: CREATOR_AGREEMENT_VERSION,
-              accepted: true,
-            });
-          }
-          return res.json({
-            ok: true,
-            storage: 'memory',
-            degraded: true,
-            dpdp_consent_version: DPDP_PRIVACY_VERSION,
-            creator_agreement_version: agreementOk ? CREATOR_AGREEMENT_VERSION : null,
-            warning: err?.message || 'Consent saved in memory after storage error',
-          });
-        }
-      } catch (fallbackErr) {
-        console.error('[auth/consent] fallback failed', fallbackErr?.message);
-      }
-    }
     next(err);
   }
 });

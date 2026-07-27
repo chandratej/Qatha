@@ -12,9 +12,14 @@ import {
 
 const LOCAL_KEY = 'katha_creator_legal_consent_v1';
 
+function expectedLocalValue() {
+  return `${DPDP_PRIVACY_VERSION}|${CREATOR_AGREEMENT_VERSION}`;
+}
+
 /**
  * Legal Wave 0 — block Studio until DPDP + Creator Agreement accepted.
- * Persists via API when authenticated; localStorage covers mock mode.
+ * Durable record via POST /auth/consent when authenticated.
+ * localStorage is a cache after server confirmation (and the store in mock mode only).
  */
 export function LegalConsentGate() {
   const { user, token, isMockMode } = useAuth();
@@ -31,22 +36,35 @@ export function LegalConsentGate() {
       setNeedsConsent(false);
       return;
     }
-    const localOk =
-      localStorage.getItem(LOCAL_KEY) ===
-      `${DPDP_PRIVACY_VERSION}|${CREATOR_AGREEMENT_VERSION}`;
-    if (localOk) {
-      setNeedsConsent(false);
+
+    const localOk = localStorage.getItem(LOCAL_KEY) === expectedLocalValue();
+
+    // Mock / offline Studio: localStorage is the only consent store.
+    if (isMockMode) {
+      setNeedsConsent(!localOk);
       setReady(true);
       return;
     }
+
+    // Authenticated production path: localStorage alone is never sufficient —
+    // server must report matching DPDP + Creator Agreement versions.
     let cancelled = false;
     (async () => {
       try {
-        if (!isMockMode && token) {
-          const res = await fetch(
-            `${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/auth/me`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
+        if (token) {
+          // Never fall back to localhost in production builds — missing VITE_API_URL must fail closed.
+          const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '');
+          if (!apiBase) {
+            if (!cancelled) {
+              setError('Studio API URL is not configured (VITE_API_URL).');
+              setNeedsConsent(true);
+              setReady(true);
+            }
+            return;
+          }
+          const res = await fetch(`${apiBase}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
           if (res.ok) {
             const body = await res.json();
             const u = body.user || {};
@@ -54,20 +72,19 @@ export function LegalConsentGate() {
               u.dpdp_consent_version === DPDP_PRIVACY_VERSION &&
               u.creator_agreement_version === CREATOR_AGREEMENT_VERSION
             ) {
-              localStorage.setItem(
-                LOCAL_KEY,
-                `${DPDP_PRIVACY_VERSION}|${CREATOR_AGREEMENT_VERSION}`,
-              );
+              localStorage.setItem(LOCAL_KEY, expectedLocalValue());
               if (!cancelled) {
                 setNeedsConsent(false);
                 setReady(true);
               }
               return;
             }
+            // Stale client cache must not unlock Studio.
+            localStorage.removeItem(LOCAL_KEY);
           }
         }
       } catch {
-        /* fall through */
+        /* fall through — fail closed until server confirms */
       }
       if (!cancelled) {
         setNeedsConsent(true);
@@ -87,30 +104,37 @@ export function LegalConsentGate() {
     setSubmitting(true);
     setError(null);
     try {
+      if (isMockMode) {
+        // No durable backend in mock mode — local acceptance unlocks Studio.
+        localStorage.setItem(LOCAL_KEY, expectedLocalValue());
+        setNeedsConsent(false);
+        return;
+      }
+
       const result = await api.recordConsent({
         dpdp: true,
         creator_agreement: true,
         user_agent: navigator.userAgent,
       });
-      localStorage.setItem(
-        LOCAL_KEY,
-        `${DPDP_PRIVACY_VERSION}|${CREATOR_AGREEMENT_VERSION}`,
-      );
+      // Cache only after server accepted (API degrades to memory/profiles but returns 200).
+      localStorage.setItem(LOCAL_KEY, expectedLocalValue());
       setNeedsConsent(false);
       if (result && 'warning' in result && result.warning) {
         console.warn('[LegalConsentGate]', result.warning);
       }
     } catch (e) {
-      // Never permanently trap creators: local record still unlocks Studio.
-      // Durable audit is restored once migration 041 is applied.
-      localStorage.setItem(
-        LOCAL_KEY,
-        `${DPDP_PRIVACY_VERSION}|${CREATOR_AGREEMENT_VERSION}`,
+      // Fail closed: do not treat localStorage as durable DPDP / Creator Agreement.
+      // Backend already soft-degrades schema lag; true errors must surface and retry.
+      const message =
+        e instanceof Error
+          ? e.message
+          : 'Could not save consent. Please try again.';
+      setError(
+        `${message} Studio unlocks only after consent is recorded on the server.`,
       );
-      setNeedsConsent(false);
       console.warn(
-        '[LegalConsentGate] API consent failed — accepted locally.',
-        e instanceof Error ? e.message : e,
+        '[LegalConsentGate] API consent failed — Studio remains locked until retry succeeds.',
+        message,
       );
     } finally {
       setSubmitting(false);

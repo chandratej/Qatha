@@ -18,10 +18,7 @@ export function OnboardingGate() {
         if (!cancelled) setChecking(false);
         return;
       }
-      if (location.pathname.includes('/chapters/')) {
-        if (!cancelled) setChecking(false);
-        return;
-      }
+      // Always evaluate onboarding — deep links into chapter editors must not skip the gate.
 
       const needs = await checkOnboardingRequired();
       if (!cancelled) {
