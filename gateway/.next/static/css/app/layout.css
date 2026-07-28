@@ -2,6 +2,7 @@
   !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[3]!./app/globals.css ***!
   \*************************************************************************************************************************************************************************************************************************************************************/
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Noto+Sans+Telugu:wght@400;500;600;700&family=Noto+Serif+Telugu:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+/* Vendored from packages/shared/brand-tokens.css for standalone Vercel deploy */
 
 :root,
 [data-katha-mode='reading'] {
@@ -244,7 +245,15 @@ body {
   word-break: break-word;
 }
 
-.chapter-body p:first-of-type::first-letter {
+/*
+ * Drop-cap only for alphabetic openings (Latin or Telugu letters).
+ * Numeric chapter openings like "1920ల కాలంలో…" must not style only "1"
+ * (would leave "920ల…" orphaned). :not() with :lang is limited; use
+ * :has() guard is imperfect — instead disable first-letter when the
+ * paragraph's text starts with a digit via a class applied in ChapterReader,
+ * and also use a safer CSS default: only apply drop-cap when not data-no-dropcap.
+ */
+.chapter-body p:first-of-type:not([data-no-dropcap])::first-letter {
   font-family: var(--font-display);
   font-size: 2.6em;
   font-weight: 600;
@@ -406,6 +415,15 @@ body {
   letter-spacing: -0.02em;
 }
 
+.paywall__eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--katha-gold-muted, #a8864e);
+  font-weight: 600;
+}
+
 .paywall__subtitle {
   margin: 0 0 20px;
   font-size: 0.875rem;
@@ -414,6 +432,37 @@ body {
   max-width: 28rem;
   margin-left: auto;
   margin-right: auto;
+}
+
+.paywall__benefits {
+  list-style: none;
+  margin: 0 auto 18px;
+  padding: 12px 14px;
+  max-width: 22rem;
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--katha-ink-soft);
+  background: rgba(196, 160, 82, 0.06);
+  border: 1px solid rgba(196, 160, 82, 0.14);
+  border-radius: 12px;
+}
+
+.paywall__benefits li {
+  margin: 0 0 6px;
+  padding-left: 0.1rem;
+}
+
+.paywall__benefits li:last-child {
+  margin-bottom: 0;
+}
+
+.paywall__benefits-share {
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px solid rgba(196, 160, 82, 0.16);
+  color: var(--katha-maroon, #6b2338);
+  font-weight: 500;
 }
 
 .paywall__price-row {
@@ -625,12 +674,12 @@ body {
     scroll-behavior: auto;
   }
 }
-/*!*******************************************************************************************************************************************************************************************************************************************************************************!*\
-  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[3]!../packages/shared/brand-tokens.css ***!
-  \*******************************************************************************************************************************************************************************************************************************************************************************/
+/*!*********************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[10].use[3]!./styles/brand-tokens.css ***!
+  \*********************************************************************************************************************************************************************************************************************************************************************/
 /**
  * Katha Brand Tokens — single source of truth
- * Spec: UI_UX/UI_UX_decisions/Brand Identity/Katha_Brand_Identity_Specification.md
+ * Spec: packages/shared/brand.ts
  * Import in Creator CMS (theme.css), Gateway (globals.css).
  */
 
@@ -639,24 +688,34 @@ body {
   --katha-gold: #c4a052;
   --katha-gold-soft: #e8d5a3;
   --katha-gold-muted: #a8864e;
-  --katha-gold-dark: #9a7b3a;
+  --katha-gold-dark: #7a6340;
   --katha-ember: #8b3a62;
   /** Secondary — Telugu textile / manuscript maroon (earnings, published, drama) */
   --katha-maroon: #6b2338;
   --katha-maroon-soft: #8b3a52;
   --katha-maroon-deep: #4a1526;
   --katha-turmeric: #c47a2a;
+  /** Indigo — future accent for community / reader features */
+  --katha-indigo: #3d3a8c;
+  --katha-indigo-soft: rgba(61, 58, 140, 0.12);
   --katha-ink: #1a1814;
   --katha-ink-soft: #4a4540;
   --katha-ink-muted: #8a847c;
   --katha-ink-faint: #b0a99f;
+  --katha-cream: #fdf8f0;
 
   /* Typography */
   --katha-font-ui: 'Outfit', system-ui, -apple-system, sans-serif;
   --katha-font-display: 'Fraunces', 'Literata', Georgia, 'Times New Roman', serif;
   --katha-font-reading: 'Noto Serif Telugu', 'Noto Sans Telugu', 'Literata', Georgia, serif;
   --katha-font-ui-telugu: 'Noto Sans Telugu', 'Noto Serif Telugu', serif;
-  --katha-palm-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'%3E%3Cpath d='M4 20 Q12 4 20 20 Q28 6 36 20 Q40 12 44 20' fill='none' stroke='%23c4a052' stroke-opacity='0.12' stroke-width='1'/%3E%3C/svg%3E");
+  --katha-telugu-letter-spacing: 0.15px;
+  /* Palm-leaf manuscript motif — heritage texture (slightly visible for brand identity) */
+  --katha-palm-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'%3E%3Cpath d='M0 20 Q12 4 24 20 Q36 6 48 20' fill='none' stroke='%23c4a052' stroke-opacity='0.14' stroke-width='0.9'/%3E%3C/svg%3E");
+  --katha-palm-pattern-subtle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='24' viewBox='0 0 48 24'%3E%3Cpath d='M0 20 Q12 4 24 20 Q36 6 48 20' fill='none' stroke='%23c4a052' stroke-opacity='0.06' stroke-width='0.75'/%3E%3C/svg%3E");
+  --katha-atmosphere-warm: radial-gradient(ellipse 120% 85% at 0% -8%, rgba(196, 160, 82, 0.055), transparent 52%);
+  --katha-atmosphere-maroon: radial-gradient(ellipse 100% 75% at 100% -6%, rgba(107, 35, 56, 0.04), transparent 50%);
+  --katha-atmosphere-floor: radial-gradient(ellipse 90% 45% at 50% 108%, rgba(196, 160, 82, 0.03), transparent 58%);
 
   /* Geometry & motion */
   --katha-radius-sm: 10px;
@@ -665,15 +724,36 @@ body {
   --katha-radius-xl: 24px;
   --katha-space-unit: 8px;
   --katha-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --katha-ease-celebrate: cubic-bezier(0.34, 1.4, 0.64, 1);
   --katha-duration-fast: 150ms;
   --katha-duration: 180ms;
   --katha-duration-slow: 220ms;
+  --katha-duration-enter: 420ms;
   --katha-focus-ring: rgba(196, 160, 82, 0.28);
+  /** Optimal writing/reading column width (~60–75 Latin chars) */
+  --katha-read-optimal: 36rem;
+  --katha-gold-glow: 0 4px 24px rgba(196, 160, 82, 0.26);
+  --katha-gold-glow-strong: 0 8px 36px rgba(196, 160, 82, 0.36);
+  --katha-maroon-glow: 0 4px 20px rgba(107, 35, 56, 0.24);
+  --katha-maroon-glow-strong: 0 8px 32px rgba(107, 35, 56, 0.32);
+  /* Chapter spine status colors */
+  --katha-spine-draft: linear-gradient(180deg, #c8bc9e 0%, #a8987c 100%);
+  --katha-spine-published: linear-gradient(180deg, var(--katha-maroon) 0%, var(--katha-maroon-deep) 100%);
+  --katha-spine-review: linear-gradient(180deg, var(--katha-gold) 0%, var(--katha-gold-dark) 100%);
+  --katha-spine-revision: linear-gradient(180deg, var(--katha-ember) 0%, #5a1e38 100%);
+  --katha-spine-scheduled: linear-gradient(180deg, #6b7a8d 0%, #4a5568 100%);
 
   /* Semantic accents */
   --katha-success: #6b8570;
   --katha-warning: #a8864e;
   --katha-error: #9a4a52;
+
+  /* Elevation scale — consistent depth language */
+  --katha-elevation-0: none;
+  --katha-elevation-1: 0 1px 3px rgba(26, 24, 20, 0.04), 0 1px 2px rgba(26, 24, 20, 0.03);
+  --katha-elevation-2: 0 2px 12px rgba(26, 24, 20, 0.06), 0 1px 3px rgba(26, 24, 20, 0.04);
+  --katha-elevation-3: 0 8px 28px rgba(26, 24, 20, 0.08), 0 2px 8px rgba(26, 24, 20, 0.04);
+  --katha-elevation-4: 0 16px 48px rgba(26, 24, 20, 0.12), 0 4px 12px rgba(26, 24, 20, 0.06);
 }
 
 /* ── Management Mode — Dashboard, Stories, Analytics, Settings ── */
@@ -685,9 +765,9 @@ body {
   --katha-mode-surface-raised: #f8f6f2;
   --katha-mode-border: rgba(26, 24, 20, 0.08);
   --katha-mode-border-strong: rgba(26, 24, 20, 0.14);
-  --katha-mode-shadow-sm: 0 1px 4px rgba(26, 24, 20, 0.04);
-  --katha-mode-shadow: 0 2px 12px rgba(26, 24, 20, 0.06);
-  --katha-mode-shadow-lg: 0 8px 28px rgba(26, 24, 20, 0.08);
+  --katha-mode-shadow-sm: var(--katha-elevation-1);
+  --katha-mode-shadow: var(--katha-elevation-2);
+  --katha-mode-shadow-lg: var(--katha-elevation-3);
   --katha-mode-accent: var(--katha-gold);
 }
 
@@ -742,6 +822,10 @@ body {
   --katha-ink: #e8e6e3;
   --katha-ink-soft: #b8b5b0;
   --katha-ink-muted: #7a7874;
+  --katha-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --katha-elevation-2: 0 2px 12px rgba(0, 0, 0, 0.28);
+  --katha-elevation-3: 0 8px 28px rgba(0, 0, 0, 0.36);
+  --katha-elevation-4: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
 [data-theme='dark'][data-katha-mode='creation'] {
@@ -763,5 +847,7 @@ body {
     --katha-duration-fast: 0ms;
     --katha-duration: 0ms;
     --katha-duration-slow: 0ms;
+    --katha-duration-enter: 0ms;
   }
 }
+

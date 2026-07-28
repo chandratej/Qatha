@@ -43,6 +43,9 @@
   --nos-ink-faint: #b8ae9c;
   --nos-brass: #d4b46e;
   --nos-brass-soft: #e0c88a;
+  /* Match dark --katha-maroon: oxblood-as-text must clear AA on night paper */
+  --nos-oxblood: #e0a8b6;
+  --nos-sage: #8aab90;
   --nos-hairline: rgba(244, 239, 228, 0.16);
   --nos-line: var(--nos-hairline);
   --nos-shadow: rgba(0, 0, 0, 0.4);
@@ -158,7 +161,8 @@ body.narrative-os-body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  max-width: min(48vw, 520px);
+  /* Use spare topbar width — previous min(48vw, 520px) over-truncated Telugu titles */
+  max-width: min(62vw, 760px);
   min-width: 0;
   padding: 0 8px;
   opacity: 0;
@@ -199,7 +203,7 @@ body.narrative-os-body {
 .narrative-os-app .crumb .nos-chapter-title .katha-inline-title {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: 180px;
+  max-width: min(36vw, 320px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -833,7 +837,8 @@ body.narrative-os-body {
   display: flex;
   gap: 2px;
   z-index: 10;
-  background: rgba(251, 247, 238, 0.9);
+  /* Token-based so dark theme is not light-on-light (was hardcoded cream) */
+  background: color-mix(in srgb, var(--nos-paper) 92%, transparent);
   backdrop-filter: blur(6px);
   padding: 4px;
   border-radius: 11px;
@@ -1931,6 +1936,8 @@ body.narrative-os-body {
   padding: 28px 22px 36px;
   border-radius: 4px;
   background: #fefcf6;
+  /* Explicit ink so app dark-theme light ink does not bleed onto light preview paper */
+  color: #2e2820;
   border: 1px solid var(--nos-hairline);
   box-shadow: 0 8px 32px var(--nos-shadow);
   min-height: 360px;
@@ -1976,6 +1983,15 @@ body.narrative-os-body {
   font-weight: 500;
   margin: 0 0 20px;
   line-height: 1.25;
+  color: #1a1610;
+}
+
+.narrative-os-app .nos-refine-frame__screen[data-preview-theme='dark'] .nos-refine-reader__title {
+  color: #f0e9dc;
+}
+
+.narrative-os-app .nos-refine-frame__screen[data-preview-theme='sepia'] .nos-refine-reader__title {
+  color: #3d3529;
 }
 
 .narrative-os-app .nos-refine-reader__divider {

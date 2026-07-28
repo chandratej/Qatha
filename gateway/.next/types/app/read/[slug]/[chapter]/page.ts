@@ -1,4 +1,4 @@
-// File: D:\Kata_Enterprise\MVP\gateway\app\read\[slug]\[chapter]\page.tsx
+// File: D:\Katha_Enterprise\MVP\gateway\app\read\[slug]\[chapter]\page.tsx
 import * as entry from '../../../../../../app/read/[slug]/[chapter]/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -186,7 +186,32 @@ body:has([data-katha-mode='creation']) {
   --gold: #d4b46e;
   --gold-dark: #e0c88a;
   --gold-light: rgba(212, 180, 110, 0.28);
+  /*
+   * Maroon as dark-mode foreground (active nav, errors, badges).
+   * Brand #6b2338 / creation #5a1d2e sits near night surfaces (~1.4:1).
+   * Dusty rose keeps the textile-maroon identity at AA+ (≥4.5:1 on #12100e–#1c1814).
+   */
+  --katha-maroon: #e0a8b6;
+  --katha-maroon-soft: #ebbcc7;
+  --katha-maroon-deep: #c88898;
+  --maroon: var(--katha-maroon);
+  --maroon-soft: var(--katha-maroon-soft);
+  --maroon-deep: var(--katha-maroon-deep);
   color-scheme: dark;
+}
+
+/*
+ * Creation mode redeclares --katha-maroon on a child subtree (see above).
+ * Re-apply the dark pair so chapter editor doesn't snap back to #5a1d2e.
+ */
+[data-theme='dark'] [data-katha-mode='creation'],
+[data-theme='dark'][data-katha-mode='creation'] {
+  --katha-maroon: #e0a8b6;
+  --katha-maroon-soft: #ebbcc7;
+  --katha-maroon-deep: #c88898;
+  --maroon: var(--katha-maroon);
+  --maroon-soft: var(--katha-maroon-soft);
+  --maroon-deep: var(--katha-maroon-deep);
 }
 
 /* Body copy defaults to soft ink — lift default for dark readability */

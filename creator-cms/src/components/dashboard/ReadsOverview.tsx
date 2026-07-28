@@ -32,7 +32,7 @@ export function ReadsOverview({ readsHistory, totalReads, analyticsHref }: Props
           <YAxis yAxisId="ret" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} />
           <Tooltip contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', borderRadius: 12 }} />
           <Legend />
-          <Area yAxisId="reads" type="monotone" dataKey="reads" name="Reads" stroke="var(--dash-gold)" fill="var(--dash-gold-soft)" fillOpacity={0.3} />
+          <Area yAxisId="reads" type="monotone" dataKey="reads" name="Reads" stroke="var(--gold-dark, var(--dash-gold))" fill="var(--dash-gold-soft)" fillOpacity={0.3} />
           <Line yAxisId="ret" type="monotone" dataKey="retention" name="Retention %" stroke="var(--accent-sage)" strokeWidth={2} dot={false} />
         </ComposedChart>
       </ResponsiveContainer>

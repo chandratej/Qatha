@@ -67,6 +67,17 @@
   font-weight: 600;
 }
 
+[data-theme='dark'] .app-topnav--v2 .app-topnav__link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink, #f4efe4);
+}
+
+[data-theme='dark'] .app-topnav--v2 .app-topnav__link--active {
+  background: color-mix(in srgb, var(--katha-maroon, #e0a8b6) 18%, var(--surface, #1c1814));
+  color: var(--katha-maroon, #e0a8b6);
+  box-shadow: none;
+}
+
 /* —— More dropdown (prototype: d-more-menu) —— */
 .app-topnav--v2 .app-topnav__more {
   position: relative;

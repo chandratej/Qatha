@@ -8,123 +8,123 @@
 
 ## Functional smoke
 
-Creator Studio’s product surface is wired end-to-end in code for an MVP1 soft-launch smoke path: login → protected shell (legal consent + onboarding gates) → dashboard / create story (cover optional with default) / Telugu fields / editor / earn / settings / release checklist, with production API URL resolution, mock hard-blocked in PROD, root error boundary, theme toggle, comfort prefs, and mobile tab bar. This is static surface verification only—no live browser or production QA was run; human re-smoke on the production CMS URL remains required per docs/MVP1_LAUNCH_CHECKLIST.md.
+Static code smoke of Creator Studio shows a complete MVP1 soft-launch surface: core routes and gates (legal consent fail-closed, onboarding fail-closed), prod-safe API base resolver, mock hard-block in PROD, create-story without cover via default cover, TeluguTextField paths, comfort/theme wiring, mobile tab bar, root error boundary, and Dashboard/Earn/Settings/Release Checklist entry points. In code terms Studio can be smoke-tested end-to-end along login → gates → create → editor → earn/settings; this does not claim live browser or production QA passed—human re-smoke on the deployed URL remains required per the launch checklist.
 
 **Blockers (fail count):** 0
 
 | ID | Result | Evidence |
 |---|---|---|
-| routes_core_present | pass | creator-cms/src/App.tsx: /login, / (Dashboard), /stories/new (CreateStory), /earn (+ reviews/payouts), /settings, /release-checklist, /profile, chapter editor paths under ProtectedRoute + Layout. |
-| legal_consent_gate | pass | App.tsx wraps protected tree in LegalConsentGate; LegalConsentGate.tsx requires server /auth/me DPDP+agreement versions (fail closed), localStorage cache only after confirm; mock uses local only. |
-| onboarding_gate | pass | OnboardingGate.tsx always evaluates checkOnboardingRequired (no chapter deep-link bypass); onboardingStatus.ts fail-closed on API error returns true → Navigate to /onboarding. |
-| api_url_resolver | pass | api_config.ts resolveStudioApiBase(): prefers VITE_API_URL; PROD rejects localhost env and falls back to PRODUCTION_STUDIO_API_URL https://katha-api.onrender.com/api; gateway same pattern. |
-| release_checklist_page | pass | App route /release-checklist → ReleaseChecklist.tsx; lib/releaseChecklist.ts RELEASE_CHECKLIST_ITEMS (auth.login, story.create, etc.); Settings links to /release-checklist. |
-| create_story_no_cover_path | pass | CreateStory.tsx: cover optional at create (comment + coverOpts only if uploaded); createStory uses cover_url || defaultStoryCoverUrl(); storyCover.ts default marker; ChapterEditor blocks publish when isMissingOrDefaultCover. |
-| telugu_input_path | pass | TeluguTextField.tsx (IME-safe, phonetic optional, lang=te); used in CreateStory.tsx (title/fields) and Profile.tsx bio-style fields. |
-| comfort_prefs_wired | pass | comfortPrefs.ts load/save/applyGlobalComfort; main.tsx calls applyGlobalComfort before paint; Settings.tsx comfort controls (uiScale, calmMotion, highContrast, editor font/line/break); ChapterEditor imports comfortPrefs. |
-| theme_toggle_present | pass | ThemeContext.tsx ThemeProvider (system/light/dark, toggleTheme); ThemeToggle.tsx; App.tsx wraps with ThemeProvider; AppTopNav + Login mount ThemeToggle; Settings uses setTheme for pref. |
-| mock_mode_prod_guard | pass | lib/supabase.ts: isMockMode = import.meta.env.PROD ? false : …; comment ARC-02 hard-blocks VITE_MOCK_MODE in production builds. |
-| mobile_tab_bar | pass | AppMobileTabBar.tsx (primary tabs + More sheet from navConfig); Layout.tsx renders <AppMobileTabBar /> under app-shell. |
-| error_boundaries | pass | ErrorBoundary.tsx class with reload UI; App.tsx root wraps entire tree in <ErrorBoundary>…</ErrorBoundary>. |
-| auth_login_page | pass | pages/Login.tsx: Google + email OTP flows via AuthContext, finishLogin onboarding check, route /login in App.tsx. |
-| dashboard_entry | pass | App.tsx path "/" → Dashboard; Dashboard.tsx loads api.getDashboard, stories, milestones; nav primary dashboard route "/". |
-| earn_hub_entry | pass | App.tsx /earn with nested reviews/payouts; Earn.tsx hub tabs + Outlet; legacy /reviewers and /monetization redirect into hub. |
-| settings_entry | pass | App.tsx /settings → Settings.tsx: comfort, theme pref, devices, payouts fields, link to /release-checklist; nav More includes Settings. |
+| routes_core_present | pass | App.tsx: /login, / (Dashboard), /stories/new (CreateStory), chapter editor routes, /earn, /settings, /profile, /release-checklist; ProtectedRoute → LegalConsentGate → OnboardingGate → Layout |
+| legal_consent_gate | pass | LegalConsentGate.tsx: wraps protected tree; prod requires /auth/me DPDP+agreement versions (fail-closed); submit via api.recordConsent; mock allows localStorage only; UI checkboxes + Accept |
+| onboarding_gate | pass | OnboardingGate.tsx: BYPASS only /onboarding|/login; always checkOnboardingRequired including editors; onboardingStatus.ts catch returns true (fail-closed) |
+| api_url_resolver | pass | api_config.ts resolveStudioApiBase(): VITE_API_URL preferred; PROD blocks localhost env and falls back to PRODUCTION_STUDIO_API_URL https://katha-api.onrender.com/api; used by LegalConsentGate |
+| release_checklist_page | pass | App.tsx route /release-checklist → ReleaseChecklist.tsx; lib/releaseChecklist.ts RELEASE_CHECKLIST_ITEMS (auth, story.create, comfort, earn); Settings.tsx Link Open release checklist |
+| create_story_no_cover_path | pass | CreateStory.tsx: cover optional; syncServerDraft uses cover_url || defaultStoryCoverUrl(); coverDefer UI; storyCover.ts DEFAULT_STORY_COVER_PATH; ChapterEditor publish blocks isMissingOrDefaultCover |
+| telugu_input_path | pass | TeluguTextField.tsx phonetic+IME lang=te; CreateStory uses it for title/description/setting/themes; Profile.tsx bio/name fields use TeluguTextField |
+| comfort_prefs_wired | pass | comfortPrefs.ts load/save + applyGlobalComfort (data-ui-scale/motion/contrast); main.tsx boot applyGlobalComfort(); Settings.tsx UI controls; ChapterEditor fontScale; comfort-system.css consumes attrs |
+| theme_toggle_present | pass | ThemeContext.tsx toggleTheme/setTheme; ThemeToggle.tsx; mounted in AppTopNav, Login, Onboarding, EditorNavbar; Settings theme pref control |
+| mock_mode_prod_guard | pass | lib/supabase.ts: export const isMockMode = import.meta.env.PROD ? false : (VITE_MOCK_MODE or placeholder config); ARC-02 comment hard-blocks mock in production builds |
+| mobile_tab_bar | pass | Layout.tsx renders AppMobileTabBar; AppMobileTabBar maps NAV_PRIMARY (dashboard/stories/earn) + More sheet; navConfig.ts NAV_PRIMARY routes |
+| error_boundaries | pass | App.tsx root <ErrorBoundary> wraps providers/router; ErrorBoundary.tsx class boundary with reload CTA; stack only in DEV |
+| auth_login_page | pass | pages/Login.tsx export Login; Google + email OTP flows; OAuth code return handling; ThemeToggle; route /login outside ProtectedRoute |
+| dashboard_entry | pass | App.tsx path="/" element={<Dashboard />}; Dashboard.tsx loads api.getDashboard, stories, milestones, persona widgets |
+| earn_hub_entry | pass | App.tsx /earn → Earn with reviews (flag) + payouts children; Earn.tsx tab UI + Outlet; /reviewers and /monetization Navigate to earn hub |
+| settings_entry | pass | App.tsx /settings → Settings.tsx; comfort prefs, theme, devices, payout profile, Link to /release-checklist |
 
 ## Visual / UX dimensions
 
 ### visual_communication
 
-Visual communication is strongest on Login CTA hierarchy and CreateStory primary/secondary actions, but status color semantics break down (Dashboard collapses review/revision into draft; library cards use one gold for pending and needs-revision; design-system badge-error equals badge-maroon). Error messaging is inconsistent (Login alerts vs CreateStory plain red text; Settings payout feedback is tone-blind). The legal consent gate and create-meta fields lag bilingual/Telugu clarity relative to the rest of Studio, and primary empty states still bypass the unified empty-state system.
+Visual communication is strongest where dedicated systems exist (Create Story bordered errors, empty-state v2 layout, labeled status badges). Hierarchy breaks across surfaces: gold vs maroon primary CTAs, weak color-only login errors, legal copy that understates a full Studio lock, silent phonetic fields, and incomplete Telugu coverage on Settings plus code-switched Telugu strings. Unify primary CTA tokens, strengthen auth/legal alerts, and make bilingual labels and input-mode affordances explicit.
 
 ### eye_comfort
 
-Creation/editor eye-comfort is strong: warm paper vs night canvas, Telugu font stacks, global reduced-motion + calm-motion, high-contrast tokens, and chapter-editor type/leading prefs (with spacious Telugu leading). Gaps are outside the manuscript: pure-white management/auth cards reintroduce glare; mobile nav type is too small/muted for senior users; alternate editors ignore comfortPrefs; Settings line-height labels drift from real values; residual soft ink and premium-muted dark tokens can undercut contrast; in-editor controls and default UI scale lag the comfort defaults the product already claims.
+Creation manuscript eye-comfort is mature (warm paper, deep ink, Telugu leading, calm-motion/high-contrast, comfortPrefs). Residual risk is management/hub pure-white and near-white editor preview chrome, washed sv21 muted text, Settings line-height mislabels, and no in-editor leading control—plus small nav chips and a non-senior default UI scale.
 
 ### css_consistency
 
-Creator Studio has a real brand/token foundation (brand-tokens + theme + late comfort/eye-comfort layers), but consistency is undermined by parallel palettes (sv21 vs premium), undefined nav prototype tokens, TSX hard-coded colors, unused spacing scale, and a z-index scheme where mobile chrome (9k–10k) sits above all shared modals (1k). Highest priority: fix overlay stacking, bind nav colors to real ink/surface tokens, and collapse maroon/gold + padding ownership to one system.
+Creator Studio has a real brand token core (brand-tokens → theme → comfort) but consistency is undermined by (1) mobile z-index above all shared modals, (2) undefined prototype tokens in nav-v2 with light fallbacks that break dark mobile, (3) a deep premium/cohesion cascade that patches rather than owns color, and (4) key surfaces (LegalConsentGate, Settings) living in inline styles while UI_CONFIG and CSS disagree on brand hex. Highest leverage: one z-index scale, one token language, collapse wave CSS, and move TSX inline styles into token-backed classes.
 
 ### ergonomics_a11y
 
-Creator Studio has a solid comfort foundation (UI scale, contrast, reduced motion) and several good a11y primitives (Esc on menus/modals, Login role=alert, some aria-busy loaders, mobile tab bar with safe-area main padding). The highest-impact gaps are incomplete modal/sheet focus management (CmsModal + mobile More), sub-44px touch targets on editor/nav/theme chrome, and Create Story validation that neither associates errors with fields nor explains disabled primary actions. Secondary gaps: Login field–error linkage, Analytics loading announcement, and Telugu overflow risk on tiny mobile tab labels.
+Creator Studio has solid foundations (comfort-system contrast/motion, 52px mobile tab bar, Esc on key menus, editor shortcuts, many role=alert surfaces) but keyboard modal hygiene and touch/disabled-state communication lag: shared CmsModal and the mobile More sheet lack focus traps/initial focus; MediaInsertModal lacks Esc entirely; many chrome/editor icon controls sit at 32–34px; login errors are not field-associated; disabled primaries often show only reduced opacity without explaining why. Fixing a shared focus-trap modal primitive and a 44px control token would clear most major ergonomics_a11y debt.
 
 ## Confirmed findings (survived verification)
 
 | ID | Severity | Area | File | Issue |
 |---|---|---|---|---|
-| VC-01 | major | visual | `D:\Katha_Enterprise\MVP\creator-cms\src\pages\Dashboard.tsx` | statusBadgeClass only maps published → sv21__badge--published; pending_review and needs_revision both render as sv21__badge--draft despite different text labels. studio-v21.css already defines sv21__badge--review, so dashboard status chips hide action urgency (revision vs waiting vs draft). |
-| VC-02 | major | visual | `D:\Katha_Enterprise\MVP\creator-cms\src\components\studio\StoryCardV21.tsx` | statusStamp applies the same sv21__badge--review class to both pending_review and needs_revision. Color no longer encodes meaning: 'waiting on moderators' and 'you must edit' look identical at a glance. |
-| VC-03 | major | a11y | `D:\Katha_Enterprise\MVP\creator-cms\src\pages\CreateStory.tsx` | Wizard errors use <p className="cs-v21__error"> without role="alert" or aria-live. Styles are color-only (#b42318 text, no surface/border/icon). Login and Stories use role="alert"; create-flow failures can sit above a sticky CTA bar and be easy to miss. |
-| VC-04 | major | ux | `D:\Katha_Enterprise\MVP\creator-cms\src\components\LegalConsentGate.tsx` | Blocking legal gate is English-only (titles, checkbox copy, CTA, errors) while Login and Studio support te/en locale. Tagline uses dense jargon ("DPDP consent + Creator Agreement") without a Telugu summary; first-person DPDP summary sits beside a checkbox, which reads as double-accept confusion. |
-| VC-05 | major | css | `D:\Katha_Enterprise\MVP\creator-cms\src\styles\components.css` | .badge-error and .badge-maroon share identical background/color (maroon soft fill). Error/danger and brand-maroon status cannot be distinguished by color alone, weakening semantic badge language across Studio. |
-| VC-06 | minor | ux | `D:\Katha_Enterprise\MVP\creator-cms\src\pages\Settings.tsx` | payoutMsg (success and failure) is always var(--ink-soft) with no role="alert". Failed save and successful save look the same; export errors reuse the same muted line. Visual feedback does not communicate outcome. |
-| VC-07 | minor | ux | `D:\Katha_Enterprise\MVP\creator-cms\src\pages\CreateStory.tsx` | With locale=te, genres/format guides localize, but age rating and completion status options stay English-only (AGE_RATINGS/STORY_STATUSES .label). Mixed Telugu UI + English critical metadata labels reduces bilingual clarity on the create path. |
-| VC-08 | minor | visual | `D:\Katha_Enterprise\MVP\creator-cms\src\pages\Dashboard.tsx` | Primary empty shelf uses ad-hoc sv21__empty (icon + muted 13px paragraph) instead of StudioEmptyState / studio-empty--v2 (glyph ring, title, optional titleTe, CTA placement). Wave-12 empty-state system is underused on Dashboard/Stories, so empty communication feels thinner and less bilingual than designed. |
-| EC-01 | major | visual | `D:\Katha_Enterprise\MVP\creator-cms\src\styles\premium-shell.css` | Management shell cards use pure white surfaces (--premium-surface: #ffffff; brand management --katha-mode-surface: #ffffff) while creation mode deliberately uses warm ivory (~#e8e0d0). Dashboard, Settings, Login, and nav menus remain high-luminance glare islands for multi-hour management work despite low-glare editor philosophy. |
-| EC-02 | major | a11y | `D:\Katha_Enterprise\MVP\creator-cms\src\styles\nav-v2.css` | Mobile tab bar labels are font-size: 0.625rem with color var(--text-muted, #9c8f7a) on white/near-white chrome. At ~10px, labels fail senior-friendly density and likely WCAG AA for non-decorative UI text, especially for Telugu captions. |
+| vc-cta-primary-system-split | major | visual | `D:/Katha_Enterprise/MVP/creator-cms/src/styles/dashboard.css` | Primary actions use two competing systems: gold cream-on-gradient (.dashboard-cta / .katha-cta on Login and Settings) vs maroon white-on-solid (.sv21__cta on Dashboard, .cs-v21__continue-btn on Create Story). .btn-primary forces dark ink on gold while .dashboard-cta uses cream-on-gold, so users cannot learn a single main-action look. Dashboard load-error recovery also uses .sv21__cta--soft, demoting the only recovery action. |
+| vc-legal-consent-scope-copy | major | ux | `D:/Katha_Enterprise/MVP/creator-cms/src/components/LegalConsentGate.tsx` | Tagline says Privacy and Creator Agreement are required before publishing on Katha, but the gate blocks the entire Studio Outlet until both checkboxes are accepted. Telugu CTA mixes scripts (Creator Studio). Version lines are always English. Error uses hard-coded #8B3A62 brand ember instead of the stronger bordered error treatment used on Create Story. |
+| vc-auth-error-visibility | major | a11y | `D:/Katha_Enterprise/MVP/creator-cms/src/pages/Login.tsx` | Login errors render only as .cms-error-text.cms-auth-error (color ~#9a4a52, no background or border) and sit after all CTAs. OAuth/API failures are often English regardless of locale. Create Story uses .cs-v21__error with border, tinted background, weight 500, and assertive live region. |
+| vc-settings-english-only | major | ux | `D:/Katha_Enterprise/MVP/creator-cms/src/pages/Settings.tsx` | Settings imports useLocale but major sections (payout readiness, legal name/UPI/PAN labels, comfort toggles, Labs, release checklist) are hard-coded English. With the nav locale toggle set to Telugu, this page breaks bilingual continuity and form-label clarity for Telugu creators. |
+| vc-phonetic-no-field-affordance | major | ergonomics | `D:/Katha_Enterprise/MVP/creator-cms/src/pages/CreateStory.tsx` | Title, description, setting, and themes use TeluguTextField with phonetic enabled when locale or story language is te, with no adjacent label, chip, or hint that roman-to-Telugu conversion is live. Unlike ChapterEditor's phonetic toggle, Create Story can rewrite Latin keystrokes without explaining input mode. |
+| vc-empty-state-title-te-duplicate | minor | visual | `D:/Katha_Enterprise/MVP/creator-cms/src/pages/Dashboard.tsx` | Empty shelf passes title and titleTe as the same t('stories.emptyShelfText') when locale is te. StudioEmptyState then renders the identical Telugu string twice, cluttering empty-state hierarchy. |
+| vc-status-badge-brand-collision | minor | visual | `D:/Katha_Enterprise/MVP/creator-cms/src/styles/studio-v21.css` | .sv21__badge--review uses brand gold and --revision uses brand ember/maroon—the same palette as CTAs and nav active states—so status meaning leans on small 12px text. Draft and registered both use surface-1 with soft nuance that is easy to miss. app-nav-status Early stage is also muted chip chrome, not a distinct status language. |
+| vc-te-code-switch-create-legal | minor | ux | `D:/Katha_Enterprise/MVP/creator-cms/src/pages/CreateStory.tsx` | Telugu format-guide flags and shared legal summaries mix Latin product jargon mid-sentence (Publish, Format Spec v1, soft targets, Story Trust, Performing/Apex, Creator Studio). Combined with always-English Version labels on LegalConsentGate, Telugu locale reads half-translated and weakens form and consent comprehension. |
+| ec-mgmt-pure-white | major | comfort | `D:\Katha_Enterprise\MVP\packages\shared\brand-tokens.css` | Management mode and hub pages still use pure white surfaces (#ffffff for --katha-mode-surface / --sv21-surface) while Settings claims low-glare warm ivory; long dashboard/settings sessions keep higher glare than creation paper. |
+| ec-preview-glare | major | visual | `D:\Katha_Enterprise\MVP\creator-cms\src\styles\editor-prototype.css` | Editor preview/reader cards hardcode near-white (#FFFCF7 and rgba(255,252,247,…) in editor-premium-v2.css) against the warm ivory manuscript canvas (#e8e0d0), causing a brightness jump when creators switch write↔preview. |
 
 ### Evidence & suggestions
 
-#### VC-01
+#### vc-cta-primary-system-split
 
-- **Issue:** statusBadgeClass only maps published → sv21__badge--published; pending_review and needs_revision both render as sv21__badge--draft despite different text labels. studio-v21.css already defines sv21__badge--review, so dashboard status chips hide action urgency (revision vs waiting vs draft).
-- **Evidence:** Dashboard.tsx L21-24: `if (status === 'published') return 'sv21__badge sv21__badge--published'; return 'sv21__badge sv21__badge--draft';` with L26-30 labeling pending_review/needs_revision separately; L311 applies statusBadgeClass(story.moderation_status). studio-v21.css L126: `.sv21__badge--review { background: var(--sv21-gold-light); color: var(--sv21-gold); }`.
-- **Suggestion:** Map pending_review → sv21__badge--review and needs_revision to a distinct revision/warning class (or maroon/warning badge); align with StoryCardV21/ManuscriptCard color semantics.
+- **Issue:** Primary actions use two competing systems: gold cream-on-gradient (.dashboard-cta / .katha-cta on Login and Settings) vs maroon white-on-solid (.sv21__cta on Dashboard, .cs-v21__continue-btn on Create Story). .btn-primary forces dark ink on gold while .dashboard-cta uses cream-on-gold, so users cannot learn a single main-action look. Dashboard load-error recovery also uses .sv21__cta--soft, demoting the only recovery action.
+- **Evidence:** .dashboard-cta,.katha-cta { background: linear-gradient(...gold...); color: var(--katha-cream, #fdf8f0) } (dashboard.css:628-643). .btn-primary { color: #1a1510; gold gradient } (components.css:13-17). .sv21__cta { background: var(--sv21-maroon); color: #fff } and .sv21__cta--soft { surface + maroon text } (studio-v21.css:92-113). .cs-v21__continue-btn { background: var(--cs-maroon); color: #fff } (cohesion-wave29.css:474-482). Dashboard.tsx:197 uses className="sv21__cta sv21__cta--soft" for tryAgain/signInAgain.
+- **Suggestion:** Pick one primary (gold dark-ink for management/auth; maroon only for publish-critical). Map all page-level progress CTAs to that token; reserve soft/secondary for back/alternate. Use solid primary styling for empty-state and error recovery CTAs.
 
-#### VC-02
+#### vc-legal-consent-scope-copy
 
-- **Issue:** statusStamp applies the same sv21__badge--review class to both pending_review and needs_revision. Color no longer encodes meaning: 'waiting on moderators' and 'you must edit' look identical at a glance.
-- **Evidence:** StoryCardV21.tsx lines 13-14: if (s === 'pending_review') return { label: t('stories.statusPendingReview'), className: 'sv21__card-stamp sv21__badge--review' }; if (s === 'needs_revision') return { label: t('stories.statusNeedsRevision'), className: 'sv21__card-stamp sv21__badge--review' };
-- **Suggestion:** Add sv21__badge--revision (e.g. turmeric/warning ink) for needs_revision; keep gold/review for pending_review only. Use the same mapping on Dashboard and Stories filters.
+- **Issue:** Tagline says Privacy and Creator Agreement are required before publishing on Katha, but the gate blocks the entire Studio Outlet until both checkboxes are accepted. Telugu CTA mixes scripts (Creator Studio). Version lines are always English. Error uses hard-coded #8B3A62 brand ember instead of the stronger bordered error treatment used on Create Story.
+- **Evidence:** tagline L171–172 '…required before publishing on Katha' / Telugu 'ప్రచురణకు ముందు'; L156 if (!user || !needsConsent) return <Outlet />; else full-page gate; L239 'అంగీకరించి Creator Studioకి వెళ్ళండి'; L188/209 'Version {…}' always English; L222 style={{ color: '#8B3A62' }} vs CreateStory cs-v21__error.
+- **Suggestion:** State that Studio access is locked until consent is recorded. Localize version labels; keep product naming consistent in Telugu. Style consent errors like .cs-v21__error (border, background, role=alert), not brand-ember text alone.
 
-#### VC-03
+#### vc-auth-error-visibility
 
-- **Issue:** Wizard errors use <p className="cs-v21__error"> without role="alert" or aria-live. Styles are color-only (#b42318 text, no surface/border/icon). Login and Stories use role="alert"; create-flow failures can sit above a sticky CTA bar and be easy to miss.
-- **Evidence:** CreateStory.tsx L487/L629/L683: `{error && <p className="cs-v21__error">{error}</p>}` (no role/aria-live), each immediately before `<div className="cs-v21__actions cs-v21__actions--inline">`. cohesion-wave29.css L331-335: `.cs-v21__error { margin: 0; color: #b42318; font-size: 0.875rem; }`. Login.tsx L277: `role="alert"`; Stories.tsx L123: `role="alert"`. Base `.cs-v21__actions` is position:fixed bottom (L437-451) but `--inline` overrides to position:static (L624-631).
-- **Suggestion:** Add role="alert" + aria-live="assertive", reuse cms-error-text or a bordered error strip with icon, and scroll/focus the error when setError fires.
+- **Issue:** Login errors render only as .cms-error-text.cms-auth-error (color ~#9a4a52, no background or border) and sit after all CTAs. OAuth/API failures are often English regardless of locale. Create Story uses .cs-v21__error with border, tinted background, weight 500, and assertive live region.
+- **Evidence:** Login.tsx L277: `{error && <p className="cms-error-text cms-auth-error" role="alert">{error}</p>}` after choose/email/otp CTAs; L58/94/109/124/139 English fallbacks + L26-28 oauthError from URL; dashboard.css `.cms-error-text{color:var(--katha-error,#9a4a52)}`; studio.css `.cms-auth-error` margin/center only; CreateStory `.cs-v21__error` + cohesion-wave29.css border/bg/font-weight:500; aria-live="assertive".
+- **Suggestion:** Place a single alert region above primary actions; use bordered error surface tokens; localize auth failure strings; keep role=alert and scroll into view when an error is set.
 
-#### VC-04
+#### vc-settings-english-only
 
-- **Issue:** Blocking legal gate is English-only (titles, checkbox copy, CTA, errors) while Login and Studio support te/en locale. Tagline uses dense jargon ("DPDP consent + Creator Agreement") without a Telugu summary; first-person DPDP summary sits beside a checkbox, which reads as double-accept confusion.
-- **Evidence:** LegalConsentGate.tsx:152-156 h1 'Legal essentials' + tagline 'DPDP consent + Creator Agreement — required before publishing on Katha'; 163-166 checkbox + 'Privacy (DPDP) — {DPDP_CONSENT_SUMMARY}'; 94 error English-only; 211 CTA 'Accept & continue to Creator Studio'. creatorAgreement.ts:15-17 DPDP_CONSENT_SUMMARY = 'I agree to Katha processing…'. No useLocale in this file; Login.tsx uses BRAND.taglineTelugu; LocaleContext supports te|en.
-- **Suggestion:** Wire useLocale() for all gate strings; provide short Telugu summaries of DPDP + Creator Agreement; keep full legal English via links; rephrase checkbox labels as "I accept…" with summary below, not first-person prose inside the control.
+- **Issue:** Settings imports useLocale but major sections (payout readiness, legal name/UPI/PAN labels, comfort toggles, Labs, release checklist) are hard-coded English. With the nav locale toggle set to Telugu, this page breaks bilingual continuity and form-label clarity for Telugu creators.
+- **Evidence:** Lines 32–35: useLocale + const { t } = useLocale(); only t() uses at 152–155 for header. Hard-coded: L178 "Payout readiness"; L187 "Legal name (as on UPI / PAN)"; L197 "UPI ID"; L207 "PAN / tax ID..."; L252 "Release checklist"; L269 "Studio Labs"; L340/348 comfort toggles; L357 "Writing comfort (editor)".
+- **Suggestion:** Route all Settings labels, hints, and status messages through studioLocale keys (en/te), matching Login/Dashboard patterns; keep UPI/PAN placeholders Latin with Telugu labels.
 
-#### VC-05
+#### vc-phonetic-no-field-affordance
 
-- **Issue:** .badge-error and .badge-maroon share identical background/color (maroon soft fill). Error/danger and brand-maroon status cannot be distinguished by color alone, weakening semantic badge language across Studio.
-- **Evidence:** .badge-error { background: rgba(107, 35, 56, 0.1); color: var(--katha-maroon); font-weight: 600; } and .badge-maroon { background: rgba(107, 35, 56, 0.1); color: var(--katha-maroon); font-weight: 600; } (components.css ~220-229); used as badge-maroon for Published vs badge-error for Needs edits in StorySeasons.tsx / storyStatus.ts
-- **Suggestion:** Differentiate badge-error (e.g. ember/error ink + stronger error fill) from badge-maroon (brand accent). Document a status color legend: success=sage, warning=turmeric, review=gold, error=ember, brand=maroon.
+- **Issue:** Title, description, setting, and themes use TeluguTextField with phonetic enabled when locale or story language is te, with no adjacent label, chip, or hint that roman-to-Telugu conversion is live. Unlike ChapterEditor's phonetic toggle, Create Story can rewrite Latin keystrokes without explaining input mode.
+- **Evidence:** CreateStory.tsx:280 `const useTeluguPhonetic = locale === 'te' || language === 'te';` then title/description/setting/themes all pass `phonetic={useTeluguPhonetic}` (e.g. 375–385, 394–404, 604–612, 616–624) with labels only like t('createStory.storyTitle')—no phonetic copy. TeluguTextField.tsx:22–23/90–97 live roman→Telugu when phonetic; returns only <input>/<textarea>. NarrativeInspectorPanel.tsx:145–153 has `Phonetic input` On/Off toggle.
+- **Suggestion:** Add a compact field affordance (for example Phonetic on: type amma becomes Telugu) and/or a toggle near the first Telugu field; clarify behavior when UI language is English but content language is Telugu.
 
-#### VC-06
+#### vc-empty-state-title-te-duplicate
 
-- **Issue:** payoutMsg (success and failure) is always var(--ink-soft) with no role="alert". Failed save and successful save look the same; export errors reuse the same muted line. Visual feedback does not communicate outcome.
-- **Evidence:** Render (always soft ink, no role): `{payoutMsg && (<p style={{ margin: 0, fontSize: '0.8125rem', color: 'var(--ink-soft)' }}>{payoutMsg}</p>)}` (Settings.tsx ~225-227). Writers: success `setPayoutMsg('Payout details saved...')` (~86); save fail `setPayoutMsg(e instanceof Error ? e.message : 'Could not save payout details')` (~88); export fail `setPayoutMsg(e instanceof Error ? e.message : 'Export failed')` (~121).
-- **Suggestion:** Split success vs error styling (sage vs error color), add role="alert" on errors, and optionally a short icon/prefix so save outcome is scannable.
+- **Issue:** Empty shelf passes title and titleTe as the same t('stories.emptyShelfText') when locale is te. StudioEmptyState then renders the identical Telugu string twice, cluttering empty-state hierarchy.
+- **Evidence:** Dashboard.tsx:294-295 title={t('stories.emptyShelfText')} titleTe={locale === 'te' ? t('stories.emptyShelfText') : undefined}; StudioEmptyState.tsx:40-42 <Heading className="studio-empty__title">{title}</Heading> then {titleTe && <p className="studio-empty__title-te ...">{titleTe}</p>}
+- **Suggestion:** When locale is te, pass only title (or only titleTe). Use titleTe only as a secondary gloss when the primary title is English.
 
-#### VC-07
+#### vc-status-badge-brand-collision
 
-- **Issue:** With locale=te, genres/format guides localize, but age rating and completion status options stay English-only (AGE_RATINGS/STORY_STATUSES .label). Mixed Telugu UI + English critical metadata labels reduces bilingual clarity on the create path.
-- **Evidence:** CreateStory.tsx L520: `{locale === 'te' ? g.labelTelugu : g.label}` for genres; L527: `{AGE_RATINGS.map((a) => <option ...>{a.label}</option>)}`; L548: `{STORY_STATUSES.map((s) => <option ...>{s.label}</option>)}`. content-types.ts L243-256: STORY_STATUSES/AGE_RATINGS are English-only `{ id, label }` (e.g. 'Draft', 'All Ages') with no Telugu fields.
-- **Suggestion:** Add labelTelugu (or studioLocale keys) for age ratings and story statuses and select by locale, matching primary genre/format pattern.
+- **Issue:** .sv21__badge--review uses brand gold and --revision uses brand ember/maroon—the same palette as CTAs and nav active states—so status meaning leans on small 12px text. Draft and registered both use surface-1 with soft nuance that is easy to miss. app-nav-status Early stage is also muted chip chrome, not a distinct status language.
+- **Evidence:** .sv21__badge { font-size: 12px; ... } .sv21__badge--draft { background: var(--sv21-surface-1); color: var(--sv21-ink-soft); } .sv21__badge--review { background: var(--sv21-gold-light); color: var(--sv21-gold); } .sv21__badge--revision { background: color-mix(... var(--katha-ember, #8B3A62) 14% ...); color: var(--katha-ember, #8B3A62); } .sv21__badge--registered { background: var(--sv21-surface-1); color: var(--sv21-maroon); } + .sv21__cta { background: var(--sv21-maroon); }
+- **Suggestion:** Give workflow statuses non-brand hues (sage published, amber review, rose revision, neutral draft) plus optional icons; reserve gold/maroon for brand chrome and primary CTAs.
 
-#### VC-08
+#### vc-te-code-switch-create-legal
 
-- **Issue:** Primary empty shelf uses ad-hoc sv21__empty (icon + muted 13px paragraph) instead of StudioEmptyState / studio-empty--v2 (glyph ring, title, optional titleTe, CTA placement). Wave-12 empty-state system is underused on Dashboard/Stories, so empty communication feels thinner and less bilingual than designed.
-- **Evidence:** Dashboard.tsx L289-296: `{sortedStories.length === 0 ? ( <div className="sv21__empty"> <BookOpen size={26} aria-hidden /> <p>{t('stories.emptyShelfText')}</p> <Link to="/stories/new" className="sv21__cta" ...>{t('stories.createFirst')}</Link> </div> )` vs L188-198 error path using `<StudioEmptyState icon={BookOpen} ... title={t('dashboard.studioPaused')} text={...}>`. studio-v21.css: `.sv21__empty p { font-size: 13px; ... }`.
-- **Suggestion:** Replace sv21__empty hubs with StudioEmptyState + title/titleTe/text/CTA children; keep sv21__empty only for compact filter-no-match cases if needed.
+- **Issue:** Telugu format-guide flags and shared legal summaries mix Latin product jargon mid-sentence (Publish, Format Spec v1, soft targets, Story Trust, Performing/Apex, Creator Studio). Combined with always-English Version labels on LegalConsentGate, Telugu locale reads half-translated and weakens form and consent comprehension.
+- **Evidence:** CreateStory.tsx TE flags: 'Publishకు నియమం కాదు.' and 'Format Spec v1 ... Soft targets publishను block చేయవు (hard max ...)'; LegalConsentGate always shows 'Version {DPDP_PRIVACY_VERSION}' / 'Version {CREATOR_AGREEMENT_VERSION}' with no te branch; TE CTA 'Creator Studioకి'; CREATOR_AGREEMENT_SUMMARY_TE keeps 'Story Trust'/'Performing'/'Apex'.
+- **Suggestion:** Prefer full Telugu phrasing with a single Latin proper noun only where unavoidable; provide Telugu glosses for product terms; localize structural chrome such as Version.
 
-#### EC-01
+#### ec-mgmt-pure-white
 
-- **Issue:** Management shell cards use pure white surfaces (--premium-surface: #ffffff; brand management --katha-mode-surface: #ffffff) while creation mode deliberately uses warm ivory (~#e8e0d0). Dashboard, Settings, Login, and nav menus remain high-luminance glare islands for multi-hour management work despite low-glare editor philosophy.
-- **Evidence:** premium-shell.css L19: --premium-surface: #ffffff; L201-213: .cms-panel/.studio-metric/etc background: var(--premium-surface); L89-95 nav --premium-surface-soft; L131-134 active link --premium-surface. brand-tokens.css management: --katha-mode-surface: #ffffff vs creation --katha-mode-surface:#e6ddcc / --katha-mode-canvas:#e8e0d0.
-- **Suggestion:** Warm management surfaces toward ivory/paper (e.g. #f7f2e8 / #faf6ef) and soft-mix pure #fff fallbacks in premium-shell, brand-tokens management mode, and dashboard/auth cards so non-editor chrome matches the low-glare system.
+- **Issue:** Management mode and hub pages still use pure white surfaces (#ffffff for --katha-mode-surface / --sv21-surface) while Settings claims low-glare warm ivory; long dashboard/settings sessions keep higher glare than creation paper.
+- **Evidence:** brand-tokens.css L81–86: Management Mode — Dashboard, Stories, Analytics, Settings with --katha-mode-surface: #ffffff; L96–103: Creation Mode — Chapter Editor (low-glare paper) / Target warm ivory with --katha-mode-surface: #e6ddcc
+- **Suggestion:** Align management/hub surfaces to warm paper tokens (e.g. #f7f2e8 / #f5f0e8) everywhere var(--surface)/sv21-surface is used; stop defaulting mode surface to #ffffff.
 
-#### EC-02
+#### ec-preview-glare
 
-- **Issue:** Mobile tab bar labels are font-size: 0.625rem with color var(--text-muted, #9c8f7a) on white/near-white chrome. At ~10px, labels fail senior-friendly density and likely WCAG AA for non-decorative UI text, especially for Telugu captions.
-- **Evidence:** .app-mobile-tabbar { background: var(--surface, #fff); ... } .app-mobile-tabbar__tab { color: var(--text-muted, #9c8f7a); font-size: 0.625rem; font-weight: 500; ... } (nav-v2.css ~L230–260)
-- **Suggestion:** Raise tab labels to ≥0.75–0.8125rem (and larger under data-ui-scale 3–4), use --ink-muted/#3f3a32 (or dark equivalent), and increase hit padding so bottom nav stays readable without relying on icons alone.
+- **Issue:** Editor preview/reader cards hardcode near-white (#FFFCF7 and rgba(255,252,247,…) in editor-premium-v2.css) against the warm ivory manuscript canvas (#e8e0d0), causing a brightness jump when creators switch write↔preview.
+- **Evidence:** .katha-proto-reader-card { background: #FFFCF7; } (editor-prototype.css ~2091); .katha-proto-layout--premium .katha-proto-preview { background: rgba(255, 252, 247, 0.96); } and .katha-proto-preview-body uses rgba(255, 252, 247, 0.98) (editor-premium-v2.css ~211–244); write canvas: .katha-proto-editor-canvas { background: var(--editor-canvas); } with [data-katha-mode='creation'] --katha-mode-canvas: #e8e0d0 (brand-tokens.css / theme.css).
+- **Suggestion:** Retarget .katha-proto-reader-card, premium preview panes, and leftover near-white chrome to var(--editor-canvas) / paper tokens; extend editor-eye-comfort.css selectors to cover preview surfaces.
 
 ## Human residual (cannot fully automate)
 
