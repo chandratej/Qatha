@@ -4,12 +4,12 @@
  */
 
 .narrative-os-app {
-  /* Low-glare ivory + near-black ink for buttons/chrome legibility on paper */
-  --nos-paper: #e8e0d0;
-  --nos-paper-deep: #ddd4c4;
-  --nos-ink: #14110d;
-  --nos-ink-soft: #241f18;
-  --nos-ink-faint: #4a4338;
+  /* Matte ivory — deeper than pure cream to cut room-light glare */
+  --nos-paper: #e2d8c6;
+  --nos-paper-deep: #d4cbb9;
+  --nos-ink: #1f1a14;
+  --nos-ink-soft: #3a342c;
+  --nos-ink-faint: #5c554c;
   --nos-brass: #7a5c28;
   --nos-brass-soft: #8a6b32;
   /* Text/accent maroon — remaps light in dark theme for AA on night paper */
@@ -264,12 +264,14 @@ body.narrative-os-body {
 .narrative-os-app .topbar-btn--primary {
   background: var(--nos-oxblood-fill);
   border-color: var(--nos-oxblood-fill);
-  color: #fff;
+  color: #f5efe6;
+  font-weight: 500;
+  letter-spacing: 0.02em;
 }
 
 .narrative-os-app .topbar-btn--primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--nos-oxblood-fill) 88%, #000);
-  color: #fff;
+  color: #faf6ef;
 }
 
 .narrative-os-app .nos-spin {
@@ -1785,7 +1787,7 @@ body.narrative-os-body {
   color: var(--nos-ink);
 }
 
-/* Refine theater — reader preview */
+/* Refine theater — calm reader preview (room to breathe, not chrome stack) */
 .narrative-os-app .nos-refine-theater {
   flex: 1;
   display: flex;
@@ -1793,32 +1795,42 @@ body.narrative-os-body {
   min-height: 0;
   width: 100%;
   max-width: none;
-  padding-bottom: 56px;
+  /* Room for bottomnav without stacking footer on it */
+  padding-bottom: 64px;
+}
+
+/* Hide word status bar in refine — preview footer owns metrics */
+.narrative-os-app.mode-refine .statusbar {
+  display: none;
 }
 
 .narrative-os-app .nos-refine-theater__header {
   flex: none;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  padding: 12px 20px 10px;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px 18px 10px;
   border-bottom: 1px solid var(--nos-hairline);
-  background: linear-gradient(180deg, var(--nos-paper) 0%, rgba(251, 247, 238, 0.6) 100%);
+  background: color-mix(in srgb, var(--nos-paper-deep) 70%, var(--nos-paper));
 }
 
 .narrative-os-app .nos-refine-theater__back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 7px 12px;
   border-radius: 8px;
   border: 1px solid var(--nos-hairline);
   background: transparent;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--nos-ink-soft);
   cursor: pointer;
   white-space: nowrap;
+  order: 1;
 }
 
 .narrative-os-app .nos-refine-theater__back:hover {
@@ -1827,32 +1839,35 @@ body.narrative-os-body {
 }
 
 .narrative-os-app .nos-refine-theater__intro {
-  text-align: center;
+  text-align: left;
   min-width: 0;
+  flex: 1 1 140px;
+  order: 2;
 }
 
 .narrative-os-app .nos-refine-theater__eyebrow {
   margin: 0;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: var(--nos-ink-soft);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--nos-ink-faint);
   font-weight: 500;
 }
 
 .narrative-os-app .nos-refine-theater__dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: var(--nos-oxblood);
   flex-shrink: 0;
 }
 
+/* Tagline is secondary chrome — hide by default to cut density */
 .narrative-os-app .nos-refine-theater__tagline {
+  display: none;
   margin: 2px 0 0;
   font-size: 12px;
   color: var(--nos-ink-soft);
@@ -1864,41 +1879,52 @@ body.narrative-os-body {
   align-items: center;
   gap: 8px;
   justify-content: flex-end;
+  flex: none;
+  order: 3;
+  margin-left: auto;
 }
 
 .narrative-os-app .nos-refine-dock {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   padding: 3px;
   border-radius: 10px;
-  background: var(--nos-paper-deep);
+  background: color-mix(in srgb, var(--nos-paper-deep) 88%, transparent);
   border: 1px solid var(--nos-hairline);
 }
 
 .narrative-os-app .nos-refine-dock__btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
+  justify-content: center;
+  gap: 0;
+  padding: 7px 9px;
   border: none;
   border-radius: 7px;
   background: none;
   font-size: 11px;
+  font-weight: 500;
   color: var(--nos-ink-soft);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+/* Icon-only device/theme controls — labels via title/aria */
+.narrative-os-app .nos-refine-dock__btn > span {
+  display: none;
+}
+
 .narrative-os-app .nos-refine-dock__btn--icon {
-  padding: 6px 9px;
+  padding: 7px 9px;
 }
 
 .narrative-os-app .nos-refine-dock__btn:hover {
   color: var(--nos-ink);
+  background: color-mix(in srgb, var(--nos-ink) 6%, transparent);
 }
 
 .narrative-os-app .nos-refine-dock__btn.active {
-  background: var(--nos-ink);
+  background: color-mix(in srgb, var(--nos-ink) 88%, var(--nos-paper));
   color: var(--nos-paper);
 }
 
@@ -1909,10 +1935,9 @@ body.narrative-os-body {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 28px 20px 20px;
-  background:
-    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(169, 129, 47, 0.06) 0%, transparent 70%),
-    var(--nos-paper);
+  padding: clamp(20px, 4vh, 40px) clamp(16px, 4vw, 32px) clamp(24px, 4vh, 40px);
+  /* Quiet matte surround — no gold wash */
+  background: var(--nos-paper-deep);
 }
 
 .narrative-os-app .nos-refine-theater__empty {
@@ -1959,90 +1984,94 @@ body.narrative-os-body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 22px;
+  padding: 11px 20px;
   border: none;
   border-radius: 10px;
   background: var(--nos-oxblood-fill);
-  color: #fff;
+  color: #f5efe6;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .narrative-os-app .nos-refine-theater__cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(122, 59, 54, 0.25);
+  background: color-mix(in srgb, var(--nos-oxblood-fill) 88%, #000);
 }
 
-/* Device frames */
+/* Device frames — subtle frame, generous reading measure */
 .narrative-os-app .nos-refine-frame {
   position: relative;
   transition: width 0.35s ease, max-width 0.35s ease;
+  margin: 0 auto;
 }
 
 .narrative-os-app .nos-refine-frame--mobile {
-  width: min(320px, 100%);
+  width: min(360px, 100%);
 }
 
 .narrative-os-app .nos-refine-frame--tablet {
-  width: min(480px, 100%);
+  width: min(520px, 100%);
 }
 
 .narrative-os-app .nos-refine-frame--desktop {
-  width: min(620px, 100%);
+  width: min(42rem, 100%);
 }
 
 .narrative-os-app .nos-refine-frame__bezel {
   position: absolute;
-  inset: -12px -10px -16px;
-  border-radius: 28px;
-  background: linear-gradient(145deg, #3a3632 0%, #1e1c1a 100%);
+  inset: -10px -8px -12px;
+  border-radius: 24px;
+  background: #2a2622;
   box-shadow:
-    0 24px 48px rgba(43, 36, 32, 0.18),
-    0 4px 12px rgba(43, 36, 32, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0 12px 36px rgba(24, 20, 15, 0.12),
+    0 2px 8px rgba(24, 20, 15, 0.06);
   z-index: 0;
+  opacity: 0.92;
 }
 
 .narrative-os-app .nos-refine-frame--tablet .nos-refine-frame__bezel {
-  border-radius: 20px;
-  inset: -10px -8px -12px;
+  border-radius: 16px;
+  inset: -8px -6px -10px;
 }
 
 .narrative-os-app .nos-refine-frame__screen {
   position: relative;
   z-index: 1;
-  padding: 28px 22px 36px;
-  border-radius: 4px;
-  background: #fefcf6;
-  /* Explicit ink so app dark-theme light ink does not bleed onto light preview paper */
-  color: #2e2820;
-  border: 1px solid var(--nos-hairline);
-  box-shadow: 0 8px 32px var(--nos-shadow);
-  min-height: 360px;
+  padding: clamp(1.5rem, 3.5vw, 2.25rem) clamp(1.25rem, 3vw, 2rem) clamp(2rem, 4vw, 2.75rem);
+  border-radius: 6px;
+  /* Soft ivory page — not near-white glare */
+  background: #f0e9dc;
+  color: #2a241c;
+  border: 1px solid color-mix(in srgb, var(--nos-hairline) 80%, transparent);
+  box-shadow: 0 4px 20px rgba(24, 20, 15, 0.08);
+  min-height: min(70vh, 520px);
+  max-width: 100%;
   transition: background 0.25s ease, color 0.25s ease;
 }
 
 .narrative-os-app .nos-refine-frame--mobile .nos-refine-frame__screen {
-  border-radius: 18px;
-  padding: 24px 18px 32px;
+  border-radius: 16px;
+  padding: 1.5rem 1.15rem 2rem;
+  min-height: min(65vh, 480px);
 }
 
 .narrative-os-app .nos-refine-frame--tablet .nos-refine-frame__screen {
-  border-radius: 12px;
-  padding: 26px 22px 34px;
+  border-radius: 10px;
+  padding: 1.75rem 1.5rem 2.25rem;
 }
 
 .narrative-os-app .nos-refine-frame__screen[data-preview-theme='dark'] {
-  background: #1e1c1a;
-  color: #e8e2d8;
-  border-color: #3a3632;
+  background: #181512;
+  color: #e4dccf;
+  border-color: #2e2a26;
 }
 
 .narrative-os-app .nos-refine-frame__screen[data-preview-theme='sepia'] {
-  background: #f4ecd8;
-  color: #3d3529;
+  background: #ebe1cd;
+  color: #3a3428;
 }
 
 .narrative-os-app .nos-refine-reader__chapter {
@@ -2120,79 +2149,49 @@ body.narrative-os-body {
   margin-bottom: 0;
 }
 
-/* Motivation strip */
+/* Compact footer strip — stats + one CTA only (no dual encouragement block) */
 .narrative-os-app .nos-refine-theater__motivation {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 20px 12px;
+  gap: 12px 16px;
+  padding: 8px 18px;
   border-top: 1px solid var(--nos-hairline);
-  background: rgba(241, 233, 214, 0.65);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--nos-paper) 88%, transparent);
+  backdrop-filter: blur(10px);
+  min-height: 48px;
 }
 
 .narrative-os-app .nos-refine-momentum {
   flex: 1;
   min-width: 0;
-}
-
-.narrative-os-app .nos-refine-momentum__copy {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  color: var(--nos-brass);
-  margin-bottom: 6px;
+  align-items: center;
 }
 
-.narrative-os-app .nos-refine-momentum__copy svg {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.narrative-os-app .nos-refine-momentum__headline {
-  margin: 0;
-  font-family: 'Fraunces', var(--katha-font-reading), serif;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--nos-ink);
-  line-height: 1.3;
-}
-
-.narrative-os-app .nos-refine-momentum__sub {
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: var(--nos-ink-soft);
-  line-height: 1.35;
+/* Long copy lives only on empty state — hide in footer when preview has content */
+.narrative-os-app .nos-refine-momentum__copy {
+  display: none;
 }
 
 .narrative-os-app .nos-refine-momentum__stats {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
-  color: var(--nos-ink-faint);
-  margin-bottom: 6px;
+  gap: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--nos-ink-soft);
+  margin: 0;
 }
 
 .narrative-os-app .nos-refine-momentum__dot {
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 .narrative-os-app .nos-refine-momentum__progress {
-  height: 3px;
-  border-radius: 999px;
-  background: var(--nos-hairline);
-  overflow: hidden;
-}
-
-.narrative-os-app .nos-refine-momentum__fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--nos-brass-soft), var(--nos-brass));
-  transition: width 0.4s ease;
+  display: none;
 }
 
 .narrative-os-app .nos-refine-theater__write-cta {
@@ -2200,13 +2199,14 @@ body.narrative-os-body {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 9px 18px;
+  padding: 8px 16px;
   border: none;
   border-radius: 9px;
   background: var(--nos-ink);
   color: var(--nos-paper);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }

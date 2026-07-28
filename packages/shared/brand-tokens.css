@@ -79,15 +79,15 @@
 }
 
 /* ── Management Mode — Dashboard, Stories, Analytics, Settings ──
-   Warm paper (not pure white) — same low-glare philosophy as creation mode. */
+   Matte warm paper — no near-white cards (glare under room light). */
 :root,
 [data-katha-mode='management'] {
-  --katha-mode-bg: #f5f0e8;
-  --katha-mode-bg-warm: #efe8dc;
-  --katha-mode-surface: #f7f2e8;
-  --katha-mode-surface-raised: #faf6ef;
-  --katha-mode-border: rgba(26, 24, 20, 0.08);
-  --katha-mode-border-strong: rgba(26, 24, 20, 0.14);
+  --katha-mode-bg: #e8e0d4;
+  --katha-mode-bg-warm: #e0d6c8;
+  --katha-mode-surface: #efe6d8;
+  --katha-mode-surface-raised: #f2ebe0;
+  --katha-mode-border: rgba(26, 24, 20, 0.09);
+  --katha-mode-border-strong: rgba(26, 24, 20, 0.15);
   --katha-mode-shadow-sm: var(--katha-elevation-1);
   --katha-mode-shadow: var(--katha-elevation-2);
   --katha-mode-shadow-lg: var(--katha-elevation-3);
@@ -95,15 +95,15 @@
 }
 
 /* ── Creation Mode — Chapter Editor (low-glare paper) ──
-   Avoid near-white (#fdfaf4) pages — high luminance = eye strain under
-   room light. Target warm ivory ~L* 88–90 (Kindle “warm paper” range)
-   with deep ink for contrast without a yellow tea-stain cast. */
+   Avoid near-white pages — high luminance = eye strain under room light.
+   Target warm ivory ~L* 84–88 (Kindle “warm paper”) — slightly deeper
+   than prior to cut residual glare while keeping Telugu ink readable. */
 [data-katha-mode='creation'] {
-  --katha-mode-bg: #ddd4c4;
-  --katha-mode-bg-warm: #d4cbb9;
-  --katha-mode-surface: #e6ddcc;
-  --katha-mode-surface-raised: #ebe3d4;
-  --katha-mode-canvas: #e8e0d0;
+  --katha-mode-bg: #d6cdbc;
+  --katha-mode-bg-warm: #cec4b2;
+  --katha-mode-surface: #dfd5c4;
+  --katha-mode-surface-raised: #e4dac9;
+  --katha-mode-canvas: #e2d8c6;
   --katha-mode-border: rgba(28, 22, 16, 0.14);
   --katha-mode-border-strong: rgba(28, 22, 16, 0.22);
   --katha-mode-shadow-sm: 0 1px 3px rgba(28, 22, 16, 0.05);
@@ -118,10 +118,10 @@
 
 /* ── Reading Mode — Reader App, Gateway Preview ── */
 [data-katha-mode='reading'] {
-  --katha-mode-bg: #faf8f5;
-  --katha-mode-bg-warm: #f5f0e8;
-  --katha-mode-surface: #ffffff;
-  --katha-mode-surface-raised: #faf8f5;
+  --katha-mode-bg: #f2ebe0;
+  --katha-mode-bg-warm: #ebe3d4;
+  --katha-mode-surface: #f5efe3;
+  --katha-mode-surface-raised: #f0e9dc;
   --katha-mode-border: rgba(26, 24, 20, 0.08);
   --katha-mode-border-strong: rgba(26, 24, 20, 0.14);
   --katha-mode-shadow-sm: 0 2px 8px rgba(26, 24, 20, 0.04);

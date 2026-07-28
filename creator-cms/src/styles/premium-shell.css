@@ -16,10 +16,10 @@
   --premium-display: clamp(2.125rem, 4vw, 2.75rem);
   --premium-body: 1rem;
   --premium-muted: #6b6560;
-  /* Warm paper (not pure white) — matches editor low-glare philosophy */
-  --premium-surface: #f7f2e8;
-  --premium-surface-soft: rgba(247, 242, 232, 0.88);
-  --premium-border: rgba(26, 24, 20, 0.06);
+  /* Matte warm paper — lower luminance than near-white studio cards */
+  --premium-surface: #efe6d8;
+  --premium-surface-soft: rgba(239, 230, 216, 0.92);
+  --premium-border: rgba(26, 24, 20, 0.08);
   --premium-border-hover: rgba(196, 160, 82, 0.22);
   --premium-shadow-rest:
     0 1px 2px rgba(26, 24, 20, 0.04),
@@ -41,12 +41,12 @@
   --premium-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.42);
 }
 
-/* Shell — calmer background, less pattern noise */
+/* Shell — matte room, minimal atmosphere (no bright wash) */
 .app-shell[data-katha-mode='management'] {
-  background-color: #f7f5f2;
+  background-color: #e8e0d4;
   background-image:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(196, 160, 82, 0.06), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 95% 0%, rgba(107, 35, 56, 0.04), transparent 50%);
+    radial-gradient(ellipse 70% 40% at 8% -8%, rgba(196, 160, 82, 0.035), transparent 55%),
+    radial-gradient(ellipse 50% 30% at 96% 0%, rgba(107, 35, 56, 0.025), transparent 50%);
   background-size: 100% 100%;
   background-repeat: no-repeat;
 }

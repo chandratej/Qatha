@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import {
-  ArrowLeft, BookOpen, Feather, Leaf, Moon, PenLine, Smartphone, Sun, Tablet,
+  ArrowLeft, BookOpen, Leaf, Moon, PenLine, Smartphone, Sun, Tablet,
 } from 'lucide-react';
 import type { SceneBlock } from '../Editor/SceneSidebar';
 import type { PreviewDevice, PreviewTheme } from '../../lib/editorPrefs';
@@ -154,45 +154,52 @@ export function NarrativeRefineView({
       <header className="nos-refine-theater__header">
         <button type="button" className="nos-refine-theater__back" onClick={onBackToWrite}>
           <ArrowLeft size={15} aria-hidden />
-          {locale === 'te' ? 'ప్రివ్యూ మూసివేయండి' : t('narrativeOs.backToWrite')}
+          {locale === 'te' ? 'రాయడానికి' : t('narrativeOs.backToWrite')}
         </button>
 
         <div className="nos-refine-theater__intro">
           <p className="nos-refine-theater__eyebrow">
             <span className="nos-refine-theater__dot" aria-hidden />
-            {locale === 'te' ? 'పాఠకుల ప్రివ్యూ — ఇది మీ పాఠకులు చూసేది' : t('narrativeOs.refineEyebrow')}
+            {t('narrativeOs.refineEyebrow')}
           </p>
-          <p className="nos-refine-theater__tagline">{t('narrativeOs.refineTagline')}</p>
         </div>
 
         <div className="nos-refine-theater__controls">
           <div className="nos-refine-dock" role="group" aria-label={t('narrativeOs.refineDeviceLabel')}>
-            {DEVICES.map(({ id, Icon, labelKey }) => (
-              <button
-                key={id}
-                type="button"
-                className={`nos-refine-dock__btn${device === id ? ' active' : ''}`}
-                onClick={() => onDeviceChange(id)}
-                aria-pressed={device === id}
-              >
-                <Icon size={14} aria-hidden />
-                <span>{t(`narrativeOs.${labelKey}`)}</span>
-              </button>
-            ))}
+            {DEVICES.map(({ id, Icon, labelKey }) => {
+              const label = t(`narrativeOs.${labelKey}`);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`nos-refine-dock__btn${device === id ? ' active' : ''}`}
+                  onClick={() => onDeviceChange(id)}
+                  aria-pressed={device === id}
+                  aria-label={label}
+                  title={label}
+                >
+                  <Icon size={15} aria-hidden strokeWidth={1.75} />
+                </button>
+              );
+            })}
           </div>
           <div className="nos-refine-dock nos-refine-dock--theme" role="group" aria-label={t('narrativeOs.refineThemeLabel')}>
-            {THEMES.map(({ id, Icon, labelKey }) => (
-              <button
-                key={id}
-                type="button"
-                className={`nos-refine-dock__btn nos-refine-dock__btn--icon${resolvedTheme === id ? ' active' : ''}`}
-                onClick={() => onThemeChange(id)}
-                aria-pressed={resolvedTheme === id}
-                title={t(`narrativeOs.${labelKey}`)}
-              >
-                <Icon size={14} aria-hidden />
-              </button>
-            ))}
+            {THEMES.map(({ id, Icon, labelKey }) => {
+              const label = t(`narrativeOs.${labelKey}`);
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={`nos-refine-dock__btn nos-refine-dock__btn--icon${resolvedTheme === id ? ' active' : ''}`}
+                  onClick={() => onThemeChange(id)}
+                  aria-pressed={resolvedTheme === id}
+                  aria-label={label}
+                  title={label}
+                >
+                  <Icon size={15} aria-hidden strokeWidth={1.75} />
+                </button>
+              );
+            })}
           </div>
         </div>
       </header>
@@ -247,18 +254,7 @@ export function NarrativeRefineView({
 
       <footer className="nos-refine-theater__motivation nos-refine-theater__bottom">
         <div className="nos-refine-momentum">
-          <div className="nos-refine-momentum__copy">
-            <Feather size={15} aria-hidden />
-            <div>
-              <p className="nos-refine-momentum__headline">
-                {locale === 'te'
-                  ? 'ప్రతి గొప్ప కథ ఒక వాక్యంతో మొదలవుతుంది. మీరు ఇప్పటికే ప్రారంభించారు.'
-                  : encouragement.headline}
-              </p>
-              <p className="nos-refine-momentum__sub">{encouragement.subline}</p>
-            </div>
-          </div>
-          {totalWords > 0 && (
+          {totalWords > 0 ? (
             <div className="nos-refine-momentum__stats" aria-label={t('narrativeOs.refineStatsLabel')}>
               <span>{totalWords.toLocaleString()} {t('narrativeOs.refineWords')}</span>
               <span className="nos-refine-momentum__dot" aria-hidden>·</span>
@@ -266,11 +262,15 @@ export function NarrativeRefineView({
               <span className="nos-refine-momentum__dot" aria-hidden>·</span>
               <span>{filledScenes}/{scenes.length} {t('narrativeOs.refineScenes')}</span>
             </div>
+          ) : (
+            <div className="nos-refine-momentum__stats" aria-hidden>
+              <span>{t('narrativeOs.refineEmptyTitle')}</span>
+            </div>
           )}
         </div>
         <button type="button" className="nos-refine-theater__write-cta" onClick={onContinueWriting}>
           <PenLine size={15} aria-hidden />
-          {locale === 'te' ? 'రాయడం కొనసాగించండి' : t('narrativeOs.refineKeepWriting')}
+          {t('narrativeOs.refineKeepWriting')}
         </button>
       </footer>
     </div>

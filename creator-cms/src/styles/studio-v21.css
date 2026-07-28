@@ -4,14 +4,14 @@
  */
 
 .sv21 {
-  --sv21-bg: #faf7f0;
-  --sv21-surface: #f7f2e8;
-  --sv21-surface-1: #f0e9dc;
-  --sv21-border: #e5dfd0;
-  --sv21-border-strong: #d8cfb8;
-  --sv21-ink: #2b221a;
-  --sv21-ink-soft: #6b5f4f;
-  --sv21-ink-muted: #9c8f7a;
+  --sv21-bg: #e8e0d4;
+  --sv21-surface: #efe6d8;
+  --sv21-surface-1: #e4dccf;
+  --sv21-border: #d8cfb8;
+  --sv21-border-strong: #cfc4ae;
+  --sv21-ink: #2a241c;
+  --sv21-ink-soft: #5c554c;
+  --sv21-ink-muted: #7a7268;
   --sv21-maroon: #7a2e2e;
   --sv21-maroon-dark: #5c2222;
   --sv21-gold: #b8863b;
@@ -812,5 +812,5 @@
 
 /* Override premium-main background when sv21 page is active */
 .premium-main:has(.sv21) {
-  background: var(--sv21-bg, #faf7f0);
+  background: var(--sv21-bg, #e8e0d4);
 }
