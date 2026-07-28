@@ -33,7 +33,7 @@ function statusLabel(status: string | undefined, t: (k: import('../lib/studioLoc
 }
 
 export function Dashboard() {
-  const { t, locale } = useLocale();
+  const { t } = useLocale();
   const { user, isMockMode } = useAuth();
   const { persona, lifecycleStage, loading: personaLoading } = useCreatorPersona();
   const navigate = useNavigate();

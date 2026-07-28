@@ -81,6 +81,14 @@
   font-family: 'Noto Sans Telugu', var(--font-ui), sans-serif;
 }
 .sv21__title--sm { font-size: 20px; }
+
+/* Title loading placeholder (Media Library / Story Bible — avoid literal "Story" flash) */
+.sv21__title-skeleton {
+  display: block;
+  width: min(280px, 55vw);
+  height: 1.15em;
+  border-radius: 8px;
+}
 .sv21__subtitle {
   font-size: 13px;
   color: var(--sv21-ink-soft);

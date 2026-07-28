@@ -37,7 +37,7 @@ export function Analytics() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { isMockMode } = useAuth();
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
 
   const fromPath = (location.state as { from?: string } | null)?.from
     ?? searchParams.get('from')
@@ -235,7 +235,7 @@ export function Analytics() {
             <h2 id="analytics-trust-title" className="dashboard-panel__title">
               {t('analytics.storyTrust')}
               {spiScore != null && (
-                <span className="analytics-spi-score" title="Story Performance Index">
+                <span className="analytics-spi-score" title={t('analytics.spiTitle')}>
                   {' '}· SPI {Number(spiScore).toFixed(1)}
                 </span>
               )}
@@ -266,9 +266,21 @@ export function Analytics() {
             <ul className="monetization-spi-list monetization-spi-list--compact">
               {SPI_WEIGHTS.map((w) => {
                 const live = spiComponents?.[w.id];
+                const spiLabelKey = (
+                  {
+                    reader_retention: 'analytics.spiRetention',
+                    completion_rate: 'analytics.spiCompletion',
+                    reader_satisfaction: 'analytics.spiSatisfaction',
+                    reader_growth: 'analytics.spiGrowth',
+                    publishing_consistency: 'analytics.spiConsistency',
+                    policy_quality: 'analytics.spiPolicy',
+                  } as const
+                )[w.id] ?? null;
                 return (
                   <li key={w.id} className="monetization-spi-item">
-                    <span className="monetization-spi-item__label">{w.label}</span>
+                    <span className="monetization-spi-item__label">
+                      {spiLabelKey ? t(spiLabelKey) : w.label}
+                    </span>
                     <div className="monetization-spi-item__bar-wrap">
                       <div
                         className="monetization-spi-item__bar wc-progress-delight"
@@ -276,7 +288,9 @@ export function Analytics() {
                       />
                     </div>
                     <span className="monetization-spi-item__pct">
-                      {live != null ? `${Math.round(Number(live))}` : `${w.weightPct}% wt`}
+                      {live != null
+                        ? `${Math.round(Number(live))}`
+                        : `${w.weightPct}% ${t('analytics.spiWeight')}`}
                     </span>
                   </li>
                 );
@@ -297,9 +311,9 @@ export function Analytics() {
                 <YAxis yAxisId="right" orientation="right" domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} />
                 <Tooltip contentStyle={{ background: 'var(--dash-surface)', border: '1px solid var(--dash-border)', borderRadius: 12 }} />
                 <Legend />
-                <Bar yAxisId="left" dataKey="reads" name="Reads" fill="var(--dash-gold-soft)" stroke="var(--gold-dark, var(--dash-gold))" />
-                <Line yAxisId="right" type="monotone" dataKey="retention" name="Retention %" stroke="var(--accent-sage)" strokeWidth={2} />
-                <Area yAxisId="left" type="monotone" dataKey="revenue" name="Revenue ₹" fill="var(--accent-wine-soft)" stroke="var(--accent-wine)" />
+                <Bar yAxisId="left" dataKey="reads" name={t('analytics.seriesReads')} fill="var(--gold-dark, var(--dash-gold, #7a6340))" stroke="var(--gold-dark, var(--dash-gold))" />
+                <Line yAxisId="right" type="monotone" dataKey="retention" name={t('analytics.seriesRetention')} stroke="var(--accent-sage)" strokeWidth={2} />
+                <Area yAxisId="left" type="monotone" dataKey="revenue" name={t('analytics.seriesRevenue')} fill="var(--accent-wine-soft)" stroke="var(--accent-wine)" />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -331,9 +345,9 @@ export function Analytics() {
               {popularChapters.map((ch, i) => (
                 <li key={ch.chapter_number} className="top-stories__item">
                   <span className="top-stories__rank">{i + 1}</span>
-                  <span>Chapter {ch.chapter_number}</span>
+                  <span>{t('analytics.chapterLabel')} {ch.chapter_number}</span>
                   <span className="top-stories__reads">
-                    {ch.total_views.toLocaleString('en-IN')} reads · {ch.completion_rate}% retention
+                    {ch.total_views.toLocaleString(locale === 'te' ? 'te-IN' : 'en-IN')} {t('analytics.readsWord')} · {ch.completion_rate}% {t('analytics.retentionWord')}
                   </span>
                 </li>
               ))}
@@ -347,7 +361,7 @@ export function Analytics() {
                 <div key={insight.chapter_number} className="cms-insight-row">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     <AlertTriangle size={16} color="var(--katha-turmeric)" aria-hidden />
-                    <strong>Chapter {insight.chapter_number}</strong>
+                    <strong>{t('analytics.chapterLabel')} {insight.chapter_number}</strong>
                     <span style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
                       −{insight.view_drop_pct}% {t('analytics.readersDrop')}
                     </span>

@@ -129,13 +129,13 @@ export function NarrativeInspectorPanel({
 
       {tab === 'people' && (
         <div className="nos-insp-body nos-insp-body--scroll" role="tabpanel" id="nos-insp-panel-people" aria-labelledby="nos-insp-tab-people">
-          {peopleSlot ?? <p className="nos-empty-hint">No characters linked to this scene.</p>}
+          {peopleSlot ?? <p className="nos-empty-hint">{t('narrativeOs.inspectorEmptyPeople')}</p>}
         </div>
       )}
 
       {tab === 'notes' && (
         <div className="nos-insp-body nos-insp-body--scroll" role="tabpanel" id="nos-insp-panel-notes" aria-labelledby="nos-insp-tab-notes">
-          {notesSlot ?? <p className="nos-empty-hint">No author notes for this scene.</p>}
+          {notesSlot ?? <p className="nos-empty-hint">{t('narrativeOs.inspectorEmptyNotes')}</p>}
         </div>
       )}
 

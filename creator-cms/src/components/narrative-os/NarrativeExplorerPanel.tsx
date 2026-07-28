@@ -259,7 +259,7 @@ export function NarrativeExplorerPanel({
       <div className="nos-chapter-head">
         <span className="nos-chapter-head__title">{chapterTitle || `Chapter ${chapterNum}`}</span>
         <span className="nos-chapter-head__meta">
-          {locale === 'te' ? 'సీన్లు' : 'Scenes'} · {scenes.length}
+          {t('narrativeOs.scenesCount')} · {scenes.length}
         </span>
       </div>
       <div className="seg">
@@ -278,11 +278,11 @@ export function NarrativeExplorerPanel({
             <PhoneticTextInput
               ref={searchRef}
               type="search"
-              placeholder="Search scenes…"
+              placeholder={t('narrativeOs.searchScenes')}
               value={searchTerm}
               onChange={setSearchTerm}
               phoneticLive={phoneticLive}
-              aria-label="Search scenes"
+              aria-label={t('narrativeOs.searchScenes')}
             />
           </div>
           {searchTerm.trim() && suggestions.length > 0 && (
@@ -298,7 +298,9 @@ export function NarrativeExplorerPanel({
           )}
           <div className="scene-list">
             {list.length === 0 ? (
-              <p className="nos-empty-hint">{searchTerm.trim() ? 'No matches' : 'No scenes yet'}</p>
+              <p className="nos-empty-hint">
+                {searchTerm.trim() ? t('narrativeOs.noMatches') : t('narrativeOs.noScenes')}
+              </p>
             ) : searchTerm.trim() ? (
               list.map((scene) => {
                 const idx = scenes.findIndex((s) => s.id === scene.id);
@@ -339,7 +341,7 @@ export function NarrativeExplorerPanel({
           </div>
           {!readOnly && (
             <button type="button" className="nos-add-scene" onClick={onAddScene}>
-              <Plus size={14} /> Add scene
+              <Plus size={14} /> {t('narrativeOs.addScene')}
             </button>
           )}
         </div>
@@ -356,7 +358,7 @@ export function NarrativeExplorerPanel({
                   onClick={() => onSwitchScene(scene.id)}
                   onDoubleClick={readOnly ? undefined : (e) => {
                     e.preventDefault();
-                    const next = window.prompt('Beat name', beat);
+                    const next = window.prompt(t('narrativeOs.beatName'), beat);
                     if (next?.trim()) onUpdateBeatName(scene.id, next.trim());
                   }}
                 >

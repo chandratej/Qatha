@@ -9,7 +9,7 @@ import { friendlyFeatureError, isSchemaTableMissingMessage, SCHEMA_FEATURE_PENDI
 export function MediaLibrary() {
   const { t } = useLocale();
   const { storyId = '' } = useParams();
-  const [storyTitle, setStoryTitle] = useState('Story');
+  const [storyTitle, setStoryTitle] = useState<string | null>(null);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -85,7 +85,13 @@ export function MediaLibrary() {
           <Image size={14} aria-hidden />
           {t('media.eyebrow')}
         </p>
-        <h1 className="sv21__title sv21__title--sm" lang="te">{storyTitle}</h1>
+        {storyTitle ? (
+          <h1 className="sv21__title sv21__title--sm" lang="te">{storyTitle}</h1>
+        ) : (
+          <h1 className="sv21__title sv21__title--sm" aria-busy="true">
+            <span className="dashboard-skeleton sv21__title-skeleton" aria-label={t('media.titleLoading')} />
+          </h1>
+        )}
         <p className="sv21__subtitle">{t('media.subtitle')}</p>
       </div>
 

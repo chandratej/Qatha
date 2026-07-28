@@ -149,6 +149,13 @@
   --katha-ink: #e8e6e3;
   --katha-ink-soft: #b8b5b0;
   --katha-ink-muted: #7a7874;
+  /*
+   * Maroon as dark-mode foreground text (active nav, badges).
+   * Brand #6b2338 sits ~1.4:1 on night surfaces — dusty rose clears AA+.
+   * Keep solid fills on --katha-maroon-deep / component fill tokens.
+   */
+  --katha-maroon: #e0a8b6;
+  --katha-maroon-soft: #ebbcc7;
   --katha-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
   --katha-elevation-2: 0 2px 12px rgba(0, 0, 0, 0.28);
   --katha-elevation-3: 0 8px 28px rgba(0, 0, 0, 0.36);
@@ -168,6 +175,8 @@
   --katha-mode-ink: #f4efe4;
   --katha-mode-ink-soft: #e4dccf;
   --katha-mode-ink-muted: #c4b9a8;
+  --katha-maroon: #e0a8b6;
+  --katha-maroon-soft: #ebbcc7;
 }
 
 @media (prefers-reduced-motion: reduce) {

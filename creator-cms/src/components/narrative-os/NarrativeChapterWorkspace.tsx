@@ -457,11 +457,19 @@ export function NarrativeChapterWorkspace({
             findSceneMatches={findMatches}
           />
         ) : (
-          <div className="canvas narrative-empty-scene" style={editorComfortStyle}>
-            <p className="narrative-empty-scene__title">{t('narrativeOs.emptyScene')}</p>
+          <div
+            className={`canvas narrative-empty-scene${phase === 'structure' ? ' narrative-empty-scene--structure' : ''}`}
+            style={editorComfortStyle}
+          >
+            <p className="narrative-empty-scene__title">
+              {phase === 'structure' ? t('narrativeOs.emptyStructureTitle') : t('narrativeOs.emptyScene')}
+            </p>
+            {phase === 'structure' && (
+              <p className="narrative-empty-scene__hint">{t('narrativeOs.emptyStructureHint')}</p>
+            )}
             {!readOnly && (
               <button type="button" className="narrative-empty-scene__btn" onClick={onAddScene}>
-                {t('narrativeOs.addFirstScene')}
+                {phase === 'structure' ? t('narrativeOs.addScene') : t('narrativeOs.addFirstScene')}
               </button>
             )}
           </div>

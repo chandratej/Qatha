@@ -30,7 +30,7 @@ export function StoryBible() {
   const { t } = useLocale();
   const { storyId = '' } = useParams();
   const [tab, setTab] = useState<Tab>('characters');
-  const [storyTitle, setStoryTitle] = useState('Story');
+  const [storyTitle, setStoryTitle] = useState<string | null>(null);
   const [characters, setCharacters] = useState<StoryCharacter[]>([]);
   const [lore, setLore] = useState<StoryLoreEntry[]>([]);
   const [members, setMembers] = useState<StoryMemberSummary[]>([]);
@@ -184,12 +184,13 @@ export function StoryBible() {
     try {
       const { glossary } = await api.getStoryGlossary(storyId);
       const lines = glossary.map((g) => `${g.term}: ${g.definition || '(no definition)'}`);
-      const text = [`# Glossary — ${storyTitle}`, '', ...lines].join('\n');
+      const title = storyTitle?.trim() || 'story';
+      const text = [`# Glossary — ${title}`, '', ...lines].join('\n');
       const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${storyTitle.replace(/\s+/g, '-').toLowerCase()}-glossary.txt`;
+      a.download = `${title.replace(/\s+/g, '-').toLowerCase()}-glossary.txt`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -218,7 +219,13 @@ export function StoryBible() {
             <BookMarked size={14} aria-hidden />
             {t('storyBible.eyebrow')}
           </p>
-          <h1 className="sv21__title sv21__title--sm" lang="te">{storyTitle}</h1>
+          {storyTitle ? (
+            <h1 className="sv21__title sv21__title--sm" lang="te">{storyTitle}</h1>
+          ) : (
+            <h1 className="sv21__title sv21__title--sm" aria-busy="true">
+              <span className="dashboard-skeleton sv21__title-skeleton" aria-label={t('storyBible.titleLoading')} />
+            </h1>
+          )}
           <p className="sv21__subtitle">{t('storyBible.subtitle')}</p>
         </div>
       </div>

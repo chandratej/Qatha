@@ -76,7 +76,7 @@ function OpsCalendar({
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  const monthLabel = month.toLocaleString(te ? 'en-IN' : undefined, { month: 'long', year: 'numeric' });
+  const monthLabel = month.toLocaleString(te ? 'te-IN' : 'en-IN', { month: 'long', year: 'numeric' });
   const weekdays = te ? TE_WEEKDAYS : EN_WEEKDAYS;
 
   return (

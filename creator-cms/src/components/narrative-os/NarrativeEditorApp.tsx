@@ -32,6 +32,14 @@ const PHASE_LABEL_KEYS: Record<WritingPhase, import('../../lib/studioLocale').St
   publish: 'narrativeOs.phasePublish',
 };
 
+const PHASE_SHORT_KEYS: Record<WritingPhase, import('../../lib/studioLocale').StudioStringKey> = {
+  think: 'narrativeOs.phaseThinkShort',
+  structure: 'narrativeOs.phaseStructureShort',
+  write: 'narrativeOs.phaseWriteShort',
+  refine: 'narrativeOs.phaseRefineShort',
+  publish: 'narrativeOs.phasePublishShort',
+};
+
 export interface NarrativeEditorAppProps {
   children: ReactNode;
   storyTitle: string;
@@ -531,7 +539,8 @@ export function NarrativeEditorApp({
             disabled={id === 'publish' && (publishDisabled || publishing)}
             aria-current={phase === id ? 'step' : undefined}
           >
-            {t(PHASE_LABEL_KEYS[id])}
+            <span className="bn-label bn-label--full">{t(PHASE_LABEL_KEYS[id])}</span>
+            <span className="bn-label bn-label--short">{t(PHASE_SHORT_KEYS[id])}</span>
           </button>
         ))}
       </nav>

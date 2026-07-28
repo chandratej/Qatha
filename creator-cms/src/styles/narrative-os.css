@@ -12,7 +12,10 @@
   --nos-ink-faint: #4a4338;
   --nos-brass: #7a5c28;
   --nos-brass-soft: #8a6b32;
+  /* Text/accent maroon — remaps light in dark theme for AA on night paper */
   --nos-oxblood: #5a1d2e;
+  /* Solid fills (CTAs, spines) — stay deep so white labels keep ≥4.5:1 */
+  --nos-oxblood-fill: #5a1d2e;
   --nos-sage: #4a5c48;
   --nos-hairline: rgba(24, 20, 15, 0.14);
   --nos-line: var(--nos-hairline);
@@ -45,6 +48,8 @@
   --nos-brass-soft: #e0c88a;
   /* Match dark --katha-maroon: oxblood-as-text must clear AA on night paper */
   --nos-oxblood: #e0a8b6;
+  /* Keep fill deep — white-on-rose fails when text token is lightened */
+  --nos-oxblood-fill: #5a1d2e;
   --nos-sage: #8aab90;
   --nos-hairline: rgba(244, 239, 228, 0.16);
   --nos-line: var(--nos-hairline);
@@ -152,17 +157,20 @@ body.narrative-os-body {
 
 .narrative-os-app .crumb {
   position: absolute;
-  left: 50%;
+  /* Inset from chrome so we use spare topbar width without overlapping actions.
+     Previous center+max-width caps (48vw/520px, chapter 180px) over-truncated Telugu. */
+  left: max(132px, 11%);
+  right: max(168px, 13%);
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateY(-50%);
+  width: auto;
+  max-width: none;
   font-size: 12px;
   color: var(--nos-ink-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  /* Use spare topbar width — previous min(48vw, 520px) over-truncated Telugu titles */
-  max-width: min(62vw, 760px);
   min-width: 0;
   padding: 0 8px;
   opacity: 0;
@@ -203,7 +211,7 @@ body.narrative-os-body {
 .narrative-os-app .crumb .nos-chapter-title .katha-inline-title {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: min(36vw, 320px);
+  max-width: min(44vw, 440px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -254,13 +262,13 @@ body.narrative-os-body {
 }
 
 .narrative-os-app .topbar-btn--primary {
-  background: var(--nos-oxblood);
-  border-color: var(--nos-oxblood);
+  background: var(--nos-oxblood-fill);
+  border-color: var(--nos-oxblood-fill);
   color: #fff;
 }
 
 .narrative-os-app .topbar-btn--primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--nos-oxblood) 88%, #000);
+  background: color-mix(in srgb, var(--nos-oxblood-fill) 88%, #000);
   color: #fff;
 }
 
@@ -339,7 +347,7 @@ body.narrative-os-body {
 
 .narrative-os-app .spine.mode-novel { background: var(--nos-ink-faint); }
 .narrative-os-app .spine.mode-chat { background: var(--nos-sage); }
-.narrative-os-app .spine.mode-letter { background: var(--nos-oxblood); }
+.narrative-os-app .spine.mode-letter { background: var(--nos-oxblood-fill); }
 .narrative-os-app .spine.mode-choice { background: var(--nos-brass); }
 
 .narrative-os-app .spine-peek {
@@ -876,6 +884,14 @@ body.narrative-os-body {
   font-size: 1.25rem;
   color: var(--nos-ink-soft);
   margin: 0;
+}
+
+.narrative-os-app .narrative-empty-scene__hint {
+  max-width: 36ch;
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--nos-ink-faint);
 }
 
 .narrative-os-app .narrative-empty-scene__btn {
@@ -1625,6 +1641,13 @@ body.narrative-os-body {
   transition: opacity 0.25s ease;
 }
 
+/* Empty structure: full opacity + interactive CTA (not a dead dimmed void) */
+.narrative-os-app.mode-structure .stage .canvas.narrative-empty-scene,
+.narrative-os-app.mode-structure .stage .canvas.narrative-empty-scene--structure {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .narrative-os-app .nos-mode-surface {
   width: 100%;
   max-width: var(--manuscript-column-width);
@@ -1639,6 +1662,15 @@ body.narrative-os-body {
   .narrative-os-app .narrative-stage-shell {
     width: min(90vw, var(--manuscript-column-width));
   }
+}
+
+/* Phase labels: full on desktop, short on narrow (defaults before media query) */
+.narrative-os-app .bn-label--short {
+  display: none;
+}
+
+.narrative-os-app .bn-label--full {
+  display: inline;
 }
 
 @media (max-width: 767px) {
@@ -1657,6 +1689,54 @@ body.narrative-os-body {
 
   .narrative-os-app .manuscript .ql-editor {
     font-size: min(var(--editor-font-size, 1.1875rem), 1.125rem) !important;
+  }
+
+  /* Crumb: tighter insets so titles use spare width without colliding chrome */
+  .narrative-os-app .crumb {
+    left: max(96px, 8%);
+    right: max(108px, 10%);
+  }
+
+  .narrative-os-app .crumb .nos-crumb-scene {
+    display: none;
+  }
+
+  .narrative-os-app .topbar {
+    padding: 0 10px;
+  }
+
+  .narrative-os-app .topbar-right {
+    gap: 4px;
+  }
+
+  /* Phase stepper: fit narrow viewports */
+  .narrative-os-app .bottomnav {
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .narrative-os-app .bn-item {
+    padding: 6px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+    flex: none;
+  }
+
+  .narrative-os-app .bn-label--full {
+    display: none;
+  }
+
+  .narrative-os-app .bn-label--short {
+    display: inline;
+  }
+
+  /* Structure explorer as full-width drawer on phone */
+  .narrative-os-app .panel {
+    width: min(100vw, 360px);
+    max-width: 100vw;
   }
 }
 
@@ -1882,7 +1962,7 @@ body.narrative-os-body {
   padding: 11px 22px;
   border: none;
   border-radius: 10px;
-  background: var(--nos-oxblood);
+  background: var(--nos-oxblood-fill);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
@@ -2132,7 +2212,7 @@ body.narrative-os-body {
 }
 
 .narrative-os-app .nos-refine-theater__write-cta:hover {
-  background: var(--nos-oxblood);
+  background: var(--nos-oxblood-fill);
   transform: translateY(-1px);
 }
 
@@ -2375,7 +2455,7 @@ body.narrative-os-body {
   padding: 12px 24px;
   border: none;
   border-radius: 10px;
-  background: var(--nos-oxblood);
+  background: var(--nos-oxblood-fill);
   color: #fff;
   font-size: 0.9375rem;
   font-weight: 600;

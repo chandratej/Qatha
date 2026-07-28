@@ -200,6 +200,21 @@ export type StudioStringKey =
   | 'narrativeOs.refineStatsLabel'
   | 'narrativeOs.refineFindHint'
   | 'narrativeOs.refinePreview'
+  | 'narrativeOs.emptyStructureTitle'
+  | 'narrativeOs.emptyStructureHint'
+  | 'narrativeOs.addScene'
+  | 'narrativeOs.noScenes'
+  | 'narrativeOs.noMatches'
+  | 'narrativeOs.searchScenes'
+  | 'narrativeOs.scenesCount'
+  | 'narrativeOs.beatName'
+  | 'narrativeOs.inspectorEmptyPeople'
+  | 'narrativeOs.inspectorEmptyNotes'
+  | 'narrativeOs.phaseThinkShort'
+  | 'narrativeOs.phaseStructureShort'
+  | 'narrativeOs.phaseWriteShort'
+  | 'narrativeOs.phaseRefineShort'
+  | 'narrativeOs.phasePublishShort'
   | 'stories.prideTitle'
   | 'stories.prideText'
   | 'notifications.eyebrow'
@@ -491,7 +506,23 @@ export type StudioStringKey =
   | 'analytics.popularChapters'
   | 'analytics.dropOffInsights'
   | 'analytics.readersDrop'
+  | 'analytics.seriesReads'
+  | 'analytics.seriesRetention'
+  | 'analytics.seriesRevenue'
+  | 'analytics.chapterLabel'
+  | 'analytics.readsWord'
+  | 'analytics.retentionWord'
+  | 'analytics.spiTitle'
+  | 'analytics.spiWeight'
+  | 'analytics.spiRetention'
+  | 'analytics.spiCompletion'
+  | 'analytics.spiSatisfaction'
+  | 'analytics.spiGrowth'
+  | 'analytics.spiConsistency'
+  | 'analytics.spiPolicy'
   | 'media.eyebrow'
+  | 'media.titleLoading'
+  | 'storyBible.titleLoading'
   | 'media.subtitle'
   | 'media.uploadAsset'
   | 'media.attribution'
@@ -501,6 +532,30 @@ export type StudioStringKey =
   | 'media.empty'
   | 'media.emptyV21'
   | 'media.dropzoneHint'
+  | 'legal.title'
+  | 'legal.intro'
+  | 'legal.grievanceTitle'
+  | 'legal.grievanceEmail'
+  | 'legal.grievanceBody'
+  | 'legal.privacyTitle'
+  | 'legal.privacyBody'
+  | 'legal.agreementTitle'
+  | 'legal.agreementIp'
+  | 'legal.agreementLicense'
+  | 'legal.agreementNoCoins'
+  | 'legal.agreementCounsel'
+  | 'legal.royaltyTitle'
+  | 'legal.royaltyBody'
+  | 'legal.tierCol'
+  | 'legal.shareCol'
+  | 'legal.purposeCol'
+  | 'legal.preMonetization'
+  | 'legal.spiTitle'
+  | 'legal.spiIntro'
+  | 'legal.spiBody'
+  | 'legal.paymentsTitle'
+  | 'legal.paymentsBody'
+  | 'legal.backToStudio'
   | 'storyBible.eyebrow'
   | 'storyBible.subtitle'
   | 'storyBible.characters'
@@ -1187,6 +1242,21 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'narrativeOs.refineThemeDark': 'డార్క్',
     'narrativeOs.refineStartWriting': 'రాయడం ప్రారంభించండి',
     'narrativeOs.refineKeepWriting': 'రాయడం కొనసాగించండి',
+    'narrativeOs.emptyStructureTitle': 'ఇంకా నిర్మాణం లేదు',
+    'narrativeOs.emptyStructureHint': 'మీ అధ్యాయాన్ని సీన్లుగా విభజించండి — కథ ఎలా కదులుతుందో ఇక్కడే చూస్తారు.',
+    'narrativeOs.addScene': 'సీన్ జోడించండి',
+    'narrativeOs.noScenes': 'ఇంకా సీన్లు లేవు',
+    'narrativeOs.noMatches': 'సరిపోలికలు లేవు',
+    'narrativeOs.searchScenes': 'సీన్లు వెతకండి…',
+    'narrativeOs.scenesCount': 'సీన్లు',
+    'narrativeOs.beatName': 'బీట్ పేరు',
+    'narrativeOs.inspectorEmptyPeople': 'ఈ సీన్‌కు పాత్రలు లింక్ కాలేదు.',
+    'narrativeOs.inspectorEmptyNotes': 'ఈ సీన్‌కు రచయిత నోట్స్ లేవు.',
+    'narrativeOs.phaseThinkShort': 'ఆలో',
+    'narrativeOs.phaseStructureShort': 'నిర్మ',
+    'narrativeOs.phaseWriteShort': 'రాయ',
+    'narrativeOs.phaseRefineShort': 'పరిష్క',
+    'narrativeOs.phasePublishShort': 'ప్రచు',
     'narrativeOs.refineUntitled': 'శీర్షిక లేని అధ్యాయం',
     'narrativeOs.refineWords': 'పదాలు',
     'narrativeOs.refineMinRead': 'నిమిషాల చదవడం',
@@ -1487,7 +1557,23 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'analytics.popularChapters': 'జనాదరణ పొందిన అధ్యాయాలు',
     'analytics.dropOffInsights': 'డ్రాప్-ఆఫ్ అంతర్దృష్టి',
     'analytics.readersDrop': 'పాఠకులు',
-    'media.eyebrow': 'మీడియా లైబ్రరీ · Media Library',
+    'analytics.seriesReads': 'చదవడాలు',
+    'analytics.seriesRetention': 'నిలుపుదల %',
+    'analytics.seriesRevenue': 'ఆదాయం ₹',
+    'analytics.chapterLabel': 'అధ్యాయం',
+    'analytics.readsWord': 'చదవడాలు',
+    'analytics.retentionWord': 'నిలుపుదల',
+    'analytics.spiTitle': 'కథా పనితీరు సూచిక (SPI)',
+    'analytics.spiWeight': 'బరువు',
+    'analytics.spiRetention': 'పాఠకుల నిలుపుదల',
+    'analytics.spiCompletion': 'పూర్తి రేటు',
+    'analytics.spiSatisfaction': 'పాఠకుల సంతృప్తి',
+    'analytics.spiGrowth': 'పాఠకుల వృద్ధి',
+    'analytics.spiConsistency': 'ప్రచురణ స్థిరత్వం',
+    'analytics.spiPolicy': 'విధానం & నాణ్యత',
+    'media.eyebrow': 'మీడియా లైబ్రరీ',
+    'media.titleLoading': 'కథ లోడ్ అవుతోంది…',
+    'storyBible.titleLoading': 'కథ లోడ్ అవుతోంది…',
     'media.subtitle': 'కవర్ చిత్రాలు, చిత్రీకరణలు, రిఫరెన్స్ ఆసెట్లు — ప్రచురణకు సిద్ధంగా ఉంచండి. ప్రతి చిత్రానికి క్రెడిట్ మరియు లైసెన్స్ జోడించండి.',
     'media.uploadAsset': 'ఆసెట్ అప్‌లోడ్',
     'media.attribution': 'క్రెడిట్ (కళాకారుడు, మూలం)',
@@ -1497,7 +1583,31 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'media.empty': 'ఇంకా మీడియా లేదు — కవర్లు మరియు చిత్రీకరణలు అప్‌లోడ్ చేయండి.',
     'media.emptyV21': 'ఇంకా మీడియా లేదు — కవర్లు మరియు చిత్రీకరణలు అప్‌లోడ్ చేయండి, అవి ఇక్కడ గ్రిడ్‌గా కనిపిస్తాయి.',
     'media.dropzoneHint': 'ఇక్కడ క్లిక్ చేయండి లేదా చిత్రాన్ని లాగి వదలండి',
-    'storyBible.eyebrow': 'కథా బైబిల్ · Story Bible',
+    'legal.title': 'చట్టం & పారదర్శకత',
+    'legal.intro': 'కథ తెలుగు సీరియలైజ్డ్ కల్పనకు ఉత్తమ ప్లాట్‌ఫామ్‌ను నిర్మిస్తోంది — మీరు నిజంగా చదవగలిగే ఒప్పందాలు మరియు ఆర్థికాలతో.',
+    'legal.grievanceTitle': 'గ్రీవెన్స్ అధికారి',
+    'legal.grievanceEmail': 'ఇమెయిల్',
+    'legal.grievanceBody': 'గుర్తింపు లక్ష్యం: 72 గంటలు. కంటెంట్, ఖాతా, చెల్లింపు ఫిర్యాదులు స్వాగతం. నియమిత అధికారి: స్థాపక బృందం (లాంచ్‌లో పేరు ప్రచురిస్తాం).',
+    'legal.privacyTitle': 'గోప్యత (DPDP)',
+    'legal.privacyBody': 'మేము ఖాతా, పరికరం, చదివే ఎంగేజ్‌మెంట్, మరియు (రచయితలకు) చెల్లింపు డేటాను కథ నడపడానికి, Razorpay ద్వారా సబ్‌స్క్రిప్షన్లు ప్రాసెస్ చేయడానికి, Story Trust / రాయల్టీలు లెక్కించడానికి మాత్రమే సేకరిస్తాము. పూర్తి విధానం ప్రాడక్ట్ రిపోలోని PRIVACY_POLICY మరియు సైన్‌అప్‌లోని సమ్మతి.',
+    'legal.agreementTitle': 'రచయిత ఒప్పందం',
+    'legal.agreementIp': 'మీ రచనకు IP యాజమాన్యం మీదే ఉంటుంది.',
+    'legal.agreementLicense': 'కథ ప్లాట్‌ఫామ్‌పై హోస్ట్ చేసి మానిటైజ్ చేయడానికి పరిమిత లైసెన్స్ పొందుతుంది.',
+    'legal.agreementNoCoins': 'మానిటైజేషన్‌కు కాయిన్లు, యాడ్స్ లేదా ఫాలోయర్ గేట్లు లేవు.',
+    'legal.agreementCounsel': 'నెట్‌వర్క్ కాని రచయిత కోహార్ట్‌లకు ముందు న్యాయ సలహాదారు ఆమోదం అవసరం.',
+    'legal.royaltyTitle': 'రచయిత వాటా లాడర్ (DEC-006)',
+    'legal.royaltyBody': 'Performing వద్ద బేస్ వాటా: {pct}%. Story Trustతో పెరుగుతుంది — Apex వద్ద 60% వరకు. చెల్లింపు సమయంలో లెడ్జర్‌లో స్నాప్‌షాట్.',
+    'legal.tierCol': 'టైర్',
+    'legal.shareCol': 'రచయిత వాటా',
+    'legal.purposeCol': 'ఉద్దేశం',
+    'legal.preMonetization': '— (మానిటైజేషన్ ముందు)',
+    'legal.spiTitle': 'Story Trust / SPI ఫార్ములా (DEC-021)',
+    'legal.spiIntro': 'SPI అనేది లైవ్ అధ్యాయ విశ్లేషణల నుండి 0–100 స్కోరు — వానిటీ బ్యాడ్జ్ కాదు. బరువులు:',
+    'legal.spiBody': 'Trust స్థాయి SPI స్కోరు (మరియు స్థిరత్వ విండో) నుండి మ్యాప్ అవుతుంది. మానిటైజేషన్ అర్హత Performing నుండి ప్రారంభం. రచయితలు Creator Studio Analytics నుండి SPIని మళ్లీ లెక్కించవచ్చు.',
+    'legal.paymentsTitle': 'చెల్లింపుల వైఖరి',
+    'legal.paymentsBody': 'పాఠకుల చెల్లింపులు Razorpay (లైసెన్స్ PA/PG) ద్వారా సెటిల్ అవుతాయి. కథ కాయిన్ వాలెట్ నడపదు. మొదటి నిజమైన రచయిత చెల్లింపుకు ముందు న్యాయ నిర్ధారణ అవసరం.',
+    'legal.backToStudio': '← Creator Studioకు తిరిగి',
+    'storyBible.eyebrow': 'కథా బైబిల్',
     'storyBible.subtitle': 'పాత్రలు, ప్రపంచం, బృందం — మీ కథ యొక్క ఖచ్చితమైన రికార్డ్. సహ-రచయితలతో సమన్వయం ఇక్కడే.',
     'storyBible.characters': 'పాత్రలు',
     'storyBible.world': 'ప్రపంచం & లోర్',
@@ -2182,6 +2292,21 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'narrativeOs.refineThemeDark': 'Dark',
     'narrativeOs.refineStartWriting': 'Start writing',
     'narrativeOs.refineKeepWriting': 'Keep writing',
+    'narrativeOs.emptyStructureTitle': 'No structure yet',
+    'narrativeOs.emptyStructureHint': 'Break your chapter into scenes — this is where you shape how the story moves.',
+    'narrativeOs.addScene': 'Add scene',
+    'narrativeOs.noScenes': 'No scenes yet',
+    'narrativeOs.noMatches': 'No matches',
+    'narrativeOs.searchScenes': 'Search scenes…',
+    'narrativeOs.scenesCount': 'Scenes',
+    'narrativeOs.beatName': 'Beat name',
+    'narrativeOs.inspectorEmptyPeople': 'No characters linked to this scene.',
+    'narrativeOs.inspectorEmptyNotes': 'No author notes for this scene.',
+    'narrativeOs.phaseThinkShort': 'Think',
+    'narrativeOs.phaseStructureShort': 'Struct',
+    'narrativeOs.phaseWriteShort': 'Write',
+    'narrativeOs.phaseRefineShort': 'Refine',
+    'narrativeOs.phasePublishShort': 'Pub',
     'narrativeOs.refineUntitled': 'Untitled chapter',
     'narrativeOs.refineWords': 'words',
     'narrativeOs.refineMinRead': 'min read',
@@ -2480,7 +2605,23 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'analytics.popularChapters': 'Popular chapters',
     'analytics.dropOffInsights': 'Drop-off insights',
     'analytics.readersDrop': 'readers',
-    'media.eyebrow': 'మీడియా లైబ్రరీ · Media Library',
+    'analytics.seriesReads': 'Reads',
+    'analytics.seriesRetention': 'Retention %',
+    'analytics.seriesRevenue': 'Revenue ₹',
+    'analytics.chapterLabel': 'Chapter',
+    'analytics.readsWord': 'reads',
+    'analytics.retentionWord': 'retention',
+    'analytics.spiTitle': 'Story Performance Index',
+    'analytics.spiWeight': 'wt',
+    'analytics.spiRetention': 'Reader Retention',
+    'analytics.spiCompletion': 'Completion Rate',
+    'analytics.spiSatisfaction': 'Reader Satisfaction',
+    'analytics.spiGrowth': 'Reader Growth',
+    'analytics.spiConsistency': 'Publishing Consistency',
+    'analytics.spiPolicy': 'Policy & Quality',
+    'media.eyebrow': 'Media Library',
+    'media.titleLoading': 'Loading story…',
+    'storyBible.titleLoading': 'Loading story…',
     'media.subtitle': 'Cover images, illustrations, and reference assets — keep your publishing pipeline visually ready. Add credit and license for every image.',
     'media.uploadAsset': 'Upload asset',
     'media.attribution': 'Attribution (artist, source)',
@@ -2490,7 +2631,31 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'media.empty': 'No media yet — upload covers and illustrations for your publishing pipeline.',
     'media.emptyV21': 'No media yet — upload covers and illustrations and they will appear here as a grid.',
     'media.dropzoneHint': 'Click here or drag and drop an image',
-    'storyBible.eyebrow': 'కథా బైబిల్ · Story Bible',
+    'legal.title': 'Legal & transparency',
+    'legal.intro': 'Katha is building the best Telugu serialized-fiction platform — with contracts and economics you can actually read.',
+    'legal.grievanceTitle': 'Grievance officer',
+    'legal.grievanceEmail': 'Email',
+    'legal.grievanceBody': 'Acknowledgment target: 72 hours. Content, account, and payout complaints welcome. Designated officer: founding team (named contact published at launch).',
+    'legal.privacyTitle': 'Privacy (DPDP)',
+    'legal.privacyBody': 'We collect account, device, reading engagement, and (for creators) payout data only to run Katha, process subscriptions via Razorpay, and compute Story Trust / royalties. Full policy: product-repo PRIVACY_POLICY and in-product consent at signup.',
+    'legal.agreementTitle': 'Creator Agreement',
+    'legal.agreementIp': 'You keep IP ownership of your work.',
+    'legal.agreementLicense': 'Katha receives a limited license to host and monetize on the platform.',
+    'legal.agreementNoCoins': 'No coins, ads, or follower gates for monetization.',
+    'legal.agreementCounsel': 'Counsel sign-off required before non-network creator cohorts.',
+    'legal.royaltyTitle': 'Creator share ladder (DEC-006)',
+    'legal.royaltyBody': 'Base share at Performing: {pct}%. Escalates with Story Trust — up to 60% at Apex. Snapshot at payment time on the earnings ledger.',
+    'legal.tierCol': 'Tier',
+    'legal.shareCol': 'Creator share',
+    'legal.purposeCol': 'Purpose',
+    'legal.preMonetization': '— (pre-monetization)',
+    'legal.spiTitle': 'Story Trust / SPI formula (DEC-021)',
+    'legal.spiIntro': 'SPI is a 0–100 score from live chapter analytics — not a vanity badge. Weights:',
+    'legal.spiBody': 'Trust level maps from SPI score (and stability window). Monetization eligibility starts at Performing. Creators can recompute SPI from Analytics in Creator Studio.',
+    'legal.paymentsTitle': 'Payments stance',
+    'legal.paymentsBody': 'Reader payments settle through Razorpay (licensed PA/PG). Katha does not operate a coin wallet. Counsel confirmation required before first real creator payout.',
+    'legal.backToStudio': '← Back to Creator Studio',
+    'storyBible.eyebrow': 'Story Bible',
     'storyBible.subtitle': 'Characters, world, and team — the canonical record of your story. Coordinate with co-authors here.',
     'storyBible.characters': 'Characters',
     'storyBible.world': 'World & lore',

@@ -528,6 +528,16 @@
   font-weight: 600 !important;
   text-align: center;
   margin-bottom: 1.25rem !important;
+  /* Explicit base color — dark/sepia variants live on the preview screen */
+  color: #1a1610;
+}
+
+.nos-refine-frame__screen[data-preview-theme='dark'] .nos-refine-reader__title {
+  color: #f0e9dc;
+}
+
+.nos-refine-frame__screen[data-preview-theme='sepia'] .nos-refine-reader__title {
+  color: #3d3529;
 }
 
 .nos-refine-reader__prose {

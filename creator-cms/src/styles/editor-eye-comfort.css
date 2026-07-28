@@ -792,10 +792,17 @@ html:not([data-theme='dark']) button:not([class*='theme']):not(.nos-skip-link) {
   color: var(--nos-ink-soft);
 }
 
-[data-theme='dark'] .narrative-os-app .nos-publish__cta {
+[data-theme='dark'] .narrative-os-app .nos-publish__cta,
+[data-theme='dark'] .narrative-os-app .nos-refine-theater__cta {
   color: #1a1510 !important;
   background: linear-gradient(168deg, #e0c88a 0%, #c4a060 100%) !important;
   font-weight: 600;
+}
+
+/* Publish-blocking errors: oxblood-as-text (light rose in dark) */
+[data-theme='dark'] .narrative-os-app .nos-publish__error,
+[data-theme='dark'] .narrative-os-app .nos-over-limit {
+  color: var(--nos-oxblood, #e0a8b6) !important;
 }
 
 [data-theme='dark'] .narrative-os-app .nos-publish__stat strong {
