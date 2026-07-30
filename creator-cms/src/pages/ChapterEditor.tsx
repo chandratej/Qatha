@@ -36,6 +36,7 @@ import {
   sceneContentEmpty,
   type DraftConflictChoice,
 } from '../lib/draftConflict';
+import { shouldApplyChapterLoad } from '../lib/chapterLoadGuard';
 import { DraftConflictModal } from '../components/Editor/DraftConflictModal';
 import { ShareModal } from '../components/studio/ShareModal';
 import type { StoryData, ChapterListItem } from '../types/database';
@@ -272,6 +273,9 @@ export function ChapterEditor() {
   const scenesRef = useRef(scenes);
   const chapterTitleRef = useRef(chapterTitle);
   const dirtyBaselineRef = useRef<string>('');
+  /** Bumps on every chapter-load effect run; late async resolves must match to apply. */
+  const chapterLoadGenRef = useRef(0);
+  const dirtyRef = useRef(false);
 
   const flushEditor = useCallback(() => {
     editorFlushRef.current?.();
@@ -284,6 +288,7 @@ export function ChapterEditor() {
 
   useEffect(() => { scenesRef.current = scenes; }, [scenes]);
   useEffect(() => { chapterTitleRef.current = chapterTitle; }, [chapterTitle]);
+  useEffect(() => { dirtyRef.current = dirty; }, [dirty]);
 
   const contentFingerprint = useMemo(
     () => JSON.stringify({ title: chapterTitle, scenes }),
@@ -391,6 +396,20 @@ export function ChapterEditor() {
 
   useEffect(() => {
     let cancelled = false;
+    const loadGeneration = ++chapterLoadGenRef.current;
+
+    const canApply = (opts?: { allowWhenDirty?: boolean }) => {
+      const decision = shouldApplyChapterLoad({
+        cancelled,
+        loadGeneration,
+        currentGeneration: chapterLoadGenRef.current,
+        // allowWhenDirty: true for the initial post-fetch apply path (dirtyRef is
+        // reset at load start). After draft-cache await, leave false so a late
+        // resolve never stomps live keystrokes.
+        userDirty: opts?.allowWhenDirty ? false : dirtyRef.current,
+      });
+      return decision.apply;
+    };
 
     async function loadChapter() {
       if (isDemo) {
@@ -409,7 +428,7 @@ export function ChapterEditor() {
         } else if (chapterScenes.length === 0) {
           chapterScenes = [createDefaultScene()];
         }
-        if (!cancelled) {
+        if (canApply({ allowWhenDirty: true })) {
           setScenes(chapterScenes);
           setActiveSceneId(chapterScenes[0].id);
           const title = getChapterTitle(storyId, chapterNumber) || 'The Call of the Jungle';
@@ -440,24 +459,38 @@ export function ChapterEditor() {
       }
 
       setLoading(true);
+      // Opening a chapter always starts from a clean baseline for this generation.
+      dirtyRef.current = false;
       try {
-        const [{ chapter }, chaptersMeta, storiesRes] = await Promise.all([
+        // Single-story metadata comes from getStoryChapters (content_type/language) —
+        // do NOT call getCreatorStories here (that N+1 status storm delayed open and
+        // widened the race window for late setScenes stomps).
+        type StoryChaptersMeta = {
+          story?: {
+            title?: string;
+            content_type?: string | null;
+            language?: string | null;
+          };
+          chapters: Array<{ chapter_number: number; title?: string }>;
+        };
+        const [{ chapter }, chaptersMeta] = await Promise.all([
           api.getChapter(storyId, chapterNumber),
-          api.getStoryChapters(storyId).catch(() => ({ story: undefined as { title?: string } | undefined, chapters: [] as Array<{ chapter_number: number; title?: string }> })),
-          api.getCreatorStories().catch(() => ({ stories: [] as Array<{ id: string; content_type?: string; language?: string; title?: string }> })),
+          api.getStoryChapters(storyId).catch(
+            (): StoryChaptersMeta => ({ story: undefined, chapters: [] }),
+          ) as Promise<StoryChaptersMeta>,
         ]);
+        if (!canApply({ allowWhenDirty: true })) return;
+
         if (chaptersMeta.story?.title) setStoryDisplayTitle(chaptersMeta.story.title);
-        const storyRow = (storiesRes.stories ?? []).find((s) => s.id === storyId);
-        const contentType = storyRow?.content_type || null;
-        const language = storyRow?.language || null;
-        if (storyRow?.title && !chaptersMeta.story?.title) setStoryDisplayTitle(storyRow.title);
+        const contentType = chaptersMeta.story?.content_type || null;
+        const language = chaptersMeta.story?.language || null;
         setStoryContentType(contentType);
         setStoryLanguage(language);
 
         // MVP1: specialized formats open in dedicated editors — never show raw JSON in prose canvas
         if (contentType === 'interactive_branching' || contentType === 'epistolary_chat') {
           const target = resolveChapterEditorPath(storyId, chapterNumber, { contentType, language });
-          if (!cancelled) navigate(target, { replace: true });
+          if (canApply({ allowWhenDirty: true })) navigate(target, { replace: true });
           return;
         }
 
@@ -465,11 +498,15 @@ export function ChapterEditor() {
         const probe = chapter.content || chapter.content_delta?.scenes?.[0]?.content || '';
         const plainProbe = stripHtml(probe).trim();
         if (looksLikeBranchingJson(plainProbe) || looksLikeBranchingJson(probe)) {
-          if (!cancelled) navigate(resolveChapterEditorPath(storyId, chapterNumber, { contentType: 'interactive_branching' }), { replace: true });
+          if (canApply({ allowWhenDirty: true })) {
+            navigate(resolveChapterEditorPath(storyId, chapterNumber, { contentType: 'interactive_branching' }), { replace: true });
+          }
           return;
         }
         if (looksLikeEpistolaryJson(plainProbe) || looksLikeEpistolaryJson(probe)) {
-          if (!cancelled) navigate(resolveChapterEditorPath(storyId, chapterNumber, { contentType: 'epistolary_chat' }), { replace: true });
+          if (canApply({ allowWhenDirty: true })) {
+            navigate(resolveChapterEditorPath(storyId, chapterNumber, { contentType: 'epistolary_chat' }), { replace: true });
+          }
           return;
         }
 
@@ -482,9 +519,13 @@ export function ChapterEditor() {
         }));
         if (chList.length > 0) setChapterOptions(chList);
         else setChapterOptions([{ chapterNumber, title: chapter.title || `Chapter ${chapterNumber}` }]);
-        if (cancelled) return;
+        if (!canApply({ allowWhenDirty: true })) return;
 
         const cached = await loadDraftFromCache(storyId, chapterNumber).catch(() => null);
+        // Critical: re-check after the second await — this is where late loads used to
+        // stomp keystrokes after a newer generation already opened the editor.
+        if (!canApply()) return;
+
         const cloudScenes = scenesFromChapterPayload(chapter).map((s) => ({
           ...s,
           narrativeFormat: narrativeFormatFromContentType(contentType),
@@ -494,11 +535,13 @@ export function ChapterEditor() {
         const cloudUpdatedAt = cloudUpdatedRaw ? Date.parse(cloudUpdatedRaw) || null : null;
 
         const applyDraft = (title: string, loadedScenes: SceneBlock[], markDirty: boolean) => {
+          if (!canApply()) return;
           setScenes(loadedScenes);
           setActiveSceneId(loadedScenes[0]?.id || '');
           setChapterTitle(title);
           dirtyBaselineRef.current = JSON.stringify({ title, scenes: loadedScenes });
           setDirty(markDirty);
+          dirtyRef.current = markDirty;
         };
 
         if (cached?.scenes?.length) {
@@ -543,11 +586,13 @@ export function ChapterEditor() {
           applyDraft(cloudTitle, cloudScenes.length ? cloudScenes : [createDefaultScene()], false);
         }
 
+        // Metadata only — allowWhenDirty so prefer=local (markDirty) still sets status.
+        if (!canApply({ allowWhenDirty: true })) return;
         setChapterStatus(chapter.status || null);
         setModerationStatus(chapter.moderation_status || chapter.status || null);
         setModerationNotes(chapter.moderation_reason || null);
       } catch (err) {
-        if (!cancelled) {
+        if (canApply({ allowWhenDirty: true })) {
           const fallback = [createDefaultScene()];
           setScenes(fallback);
           setActiveSceneId(fallback[0].id);
@@ -555,10 +600,15 @@ export function ChapterEditor() {
           setChapterTitle(title);
           dirtyBaselineRef.current = JSON.stringify({ title, scenes: fallback });
           setDirty(false);
+          dirtyRef.current = false;
           console.warn('Chapter load failed, starting fresh:', err);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        // Always clear skeleton for the winning generation, even if draft apply
+        // was skipped due to dirty (user already typing under this gen).
+        if (!cancelled && loadGeneration === chapterLoadGenRef.current) {
+          setLoading(false);
+        }
       }
     }
 

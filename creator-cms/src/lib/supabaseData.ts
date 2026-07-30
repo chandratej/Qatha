@@ -4,7 +4,6 @@
  */
 import type { PostgrestError } from '@supabase/supabase-js';
 import { supabase, isMockMode } from './supabase';
-import { deriveStoryModerationStatus } from '../business/moderationStatus';
 import { buildDropOffInsights } from '../business/dropOffInsights';
 import { getNextPayoutDate } from '../business/payout';
 import { slugifyTitle } from './shareLinks';
@@ -12,6 +11,7 @@ import { getSchemaCapabilities } from './schemaCapabilities';
 import { isForeignKeyError, isInvalidEnumError, isMissingColumnError } from './schemaHealth';
 import { ensureCreatorRow } from './creatorProfile';
 import { requireSessionUser, getSessionUser } from './authSession';
+import { attachBatchedStoryStatuses, type StatusRow } from './storyStatusBatch';
 import type {
   StoryData,
   ChapterListItem,
@@ -40,12 +40,26 @@ async function requireUser() {
 }
 
 async function assertStoryOwner(storyId: string, userId: string) {
+  // Include content_type/language so chapter open can skip the full-library
+  // getCreatorStories N+1 status storm (one pair of queries per story).
   const { data: story, error } = await supabase
     .from('stories')
-    .select('id, title, author_id')
+    .select('id, title, author_id, content_type, language')
     .eq('id', storyId)
     .single();
   if (error || !story || story.author_id !== userId) {
+    // Pre-migration DBs may lack content_type/language — retry minimal select.
+    if (error && /column|schema cache|does not exist/i.test(error.message || '')) {
+      const fb = await supabase
+        .from('stories')
+        .select('id, title, author_id')
+        .eq('id', storyId)
+        .single();
+      if (fb.error || !fb.data || fb.data.author_id !== userId) {
+        throw new Error('Story not found');
+      }
+      return { ...fb.data, content_type: null as string | null, language: null as string | null };
+    }
     throw new Error('Story not found');
   }
   return story;
@@ -231,30 +245,41 @@ export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
 
   if (error) throw new Error(error.message);
 
-  const storiesWithStatus = await Promise.all((data || []).map(async (s) => {
-    const chaptersQuery = supabase.from('chapters').select('status').eq('story_id', s.id);
-    const draftsQuery = caps.chapterDraftStatus
-      ? supabase.from('chapter_drafts').select('status').eq('story_id', s.id).eq('creator_id', user.id)
-      : supabase.from('chapter_drafts').select('chapter_number').eq('story_id', s.id).eq('creator_id', user.id);
+  const rows = data || [];
+  if (rows.length === 0) return { stories: [] };
 
-    const [{ data: chapters }, { data: drafts }] = await Promise.all([chaptersQuery, draftsQuery]);
-    return {
-      ...(s as object),
-      id: String(s.id),
-      title: String(s.title ?? ''),
-      genre: String(s.genre ?? 'romance'),
-      chapter_count: Number(s.chapter_count) || 0,
-      total_readers: Number(s.total_readers) || 0,
-      moderation_status: deriveStoryModerationStatus([
-        ...(chapters || []),
-        ...(drafts || []).map((d) => ({
-          status: 'status' in d && typeof d.status === 'string' ? d.status : 'draft',
-        })),
-      ]),
-    } as StoryData;
-  }));
+  // Two queries total (not 2×N): batch status rows for every owned story.
+  const storyIds = rows.map((s) => String(s.id));
+  const chaptersQuery = supabase
+    .from('chapters')
+    .select('story_id, status')
+    .in('story_id', storyIds);
+  const draftsQuery = caps.chapterDraftStatus
+    ? supabase
+        .from('chapter_drafts')
+        .select('story_id, status, chapter_number')
+        .in('story_id', storyIds)
+        .eq('creator_id', user.id)
+    : supabase
+        .from('chapter_drafts')
+        .select('story_id, chapter_number')
+        .in('story_id', storyIds)
+        .eq('creator_id', user.id);
 
-  return { stories: storiesWithStatus };
+  const [{ data: chapterRows, error: chErr }, { data: draftRows, error: drErr }] = await Promise.all([
+    chaptersQuery,
+    draftsQuery,
+  ]);
+  if (chErr) throw new Error(chErr.message);
+  if (drErr) throw new Error(drErr.message);
+
+  const stories = attachBatchedStoryStatuses(
+    rows as Array<Record<string, unknown> & { id: string | number }>,
+    (chapterRows || []) as StatusRow[],
+    (draftRows || []) as StatusRow[],
+  );
+
+  return { stories };
 }
 
 const STORY_OPTIONAL_MIGRATION_COLS = [
@@ -431,7 +456,13 @@ export async function sbDeleteStory(storyId: string): Promise<{ archived: boolea
 }
 
 export async function sbGetStoryChapters(storyId: string): Promise<{
-  story?: { id: string; title: string; slug?: string | null };
+  story?: {
+    id: string;
+    title: string;
+    slug?: string | null;
+    content_type?: string | null;
+    language?: string | null;
+  };
   chapters: ChapterListItem[];
 }> {
   const user = await requireUser();
@@ -501,7 +532,13 @@ export async function sbGetStoryChapters(storyId: string): Promise<{
   }
 
   return {
-    story: { id: story.id, title: story.title, slug: storySlug },
+    story: {
+      id: story.id,
+      title: story.title,
+      slug: storySlug,
+      content_type: (story as { content_type?: string | null }).content_type ?? null,
+      language: (story as { language?: string | null }).language ?? null,
+    },
     chapters: Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number),
   };
 }

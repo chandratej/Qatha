@@ -207,17 +207,52 @@ creatorsRouter.get('/stories', async (req, res, next) => {
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
 
-    const storiesWithStatus = await Promise.all((data || []).map(async (s) => {
-      const { data: chapters } = await supabase.from('chapters')
-        .select('status').eq('story_id', s.id);
-      const { data: drafts } = await supabase.from('chapter_drafts')
-        .select('chapter_number').eq('story_id', s.id).eq('creator_id', creatorId);
+    const rows = data || [];
+    if (rows.length === 0) {
+      return res.json({ stories: [] });
+    }
+
+    // Two queries total (not 2×N): batch chapter + draft status for all stories.
+    const storyIds = rows.map((s) => s.id);
+    const [{ data: chapterRows, error: chErr }, { data: draftRows, error: drErr }] = await Promise.all([
+      supabase.from('chapters').select('story_id, status').in('story_id', storyIds),
+      supabase
+        .from('chapter_drafts')
+        .select('story_id, chapter_number')
+        .in('story_id', storyIds)
+        .eq('creator_id', creatorId),
+    ]);
+    if (chErr) throw createAppError('INTERNAL_ERROR', chErr.message, 500);
+    if (drErr) throw createAppError('INTERNAL_ERROR', drErr.message, 500);
+
+    const chaptersByStory = new Map();
+    for (const row of chapterRows || []) {
+      const id = row.story_id;
+      const list = chaptersByStory.get(id) || [];
+      list.push({ status: row.status || 'draft' });
+      chaptersByStory.set(id, list);
+    }
+    const draftsByStory = new Map();
+    for (const row of draftRows || []) {
+      const id = row.story_id;
+      const list = draftsByStory.get(id) || [];
+      list.push({ status: 'draft' });
+      draftsByStory.set(id, list);
+    }
+
+    const storiesWithStatus = rows.map((s) => {
       const statuses = [
-        ...(chapters || []),
-        ...(drafts || []).map(() => ({ status: 'draft' })),
+        ...(chaptersByStory.get(s.id) || []),
+        ...(draftsByStory.get(s.id) || []),
       ];
-      return { ...s, moderation_status: deriveStoryModerationStatus(statuses) };
-    }));
+      const observed = statuses.length;
+      const chapter_count = Math.max(Number(s.chapter_count) || 0, observed);
+      return {
+        ...s,
+        chapter_count,
+        moderation_status: deriveStoryModerationStatus(statuses),
+      };
+    });
 
     res.json({ stories: storiesWithStatus });
   } catch (err) {
@@ -235,14 +270,39 @@ creatorsRouter.get('/stories/:storyId/chapters', requireStoryRole('story.read'),
       if (!chapters) throw createAppError('CHAPTER_NOT_FOUND', 'Story not found', 404);
       const story = [...seedStories, ...mockCreatorStories].find((s) => s.id === storyId);
       return res.json({
-        story: { id: storyId, title: story?.title || 'My Story', slug: story?.slug || null },
+        story: {
+          id: storyId,
+          title: story?.title || 'My Story',
+          slug: story?.slug || null,
+          content_type: story?.content_type || null,
+          language: story?.language || null,
+        },
         chapters,
         mock: true,
       });
     }
 
-    const { data: story } = await supabase.from('stories').select('id, title, author_id')
-      .eq('id', storyId).single();
+    // content_type + language let the chapter editor skip getCreatorStories (N+1)
+    let story = null;
+    {
+      const primary = await supabase
+        .from('stories')
+        .select('id, title, author_id, content_type, language, slug')
+        .eq('id', storyId)
+        .single();
+      if (primary.error && /column|schema cache|does not exist/i.test(primary.error.message || '')) {
+        const fb = await supabase
+          .from('stories')
+          .select('id, title, author_id')
+          .eq('id', storyId)
+          .single();
+        story = fb.data
+          ? { ...fb.data, content_type: null, language: null, slug: null }
+          : null;
+      } else {
+        story = primary.data;
+      }
+    }
     if (!story || story.author_id !== creatorId) {
       throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
     }
@@ -285,7 +345,13 @@ creatorsRouter.get('/stories/:storyId/chapters', requireStoryRole('story.read'),
     }
 
     res.json({
-      story: { id: story.id, title: story.title, slug: story.slug ?? null },
+      story: {
+        id: story.id,
+        title: story.title,
+        slug: story.slug ?? null,
+        content_type: story.content_type ?? null,
+        language: story.language ?? null,
+      },
       chapters: Array.from(byNum.values()).sort((a, b) => a.chapter_number - b.chapter_number),
     });
   } catch (err) {

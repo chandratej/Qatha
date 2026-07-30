@@ -106,7 +106,16 @@ export const api = {
   getStoryChapters: (storyId: string) =>
     useSupabaseDirect()
       ? sb.sbGetStoryChapters(storyId)
-      : request<{ story?: { id: string; title: string; slug?: string | null }; chapters: ChapterListItem[] }>(`/creators/stories/${storyId}/chapters`),
+      : request<{
+          story?: {
+            id: string;
+            title: string;
+            slug?: string | null;
+            content_type?: string | null;
+            language?: string | null;
+          };
+          chapters: ChapterListItem[];
+        }>(`/creators/stories/${storyId}/chapters`),
   getChapter: (storyId: string, chapterNumber: number) =>
     useSupabaseDirect()
       ? sb.sbGetChapter(storyId, chapterNumber)
