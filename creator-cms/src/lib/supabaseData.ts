@@ -245,7 +245,8 @@ export async function sbGetCreatorStories(): Promise<{ stories: StoryData[] }> {
 
   if (error) throw new Error(error.message);
 
-  const rows = data || [];
+  // Soft-archived shells keep a title prefix when hard-delete is blocked by payments.
+  const rows = (data || []).filter((s) => !String(s.title ?? '').startsWith('[archived] '));
   if (rows.length === 0) return { stories: [] };
 
   // Two queries total (not 2×N): batch status rows for every owned story.
@@ -450,8 +451,30 @@ export async function sbDeleteStory(storyId: string): Promise<{ archived: boolea
   const user = await requireUser();
   await assertStoryOwner(storyId, user.id);
 
-  const { error } = await supabase.from('stories').update({ is_published: false }).eq('id', storyId);
-  if (error) throw new Error(error.message);
+  // Always unpublish so readers lose access immediately.
+  const { error: unpubErr } = await supabase
+    .from('stories')
+    .update({ is_published: false })
+    .eq('id', storyId);
+  if (unpubErr) throw new Error(unpubErr.message);
+
+  // Remove working drafts first (library list merges drafts into chapter counts).
+  await supabase.from('chapter_drafts').delete().eq('story_id', storyId).eq('creator_id', user.id);
+
+  // Hard-delete so the story leaves the creator shelf.
+  // Stories with payment transactions may RESTRICT delete — fall back to soft archive.
+  const { error: delErr } = await supabase.from('stories').delete().eq('id', storyId);
+  if (delErr) {
+    if (/foreign key|restrict|violates/i.test(delErr.message || '')) {
+      // Soft-archive: hide from creator shelf by prefix + unpublished
+      const { data: row } = await supabase.from('stories').select('title').eq('id', storyId).maybeSingle();
+      const title = String(row?.title || 'Story');
+      const archivedTitle = title.startsWith('[archived] ') ? title : `[archived] ${title}`.slice(0, 100);
+      await supabase.from('stories').update({ title: archivedTitle, is_published: false }).eq('id', storyId);
+      return { archived: true };
+    }
+    throw new Error(delErr.message);
+  }
   return { archived: true };
 }
 
@@ -1109,6 +1132,16 @@ export async function sbUpsertPhoneticCorrection(phoneticInput: string, correcte
     corrected_telugu: correctedTelugu,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'creator_id,phonetic_input' });
+}
+
+export async function sbDeletePhoneticCorrection(phoneticInput: string) {
+  const user = await requireUser();
+  const key = phoneticInput.toLowerCase().trim();
+  await supabase
+    .from('phonetic_corrections')
+    .delete()
+    .eq('creator_id', user.id)
+    .eq('phonetic_input', key);
 }
 
 export async function sbLoadPhoneticCorrections(): Promise<Record<string, string>> {

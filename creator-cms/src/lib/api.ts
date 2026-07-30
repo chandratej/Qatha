@@ -412,6 +412,50 @@ export const api = {
       `/creators/stories/${storyId}/lore/glossary`,
     ),
 
+  getStoryTimeline: (storyId: string) =>
+    request<{ events: import('../../../packages/shared/storyBible').StoryPlotEvent[] }>(
+      `/creators/stories/${storyId}/timeline`,
+    ),
+  createStoryPlotEvent: (
+    storyId: string,
+    body: { label: string; chapter_number?: number; body?: string; when_label?: string },
+  ) =>
+    request<{ event: import('../../../packages/shared/storyBible').StoryPlotEvent }>(
+      `/creators/stories/${storyId}/timeline`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  deleteStoryPlotEvent: (storyId: string, eventId: string) =>
+    request<{ deleted: boolean }>(`/creators/stories/${storyId}/timeline/${eventId}`, { method: 'DELETE' }),
+
+  getStoryRelationships: (storyId: string) =>
+    request<{ relationships: import('../../../packages/shared/storyBible').StoryCharacterRelationship[] }>(
+      `/creators/stories/${storyId}/relationships`,
+    ),
+  createStoryRelationship: (
+    storyId: string,
+    body: { from_character_id: string; to_character_id: string; relation_type?: string; notes?: string },
+  ) =>
+    request<{ relationship: import('../../../packages/shared/storyBible').StoryCharacterRelationship }>(
+      `/creators/stories/${storyId}/relationships`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  deleteStoryRelationship: (storyId: string, relationshipId: string) =>
+    request<{ deleted: boolean }>(
+      `/creators/stories/${storyId}/relationships/${relationshipId}`,
+      { method: 'DELETE' },
+    ),
+
+  getAuthorFollowers: (authorId: string) =>
+    request<{ count: number; follower_ids: string[]; author_id: string }>(
+      `/follows/authors/${authorId}/readers`,
+    ),
+  getMyFollowing: () =>
+    request<{ count: number; author_ids: string[] }>('/follows/me/following'),
+  followAuthor: (authorId: string) =>
+    request<{ following: boolean }>(`/follows/${authorId}`, { method: 'POST' }),
+  unfollowAuthor: (authorId: string) =>
+    request<{ following: boolean }>(`/follows/${authorId}`, { method: 'DELETE' }),
+
   getSceneCharacterLinks: (storyId: string, chapterNum: number) =>
     request<{ links: import('../../../packages/shared/storyBible').SceneCharacterLink[] }>(
       `/creators/stories/${storyId}/chapters/${chapterNum}/scene-characters`,
@@ -518,6 +562,17 @@ export const api = {
         mock?: boolean;
       };
     }>('/creators/reputation'),
+  getFoundingAuthorStatus: () =>
+    request<{
+      status: {
+        enrolled: boolean;
+        enrolled_at?: string | null;
+        acceleration_ends_at?: string | null;
+        scope?: string | null;
+        mock_demo?: boolean;
+      };
+    }>('/creators/founding-author/status'),
+
   getDebutSeasonProgress: () =>
     request<{
       progress: {

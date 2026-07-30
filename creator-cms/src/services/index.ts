@@ -31,6 +31,7 @@ export {
   sbListUserDevices,
   sbRemoveUserDevice,
   sbUpsertPhoneticCorrection,
+  sbDeletePhoneticCorrection,
   sbLoadPhoneticCorrections,
   sbMigrateLocalPhoneticCorrections,
   sbTrackAnalyticsEvent,

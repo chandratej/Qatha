@@ -42,6 +42,7 @@ type QuillHighlightEditor = {
 /** Clear Quill background highlights applied for author-note anchors */
 export function clearAuthorNoteHighlights(editor: QuillHighlightEditor) {
   const len = editor.getLength();
+  // Full-document removeFormat is expensive on long chapters — skip empty docs.
   if (len > 1) editor.removeFormat(0, len - 1, 'background', 'api');
 }
 
@@ -52,19 +53,24 @@ export function applyAuthorNoteHighlights(
   sceneId: string,
   activeCommentId: string | null,
 ) {
-  clearAuthorNoteHighlights(editor);
-  const plainText = editor.getText();
   const sceneComments = comments.filter(
     (c) => c.scene_id === sceneId && c.status !== 'resolved',
   );
+  // Avoid full-document format clear when there is nothing to draw (common case).
+  if (sceneComments.length === 0) return;
+
+  clearAuthorNoteHighlights(editor);
+  const plainText = editor.getText();
 
   for (const comment of sceneComments) {
     const anchor = resolveAuthorCommentOffsets(plainText, comment);
     if (!anchor) continue;
     const length = anchor.end - anchor.start;
     if (length <= 0) continue;
+    // Cap highlight span — runaway offsets must not format tens of thousands of chars
+    const safeLen = Math.min(length, 500);
     const color = comment.id === activeCommentId ? '#fde68a' : '#fef9c3';
-    editor.formatText(anchor.start, length, 'background', color, 'api');
+    editor.formatText(anchor.start, safeLen, 'background', color, 'api');
   }
 }
 

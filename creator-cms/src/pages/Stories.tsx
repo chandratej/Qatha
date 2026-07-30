@@ -28,6 +28,8 @@ export function Stories() {
   const [sharingStory, setSharingStory] = useState<StoryData | null>(null);
   const [shareChapters, setShareChapters] = useState<ChapterListItem[]>([]);
   const [shareLoading, setShareLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
 
   const filteredStories = useMemo(() => {
     const list = data?.stories ?? [];
@@ -53,11 +55,17 @@ export function Stories() {
   }, [data?.stories]);
 
   const handleDelete = async (story: StoryData) => {
-    if (!confirm(`${t('stories.archiveConfirm')}\n\n"${story.title}"`)) return;
+    const ok = window.confirm(`${t('stories.archiveConfirm')}\n\n"${story.title}"`);
+    if (!ok) return;
+    setDeleteError(null);
+    setDeleteNotice(null);
     setDeleting(story.id);
     try {
       await api.deleteStory(story.id);
+      setDeleteNotice(t('stories.deleted'));
       await reload();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : t('stories.deleteFailed'));
     } finally {
       setDeleting(null);
     }
@@ -121,6 +129,8 @@ export function Stories() {
       )}
 
       {error && <p className="sv21__error" role="alert">{error}</p>}
+      {deleteError && <p className="sv21__error" role="alert">{deleteError}</p>}
+      {deleteNotice && <p className="sv21__subtitle" role="status">{deleteNotice}</p>}
 
       {!loading && (data?.stories?.length ?? 0) > 0 && (
         <div className="sv21__toolbar">

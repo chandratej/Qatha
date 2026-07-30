@@ -181,7 +181,14 @@ export function StoryCardV21({ story, onEdit, onDelete, onShare, deleting }: Sto
               type="button"
               className="sv21__card-menu-item sv21__card-menu-item--danger"
               role="menuitem"
-              onClick={() => { onDelete(); closeMenu(); }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Close first so the confirm dialog is not blocked by the portaled menu.
+                closeMenu();
+                // Defer so menu unmounts before native confirm (Windows focus quirk).
+                window.setTimeout(() => { onDelete(); }, 0);
+              }}
               disabled={deleting}
             >
               {deleting ? <Loader2 size={14} className="cms-loading__spin" aria-hidden /> : null}

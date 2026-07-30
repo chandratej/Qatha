@@ -5,7 +5,15 @@ import { enterStudio as enterStudioEnglish } from './helpers/studio';
  * Golden path smoke — DEC-019 / V09-13-D3
  * Mock mode: email OTP code 123456 (see Login.tsx).
  * Product + Quality Council: Reviewer Pool author → reviewer → workspace loop.
+ *
+ * Keep the two flags below in sync with `src/config/feature_flags.ts`.
+ * Events + marketplace are off for MVP1 launch (P1-21) until staffed; those
+ * routes are not mounted in App.tsx, so the gated tests skip rather than fail.
+ * Full coverage when flags are on: e2e/events-strict.spec.ts,
+ * e2e/reviewer-pool-strict.spec.ts (run with E2E_STRICT_PLATFORM / npm scripts).
  */
+const FEATURE_EVENTS = false; // FEATURE_FLAGS.events
+const FEATURE_MARKETPLACE = false; // FEATURE_FLAGS.marketplace
 
 /** Events are core nav — bypass onboarding gate for contest E2E */
 async function enterStudioShell(page: Page, email: string) {
@@ -73,6 +81,7 @@ test.describe('Creator Studio golden path', () => {
   });
 
   test('events are core nav and registration page loads', async ({ page }) => {
+    test.skip(!FEATURE_EVENTS, 'FEATURE_FLAGS.events=false (P1-21); see e2e/events-strict.spec.ts');
     await enterStudioShell(page, 'e2e.events@katha.test');
 
     await expect(
@@ -85,6 +94,7 @@ test.describe('Creator Studio golden path', () => {
   });
 
   test('author can register for a free contest', async ({ page }) => {
+    test.skip(!FEATURE_EVENTS, 'FEATURE_FLAGS.events=false (P1-21); see e2e/events-strict.spec.ts');
     await enterStudioShell(page, 'e2e.register@katha.test');
 
     await page.goto('/events');
@@ -101,6 +111,7 @@ test.describe('Creator Studio golden path', () => {
   });
 
   test('author can request peer review and reviewer sees invitation', async ({ page }) => {
+    test.skip(!FEATURE_MARKETPLACE, 'FEATURE_FLAGS.marketplace=false (P1-21); see e2e/reviewer-pool-strict.spec.ts');
     await page.route('**/creators/stories', async (route) => {
       await route.fulfill({
         status: 200,
@@ -133,6 +144,7 @@ test.describe('Creator Studio golden path', () => {
   });
 
   test('reviewer can open workspace from dev seed assignment', async ({ page }) => {
+    test.skip(!FEATURE_MARKETPLACE, 'FEATURE_FLAGS.marketplace=false (P1-21); see e2e/reviewer-pool-strict.spec.ts');
     await enterStudioShell(page, 'e2e.workspace@katha.test');
     await openReviewerPool(page);
     await seedDevReviewScenario(page);
@@ -143,6 +155,7 @@ test.describe('Creator Studio golden path', () => {
   });
 
   test('author feedback inbox shows waiting manuscripts after request', async ({ page }) => {
+    test.skip(!FEATURE_MARKETPLACE, 'FEATURE_FLAGS.marketplace=false (P1-21); see e2e/reviewer-pool-strict.spec.ts');
     await page.route('**/creators/stories', async (route) => {
       await route.fulfill({
         status: 200,

@@ -153,3 +153,41 @@ export async function getFoundingAccelerationForCreator(creatorId) {
 export function __resetMockFoundingEnrollmentsForTests() {
   mockEnrollments.clear();
 }
+
+/** Profile / badge surface — permanent status when enrolled. */
+export async function getFoundingStatusForCreator(creatorId) {
+  if (!creatorId) return { enrolled: false };
+  if (isMockMode()) {
+    const rec = mockEnrollments.get(creatorId);
+    if (rec) {
+      return {
+        enrolled: true,
+        enrolled_at: rec.enrolled_at,
+        acceleration_ends_at: rec.acceleration_ends_at,
+        scope: rec.scope,
+      };
+    }
+    // Mock demo: show badge so founders can review recognition UI
+    return {
+      enrolled: true,
+      enrolled_at: new Date().toISOString(),
+      acceleration_ends_at: new Date(Date.now() + 180 * 86_400_000).toISOString(),
+      scope: 'per_author',
+      mock_demo: true,
+    };
+  }
+  const sb = getSupabase();
+  if (!sb) return { enrolled: false };
+  const { data } = await sb
+    .from('profiles')
+    .select('founding_cohort_enrolled_at, founding_cohort_scope, founding_cohort_acceleration_ends_at')
+    .eq('id', creatorId)
+    .maybeSingle();
+  if (!data?.founding_cohort_enrolled_at) return { enrolled: false };
+  return {
+    enrolled: true,
+    enrolled_at: data.founding_cohort_enrolled_at,
+    acceleration_ends_at: data.founding_cohort_acceleration_ends_at,
+    scope: data.founding_cohort_scope,
+  };
+}

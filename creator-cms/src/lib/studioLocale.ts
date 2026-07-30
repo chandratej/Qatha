@@ -44,7 +44,12 @@ export type StudioStringKey =
   | 'common.share'
   | 'common.delete'
   | 'common.edit'
+  | 'common.rename'
+  | 'common.duplicate'
   | 'common.create'
+  | 'chapters.deleteConfirm'
+  | 'stories.deleteFailed'
+  | 'stories.deleted'
   | 'common.submit'
   | 'common.back'
   | 'common.next'
@@ -1095,7 +1100,12 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'common.share': 'షేర్ చేయండి',
     'common.delete': 'తొలగించండి',
     'common.edit': 'ఎడిట్',
+    'common.rename': 'పేరు మార్చండి',
+    'common.duplicate': 'నకలు',
     'common.create': 'సృష్టించండి',
+    'chapters.deleteConfirm': 'అధ్యాయం {num} ను తొలగించాలా? ఇది రద్దు కాదు.',
+    'stories.deleteFailed': 'కథను తొలగించలేకపోయాం. మళ్ళీ ప్రయత్నించండి.',
+    'stories.deleted': 'కథ తొలగించబడింది.',
     'common.submit': 'సబ్మిట్',
     'common.back': 'వెనక్కి',
     'common.next': 'తర్వాత',
@@ -2143,7 +2153,12 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'common.share': 'Share',
     'common.delete': 'Delete',
     'common.edit': 'Edit',
+    'common.rename': 'Rename',
+    'common.duplicate': 'Duplicate',
     'common.create': 'Create',
+    'chapters.deleteConfirm': 'Delete Chapter {num}? This cannot be undone.',
+    'stories.deleteFailed': 'Could not delete this story. Please try again.',
+    'stories.deleted': 'Story deleted.',
     'common.submit': 'Submit',
     'common.back': 'Back',
     'common.next': 'Next',

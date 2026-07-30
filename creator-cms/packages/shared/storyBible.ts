@@ -64,3 +64,39 @@ export interface SceneCharacterLink {
   character_id: string;
   created_at?: string;
 }
+
+/** Plot chronology — continuous novel moat (timeline is expensive to rebuild). */
+export interface StoryPlotEvent {
+  id: string;
+  story_id: string;
+  chapter_number?: number | null;
+  label: string;
+  body?: string | null;
+  when_label?: string | null;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const RELATION_TYPES = [
+  'family',
+  'ally',
+  'rival',
+  'lover',
+  'mentor',
+  'enemy',
+  'related',
+] as const;
+
+export type RelationType = (typeof RELATION_TYPES)[number];
+
+export interface StoryCharacterRelationship {
+  id: string;
+  story_id: string;
+  from_character_id: string;
+  to_character_id: string;
+  relation_type: string;
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}

@@ -51,6 +51,8 @@ export function VersionHistoryPanel({
   const [saveOpen, setSaveOpen] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** Cloud vs device-local — work-tied history is the moat; local is offline fallback only. */
+  const [storageHint, setStorageHint] = useState<'cloud' | 'local' | 'unknown'>('unknown');
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -58,9 +60,15 @@ export function VersionHistoryPanel({
     try {
       const list = await listVersions(storyId, chapterId, 50);
       setVersions(list);
+      // Heuristic: non-local created_by / UUID-like ids ⇒ cloud primary
+      const cloudish = list.some((v) => v.created_by && v.created_by !== 'local' && v.id.length > 20);
+      setStorageHint(
+        storyId.startsWith('demo-') ? 'local' : cloudish || list.length === 0 ? 'cloud' : 'local',
+      );
       if (list[0] && !selectedId) setSelectedId(list[0].id);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load versions');
+      setStorageHint('local');
     } finally {
       setLoading(false);
     }
@@ -148,6 +156,20 @@ export function VersionHistoryPanel({
             <p className="vh-panel__eyebrow">
               <Clock size={14} aria-hidden />
               {te ? 'వెర్షన్ చరిత్ర' : 'Version history'}
+              <span
+                className={`version-history-storage version-history-storage--${storageHint}`}
+                title={
+                  storageHint === 'cloud'
+                    ? (te ? 'క్లౌడ్ — ఈ అధ్యాయానికి జత' : 'Cloud — tied to this chapter work')
+                    : (te ? 'ఈ పరికరం / ఆఫ్‌లైన్ ఫాల్‌బ్యాక్' : 'This device / offline fallback')
+                }
+              >
+                {storageHint === 'cloud'
+                  ? (te ? ' · క్లౌడ్ (కథకు జత)' : ' · cloud (work-tied)')
+                  : storageHint === 'local'
+                    ? (te ? ' · స్థానిక' : ' · local')
+                    : ''}
+              </span>
             </p>
             <h2 id="vh-title" className="vh-panel__title">
               {te ? 'కథా టైమ్‌లైన్' : 'Story timeline'}

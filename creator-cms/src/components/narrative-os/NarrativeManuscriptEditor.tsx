@@ -24,6 +24,11 @@ import {
   isEmptyEditorHtml,
   replaceTrailingRomanInHtml,
 } from '../../lib/quillPhonetic';
+import {
+  createRafScheduler,
+  getSafeSelectionBounds,
+  isOversizedSelection,
+} from '../../lib/quillSelectionBounds';
 import { parseSlashLine } from '../../lib/slashCommand';
 import { useLocale } from '../../context/LocaleContext';
 
@@ -338,12 +343,17 @@ export function NarrativeManuscriptEditor({
       }
       if (e.key === 'Backspace' || e.key === 'Delete') scheduleDetect();
     };
+    // Slash detection only needs caret moves + typing — not word/paragraph select
+    // (double-click / Ctrl+A was re-running getText over the whole doc every time).
+    const onSelectionChange = (range: { index: number; length: number } | null) => {
+      if (range && range.length === 0) scheduleDetect();
+    };
     editor.on('text-change', onTextChange);
-    editor.on('selection-change', scheduleDetect);
+    editor.on('selection-change', onSelectionChange);
     editor.root.addEventListener('keyup', onKeyUp);
     return () => {
       editor.off('text-change', onTextChange);
-      editor.off('selection-change', scheduleDetect);
+      editor.off('selection-change', onSelectionChange);
       editor.root.removeEventListener('keyup', onKeyUp);
     };
   }, [activeScene.id, readOnly, onSlashCommandRequest, detectSlashCommand]);
@@ -351,10 +361,17 @@ export function NarrativeManuscriptEditor({
   useEffect(() => {
     const editor = getEditor();
     if (!editor || !onSelectionRectChange) return;
-    const onSelectionChange = (range: { index: number; length: number } | null) => {
-      if (!range?.length) { onSelectionRectChange(null); return; }
-      const bounds = editor.getBounds(range.index, range.length);
-      if (!bounds) { onSelectionRectChange(null); return; }
+    let latest: { index: number; length: number } | null = null;
+    const raf = createRafScheduler(() => {
+      const range = latest;
+      const bounds = getSafeSelectionBounds(
+        (i, len) => editor.getBounds(i, len ?? 0),
+        range,
+      );
+      if (!bounds) {
+        onSelectionRectChange(null);
+        return;
+      }
       const rootRect = editor.root.getBoundingClientRect();
       onSelectionRectChange(new DOMRect(
         rootRect.left + bounds.left,
@@ -362,9 +379,22 @@ export function NarrativeManuscriptEditor({
         bounds.width,
         bounds.height,
       ));
+    });
+    const onSelectionChange = (range: { index: number; length: number } | null) => {
+      latest = range;
+      // Oversized: clear chip immediately without waiting for rAF work
+      if (isOversizedSelection(range) || !range?.length) {
+        raf.cancel();
+        onSelectionRectChange(null);
+        return;
+      }
+      raf.schedule();
     };
     editor.on('selection-change', onSelectionChange);
-    return () => { editor.off('selection-change', onSelectionChange); };
+    return () => {
+      raf.cancel();
+      editor.off('selection-change', onSelectionChange);
+    };
   }, [activeScene.id, onSelectionRectChange]);
 
   useEffect(() => {
@@ -373,7 +403,8 @@ export function NarrativeManuscriptEditor({
       const editor = getEditor();
       if (editor) {
         const range = editor.getSelection();
-        if (range?.length) {
+        // Cap getText length — full-doc select must not copy 50k chars into anchor state
+        if (range?.length && !isOversizedSelection(range)) {
           const text = editor.getText(range.index, range.length).trim();
           if (text) {
             const anchor = { text, start_offset: range.index, end_offset: range.index + range.length };
@@ -392,7 +423,7 @@ export function NarrativeManuscriptEditor({
     const editor = getEditor();
     if (!editor) return;
     const onSel = (range: { index: number; length: number } | null) => {
-      if (!range?.length) return;
+      if (!range?.length || isOversizedSelection(range)) return;
       const text = editor.getText(range.index, range.length).trim();
       if (!text) return;
       lastSelectionRef.current = {

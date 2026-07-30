@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Stable English locale + onboarding bypass for Creator Studio E2E. */
 export async function enterStudio(page: Page, email = 'writer@katha.test') {
@@ -25,4 +25,41 @@ export async function openDemoChapter(page: Page, chapterNum = 1) {
   await page.goto(`/stories/demo-valley-te/chapters/${chapterNum}`);
   await expect(page.locator('.narrative-os-app')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('.narrative-stage-shell .canvas')).toBeVisible();
+}
+
+/** Wait until the Quill manuscript is interactive (not the loading skeleton). */
+export async function waitForManuscriptEditor(page: Page): Promise<Locator> {
+  const editor = page.locator('.narrative-os-app .ql-editor').first();
+  await expect(editor).toBeVisible({ timeout: 20_000 });
+  await expect(editor).toBeEditable();
+  // Arrival overlay must not steal focus/clicks
+  await expect(page.locator('.narrative-os-app .arrival:not(.hide)')).toHaveCount(0);
+  return editor;
+}
+
+/**
+ * Type into Quill without Ctrl+A / select-all.
+ * Chrome-automation Ctrl+A is unreliable against this editor and was a major
+ * source of false "keystroke loss" reports (prepend vs replace confusion).
+ */
+export async function typeIntoManuscript(
+  editor: Locator,
+  text: string,
+  opts?: { clearFirst?: boolean },
+) {
+  await editor.click();
+  if (opts?.clearFirst) {
+    // Prefer Quill's own empty state over select-all
+    await editor.evaluate((el) => {
+      el.focus();
+      // Place caret at end so we append predictably
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    });
+  }
+  await editor.pressSequentially(text, { delay: 15 });
 }

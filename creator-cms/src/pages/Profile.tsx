@@ -14,6 +14,9 @@ import { StoryTrustBadge } from '../components/studio/StoryTrustBadge';
 import type { StoryTrustLevelId } from '../lib/platformConstants';
 import { useLocale } from '../context/LocaleContext';
 import { TeluguTextField } from '../components/TeluguTextField';
+import { FoundingAuthorBadge } from '../components/moat/FoundingAuthorBadge';
+import { TrustLadderPanel } from '../components/moat/TrustLadderPanel';
+import { ReaderAudiencePanel } from '../components/moat/ReaderAudiencePanel';
 
 const PROFILE_GENRES = PRD_GENRES.filter((g) => !('mapsTo' in g && g.mapsTo));
 
@@ -22,6 +25,9 @@ export function Profile() {
   const { user } = useAuth();
   const { data: dash } = useApi(() => api.getDashboard().catch(() => null));
   const { data: repData } = useApi(() => api.getCreatorReputation().catch(() => null));
+  const { data: foundingData } = useApi(() =>
+    api.getFoundingAuthorStatus().catch(() => ({ status: { enrolled: false } })),
+  );
   const [profile, setProfile] = useState(() => loadCreatorProfile(user?.display_name || 'Creator'));
   const [saved, setSaved] = useState(false);
   const te = locale === 'te';
@@ -75,6 +81,7 @@ export function Profile() {
             <Award size={16} aria-hidden />
             {badge.label}
           </div>
+          <FoundingAuthorBadge status={foundingData?.status} />
           <div className="profile-card__stats">
             <div><strong>{formatCompact(totalReads)}</strong><span>{t('profile.totalReads')}</span></div>
             <div><strong>{sharePct}%+</strong><span>{t('profile.storyTrust')}</span></div>
@@ -93,8 +100,14 @@ export function Profile() {
               <Link to="/monetization" className="katha-cta katha-cta--soft">{t('profile.viewTrustLadder')}</Link>
             </div>
           )}
+          <ReaderAudiencePanel />
         </aside>
 
+        <div className="profile-form-column">
+        <TrustLadderPanel
+          totalReads={totalReads}
+          trustLevel={(repData?.reputation?.top_trust_level as StoryTrustLevelId) || storyTrust}
+        />
         <form className="cms-panel profile-form" onSubmit={handleSave}>
           <h3 className="cms-panel__title"><User size={18} aria-hidden /> {t('profile.publicDetails')}</h3>
           <div className="profile-form__grid">
@@ -167,6 +180,7 @@ export function Profile() {
             <Link to="/stories/new" className="btn btn-secondary"><PenLine size={16} /> {t('profile.writeNew')}</Link>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

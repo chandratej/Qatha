@@ -3096,6 +3096,70 @@
   line-height: 1.5;
 }
 
+.katha-publish-confirm__cover {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--paper, #faf7f2);
+  box-shadow: inset 0 0 0 1px rgba(122, 99, 64, 0.1);
+}
+.katha-publish-confirm__cover--needed {
+  box-shadow: inset 0 0 0 1px rgba(122, 74, 82, 0.28);
+  background: rgba(122, 74, 82, 0.04);
+}
+.katha-publish-confirm__cover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 0.8125rem;
+}
+.katha-publish-confirm__cover-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.katha-publish-confirm__cover-preview {
+  flex: 0 0 72px;
+  width: 72px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(122, 99, 64, 0.08);
+  color: var(--ink-muted, #5c534c);
+}
+.katha-publish-confirm__cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.katha-publish-confirm__cover-actions {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.katha-publish-confirm__cover-actions p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-soft, #3d342c);
+}
+.katha-publish-confirm__cover-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .katha-publish-confirm__cta,
 .katha-delete-scene__cta {
   display: inline-flex;

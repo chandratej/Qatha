@@ -16,6 +16,9 @@ import { StudioEmptyState } from '../components/studio/StudioEmptyState';
 import { StudioGlyph } from '../components/studio/StudioGlyph';
 import { useLocale } from '../context/LocaleContext';
 import { useCreatorPersona } from '../hooks/useCreatorPersona';
+import { TrustLadderPanel } from '../components/moat/TrustLadderPanel';
+import { FoundingAuthorBadge } from '../components/moat/FoundingAuthorBadge';
+import { ReaderAudiencePanel } from '../components/moat/ReaderAudiencePanel';
 
 
 function statusBadgeClass(status?: string) {
@@ -59,6 +62,9 @@ export function Dashboard() {
         total_score: null,
       },
     })),
+  );
+  const { data: foundingData } = useApi(() =>
+    api.getFoundingAuthorStatus().catch(() => ({ status: { enrolled: false } })),
   );
   const [activeMilestone, setActiveMilestone] = useState<CreatorMilestone | null>(null);
   const [showDebutGraduation, setShowDebutGraduation] = useState(false);
@@ -258,6 +264,15 @@ export function Dashboard() {
           <PenLine size={16} aria-hidden />
           {t('stories.newStory')}
         </Link>
+      </div>
+
+      <div className="sv21__moat-grid" style={{ display: 'grid', gap: 16, marginBottom: 20 }}>
+        <FoundingAuthorBadge status={foundingData?.status} />
+        <TrustLadderPanel
+          totalReads={(d?.stories ?? []).reduce((s, x) => s + (x.total_readers || 0), 0)}
+          compact
+        />
+        <ReaderAudiencePanel />
       </div>
 
       <div className="sv21__streak">

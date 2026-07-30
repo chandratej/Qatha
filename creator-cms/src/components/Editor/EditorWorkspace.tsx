@@ -34,6 +34,11 @@ import {
   isEmptyEditorHtml,
   replaceTrailingRomanInHtml,
 } from '../../lib/quillPhonetic';
+import {
+  createRafScheduler,
+  getSafeSelectionBounds,
+  isOversizedSelection,
+} from '../../lib/quillSelectionBounds';
 
 interface EditorWorkspaceProps {
   activeScene: SceneBlock | undefined;
@@ -191,16 +196,16 @@ export function EditorWorkspace({
     const editor = getEditor();
     if (!editor) return;
     const selection = editor.getSelection();
-    if (selection) {
-      const bounds = editor.getBounds(selection.index, selection.length);
-      if (!bounds) return;
-      const editorNode = editor.root.parentNode as HTMLElement;
-      const editorRect = editorNode.getBoundingClientRect();
-      setSuggestionsPos({
-        top: bounds.bottom + editorRect.top + window.scrollY + 5,
-        left: bounds.left + editorRect.left + window.scrollX,
-      });
-    }
+    // Caret-only bounds — never getBounds(index, length>0).
+    if (!selection) return;
+    const bounds = editor.getBounds(selection.index, 0);
+    if (!bounds) return;
+    const editorNode = editor.root.parentNode as HTMLElement;
+    const editorRect = editorNode.getBoundingClientRect();
+    setSuggestionsPos({
+      top: bounds.bottom + editorRect.top + window.scrollY + 5,
+      left: bounds.left + editorRect.left + window.scrollX,
+    });
   }, []);
 
   const showPhoneticSuggestions = useCallback((trailing: string) => {
@@ -416,27 +421,40 @@ export function EditorWorkspace({
     const editor = getEditor();
     if (!editor) return;
 
-    const onSelectionChange = (range: { index: number; length: number } | null) => {
-      if (!range?.length || !onSelectionRectChange) {
+    let latest: { index: number; length: number } | null = null;
+    const raf = createRafScheduler(() => {
+      const bounds = getSafeSelectionBounds(
+        (i, len) => editor.getBounds(i, len ?? 0),
+        latest,
+      );
+      if (!bounds) {
         onSelectionRectChange?.(null);
         return;
       }
-      const bounds = editor.getBounds(range.index, range.length);
-      if (!bounds) {
-        onSelectionRectChange(null);
-        return;
-      }
       const rootRect = editor.root.getBoundingClientRect();
-      onSelectionRectChange(new DOMRect(
+      onSelectionRectChange?.(new DOMRect(
         rootRect.left + bounds.left,
         rootRect.top + bounds.top,
         bounds.width,
         bounds.height,
       ));
+    });
+    const onSelectionChange = (range: { index: number; length: number } | null) => {
+      if (!onSelectionRectChange) return;
+      latest = range;
+      if (isOversizedSelection(range) || !range?.length) {
+        raf.cancel();
+        onSelectionRectChange(null);
+        return;
+      }
+      raf.schedule();
     };
 
     editor.on('selection-change', onSelectionChange);
-    return () => { editor.off('selection-change', onSelectionChange); };
+    return () => {
+      raf.cancel();
+      editor.off('selection-change', onSelectionChange);
+    };
   }, [narrativeOsEnabled, onSelectionRectChange, activeScene?.id]);
 
   const detectSlashCommand = useCallback((editor: ReturnType<NonNullable<typeof quillRef.current>['getEditor']>) => {

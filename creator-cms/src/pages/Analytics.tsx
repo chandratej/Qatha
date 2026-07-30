@@ -21,6 +21,11 @@ import {
   effectiveCreatorSharePct,
   type StoryTrustLevelId,
 } from '../lib/platformConstants';
+import {
+  exportAnalyticsHistoryJson,
+  listAnalyticsHistory,
+  recordAnalyticsSnapshot,
+} from '../lib/analyticsHistory';
 
 type DateRange = '7d' | '30d' | 'all';
 
@@ -53,6 +58,21 @@ export function Analytics() {
   useEffect(() => {
     if (storyId) trackCreatorEvent('creator_analytics_view', { story_id: storyId });
   }, [storyId]);
+
+  // Compound history: snapshot each visit so 2-year series performance stays on-device + exportable
+  useEffect(() => {
+    if (!storyId || !data?.chapters?.length) return;
+    recordAnalyticsSnapshot({
+      story_id: storyId,
+      captured_at: new Date().toISOString(),
+      chapters: data.chapters.map((c) => ({
+        chapter_number: c.chapter_number,
+        total_views: c.total_views,
+        completion_rate: c.completion_rate,
+        avg_scroll_pct: c.avg_scroll_pct,
+      })),
+    });
+  }, [storyId, data?.chapters]);
 
   const handleRecomputeTrust = async () => {
     if (!storyId) return;
@@ -97,6 +117,19 @@ export function Analytics() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const exportHistory = () => {
+    if (!storyId) return;
+    const blob = new Blob([exportAnalyticsHistoryJson(storyId)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-history-${storyId}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const historyCount = storyId ? listAnalyticsHistory(storyId).length : 0;
 
   if (loading) {
     return (
@@ -160,6 +193,9 @@ export function Analytics() {
             </select>
             <button type="button" className="btn btn-secondary" onClick={exportCsv}>
               <Download size={16} aria-hidden /> {t('analytics.exportCsv')}
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={exportHistory} title="Multi-visit history — compounds as your series grows">
+              <Download size={16} aria-hidden /> {locale === 'te' ? `చరిత్ర (${historyCount})` : `History (${historyCount})`}
             </button>
           </div>
         )}

@@ -254,9 +254,9 @@ export function SceneSidebar({
           className="katha-proto-trash-btn"
           onClick={() => onDeleteScene?.(activeSceneId)}
           disabled={scenes.length <= 1}
-          title={scenes.length <= 1 ? 'Keep at least one scene' : 'Delete active scene'}
+          title={scenes.length <= 1 ? t('common.delete') : t('common.delete')}
         >
-          <Trash2 size={14} strokeWidth={EDITOR_ICON_STROKE} /> Delete
+          <Trash2 size={14} strokeWidth={EDITOR_ICON_STROKE} /> {t('common.delete')}
         </button>
         {!drawerMode && (
           <button
@@ -291,6 +291,7 @@ function DragDots() {
 }
 
 function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggable }: SceneRowProps) {
+  const { t } = useLocale();
   const words = getWordCount(scene.content);
   const dragControls = useDragControls();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -339,7 +340,7 @@ function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggabl
         <button
           type="button"
           className="sc-u-menu-btn"
-          aria-label="Scene options"
+          aria-label={t('common.more')}
           aria-expanded={menuOpen}
           onClick={e => { e.stopPropagation(); setMenuOpen(o => !o); }}
         >
@@ -354,7 +355,7 @@ function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggabl
                 className="sc-u-menu-item"
                 onClick={e => { e.stopPropagation(); onDuplicate(scene.id); setMenuOpen(false); }}
               >
-                Duplicate
+                {t('common.duplicate')}
               </button>
             )}
             {onDelete && (
@@ -364,7 +365,7 @@ function SceneRow({ idx, scene, active, onClick, onDelete, onDuplicate, draggabl
                 className="sc-u-menu-item sc-u-menu-item--danger"
                 onClick={e => { e.stopPropagation(); onDelete(scene.id); setMenuOpen(false); }}
               >
-                Delete
+                {t('common.delete')}
               </button>
             )}
           </div>

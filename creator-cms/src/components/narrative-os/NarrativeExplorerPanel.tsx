@@ -34,6 +34,7 @@ function DragDots() {
 function ExplorerSceneRow({
   idx, scene, active, onClick, onDelete, onDuplicate, onRename, draggable, locale = 'en', phoneticLive = true,
 }: SceneRowProps & { locale?: string }) {
+  const { t } = useLocale();
   const words = getSceneWordCount(scene.content, locale);
   const dragControls = useDragControls();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -125,7 +126,7 @@ function ExplorerSceneRow({
         <button
           type="button"
           className="nos-scene-menu__btn"
-          aria-label="Scene options"
+          aria-label={t('common.more')}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
@@ -145,17 +146,17 @@ function ExplorerSceneRow({
                   setMenuOpen(false);
                 }}
               >
-                Rename
+                {t('common.rename')}
               </button>
             )}
             {onDuplicate && (
               <button type="button" role="menuitem" onClick={(e) => { e.stopPropagation(); onDuplicate(scene.id); setMenuOpen(false); }}>
-                Duplicate
+                {t('common.duplicate')}
               </button>
             )}
             {onDelete && (
               <button type="button" role="menuitem" className="danger" onClick={(e) => { e.stopPropagation(); onDelete(scene.id); setMenuOpen(false); }}>
-                Delete
+                {t('common.delete')}
               </button>
             )}
           </div>

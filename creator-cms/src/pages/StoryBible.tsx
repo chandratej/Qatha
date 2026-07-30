@@ -6,16 +6,20 @@ import { LORE_CATEGORIES } from '../../../packages/shared/storyBible';
 import { INVITE_ROLES } from '../../../packages/shared/collaboration';
 import type {
   StoryCharacter,
+  StoryCharacterRelationship,
   StoryCollaborationTask,
   StoryLoreEntry,
   StoryMemberSummary,
+  StoryPlotEvent,
 } from '../../../packages/shared/storyBible';
+import { RELATION_TYPES } from '../../../packages/shared/storyBible';
 import type { StoryMemberInvite } from '../../../packages/shared/collaboration';
 import type { StoryContributorAttribution } from '../../../packages/shared/media';
 import { useLocale } from '../context/LocaleContext';
 import { friendlyFeatureError, isSchemaTableMissingMessage, SCHEMA_FEATURE_PENDING } from '../lib/errors';
+import { importPersonalCorrections } from '../lib/phonetic';
 
-type Tab = 'characters' | 'world' | 'team';
+type Tab = 'characters' | 'world' | 'timeline' | 'relationships' | 'team';
 
 function memberLabel(member: StoryMemberSummary) {
   const shortId = member.user_id.slice(0, 8);
@@ -27,12 +31,14 @@ function charInitial(name: string) {
 }
 
 export function StoryBible() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { storyId = '' } = useParams();
   const [tab, setTab] = useState<Tab>('characters');
   const [storyTitle, setStoryTitle] = useState<string | null>(null);
   const [characters, setCharacters] = useState<StoryCharacter[]>([]);
   const [lore, setLore] = useState<StoryLoreEntry[]>([]);
+  const [plotEvents, setPlotEvents] = useState<StoryPlotEvent[]>([]);
+  const [relationships, setRelationships] = useState<StoryCharacterRelationship[]>([]);
   const [members, setMembers] = useState<StoryMemberSummary[]>([]);
   const [tasks, setTasks] = useState<StoryCollaborationTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,9 +48,16 @@ export function StoryBible() {
 
   const [charName, setCharName] = useState('');
   const [charBio, setCharBio] = useState('');
+  const [charRoman, setCharRoman] = useState('');
   const [loreTitle, setLoreTitle] = useState('');
   const [loreCategory, setLoreCategory] = useState<string>('location');
   const [loreBody, setLoreBody] = useState('');
+  const [plotLabel, setPlotLabel] = useState('');
+  const [plotWhen, setPlotWhen] = useState('');
+  const [plotChapter, setPlotChapter] = useState('');
+  const [relFrom, setRelFrom] = useState('');
+  const [relTo, setRelTo] = useState('');
+  const [relType, setRelType] = useState<string>('related');
   const [taskTitle, setTaskTitle] = useState('');
   const [taskAssignee, setTaskAssignee] = useState('');
   const [invites, setInvites] = useState<StoryMemberInvite[]>([]);
@@ -59,7 +72,7 @@ export function StoryBible() {
     setError(null);
     setSchemaPending(false);
     try {
-      const [chars, loreRes, membersRes, tasksRes, invitesRes, attrRes, storiesRes] = await Promise.all([
+      const [chars, loreRes, membersRes, tasksRes, invitesRes, attrRes, storiesRes, timelineRes, relRes] = await Promise.all([
         api.getStoryCharacters(storyId),
         api.getStoryLore(storyId),
         api.getStoryMembers(storyId),
@@ -67,9 +80,13 @@ export function StoryBible() {
         api.getStoryInvites(storyId).catch(() => ({ invites: [] })),
         api.getStoryAttributions(storyId).catch(() => ({ attributions: [] })),
         api.getCreatorStories().catch(() => ({ stories: [] })),
+        api.getStoryTimeline(storyId).catch(() => ({ events: [] as StoryPlotEvent[] })),
+        api.getStoryRelationships(storyId).catch(() => ({ relationships: [] as StoryCharacterRelationship[] })),
       ]);
       setCharacters(chars.characters ?? []);
       setLore(loreRes.entries ?? []);
+      setPlotEvents(timelineRes.events ?? []);
+      setRelationships(relRes.relationships ?? []);
       setMembers(membersRes.members ?? []);
       setTasks(tasksRes.tasks ?? []);
       setInvites(invitesRes.invites ?? []);
@@ -81,6 +98,8 @@ export function StoryBible() {
       if (isSchemaTableMissingMessage(msg)) {
         setCharacters([]);
         setLore([]);
+        setPlotEvents([]);
+        setRelationships([]);
         setMembers([]);
         setTasks([]);
         setInvites([]);
@@ -103,14 +122,72 @@ export function StoryBible() {
     setBusy(true);
     try {
       await api.createStoryCharacter(storyId, { name: charName.trim(), bio: charBio.trim() || undefined });
+      // Bridge names into personal phonetic dict (moat #1 ← #2)
+      if (charRoman.trim()) {
+        importPersonalCorrections({ [charRoman.trim()]: charName.trim() });
+      }
       setCharName('');
       setCharBio('');
+      setCharRoman('');
       await reload();
     } catch (e) {
       setError(friendlyFeatureError(e instanceof Error ? e.message : 'Could not add character'));
     } finally {
       setBusy(false);
     }
+  };
+
+  const addPlotEvent = async () => {
+    if (!plotLabel.trim()) return;
+    setBusy(true);
+    try {
+      await api.createStoryPlotEvent(storyId, {
+        label: plotLabel.trim(),
+        when_label: plotWhen.trim() || undefined,
+        chapter_number: plotChapter ? Number(plotChapter) : undefined,
+      });
+      setPlotLabel('');
+      setPlotWhen('');
+      setPlotChapter('');
+      await reload();
+    } catch (e) {
+      setError(friendlyFeatureError(e instanceof Error ? e.message : 'Could not add timeline event'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addRelationship = async () => {
+    if (!relFrom || !relTo || relFrom === relTo) return;
+    setBusy(true);
+    try {
+      await api.createStoryRelationship(storyId, {
+        from_character_id: relFrom,
+        to_character_id: relTo,
+        relation_type: relType,
+      });
+      setRelFrom('');
+      setRelTo('');
+      await reload();
+    } catch (e) {
+      setError(friendlyFeatureError(e instanceof Error ? e.message : 'Could not add relationship'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const pushNamesToPhoneticDict = () => {
+    const map: Record<string, string> = {};
+    for (const c of characters) {
+      // Without roman form, still pin exact Telugu name as self-map for search
+      map[c.name] = c.name;
+    }
+    const n = importPersonalCorrections(map, { overwrite: false });
+    setError(null);
+    setBusy(false);
+    alert(n > 0
+      ? `Pinned ${n} names into your personal phonetic dictionary.`
+      : 'Names already in your dictionary.');
   };
 
   const addLore = async () => {
@@ -200,9 +277,11 @@ export function StoryBible() {
     }
   };
 
-  const tabLabels = {
+  const tabLabels: Record<Tab, string> = {
     characters: t('storyBible.characters'),
     world: t('storyBible.world'),
+    timeline: locale === 'te' ? 'కాలరేఖ' : 'Timeline',
+    relationships: locale === 'te' ? 'సంబంధాలు' : 'Relationships',
     team: t('storyBible.team'),
   };
 
@@ -231,7 +310,7 @@ export function StoryBible() {
       </div>
 
       <nav className="sv21__tabs sv21__tabs--underline" aria-label="Story bible sections">
-        {(['characters', 'world', 'team'] as Tab[]).map((id) => (
+        {(['characters', 'world', 'timeline', 'relationships', 'team'] as Tab[]).map((id) => (
           <button
             key={id}
             type="button"
@@ -262,9 +341,24 @@ export function StoryBible() {
             <div className="sv21__field">
               <textarea className="sv21__textarea" placeholder={t('storyBible.charBioPlaceholder')} rows={2} value={charBio} onChange={(e) => setCharBio(e.target.value)} />
             </div>
-            <button type="button" className="sv21__add-btn" disabled={busy} onClick={() => { void addCharacter(); }}>
-              <Plus size={16} aria-hidden /> {t('storyBible.addCharacter')}
-            </button>
+            <div className="sv21__field">
+              <input
+                className="sv21__input"
+                placeholder={locale === 'te' ? 'రోమన్ ఫొనెటిక్ (నిఘంటువుకు పిన్)' : 'Roman phonetic (pin to dictionary)'}
+                value={charRoman}
+                onChange={(e) => setCharRoman(e.target.value)}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="sv21__add-btn" disabled={busy} onClick={() => { void addCharacter(); }}>
+                <Plus size={16} aria-hidden /> {t('storyBible.addCharacter')}
+              </button>
+              {characters.length > 0 && (
+                <button type="button" className="sv21__cta sv21__cta--soft" disabled={busy} onClick={pushNamesToPhoneticDict}>
+                  {locale === 'te' ? 'పేర్లు → ఫొనెటిక్ నిఘంటువు' : 'Names → phonetic dictionary'}
+                </button>
+              )}
+            </div>
           </div>
 
           {characters.length === 0 ? (
@@ -338,6 +432,103 @@ export function StoryBible() {
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {!loading && tab === 'timeline' && (
+        <>
+          <div className="sv21__form-card">
+            <h3>{locale === 'te' ? 'ప్లాట్ కాలరేఖ' : 'Plot timeline'}</h3>
+            <p className="sv21__subtitle" style={{ marginBottom: 12 }}>
+              {locale === 'te'
+                ? '40 అధ్యాయాల కాలక్రమం వేరే చోట పునర్నిర్మించడం కష్టం — ఇక్కడే ఉంచండి.'
+                : 'A 40-chapter chronology is expensive to rebuild elsewhere — keep it here.'}
+            </p>
+            <div className="sv21__field">
+              <input className="sv21__input" placeholder={locale === 'te' ? 'సంఘటన' : 'Event label'} value={plotLabel} onChange={(e) => setPlotLabel(e.target.value)} />
+            </div>
+            <div className="sv21__field">
+              <input className="sv21__input" placeholder={locale === 'te' ? 'ఎప్పుడు (కథా సమయం)' : 'When (story time)'} value={plotWhen} onChange={(e) => setPlotWhen(e.target.value)} />
+            </div>
+            <div className="sv21__field">
+              <input className="sv21__input" type="number" min={1} placeholder={locale === 'te' ? 'అధ్యాయం #' : 'Chapter #'} value={plotChapter} onChange={(e) => setPlotChapter(e.target.value)} />
+            </div>
+            <button type="button" className="sv21__add-btn" disabled={busy} onClick={() => { void addPlotEvent(); }}>
+              <Plus size={16} aria-hidden /> {locale === 'te' ? 'సంఘటన జోడించు' : 'Add event'}
+            </button>
+          </div>
+          {plotEvents.length === 0 ? (
+            <div className="sv21__empty">
+              <p>{locale === 'te' ? 'ఇంకా కాలరేఖ సంఘటనలు లేవు.' : 'No timeline events yet.'}</p>
+            </div>
+          ) : (
+            <ol className="sv21__char-list" style={{ listStyle: 'none', padding: 0 }}>
+              {plotEvents.map((ev) => (
+                <li key={ev.id} className="sv21__char-row">
+                  <div style={{ flex: 1 }}>
+                    <p className="sv21__char-name">{ev.label}</p>
+                    <p className="sv21__char-bio">
+                      {[ev.when_label, ev.chapter_number != null ? `Ch ${ev.chapter_number}` : null].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  <button type="button" className="sv21__icon-btn" aria-label="Delete event" onClick={() => { void api.deleteStoryPlotEvent(storyId, ev.id).then(reload); }}>
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      )}
+
+      {!loading && tab === 'relationships' && (
+        <>
+          <div className="sv21__form-card">
+            <h3>{locale === 'te' ? 'పాత్ర సంబంధాలు' : 'Character relationships'}</h3>
+            <div className="sv21__field">
+              <select className="sv21__input" value={relFrom} onChange={(e) => setRelFrom(e.target.value)}>
+                <option value="">{locale === 'te' ? 'నుండి…' : 'From…'}</option>
+                {characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="sv21__field">
+              <select className="sv21__input" value={relTo} onChange={(e) => setRelTo(e.target.value)}>
+                <option value="">{locale === 'te' ? 'కు…' : 'To…'}</option>
+                {characters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="sv21__field">
+              <select className="sv21__input" value={relType} onChange={(e) => setRelType(e.target.value)}>
+                {RELATION_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <button type="button" className="sv21__add-btn" disabled={busy || characters.length < 2} onClick={() => { void addRelationship(); }}>
+              <Plus size={16} aria-hidden /> {locale === 'te' ? 'సంబంధం జోడించు' : 'Add relationship'}
+            </button>
+          </div>
+          {relationships.length === 0 ? (
+            <div className="sv21__empty">
+              <p>{locale === 'te' ? 'ఇంకా సంబంధాలు లేవు — కనీసం ఇద్దరు పాత్రలు కావాలి.' : 'No relationships yet — add at least two characters first.'}</p>
+            </div>
+          ) : (
+            <div className="sv21__char-list">
+              {relationships.map((r) => {
+                const from = characters.find((c) => c.id === r.from_character_id)?.name || r.from_character_id.slice(0, 6);
+                const to = characters.find((c) => c.id === r.to_character_id)?.name || r.to_character_id.slice(0, 6);
+                return (
+                  <div key={r.id} className="sv21__char-row">
+                    <div style={{ flex: 1 }}>
+                      <p className="sv21__char-name">{from} → {to}</p>
+                      <p className="sv21__char-bio">{r.relation_type}{r.notes ? ` · ${r.notes}` : ''}</p>
+                    </div>
+                    <button type="button" className="sv21__icon-btn" aria-label="Delete relationship" onClick={() => { void api.deleteStoryRelationship(storyId, r.id).then(reload); }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </>

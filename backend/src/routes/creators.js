@@ -52,6 +52,12 @@ import {
   updateLoreEntry,
   deleteLoreEntry,
   exportGlossary,
+  listPlotEvents,
+  createPlotEvent,
+  deletePlotEvent,
+  listRelationships,
+  createRelationship,
+  deleteRelationship,
 } from '../services/storyBibleStore.js';
 import {
   listStoryMembers,
@@ -93,6 +99,7 @@ import {
   getDebutProgress,
   graduateDebutStory,
 } from '../services/debutSeasonStore.js';
+import { getFoundingStatusForCreator } from '../services/foundingAuthorProgram.js';
 import {
   listCommunityPosts,
   createCommunityPost,
@@ -207,7 +214,8 @@ creatorsRouter.get('/stories', async (req, res, next) => {
 
     if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
 
-    const rows = data || [];
+    // Soft-archived shells (payments blocked hard delete) stay out of the shelf.
+    const rows = (data || []).filter((s) => !String(s.title || '').startsWith('[archived] '));
     if (rows.length === 0) {
       return res.json({ stories: [] });
     }
@@ -502,11 +510,24 @@ creatorsRouter.delete('/stories/:storyId', requireStoryRole('story.delete'), asy
       return res.json({ archived: true, mock: true });
     }
 
-    const { data: existing } = await supabase.from('stories').select('author_id').eq('id', storyId).single();
+    const { data: existing } = await supabase.from('stories').select('author_id, title').eq('id', storyId).single();
     if (!existing || existing.author_id !== creatorId) throw createAppError('INTERNAL_ERROR', 'Unauthorized', 403);
 
-    const { error } = await supabase.from('stories').update({ is_published: false }).eq('id', storyId);
-    if (error) throw createAppError('INTERNAL_ERROR', error.message, 500);
+    // Unpublish for readers first
+    await supabase.from('stories').update({ is_published: false }).eq('id', storyId);
+    await supabase.from('chapter_drafts').delete().eq('story_id', storyId).eq('creator_id', creatorId);
+
+    // Prefer hard delete so the story leaves the creator shelf (not a no-op unpublish).
+    const { error: delErr } = await supabase.from('stories').delete().eq('id', storyId);
+    if (delErr) {
+      if (/foreign key|restrict|violates/i.test(delErr.message || '')) {
+        const title = String(existing.title || 'Story');
+        const archivedTitle = title.startsWith('[archived] ') ? title : `[archived] ${title}`.slice(0, 100);
+        await supabase.from('stories').update({ title: archivedTitle, is_published: false }).eq('id', storyId);
+        return res.json({ archived: true, retained: true });
+      }
+      throw createAppError('INTERNAL_ERROR', delErr.message, 500);
+    }
     res.json({ archived: true });
   } catch (err) {
     next(err);
@@ -1507,6 +1528,61 @@ creatorsRouter.delete('/stories/:storyId/lore/:entryId', requireStoryRole('story
   }
 });
 
+/** Continuity moat — timeline + character relationships */
+creatorsRouter.get('/stories/:storyId/timeline', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const events = await listPlotEvents(req.params.storyId);
+    res.json({ events });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/timeline', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const event = await createPlotEvent(req.params.storyId, req.body || {});
+    res.status(201).json({ event });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.delete('/stories/:storyId/timeline/:eventId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const result = await deletePlotEvent(req.params.storyId, req.params.eventId);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.get('/stories/:storyId/relationships', requireStoryRole('story.read'), async (req, res, next) => {
+  try {
+    const relationships = await listRelationships(req.params.storyId);
+    res.json({ relationships });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.post('/stories/:storyId/relationships', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const relationship = await createRelationship(req.params.storyId, req.body || {});
+    res.status(201).json({ relationship });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+creatorsRouter.delete('/stories/:storyId/relationships/:relationshipId', requireStoryRole('story.edit'), async (req, res, next) => {
+  try {
+    const result = await deleteRelationship(req.params.storyId, req.params.relationshipId);
+    res.json(result);
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
 /** Collaboration scaffold — Vol_04-CW-D2 */
 creatorsRouter.get('/stories/:storyId/members', requireStoryRole('story.read'), async (req, res, next) => {
   try {
@@ -1773,6 +1849,17 @@ creatorsRouter.post('/community/posts/:postId/love', async (req, res, next) => {
     const post = await togglePostLove(req.params.postId, userId);
     if (!post) throw createAppError('NOT_FOUND', 'Post not found', 404);
     res.json({ post });
+  } catch (err) {
+    next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
+  }
+});
+
+/** Founding Author permanent recognition + acceleration window */
+creatorsRouter.get('/founding-author/status', async (req, res, next) => {
+  try {
+    const creatorId = getAuthenticatedUserId(req);
+    const status = await getFoundingStatusForCreator(creatorId);
+    res.json({ status });
   } catch (err) {
     next(err instanceof Error ? createAppError('BAD_REQUEST', err.message, 400) : err);
   }

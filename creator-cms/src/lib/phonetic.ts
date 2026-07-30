@@ -872,15 +872,63 @@ export async function syncPhoneticCorrectionsFromCloud() {
 
 export function setPersonalCorrection(phoneticInput: string, correctedTelugu: string) {
   const key = phoneticInput.toLowerCase().trim();
-  personalCorrections[key] = correctedTelugu;
+  const value = correctedTelugu.trim();
+  if (!key || !value) return;
+  personalCorrections[key] = value;
   cachePersonalCorrections();
   import('./supabaseData')
-    .then(({ sbUpsertPhoneticCorrection }) => sbUpsertPhoneticCorrection(key, correctedTelugu))
+    .then(({ sbUpsertPhoneticCorrection }) => sbUpsertPhoneticCorrection(key, value))
     .catch(() => {});
+}
+
+export function deletePersonalCorrection(phoneticInput: string) {
+  const key = phoneticInput.toLowerCase().trim();
+  if (!key || !(key in personalCorrections)) return;
+  delete personalCorrections[key];
+  cachePersonalCorrections();
+  import('./supabaseData')
+    .then(({ sbDeletePhoneticCorrection }) => sbDeletePhoneticCorrection(key))
+    .catch(() => {});
+}
+
+/** Bulk-import map (e.g. Story Bible character names → Telugu spellings). */
+export function importPersonalCorrections(map: Record<string, string>, opts?: { overwrite?: boolean }) {
+  const overwrite = opts?.overwrite !== false;
+  let added = 0;
+  for (const [rawKey, rawVal] of Object.entries(map)) {
+    const key = rawKey.toLowerCase().trim();
+    const value = String(rawVal || '').trim();
+    if (!key || !value) continue;
+    if (!overwrite && personalCorrections[key]) continue;
+    personalCorrections[key] = value;
+    added += 1;
+    import('./supabaseData')
+      .then(({ sbUpsertPhoneticCorrection }) => sbUpsertPhoneticCorrection(key, value))
+      .catch(() => {});
+  }
+  cachePersonalCorrections();
+  return added;
+}
+
+/** Export personal dictionary as JSON (switching-cost asset — portable backup). */
+export function exportPersonalCorrectionsJson(): string {
+  return JSON.stringify(
+    {
+      version: 1,
+      exported_at: new Date().toISOString(),
+      corrections: getPersonalCorrections(),
+    },
+    null,
+    2,
+  );
 }
 
 export function getPersonalCorrections() {
   return { ...personalCorrections };
+}
+
+export function personalCorrectionCount(): number {
+  return Object.keys(personalCorrections).length;
 }
 
 // Apply personal corrections (whole word or exact match first)

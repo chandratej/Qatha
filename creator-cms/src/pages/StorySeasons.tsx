@@ -613,7 +613,7 @@ function ChapterRowV21({
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete Chapter ${chNum}? This cannot be undone.`)) return;
+    if (!confirm(t('chapters.deleteConfirm').replace('{num}', String(chNum)))) return;
     setBusy(true);
     try {
       await api.deleteChapter(storyId, chNum);
@@ -706,7 +706,7 @@ function ChapterRowV21({
           {menuOpen && (
             <div className="sv21__form-card" style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, padding: 6, minWidth: 160, zIndex: 10 }}>
               <button type="button" className="sv21__open-btn" style={{ border: 'none', width: '100%' }} onClick={() => { setEditTitle(title); setEditing(true); setMenuOpen(false); }}>
-                <Pencil size={14} /> Rename
+                <Pencil size={14} /> {t('common.rename')}
               </button>
               {canSchedule && (
                 <button
@@ -720,10 +720,10 @@ function ChapterRowV21({
                 </button>
               )}
               <button type="button" className="sv21__open-btn" style={{ border: 'none', width: '100%' }} onClick={() => { void handleDuplicate(); setMenuOpen(false); }} disabled={busy}>
-                <Copy size={14} /> Duplicate
+                <Copy size={14} /> {t('common.duplicate')}
               </button>
               <button type="button" className="sv21__open-btn" style={{ border: 'none', width: '100%', color: '#b42318' }} onClick={() => { void handleDelete(); setMenuOpen(false); }} disabled={busy}>
-                <Trash2 size={14} /> Delete
+                <Trash2 size={14} /> {t('common.delete')}
               </button>
             </div>
           )}
@@ -782,7 +782,7 @@ function ChapterRow({
 
   const handleDelete = async () => {
     if (!storyId || !onRefresh) return;
-    if (!confirm(`Delete Chapter ${chNum}? This cannot be undone.`)) return;
+    if (!confirm(t('chapters.deleteConfirm').replace('{num}', String(chNum)))) return;
     setBusy(true);
     try {
       await api.deleteChapter(storyId, chNum);
@@ -856,13 +856,13 @@ function ChapterRow({
       <div className="manuscript-chapter-spine-card__actions">
         {onRefresh && storyId && !editing && (
           <>
-            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => { setEditTitle(title); setEditing(true); }} disabled={busy} aria-label="Rename">
+            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={() => { setEditTitle(title); setEditing(true); }} disabled={busy} aria-label={t('common.rename')}>
               <Pencil size={14} />
             </button>
-            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={handleDuplicate} disabled={busy} aria-label="Duplicate">
+            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px' }} onClick={handleDuplicate} disabled={busy} aria-label={t('common.duplicate')}>
               <Copy size={14} />
             </button>
-            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px', color: 'var(--ember)' }} onClick={handleDelete} disabled={busy} aria-label="Delete">
+            <button type="button" className="btn btn-ghost" style={{ padding: '6px 10px', color: 'var(--ember)' }} onClick={handleDelete} disabled={busy} aria-label={t('common.delete')}>
               <Trash2 size={14} />
             </button>
           </>

@@ -29,6 +29,7 @@ import type { UserDevice } from '../types/database';
 import { isStudioLabsEnabled, setStudioLabsEnabled } from '../lib/featureFlags';
 import { trackCreatorEvent } from '../lib/analyticsEvents';
 import { NotificationPreferencesPanel } from '../components/settings/NotificationPreferencesPanel';
+import { PhoneticDictionaryPanel } from '../components/settings/PhoneticDictionaryPanel';
 import { useLocale } from '../context/LocaleContext';
 
 /** Extra Settings strings (keeps studioLocale churn small; te-first for senior creators). */
@@ -228,6 +229,8 @@ export function Settings() {
       />
 
       <div className="studio-settings-grid wc-stagger-children">
+        <PhoneticDictionaryPanel />
+
         <section className="cms-panel studio-settings-section">
           <div className="studio-settings-section__head">
             <User size={18} aria-hidden />

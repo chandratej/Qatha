@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { isMockMode } from '../lib/mockMode.js';
+import { supabase } from '../lib/supabase.js';
 
 export const analyticsRouter = Router();
 
@@ -8,6 +9,8 @@ const VALID_EVENTS = new Set([
   'chapter_3_completed', 'otp_gate_shown', 'otp_completed', 'paywall_shown',
   'subscription_page_opened', 'payment_attempted', 'subscription_confirmed',
   'creator_dashboard_view', 'chapter_published', 'moderation_reviewed',
+  'phonetic_dict_add', 'phonetic_dict_export', 'phonetic_dict_import',
+  'story_trust_recompute', 'creator_analytics_view',
 ]);
 
 const eventLog = [];
@@ -28,6 +31,21 @@ analyticsRouter.post('/events', async (req, res) => {
 
   eventLog.push(entry);
   if (eventLog.length > 10000) eventLog.shift();
+
+  // Durable persist when analytics_events table exists (migration 048)
+  if (!isMockMode() && supabase) {
+    try {
+      const storyId = properties?.story_id || properties?.storyId || null;
+      await supabase.from('analytics_events').insert({
+        user_id: user_id && user_id !== 'anonymous' ? user_id : null,
+        event,
+        story_id: storyId,
+        properties: properties || {},
+      });
+    } catch {
+      /* non-blocking — in-memory still holds for process lifetime */
+    }
+  }
 
   if (isMockMode()) {
     console.log(`[Analytics] ${event}`, JSON.stringify(properties || {}));

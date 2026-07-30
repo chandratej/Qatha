@@ -218,6 +218,8 @@ export function ChapterEditor() {
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false);
   const [pendingPublish, setPendingPublish] = useState(false);
   const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  /** Story cover known at publish time (updated when author uploads in the confirm modal). */
+  const [publishCoverUrl, setPublishCoverUrl] = useState<string | null>(null);
   const [wordBandBlockOpen, setWordBandBlockOpen] = useState(false);
   const [wordBandBlockReason, setWordBandBlockReason] = useState<WordBandBlockReason>('below_min');
   const [scheduling, setScheduling] = useState(false);
@@ -1150,12 +1152,24 @@ export function ChapterEditor() {
       assertWordBandOrThrow(liveWordCount);
 
       if (!isDemo) {
-        // Cover is optional at create time; require a real cover before going live.
-        const { stories } = await api.getCreatorStories();
-        const storyRow = stories.find((s) => s.id === storyId);
-        if (isMissingOrDefaultCover(storyRow?.cover_url)) {
+        // Cover is optional at create time; required before going live.
+        // Prefer the cover just uploaded in PublishConfirmModal; re-fetch as fallback.
+        let coverUrl = publishCoverUrl;
+        if (isMissingOrDefaultCover(coverUrl)) {
+          const { stories } = await api.getCreatorStories();
+          const storyRow = stories.find((s) => s.id === storyId);
+          coverUrl = storyRow?.cover_url ?? null;
+          if (!isMissingOrDefaultCover(coverUrl)) {
+            setPublishCoverUrl(coverUrl);
+          }
+        }
+        if (isMissingOrDefaultCover(coverUrl)) {
+          // Keep the confirm modal open so the author can upload without leaving.
+          setPublishConfirmOpen(true);
           throw new Error(
-            'Add a real cover image before publishing. Open Stories → your story → upload cover (the default placeholder is not enough).',
+            locale === 'te'
+              ? 'ప్రచురణకు ముందు కవర్ అప్‌లోడ్ చేయండి — ఈ విండోలోనే అప్‌లోడ్ చేయవచ్చు.'
+              : 'Upload a story cover before publishing — you can add it in this dialog.',
           );
         }
 
@@ -1249,20 +1263,28 @@ export function ChapterEditor() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Publish failed';
       const liveCount = getWordCountFromScenes(scenes, locale);
+      const coverBlocking = /cover/i.test(msg);
       // If under min, always show word-band UI (edge errors often hide the real message).
       if (liveCount > 0 && liveCount < 1500) {
         openWordBandBlock('below_min', liveCount);
+        setPublishConfirmOpen(false);
       } else if (liveCount > 3000) {
         openWordBandBlock('over_hard_max', liveCount);
+        setPublishConfirmOpen(false);
       } else if (!notifyWordBandFromError(msg, liveCount)) {
         setPublishError(msg);
-        try {
-          window.alert(`Publish failed:\n\n${msg}`);
-        } catch {
-          /* ignore */
+        // Cover issues: keep confirm modal open so upload can complete without a dead-end alert.
+        if (!coverBlocking) {
+          try {
+            window.alert(`Publish failed:\n\n${msg}`);
+          } catch {
+            /* ignore */
+          }
+          setPublishConfirmOpen(false);
         }
+      } else {
+        setPublishConfirmOpen(false);
       }
-      setPublishConfirmOpen(false);
     } finally {
       setPublishing(false);
       setPendingPublish(false);
@@ -1464,7 +1486,7 @@ export function ChapterEditor() {
       <PublishConfirmModal
         open={publishConfirmOpen}
         onClose={() => setPublishConfirmOpen(false)}
-        onConfirm={executePublish}
+        onConfirm={() => { void executePublish(); }}
         chapterTitle={chapterTitle}
         chapterNum={chapterNumber}
         wordCount={wordCount}
@@ -1472,6 +1494,10 @@ export function ChapterEditor() {
         isResubmit={needsResubmit}
         publishing={publishing}
         softWordTarget={softWordTarget}
+        storyId={isDemo ? undefined : storyId}
+        initialCoverUrl={publishCoverUrl}
+        requireCover={!isDemo}
+        onCoverReady={(url) => setPublishCoverUrl(url)}
       />
       <WordBandBlockModal
         open={wordBandBlockOpen}

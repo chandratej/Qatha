@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { loadPersonalCorrections } from './lib/phonetic';
+import './styles/moat-surfaces.css';
 import { loadPhoneConfig } from './lib/phoneConfig';
 import { bindPublishQueueFlush } from './lib/publishQueue';
 import { initObservability } from './lib/observability';
