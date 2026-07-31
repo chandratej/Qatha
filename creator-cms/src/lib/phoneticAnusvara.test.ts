@@ -45,4 +45,12 @@ describe('word-final anusvara at clause boundaries', () => {
     expect(applyWordFinalAnusvara('సత్యం.')).toBe('సత్యం.');
     expect(applyWordFinalAnusvara('అమ్మ')).toBe('అమ్మ');
   });
+
+  it('final n is NOT anusvara (arun/seen keep న్/ణ్, not ం)', () => {
+    // bare engine would end with న్; must not become ం
+    expect(phoneticToTelugu('arun')).not.toMatch(/ం$/);
+    expect(phoneticToTelugu('seen')).not.toMatch(/ం$/);
+    expect(phoneticToTelugu('arun')).toBe('అరుణ్');
+    expect(phoneticToTelugu('seen')).toBe('సీన్');
+  });
 });

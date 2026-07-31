@@ -26,6 +26,14 @@ describe('Pramukh bench — author phrases', () => {
     ['hai', 'హై'],
     ['kuch kuch hota hai', 'కుచ్ కుచ్ హొతా హై'],
     ['kuc kuc hota hai', 'కుచ్ కుచ్ హొతా హై'],
+    // User-reported: సీన్ / అరుణ్
+    ['seen', 'సీన్'],
+    ['siin', 'సీన్'],
+    ['scene', 'సీన్'],
+    ['arun', 'అరుణ్'],
+    ['aruna', 'అరుణ'],
+    ['arun.', 'అరుణ్.'],
+    ['seen arun', 'సీన్ అరుణ్'],
   ];
 
   for (const [roman, expected] of cases) {

@@ -274,9 +274,26 @@ const wordOverrides: Record<string, string> = {
   betrayal: 'ద్రోహం',
   legacy: 'వారసత్వం',
   chapter: 'అధ్యాయం',
-  scene: 'దృశ్యం',
+  // "scene" / "seen" in film & CMS = సీన్ (not దృశ్యం — use drusyam for that)
+  scene: 'సీన్',
+  seen: 'సీన్',
+  siin: 'సీన్',
+  seene: 'సీన్',
+  seenu: 'సీను',
   adhyayam: 'అధ్యాయం',
   drusyam: 'దృశ్యం',
+  dhrushyam: 'దృశ్యం',
+  // Names — final n is ణ్ / న్, never anusvara ం
+  arun: 'అరుణ్',
+  arunn: 'అరుణ్',
+  aruna: 'అరుణ',
+  aarun: 'ఆరుణ్',
+  varun: 'వరుణ్',
+  varuna: 'వరుణ',
+  kiran: 'కిరణ్',
+  kirann: 'కిరణ్',
+  karun: 'కరుణ్',
+  karuna: 'కరుణ',
   adavi: 'అడవి',
   pilupu: 'పిలుపు',
   // Do NOT blank "the"/"of" — authors mix English; empty overrides deleted text (worklog 30 Jul).
@@ -835,35 +852,35 @@ export function phoneticToTelugu(input: string): string {
 }
 
 /**
- * Prefer anusvara (ం) for word-final bare nasals at clause boundaries.
+ * Prefer anusvara (ం) for word-final bare **m** only (satyam → సత్యం).
  *
- * 1) మ్/న్ before space, punctuation, or EOS → ం (anywhere in the buffer).
- *    This is the satyam. / satyam, / "satyam " case — virama means roman ended on bare m/n.
- * 2) Bare మ/న at absolute end only when the latin stem ends with bare n/m
- *    (after ్$ strip on isolated "satyam"). Does not fire for "prema"/"kshama" (...ma).
+ * CRITICAL: do NOT convert final **n** / న్ → ం.
+ * That destroyed names and closed syllables: arun→అరుం, seen→సేం (wanted అరుణ్ / సీన్).
  *
- * Skips geminates (మ్మ / న్న). Internal nk→ం is handled earlier.
+ * 1) మ్ before space/punct/EOS → ం (roman -m / -am endings).
+ * 2) Bare మ at EOS only when latin stem ends with bare **m** (not -ma like prema).
+ * Final న్ / ణ్ always kept. Internal nk→ంక is handled earlier.
  */
 export function applyWordFinalAnusvara(telugu: string, latinSource = ''): string {
   if (!telugu) return telugu;
 
   const boundary = String.raw`(?:$|[\s.,!?;:…'"''""»)\]}।॥])`;
 
-  // Explicit virama form at any clause boundary
+  // Only final మ్ → anusvara (not న్)
   let out = telugu.replace(
-    new RegExp(`([నమ])్(?![నమ])(?=${boundary})`, 'g'),
+    new RegExp(`మ్(?!మ)(?=${boundary})`, 'g'),
     'ం',
   );
 
-  // Isolated-word path: latin stem ends with bare n/m, output bare న/మ after ్$ strip
+  // Isolated-word path: latin stem ends with bare m only
   const stem = (latinSource || '').trim().replace(/[\s.,!?;:…'"''""»)\]}।॥]+$/g, '');
   const lastLatin = stem.slice(-1).toLowerCase();
   if (
-    (lastLatin === 'n' || lastLatin === 'm')
-    && /[నమ]\s*$/.test(out)
-    && !/(మ్మ|న్న)\s*$/.test(out)
+    lastLatin === 'm'
+    && /మ\s*$/.test(out)
+    && !/మ్మ\s*$/.test(out)
   ) {
-    out = out.replace(/([నమ])(\s*)$/, 'ం$2');
+    out = out.replace(/మ(\s*)$/, 'ం$1');
   }
 
   return out;
