@@ -30,47 +30,33 @@ const CORRECT: Array<[roman: string, telugu: string]> = [
   ['satyam', 'సత్యం'],
   ['gruham', 'గృహం'],
   ['pustakam', 'పుస్తకం'],
-];
-
-// [roman, currently-produced (wrong) output, correct expected output, note]
-const KNOWN_BROKEN: Array<[roman: string, currentWrong: string, correct: string, note: string]> = [
-  ['ganesh', 'గనెశ', 'గణేశ్', 'న should be retroflex ణ; ె should be long ే'],
-  ['prashanth', 'ప్రశంతహ', 'ప్రశాంత్', 'missing long ా vowel'],
-  ['gnanesh', 'జ్ఞనెశ', 'జ్ఞానేశ్', 'missing long ా vowel; ె should be ే'],
-  ['jyothi', 'జ్యొథి', 'జ్యోతి', 'ొ should be long ో; థ should be unaspirated త'],
-  ['chaitanya', 'చైతఞ', 'చైతన్య', '-nya cluster collapses to a single ఞ'],
-  ['vaikuntapuram', 'వైకుంతపురం', 'వైకుంఠపురం', 'త should be retroflex-aspirated ఠ — same word as the founder’s real story title'],
-  ['sneham', 'స్నెహం', 'స్నేహం', 'ె should be long ే'],
-  ['swasthi', 'స్వస్తహి', 'స్వస్తి', 'spurious హి appended'],
-  ['namaste', 'నమస్తె', 'నమస్తే', 'ె should be long ే — common greeting'],
-  ['thammudu', 'థమ్ముదు', 'తమ్ముడు', 'థ should be unaspirated త; ద should be retroflex డ'],
-  ['prayanam', 'ప్రయనమ', 'ప్రయాణం', 'missing long ా; న should be ణ; missing final anusvara'],
-  ['dharmam', 'ధర్మమ', 'ధర్మం', 'missing final anusvara (ం)'],
-  ['ananda', 'అనంద', 'ఆనంద', 'initial అ should be long ఆ'],
-  ['shanti', 'శంతి', 'శాంతి', 'missing long ా vowel'],
-  ['jagratha', 'జగ్రథ', 'జాగ్రత్త', 'missing long ా; థ vs doubled త్త'],
-  ['vidyarthi', 'విద్యర్తహి', 'విద్యార్థి', 'missing long ా; ర్తహి should be ర్థి'],
-  ['vishesham', 'విశెశం', 'విశేషం', 'ె should be long ే; second శ should be ష'],
+  // Anusvara-at-boundary fix (worklog 30 Jul 2026)
+  ['dharmam', 'ధర్మం'],
+  // Pramukh-ease high-frequency fixes (overrides + ny→న్య)
+  ['namaste', 'నమస్తే'],
+  ['sneham', 'స్నేహం'],
+  ['ganesh', 'గణేశ్'],
+  ['prashanth', 'ప్రశాంత్'],
+  ['gnanesh', 'జ్ఞానేశ్'],
+  ['jyothi', 'జ్యోతి'],
+  ['chaitanya', 'చైతన్య'],
+  ['vaikuntapuram', 'వైకుంఠపురం'],
+  ['swasthi', 'స్వస్తి'],
+  ['thammudu', 'తమ్ముడు'],
+  ['prayanam', 'ప్రయాణం'],
+  ['ananda', 'ఆనంద'],
+  ['shanti', 'శాంతి'],
+  ['jagratha', 'జాగ్రత్త'],
+  ['vidyarthi', 'విద్యార్థి'],
+  ['vishesham', 'విశేషం'],
+  ['miru', 'మీరు'],
+  ['ela', 'ఎలా'],
 ];
 
 describe('phonetic regression — common words stay correct', () => {
   for (const [roman, telugu] of CORRECT) {
     it(`${roman} -> ${telugu}`, () => {
       expect(phoneticToTelugu(roman)).toBe(telugu);
-    });
-  }
-});
-
-describe('phonetic regression — known-broken words (fix me)', () => {
-  for (const [roman, currentWrong, correct, note] of KNOWN_BROKEN) {
-    // eslint-disable-next-line vitest/valid-title
-    it.fails(`${roman} should convert to ${correct} (${note})`, () => {
-      // This assertion is written against the CORRECT output. It is expected to
-      // fail today — `it.fails` flips vitest's pass/fail so the suite stays
-      // green. If this test starts failing (i.e. the assertion now passes), the
-      // engine has been fixed: delete this entry and move the word into CORRECT.
-      expect(phoneticToTelugu(roman)).toBe(correct);
-      expect(phoneticToTelugu(roman)).not.toBe(currentWrong);
     });
   }
 });

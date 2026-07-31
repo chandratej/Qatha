@@ -125,8 +125,8 @@ export const PhoneticTextInput = forwardRef<HTMLInputElement, PhoneticTextInputP
     if (nextCursor !== undefined) cursorRef.current = nextCursor;
   }, [onChange, updateSuggestionMenu]);
 
-  const insertSuggestion = useCallback((suggestion: Suggestion) => {
-    const next = replaceTrailingRomanInPlainText(value, suggestion.value);
+  const insertSuggestion = useCallback((suggestion: Suggestion, suffix = '') => {
+    const next = replaceTrailingRomanInPlainText(value, suggestion.value) + suffix;
     commitValue(next, '', next.length);
     setShowSuggestions(false);
   }, [value, commitValue]);
@@ -146,23 +146,42 @@ export const PhoneticTextInput = forwardRef<HTMLInputElement, PhoneticTextInputP
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (phoneticLive && showSuggestions && suggestions.length > 0) {
-      if (e.key === 'ArrowDown') {
+    if (phoneticLive) {
+      const pick = showSuggestions && suggestions.length > 0
+        ? (suggestions[selectedIndex] ?? suggestions[0])
+        : undefined;
+
+      if (pick && e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((p) => (p + 1) % suggestions.length);
         return;
       }
-      if (e.key === 'ArrowUp') {
+      if (pick && e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((p) => (p - 1 + suggestions.length) % suggestions.length);
         return;
       }
-      if (e.key === 'Enter' || e.key === 'Tab' || e.key === ' ') {
+      if (pick && (e.key === 'Enter' || e.key === 'Tab')) {
         e.preventDefault();
-        insertSuggestion(suggestions[selectedIndex]);
+        insertSuggestion(pick);
         return;
       }
-      if (e.key === 'Escape') {
+      // Space: commit current roman word (suggestion if open, else live convert path via change)
+      if ((e.key === ' ' || e.key === 'Spacebar') && !e.shiftKey) {
+        const trailing = value.match(/[a-zA-Z]+$/);
+        if (trailing) {
+          e.preventDefault();
+          if (pick) {
+            insertSuggestion(pick, ' ');
+          } else {
+            // No menu: append space and let live convert commit the completed word
+            handleChange(`${value} `);
+          }
+          return;
+        }
+        // No roman trailing — allow normal space
+      }
+      if (pick && e.key === 'Escape') {
         setShowSuggestions(false);
         return;
       }

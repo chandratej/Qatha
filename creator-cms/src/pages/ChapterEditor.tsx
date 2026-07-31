@@ -847,6 +847,9 @@ export function ChapterEditor() {
   const updateSceneContent = (id: string, html: string) => {
     if (isChapterImmutable) return;
     setScenes(prev => {
+      const cur = prev.find((s) => s.id === id);
+      // Skip no-op updates — prevents re-render storms that thrash the editor
+      if (cur?.content === html) return prev;
       const next = prev.map(s => s.id === id ? { ...s, content: html } : s);
       const scene = next.find(s => s.id === id);
       if (scene) {

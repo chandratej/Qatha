@@ -28,12 +28,15 @@ import { ScenePacingHint } from './ScenePacingHint';
 import { getSceneWordCount } from '../../lib/scenePacing';
 import { PhoneticTextInput } from './PhoneticTextInput';
 import { EDITOR_ICON_STROKE } from '../../lib/editorIcons';
+import { isEmptyEditorHtml } from '../../lib/quillPhonetic';
 import {
-  applyLivePhoneticToHtml,
-  convertAllPhoneticInHtml,
-  isEmptyEditorHtml,
-  replaceTrailingRomanInHtml,
-} from '../../lib/quillPhonetic';
+  applyLivePhoneticViaQuill,
+  applySuggestionViaQuill,
+  commitWordAtCursorViaQuill,
+  convertAllRomanViaQuill,
+  isApplyingPhoneticViaQuill,
+  quillRootHtml,
+} from '../../lib/quillPhoneticApply';
 import {
   createRafScheduler,
   getSafeSelectionBounds,
@@ -134,9 +137,33 @@ export function EditorWorkspace({
   const [mediaInsertOpen, setMediaInsertOpen] = useState(false);
   const activeSceneIdRef = useRef(activeScene?.id);
   const phoneticLiveRef = useRef(phoneticLive);
+  const composingRef = useRef(false);
+  const ariaLiveRef = useRef<HTMLDivElement | null>(null);
+  /** Uncontrolled Quill: avoid value= HTML round-trip stripping trailing spaces. */
+  const lastWrittenHtmlRef = useRef(activeScene?.content || '');
+  const [editorSeed, setEditorSeed] = useState(activeScene?.content || '');
+  const [editorEpoch, setEditorEpoch] = useState(0);
 
   useEffect(() => { activeSceneIdRef.current = activeScene?.id; }, [activeScene?.id]);
   useEffect(() => { phoneticLiveRef.current = phoneticLive; }, [phoneticLive]);
+
+  useEffect(() => {
+    if (!activeScene?.id) return;
+    const html = activeScene.content || '';
+    lastWrittenHtmlRef.current = html;
+    setEditorSeed(html);
+    setEditorEpoch((n) => n + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeScene?.id]);
+
+  useEffect(() => {
+    if (!activeScene) return;
+    const incoming = activeScene.content || '';
+    if (incoming === lastWrittenHtmlRef.current) return;
+    lastWrittenHtmlRef.current = incoming;
+    setEditorSeed(incoming);
+    setEditorEpoch((n) => n + 1);
+  }, [activeScene, activeScene?.content]);
 
   useEffect(() => {
     const editor = quillRef.current?.getEditor();
@@ -225,7 +252,9 @@ export function EditorWorkspace({
   }, [updatePosition]);
 
   const saveSceneHtml = useCallback((sceneId: string, html: string, trailing = '') => {
-    updateSceneContent(sceneId, isEmptyEditorHtml(html) ? '' : html);
+    const next = isEmptyEditorHtml(html) ? '' : html;
+    lastWrittenHtmlRef.current = next;
+    updateSceneContent(sceneId, next);
     if (phoneticLiveRef.current) showPhoneticSuggestions(trailing);
     else {
       setTrailingWord('');
@@ -237,15 +266,39 @@ export function EditorWorkspace({
     const editor = getEditor();
     const sceneId = activeSceneIdRef.current;
     if (!editor || !sceneId) return;
-    let html = editor.root.innerHTML;
     let trailing = '';
-    if (phoneticLiveRef.current) {
-      const result = applyLivePhoneticToHtml(html);
-      html = result.html;
+    if (phoneticLiveRef.current && !composingRef.current) {
+      const result = applyLivePhoneticViaQuill(editor, { composing: false });
       trailing = result.trailingWord;
     }
-    saveSceneHtml(sceneId, html, trailing);
+    saveSceneHtml(sceneId, quillRootHtml(editor), trailing);
   }, [saveSceneHtml]);
+
+  useEffect(() => {
+    const editor = getEditor();
+    if (!editor) return;
+    const root = editor.root;
+    root.setAttribute('spellcheck', 'false');
+    root.setAttribute('autocapitalize', 'off');
+    root.setAttribute('autocomplete', 'off');
+    root.setAttribute('autocorrect', 'off');
+    const onStart = () => { composingRef.current = true; };
+    const onEnd = () => {
+      composingRef.current = false;
+      if (phoneticLiveRef.current) {
+        const result = applyLivePhoneticViaQuill(editor, { composing: false });
+        if (result.applied && activeSceneIdRef.current) {
+          saveSceneHtml(activeSceneIdRef.current, quillRootHtml(editor), result.trailingWord);
+        }
+      }
+    };
+    root.addEventListener('compositionstart', onStart);
+    root.addEventListener('compositionend', onEnd);
+    return () => {
+      root.removeEventListener('compositionstart', onStart);
+      root.removeEventListener('compositionend', onEnd);
+    };
+  }, [activeScene?.id, saveSceneHtml]);
 
   useEffect(() => {
     if (!flushRef) return;
@@ -301,43 +354,48 @@ export function EditorWorkspace({
 
   const handleChange = (content: string, _delta: unknown, source: string, editor: any) => {
     if (readOnly || source !== 'user' || !activeScene) return;
-
-    let html = content;
-    let trailing = '';
-    if (phoneticLive) {
-      const result = applyLivePhoneticToHtml(content);
-      html = result.html;
-      trailing = result.trailingWord;
-      if (html !== content) {
-        const selection = editor.getSelection();
-        editor.root.innerHTML = html;
-        if (selection) {
-          queueMicrotask(() => editor.setSelection(Math.min(selection.index, editor.getLength()), 0, 'silent'));
-        }
-      }
+    if (isApplyingPhoneticViaQuill()) return;
+    if (composingRef.current) {
+      saveSceneHtml(activeScene.id, content, '');
+      return;
     }
 
-    saveSceneHtml(activeScene.id, html, trailing);
+    let trailing = '';
+    if (phoneticLive) {
+      const result = applyLivePhoneticViaQuill(editor, { composing: false });
+      trailing = result.trailingWord;
+      if (result.applied && ariaLiveRef.current) {
+        ariaLiveRef.current.textContent = 'Phonetic conversion applied';
+      }
+    }
+    saveSceneHtml(activeScene.id, quillRootHtml(editor), trailing);
     if (narrativeOsEnabled) detectSlashCommand(editor);
   };
 
-  const insertSuggestion = useCallback((suggestion: Suggestion) => {
-    if (!quillRef.current || !activeScene) return;
+  const insertSuggestion = useCallback((suggestion: Suggestion, suffix = '') => {
+    if (!quillRef.current || !activeScene) return false;
     const editor = quillRef.current.getEditor();
-    const newHtml = replaceTrailingRomanInHtml(editor.root.innerHTML, suggestion.value);
-    saveSceneHtml(activeScene.id, newHtml);
-    editor.root.innerHTML = newHtml;
-    editor.setSelection(editor.getLength(), 0);
-    setShowSuggestions(false);
+    const ok = applySuggestionViaQuill(editor, suggestion.value, suffix);
+    if (ok) {
+      saveSceneHtml(activeScene.id, quillRootHtml(editor), '');
+      setShowSuggestions(false);
+    }
+    return ok;
   }, [activeScene, saveSceneHtml]);
 
   const handleConvertAll = () => {
     const editor = getEditor();
     if (!editor || !activeScene) return;
-    const newHtml = convertAllPhoneticInHtml(editor.root.innerHTML);
-    saveSceneHtml(activeScene.id, newHtml);
-    editor.root.innerHTML = newHtml;
+    convertAllRomanViaQuill(editor);
+    saveSceneHtml(activeScene.id, quillRootHtml(editor), '');
   };
+
+  const suggestionsRef = useRef(suggestions);
+  const selectedIndexRef = useRef(selectedIndex);
+  const showSuggestionsRef = useRef(showSuggestions);
+  useEffect(() => { suggestionsRef.current = suggestions; }, [suggestions]);
+  useEffect(() => { selectedIndexRef.current = selectedIndex; }, [selectedIndex]);
+  useEffect(() => { showSuggestionsRef.current = showSuggestions; }, [showSuggestions]);
 
   const format = (name: string, value?: unknown) => {
     const editor = getEditor();
@@ -476,17 +534,69 @@ export function EditorWorkspace({
   }, [onSlashCommandRequest]);
 
   useEffect(() => {
+    if (readOnly || !phoneticLive) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showSuggestions && suggestions.length > 0) {
-        if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(p => (p + 1) % suggestions.length); return; }
-        if (e.key === 'ArrowUp') { e.preventDefault(); setSelectedIndex(p => (p - 1 + suggestions.length) % suggestions.length); return; }
-        if (e.key === 'Enter' || e.key === 'Tab' || e.key === ' ') { e.preventDefault(); insertSuggestion(suggestions[selectedIndex]); return; }
-        if (e.key === 'Escape') { setShowSuggestions(false); return; }
+      const editor = getEditor();
+      if (!editor || !activeSceneIdRef.current) return;
+      const root = editor.root;
+      const active = document.activeElement;
+      if (active !== root && !root.contains(active)) return;
+
+      const list = suggestionsRef.current;
+      const menuOpen = showSuggestionsRef.current && list.length > 0;
+      const pick = menuOpen ? (list[selectedIndexRef.current] ?? list[0]) : undefined;
+
+      if (menuOpen && e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedIndex((p) => (p + 1) % list.length);
+        return;
+      }
+      if (menuOpen && e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedIndex((p) => (p - 1 + list.length) % list.length);
+        return;
+      }
+      if (menuOpen && e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowSuggestions(false);
+        return;
+      }
+
+      // Space: Pramukh word-commit + space (works with or without menu)
+      if ((e.key === ' ' || e.key === 'Spacebar') && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const ok = commitWordAtCursorViaQuill(editor, {
+          telugu: pick?.value,
+          suffix: ' ',
+        });
+        if (ok) {
+          e.preventDefault();
+          e.stopPropagation();
+          saveSceneHtml(activeSceneIdRef.current, quillRootHtml(editor), '');
+          setShowSuggestions(false);
+        }
+        return;
+      }
+
+      if (menuOpen && (e.key === 'Enter' || e.key === 'Tab') && pick) {
+        const ok = commitWordAtCursorViaQuill(editor, {
+          telugu: pick.value,
+          suffix: '',
+        });
+        if (ok) {
+          e.preventDefault();
+          e.stopPropagation();
+          saveSceneHtml(activeSceneIdRef.current, quillRootHtml(editor), '');
+          setShowSuggestions(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [showSuggestions, suggestions, selectedIndex, insertSuggestion]);
+  }, [readOnly, phoneticLive, saveSceneHtml]);
 
   if (!activeScene) {
     return (
@@ -595,19 +705,24 @@ export function EditorWorkspace({
             disabled={readOnly}
           />
           <ReactQuill
-            key={activeScene.id}
+            key={`${activeScene.id}-${editorEpoch}`}
             ref={quillRef}
             theme="snow"
-            value={activeScene.content || ''}
+            defaultValue={editorSeed}
             onChange={handleChange}
             onBlur={flushActiveScene}
             readOnly={readOnly}
             modules={{ toolbar: false, history: { delay: 1000, maxStack: 200, userOnly: true } }}
             placeholder={readOnly ? 'Published chapter — read only' : 'Begin this scene…'}
           />
+          <div ref={ariaLiveRef} className="sr-only" aria-live="polite" aria-atomic="true" />
           {isBlank && (
             <div className="katha-proto-editor-nudge" aria-hidden>
-              <p>Tip: Type English phonetics for Telugu — they convert as you write.</p>
+              <p>
+                Tip: Type roman phonetics — they convert to Telugu as you write (Pramukh-style).
+                Suggestions: <strong>Space</strong> / <strong>Enter</strong> / <strong>Tab</strong> accept · ↑↓ move · Esc close.
+                Rare English: <code>$Netflix</code> or <code>`Netflix`</code> or ALL-CAPS.
+              </p>
             </div>
           )}
         </div>

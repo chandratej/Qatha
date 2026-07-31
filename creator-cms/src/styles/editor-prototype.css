@@ -2497,16 +2497,18 @@
   display: block;
 }
 
-/* Phonetic suggestion menu */
+/* Phonetic suggestion menu — high-contrast selection for keyboard navigation */
 .katha-proto-phonetic-menu {
   position: fixed;
   z-index: 9999;
-  min-width: 220px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: var(--shadow-md);
+  min-width: 240px;
+  max-width: min(360px, 92vw);
+  background: #fffefb;
+  border: 1px solid rgba(90, 70, 40, 0.22);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(40, 28, 12, 0.18);
   overflow: hidden;
+  padding: 4px;
 }
 
 .katha-proto-phonetic-item {
@@ -2514,47 +2516,92 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   cursor: pointer;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background: transparent;
+  transition: background 0.12s ease, border-color 0.12s ease;
 }
 
+.katha-proto-phonetic-item:hover {
+  background: rgba(122, 99, 64, 0.08);
+}
+
+/* Selected row — unmistakably different from neighbors */
 .katha-proto-phonetic-item--active {
-  background: var(--paper-warm);
+  background: #5c2a35;
+  border-color: #3d1a22;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+}
+
+.katha-proto-phonetic-item--active .katha-proto-phonetic-item__word {
+  color: #fffefb;
+  font-weight: 700;
+}
+
+.katha-proto-phonetic-item--active .katha-proto-phonetic-item__hint {
+  color: rgba(255, 254, 251, 0.82);
+}
+
+.katha-proto-phonetic-item--active .katha-proto-phonetic-teach {
+  border-color: rgba(255, 254, 251, 0.45);
+  color: #fffefb;
+  background: rgba(255, 254, 251, 0.1);
 }
 
 .katha-proto-phonetic-item__main {
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 0;
+  gap: 0 6px;
   border: none;
   background: transparent;
   padding: 0;
   text-align: left;
   cursor: pointer;
+  color: inherit;
+}
+
+.katha-proto-phonetic-item__caret {
+  display: inline-block;
+  margin-right: 4px;
+  font-weight: 800;
+  color: #f0d78c;
 }
 
 .katha-proto-phonetic-item__word {
   font-family: var(--font-telugu), var(--font-reading);
   font-weight: 600;
-  color: var(--ink);
+  font-size: 1.05rem;
+  color: #1a1410;
 }
 
 .katha-proto-phonetic-item__hint {
-  margin-left: 8px;
+  margin-left: 0;
   font-size: 0.75rem;
-  color: var(--ink-muted);
+  color: #6b6258;
 }
 
 .katha-proto-phonetic-teach {
   font-size: 0.6875rem;
   padding: 3px 8px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(90, 70, 40, 0.28);
   border-radius: 6px;
   background: transparent;
-  color: var(--ink-muted);
+  color: #6b6258;
   cursor: pointer;
+  flex-shrink: 0;
+}
+
+.katha-proto-phonetic-menu__footer {
+  padding: 6px 10px 4px;
+  font-size: 0.68rem;
+  color: #6b6258;
+  border-top: 1px solid rgba(90, 70, 40, 0.12);
+  margin-top: 2px;
 }
 
 .katha-proto-breadcrumb__chapter {

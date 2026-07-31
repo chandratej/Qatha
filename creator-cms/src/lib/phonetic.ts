@@ -5,14 +5,13 @@
  * Full Modern Telugu coverage: 16 అచ్చులు, all వర్గాలు (కంఠ్య/తాలవ్య/మూర్ధన్య/దంత్య/ఓష్ఠ్య + nasals),
  * గుణింతాలు, ఒత్తులు (live repeat), హలంతాలు (incl. న్ via space), అనుస్వారం/విసర్గ, ఉభయాక్షరాలు/conjuncts.
  *
- * Speed design:
- * - Live ottu on letter repeat (akk → అక్క instantly)
- * - Space after cons for explicit halant ("k " → క్, "n " → న్)
- * - Capitals for retroflex
- * - Longest clusters first + massive word overrides for common story words
- * - Suggestions + personal dict
+ * Speed design (PramukhIME model):
+ * - Keep full roman word while typing; convert on Space / punctuation (NOT mid-word doubles)
+ * - Double consonants (mm, nn, kk) resolve when the *whole word* converts (amma → అమ్మ)
+ * - Capitals for retroflex; longest clusters first; spoken-word overrides
+ * - Suggestions: Space / Enter / Tab accept
  *
- * Result: authors can type fast with high accuracy and minimal corrections.
+ * Never mid-commit on letter-repeat — that produced అమ్ంఅ when typing "amma".
  */
 
 const cons: Record<string, string> = {
@@ -35,20 +34,24 @@ const vowels: Record<string, string> = {
   a: 'అ', aa: 'ఆ',
   i: 'ఇ', ii: 'ఈ',
   u: 'ఉ', uu: 'ఊ',
-  e: 'ఎ', ae: 'ఏ',
+  e: 'ఎ', ee: 'ఏ', ae: 'ఏ',
   ai: 'ఐ',
   o: 'ఒ', oo: 'ఓ', au: 'ఔ',
-  ru: 'ఋ', ruu: 'ౠ', lu: 'ఌ', luu: 'ౡ',
+  // Standalone vocalic R/L only via capital-R path or lru/lruu — not bare "ru"/"lu"
+  // (bare "ru" at word start is ordinary రు — see word-start handling below)
+  ruu: 'ౠ',
+  lru: 'ఌ', lruu: 'ౡ',
 };
 
 const matras: Record<string, string> = {
   aa: 'ా',
   i: 'ి', ii: 'ీ',
   u: 'ు', uu: 'ూ',
-  e: 'ె', ae: 'ే',
+  e: 'ె', ee: 'ే', ae: 'ే',
   ai: 'ై',
   o: 'ొ', oo: 'ో', au: 'ౌ',
-  lu: 'ౢ', lru: 'ౢ', luu: 'ౣ', lruu: 'ౣ',
+  // Rare vocalic matras — only via explicit lru/lruu digraphs, NOT bare "lu" (plural -lu)
+  lru: 'ౢ', lruu: 'ౣ',
   a: '', // implicit a
 };
 
@@ -276,12 +279,119 @@ const wordOverrides: Record<string, string> = {
   drusyam: 'దృశ్యం',
   adavi: 'అడవి',
   pilupu: 'పిలుపు',
-  the: '',
-  of: '',
+  // Do NOT blank "the"/"of" — authors mix English; empty overrides deleted text (worklog 30 Jul).
   and: 'మరియు',
   call: 'పిలుపు',
   okati: 'ఒకటి',
   one: 'ఒకటి',
+  // Everyday money / frequency nouns (were rare-vocalic mis-parses)
+  rupayalu: 'రూపాయలు',
+  rupayi: 'రూపాయి',
+  rupayaluu: 'రూపాయలు',
+  sarlu: 'సార్లు',
+  // High-frequency story words — Pramukh ease (override engine edge cases)
+  namaste: 'నమస్తే',
+  namasthe: 'నమస్తే',
+  sneham: 'స్నేహం',
+  sneha: 'స్నేహ',
+  ganesh: 'గణేశ్',
+  ganesha: 'గణేశ',
+  ganes: 'గణేశ్',
+  prashanth: 'ప్రశాంత్',
+  prashant: 'ప్రశాంత్',
+  prasanth: 'ప్రశాంత్',
+  prasant: 'ప్రశాంత్',
+  gnanesh: 'జ్ఞానేశ్',
+  jnanesh: 'జ్ఞానేశ్',
+  jyothi: 'జ్యోతి',
+  jyoti: 'జ్యోతి',
+  chaitanya: 'చైతన్య',
+  chaithanya: 'చైతన్య',
+  vaikuntapuram: 'వైకుంఠపురం',
+  vaikunthapuram: 'వైకుంఠపురం',
+  swasthi: 'స్వస్తి',
+  swasti: 'స్వస్తి',
+  thammudu: 'తమ్ముడు',
+  tammudu: 'తమ్ముడు',
+  prayanam: 'ప్రయాణం',
+  prayaanam: 'ప్రయాణం',
+  ananda: 'ఆనంద',
+  aananda: 'ఆనంద',
+  shanti: 'శాంతి',
+  shaanthi: 'శాంతి',
+  santhi: 'శాంతి',
+  jagratha: 'జాగ్రత్త',
+  jagrata: 'జాగ్రత్త',
+  vidyarthi: 'విద్యార్థి',
+  vishesham: 'విశేషం',
+  vishesha: 'విశేష',
+  miru: 'మీరు',
+  meeru: 'మీరు',
+  // Spoken present forms — natural roman (unnavu) must match Pramukh, not bare engine ఉన్నవు
+  unnavu: 'ఉన్నావు',
+  unnaavu: 'ఉన్నావు',
+  unnaru: 'ఉన్నారు',
+  unnaaru: 'ఉన్నారు',
+  unnara: 'ఉన్నారా',
+  unnaara: 'ఉన్నారా',
+  unnava: 'ఉన్నావా',
+  unnaava: 'ఉన్నావా',
+  unnanu: 'ఉన్నాను',
+  unnaanu: 'ఉన్నాను',
+  unnamu: 'ఉన్నాము',
+  unnaamu: 'ఉన్నాము',
+  unnayi: 'ఉన్నాయి',
+  unnaayi: 'ఉన్నాయి',
+  unnadi: 'ఉన్నది',
+  unnaadi: 'ఉన్నది',
+  undi: 'ఉంది',
+  undhi: 'ఉంది',
+  undaa: 'ఉందా',
+  unda: 'ఉందా',
+  bagundi: 'బాగుంది',
+  baagundi: 'బాగుంది',
+  bagunnaru: 'బాగున్నారు',
+  baagunnaru: 'బాగున్నారు',
+  bagunnaava: 'బాగున్నావా',
+  bagunnava: 'బాగున్నావా',
+  yela: 'ఎలా',
+  entha: 'ఎంత',
+  enthaa: 'ఎంత',
+  ikkada: 'ఇక్కడ',
+  akkada: 'అక్కడ',
+  ekkada: 'ఎక్కడ',
+  ippudu: 'ఇప్పుడు',
+  appudu: 'అప్పుడు',
+  eppudu: 'ఎప్పుడు',
+  // Family / address (long final aa is what authors type as ammaa)
+  ammaa: 'అమ్మా',
+  nannaa: 'నాన్నా',
+  akkaa: 'అక్కా',
+  babai: 'బాబాయ్',
+  babayi: 'బాబాయ్',
+  // Hindi / film phrases common in Telugu drafts (Pramukh gets these)
+  kuch: 'కుచ్',
+  kuc: 'కుచ్',
+  kuchh: 'కుచ్',
+  hota: 'హొతా',
+  hotaa: 'హొతా',
+  hotha: 'హొతా',
+  hothaa: 'హొతా',
+  hai: 'హై',
+  he: 'హే',
+  kya: 'క్యా',
+  kyun: 'క్యూన్',
+  pyar: 'ప్యార్',
+  pyaar: 'ప్యార్',
+  dil: 'దిల్',
+  // Everyday verbs authors type without double vowels
+  chestunnavu: 'చేస్తున్నావు',
+  chestunnaavu: 'చేస్తున్నావు',
+  vastunnavu: 'వస్తున్నావు',
+  vastunnaavu: 'వస్తున్నావు',
+  chustunnavu: 'చూస్తున్నావు',
+  chustunnaavu: 'చూస్తున్నావు',
+  unna: 'ఉన్న',
   // (common Telugu literary names covered earlier in this object)
 };
 
@@ -359,8 +469,9 @@ export function phoneticToTelugu(input: string): string {
   while (i < s.length) {
     let matched = false;
 
-    // Top priority: ny/nj palatal nasal (avoid anusvara path)
-    if (s.startsWith('ny', i) || s.startsWith('nj', i)) {
+    // Top priority: nj → ఞ (palatal nasal). "ny" is ordinary న్య via clusters
+    // (chaitanya → చైతన్య, not …తఞ). Keep nj for rare ఞ sandhi forms.
+    if (s.startsWith('nj', i)) {
       result += 'ఞ';
       i += 2;
       let vlen=0, m='';
@@ -502,11 +613,11 @@ export function phoneticToTelugu(input: string): string {
 
     if (matched) continue;
 
-    // Standalone vocalic ఋ / ౠ — only at start of word or after whitespace / punctuation.
-    // Support ru, ruu, R, RR for ఋ and ౠ (long vocalic R).
-    // "rtuvu" at start → ఋతువు
-    if (!matched && (lowerAtI.startsWith('ru') || (lowerAtI[0]==='r' && /[R]/.test(origAtI[0])) )) {
-      const charBefore = i > 0 ? s[i-1] : ' ';
+    // Standalone vocalic ఋ / ౠ — capital R / RR or explicit "ruu" only.
+    // Bare lowercase "ru" at word start is ordinary రు (rupayalu → రూపాయలు via override / r+uu).
+    // "rtuvu" is covered by whole-word override.
+    if (!matched && (lowerAtI.startsWith('ruu') || (lowerAtI[0] === 'r' && /[R]/.test(origAtI[0])))) {
+      const charBefore = i > 0 ? s[i - 1] : ' ';
       const isWordStart = i === 0 || /[\s"'(\-–—]/.test(charBefore);
       if (isWordStart) {
         let isLong = false;
@@ -514,12 +625,8 @@ export function phoneticToTelugu(input: string): string {
         if (lowerAtI.startsWith('ruu')) {
           isLong = true;
           len = 3;
-        } else if (lowerAtI.startsWith('ru')) {
-          // ru is short for standalone ఋ
-          len = 2;
-        } else if (lowerAtI[0]==='r' && /[R]/.test(origAtI[0])) {
-          // capital R handling
-          if (/[R]/.test(origAtI[1])) {
+        } else if (/[R]/.test(origAtI[0])) {
+          if (/[R]/.test(origAtI[1] || '')) {
             isLong = true;
             len = 2;
           } else {
@@ -529,9 +636,21 @@ export function phoneticToTelugu(input: string): string {
         }
         result += isLong ? 'ౠ' : 'ఋ';
         i += len;
-        let vlen=0, m='';
-        for (let vl=3;vl>=1;vl--){ if(i+vl>s.length)continue; const v=s.slice(i,i+vl); if(matras[v]!==undefined){m=matras[v];vlen=vl;break;} }
-        if (vlen>0) { result += m; i += vlen; }
+        let vlen = 0;
+        let m = '';
+        for (let vl = 3; vl >= 1; vl--) {
+          if (i + vl > s.length) continue;
+          const v = s.slice(i, i + vl);
+          if (matras[v] !== undefined) {
+            m = matras[v];
+            vlen = vl;
+            break;
+          }
+        }
+        if (vlen > 0) {
+          result += m;
+          i += vlen;
+        }
         matched = true;
       }
     }
@@ -646,31 +765,34 @@ export function phoneticToTelugu(input: string): string {
       if (i + len > s.length) continue;
       const chunk = s.slice(i, i + len);
       if (vowels[chunk]) {
-        // Special for rare vocalic ఌ / ౡ : only at word start to avoid interfering with plural "lu" in modern Telugu
-        if ((chunk === 'lu' || chunk === 'luu') && i > 0 && !/[\s]/.test(s[i-1])) {
-          // fall through to regular l + u for లు
+        // Never treat bare "lu"/"luu" as standalone vocalic ఌ mid-word (plural -lu is లు).
+        if ((chunk === 'lu' || chunk === 'luu') && i > 0) {
+          // fall through to consonant l + matra u
         } else {
           // If previous output char is a Telugu consonant, treat this Latin vowel as a matra (live mode after double)
-          const lastOut = result[result.length - 1] || "";
+          const lastOut = result[result.length - 1] || '';
           if (/[\u0C00-\u0C7F]/.test(lastOut) && /[aeiou]/i.test(chunk)) {
-            const matraMap: Record<string, string> = { a: "", aa: "ా", i: "ి", ii: "ీ", u: "ు", uu: "ూ", e: "ె", ee: "ే", ae: "ే", ai: "ై", o: "ొ", oo: "ో", au: "ౌ" };
-            const m = matraMap[chunk] || "";
-            if (m !== undefined) {
-              result += m;
+            const matraMap: Record<string, string> = {
+              a: '', aa: 'ా', i: 'ి', ii: 'ీ', u: 'ు', uu: 'ూ',
+              e: 'ె', ee: 'ే', ae: 'ే', ai: 'ై', o: 'ొ', oo: 'ో', au: 'ౌ',
+            };
+            if (Object.prototype.hasOwnProperty.call(matraMap, chunk)) {
+              result += matraMap[chunk];
               i += len;
               matched = true;
               break;
             }
           }
-          result += vowels[chunk];
-          i += len;
-          // visarga after vowel
-          if (s[i] === 'h' || s[i] === ':') {
-            result += 'ః';
-            i += 1;
+          if (vowels[chunk]) {
+            result += vowels[chunk];
+            i += len;
+            if (s[i] === 'h' || s[i] === ':') {
+              result += 'ః';
+              i += 1;
+            }
+            matched = true;
+            break;
           }
-          matched = true;
-          break;
         }
       }
     }
@@ -682,28 +804,24 @@ export function phoneticToTelugu(input: string): string {
     }
   }
 
-  // Anusvara normalization for nasals (n/m) before other consonants.
-  // This implements standard Telugu spelling: nk → ంక , not న్క
-  // - Skips geminates (న్న, మ్మ) because of negative lookahead
-  // - Does not touch "n " / "n." (space or punct after ్) so explicit న్ is preserved
-  // - "nn" / "mm" at end get stripped by later rule to న్న / మ్మ
-  result = result.replace(/న్(?!న)([క-హౘౙ])/g, 'ం$1');
-  result = result.replace(/మ్(?!మ)([క-హౘౙ])/g, 'ం$1');
+  // Anusvara for n/m before *varga stops* only (nk → ంక).
+  // Do NOT fire before antastha/ushma (య ర ల వ శ ష స హ) — keeps న్య / మ్య intact
+  // (chaitanya → చైతన్య, not చైతంయ). Skips geminates via (?!న) / (?!మ).
+  const vargaStops = 'కఖగఘఙచఛజఝటఠడఢతథదధపఫబభ';
+  result = result.replace(new RegExp(`న్(?!న)([${vargaStops}])`, 'g'), 'ం$1');
+  result = result.replace(new RegExp(`మ్(?!మ)([${vargaStops}])`, 'g'), 'ం$1');
 
-  // Cleanup virama + punctuation / matra
-  // Only strip trailing halant at absolute end of input (no space/punct) so "k" -> క (implicit a)
-  // Halant kept before space or punct for easy explicit: "k " -> క్ , "k." -> క్.
-  // This matches standard phonetic editors for high velocity halant typing.
-  result = result.replace(/్$/g, '');
+  // PramukhIME rule: never invent an implicit final 'a'.
+  // Consonant with no following vowel matra keeps ్ — "k"→క్, "kuch"→కుచ్, "ka"→క.
+  // (Older path stripped ్$ so "kuch" became కుచ and broke loanwords.)
+  // Only remove virama when a matra immediately follows (normalization).
   result = result.replace(/్([ాిీుూెేైొోౌృౄ])/g, '$1');
 
-  // Prefer anusvara for a final nasal ONLY when the input itself ended with bare 'n' or 'm'
-  // (no trailing vowel). This fixes "na"→న (correct), "van"→వం, lone "n"→ం
-  // while keeping explicit "n " → న్ and not mangling "chaduvina", "sita" etc.
-  const last = (s || '').trim().slice(-1);
-  if ((last === 'n' || last === 'm') && /[నమ]$/.test(result) && !/[నమ్][నమ]$/.test(result)) {
-    result = result.replace(/([నమ])$/, 'ం');
-  }
+  // Word/clause-boundary anusvara — NOT absolute string-end only.
+  // Bare roman m/n at word end become మ్/న్ then, before space/punct/EOS, ం.
+  // Fixes satyam. / satyam, / mid-sentence "satyam " (Defensibility worklog 30 Jul 2026).
+  // Does NOT convert word-final మ from roman ...ma (prema, kshama stay ప్రేమ / క్షమ).
+  result = applyWordFinalAnusvara(result, s);
 
   // Final polish for some endings (santosh etc.)
   result = result.replace(/సంతోష(?!్)/g, 'సంతోష్');
@@ -712,15 +830,43 @@ export function phoneticToTelugu(input: string): string {
   result = result.replace(/సంతోష్ం/g, 'సంతోషం');
   result = result.replace(/సంతొశం/g, 'సంతోషం');
 
-  // Safety for live mode after ottu commit: stray Latin vowel after Telugu consonant should become proper matra.
-  // Prevents "ఇల్లu" / "అల్లఉ" when vowel is typed right after a live double.
-  result = result.replace(/([\u0C00-\u0C7F])([a-z])$/i, (_, cons, v) => {
-    const lv = v.toLowerCase();
-    const matraMap: Record<string, string> = { a: '', aa: 'ా', i: 'ి', ii: 'ీ', u: 'ు', uu: 'ూ', e: 'ె', ee: 'ే', ae: 'ే', ai: 'ై', o: 'ొ', oo: 'ో', au: 'ౌ' };
-    return cons + (matraMap[lv] !== undefined ? matraMap[lv] : v);
-  });
-
+  // Do NOT glue stray Latin after Telugu (old ottu hack). Mid-word stays roman until Space.
   return result;
+}
+
+/**
+ * Prefer anusvara (ం) for word-final bare nasals at clause boundaries.
+ *
+ * 1) మ్/న్ before space, punctuation, or EOS → ం (anywhere in the buffer).
+ *    This is the satyam. / satyam, / "satyam " case — virama means roman ended on bare m/n.
+ * 2) Bare మ/న at absolute end only when the latin stem ends with bare n/m
+ *    (after ్$ strip on isolated "satyam"). Does not fire for "prema"/"kshama" (...ma).
+ *
+ * Skips geminates (మ్మ / న్న). Internal nk→ం is handled earlier.
+ */
+export function applyWordFinalAnusvara(telugu: string, latinSource = ''): string {
+  if (!telugu) return telugu;
+
+  const boundary = String.raw`(?:$|[\s.,!?;:…'"''""»)\]}।॥])`;
+
+  // Explicit virama form at any clause boundary
+  let out = telugu.replace(
+    new RegExp(`([నమ])్(?![నమ])(?=${boundary})`, 'g'),
+    'ం',
+  );
+
+  // Isolated-word path: latin stem ends with bare n/m, output bare న/మ after ్$ strip
+  const stem = (latinSource || '').trim().replace(/[\s.,!?;:…'"''""»)\]}।॥]+$/g, '');
+  const lastLatin = stem.slice(-1).toLowerCase();
+  if (
+    (lastLatin === 'n' || lastLatin === 'm')
+    && /[నమ]\s*$/.test(out)
+    && !/(మ్మ|న్న)\s*$/.test(out)
+  ) {
+    out = out.replace(/([నమ])(\s*)$/, 'ం$2');
+  }
+
+  return out;
 }
 
 /** Suggestion shape used by the floating UI. */
@@ -729,74 +875,69 @@ export interface Suggestion {
   value: string;
 }
 
-/** Return up to 5 useful alternatives for the current roman word being typed. */
+/** Return up to 6 useful alternatives for the current roman word being typed. */
 export function getPhoneticSuggestions(roman: string): Suggestion[] {
   if (!roman || !/[a-zA-Z]/.test(roman)) return [];
 
   const seen = new Set<string>();
   const suggestions: Suggestion[] = [];
 
-  const addVariant = (variantRoman: string, label?: string) => {
+  const addVariant = (variantRoman: string, label?: string, front = false) => {
     const telugu = phoneticToTelugu(variantRoman);
     if (!telugu || seen.has(telugu) || telugu === roman) return;
     seen.add(telugu);
 
     const displayRoman = label || variantRoman;
-    suggestions.push({
+    const item = {
       display: `${displayRoman} → ${telugu}`,
       value: telugu,
-    });
+    };
+    if (front) suggestions.unshift(item);
+    else suggestions.push(item);
   };
 
-  // Base
+  // Order matters: index 0 is what Space/Enter/Tab accept.
+  // 1) personal dict  2) whole-word common  3) live conversion  4) variants
+  const lower = roman.toLowerCase();
+  const personal = personalCorrections[lower] || personalCorrections[roman];
+  if (personal && !seen.has(personal)) {
+    seen.add(personal);
+    suggestions.push({ display: `${roman} (yours) → ${personal}`, value: personal });
+  }
+
+  if (wordOverrides[lower] && !seen.has(wordOverrides[lower])) {
+    const tel = wordOverrides[lower];
+    seen.add(tel);
+    suggestions.push({ display: `${roman} (common) → ${tel}`, value: tel });
+  }
+
+  // Engine conversion (often same as common — skipped by seen)
   addVariant(roman, roman);
 
-  // Vowel length alternates (very common need)
-  addVariant(roman.replace(/e/g, 'ee'), `${roman} (long e)`);
-  addVariant(roman.replace(/e/g, 'ae'), `${roman} (ae)`);
-  addVariant(roman.replace(/o(?!o)/g, 'oo'), `${roman} (long o)`);
-  addVariant(roman.replace(/a(?!a)/g, 'aa'), `${roman} (long a)`);
+  // Vowel length alternates (most common need vs Pramukh)
+  addVariant(roman.replace(/e(?!e)/gi, 'ee'), `${roman} (long ే)`);
+  addVariant(roman.replace(/o(?!o)/gi, 'oo'), `${roman} (long ో)`);
+  addVariant(roman.replace(/a(?!a)/gi, 'aa'), `${roman} (long ా)`);
+  addVariant(roman.replace(/i(?!i)/gi, 'ii'), `${roman} (long ీ)`);
+  addVariant(roman.replace(/u(?!u)/gi, 'uu'), `${roman} (long ూ)`);
 
-  // Nasal swaps
-  addVariant(roman.replace(/n/g, 'm'), `${roman} (m for n)`);
-  addVariant(roman.replace(/m/g, 'n'), `${roman} (n for m)`);
-
-  // Retroflex toggles
+  // Retroflex toggles (capital = murdhanya — Pramukh-compatible)
+  addVariant(roman.replace(/d/g, 'D'), `${roman} (డ)`);
+  addVariant(roman.replace(/t/g, 'T'), `${roman} (ట)`);
+  addVariant(roman.replace(/n/g, 'N'), `${roman} (ణ)`);
+  addVariant(roman.replace(/th/gi, 'Th'), `${roman} (ఠ)`);
+  addVariant(roman.replace(/dh/gi, 'Dh'), `${roman} (ఢ)`);
   if (/l/i.test(roman)) {
-    addVariant(roman.replace(/ll/g, 'LL'), `${roman} (retroflex ళ్ళ)`);
-  }
-  addVariant(roman.replace(/d/g, 'D'), `${roman} (retro D డ)`);
-  addVariant(roman.replace(/t/g, 'T'), `${roman} (retro T ట)`);
-  addVariant(roman.replace(/th/g, 'Th'), `${roman} (retro aspirate ఠ)`);
-  addVariant(roman.replace(/dh/g, 'Dh'), `${roman} (retro aspirate ఢ)`);
-  addVariant(roman.replace(/n/g, 'N'), `${roman} (retro N ణ)`);
-
-  // Special letters
-  if (/^R/i.test(roman) || /RR/i.test(roman)) {
-    addVariant(roman.replace(/RR?/gi, 'R'), `${roman} (ఱ)`);
-  }
-  if (/^ru/i.test(roman) || /^R/i.test(roman)) {
-    addVariant(roman.replace(/^ruu?/i, 'ru'), `${roman} (ఋ / ౠ)`);
+    addVariant(roman.replace(/ll/gi, 'LL'), `${roman} (ళ్ళ)`);
   }
 
-  // Halant explicit easy typing
-  addVariant(roman + ' ', `${roman} (halant form e.g. క్ with space)`);
-
-  // Common cluster hints
+  // Nasal / cluster hints
+  addVariant(roman.replace(/n/g, 'm'), `${roman} (m↔n)`);
   if (/ksh|ks|x/i.test(roman)) {
     addVariant(roman.replace(/ksh|ks|x/gi, 'ksh'), `${roman} (క్ష)`);
   }
   if (/jn|gn/i.test(roman)) {
     addVariant(roman.replace(/jn|gn/gi, 'jn'), `${roman} (జ్ఞ)`);
-  }
-
-  // Offer the override directly if one exists
-  const lower = roman.toLowerCase();
-  if (wordOverrides[lower]) {
-    const tel = wordOverrides[lower];
-    if (!seen.has(tel)) {
-      suggestions.unshift({ display: `${roman} (common) → ${tel}`, value: tel });
-    }
   }
 
   return suggestions.slice(0, 6);

@@ -1,10 +1,26 @@
 import { phoneticToTelugu } from './phonetic';
+import { isProtectedPlaceholderText, shouldKeepLiteralEnglish, unwrapLiteralEnglish } from './phoneticEscape';
+
+export { isProtectedPlaceholderText, shouldKeepLiteralEnglish } from './phoneticEscape';
+
+function convertTextPreservingPlaceholders(text: string): string {
+  if (!text || !/[a-zA-Z`]/.test(text)) return text;
+  if (isProtectedPlaceholderText(text)) return text;
+  // Word-level: keep English literals + unwrap `backticks` (must match before bare [a-zA-Z]+)
+  return text.replace(/`[A-Za-z][A-Za-z0-9_\-]*`|\$[A-Za-z][A-Za-z0-9_\-]*|[A-Za-z]+/g, (word) => {
+    if (shouldKeepLiteralEnglish(word)) return unwrapLiteralEnglish(word);
+    return phoneticToTelugu(word);
+  });
+}
 
 export function applyLivePhoneticToHtml(html: string): { html: string; trailingWord: string } {
   if (!html) return { html: '', trailingWord: '' };
   const div = document.createElement('div');
   div.innerHTML = html;
   const fullPlain = div.textContent || '';
+  if (isProtectedPlaceholderText(fullPlain)) {
+    return { html, trailingWord: '' };
+  }
   const match = fullPlain.match(/[a-zA-Z]+$/);
   let trailingWord = match ? match[0] : '';
   let convertLen = trailingWord ? fullPlain.length - trailingWord.length : fullPlain.length;
@@ -23,9 +39,11 @@ export function applyLivePhoneticToHtml(html: string): { html: string; trailingW
       const start = pos;
       const end = pos + text.length;
       pos = end;
-      if (end <= convertLen) node.textContent = phoneticToTelugu(text);
+      if (isProtectedPlaceholderText(text)) return;
+      if (end <= convertLen) node.textContent = convertTextPreservingPlaceholders(text);
       else if (start < convertLen) {
-        node.textContent = phoneticToTelugu(text.slice(0, convertLen - start)) + text.slice(convertLen - start);
+        node.textContent =
+          convertTextPreservingPlaceholders(text.slice(0, convertLen - start)) + text.slice(convertLen - start);
       }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       Array.from(node.childNodes).forEach(walk);
@@ -39,9 +57,16 @@ export function convertAllPhoneticInHtml(html: string): string {
   if (!html) return html;
   const div = document.createElement('div');
   div.innerHTML = html;
+  if (isProtectedPlaceholderText(div.textContent || '')) return html;
   function walk(node: Node) {
-    if (node.nodeType === Node.TEXT_NODE) node.textContent = phoneticToTelugu(node.textContent || '');
-    else if (node.nodeType === Node.ELEMENT_NODE) Array.from(node.childNodes).forEach(walk);
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent || '';
+      if (!isProtectedPlaceholderText(text)) {
+        node.textContent = convertTextPreservingPlaceholders(text);
+      }
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      Array.from(node.childNodes).forEach(walk);
+    }
   }
   walk(div);
   return div.innerHTML;

@@ -98,8 +98,8 @@ export function ReviewTeluguTextarea({
     if (nextCursor !== undefined) cursorRef.current = nextCursor;
   }, [onChange, updateSuggestionMenu]);
 
-  const insertSuggestion = useCallback((suggestion: Suggestion) => {
-    const next = replaceTrailingRomanInPlainText(value, suggestion.value);
+  const insertSuggestion = useCallback((suggestion: Suggestion, suffix = '') => {
+    const next = replaceTrailingRomanInPlainText(value, suggestion.value) + suffix;
     commitValue(next, '', next.length);
     setShowSuggestions(false);
   }, [value, commitValue]);
@@ -118,6 +118,7 @@ export function ReviewTeluguTextarea({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (phoneticLive && showSuggestions && suggestions.length > 0) {
+      const pick = suggestions[selectedIndex] ?? suggestions[0];
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((p) => (p + 1) % suggestions.length);
@@ -128,9 +129,14 @@ export function ReviewTeluguTextarea({
         setSelectedIndex((p) => (p - 1 + suggestions.length) % suggestions.length);
         return;
       }
-      if (e.key === 'Tab' || (e.key === ' ' && !e.shiftKey)) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
         e.preventDefault();
-        insertSuggestion(suggestions[selectedIndex]);
+        if (pick) insertSuggestion(pick);
+        return;
+      }
+      if ((e.key === ' ' || e.key === 'Spacebar') && !e.shiftKey) {
+        e.preventDefault();
+        if (pick) insertSuggestion(pick, ' ');
         return;
       }
       if (e.key === 'Escape') {

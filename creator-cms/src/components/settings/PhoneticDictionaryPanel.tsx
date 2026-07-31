@@ -111,8 +111,13 @@ export function PhoneticDictionaryPanel() {
       </div>
 
       <div className="settings-phonetic-dict__toolbar">
-        <button type="button" className="btn btn-secondary" onClick={handleExport} disabled={!entries.length}>
-          <Download size={14} aria-hidden /> {te ? 'JSON ఎగుమతి' : 'Export JSON'}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleExport}
+          title={te ? 'మీ నిఘంటువును JSON ఫైల్‌గా డౌన్‌లోడ్ చేయండి' : 'Download your dictionary as a JSON file'}
+        >
+          <Download size={14} aria-hidden /> {te ? 'JSON డౌన్‌లోడ్ / ఎగుమతి' : 'Download / export JSON'}
         </button>
         <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
           {te ? 'JSON దిగుమతి' : 'Import JSON'}
@@ -129,6 +134,9 @@ export function PhoneticDictionaryPanel() {
         </label>
         <span className="input-hint">
           {entries.length} {te ? 'ఎంట్రీలు' : 'entries'}
+          {entries.length === 0
+            ? (te ? ' — ఎగుమతి ఖాళీ నిఘంటువు కూడా సేవ్ అవుతుంది' : ' — export still saves an empty backup')
+            : ''}
         </span>
       </div>
 

@@ -1174,6 +1174,20 @@ body.narrative-os-body {
 .narrative-os-app .narrative-phonetic-menu {
   position: fixed;
   z-index: 45;
+  /* Inherit high-contrast selection from .katha-proto-phonetic-* rules */
+}
+
+.narrative-os-app .narrative-phonetic-menu .katha-proto-phonetic-item--active {
+  background: #5c2a35;
+  border-color: #3d1a22;
+}
+
+.narrative-os-app .narrative-phonetic-menu .katha-proto-phonetic-item--active .katha-proto-phonetic-item__word {
+  color: #fffefb;
+}
+
+.narrative-os-app .narrative-phonetic-menu .katha-proto-phonetic-item--active .katha-proto-phonetic-item__hint {
+  color: rgba(255, 254, 251, 0.82);
 }
 
 /* Command palette */
