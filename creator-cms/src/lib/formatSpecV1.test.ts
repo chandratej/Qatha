@@ -86,11 +86,11 @@ describe('Format Spec v1 tiers', () => {
 });
 
 describe('Format Spec v1 content types', () => {
-  it('serialized band 1500–2500', () => {
+  it('serialized band 800–1200', () => {
     expect(softWordTargetForContentType('serialized_story')).toEqual({
-      min: 1500,
-      max: 2500,
-      hardMax: 3000,
+      min: 800,
+      max: 1200,
+      hardMax: 1200,
     });
   });
 

@@ -122,7 +122,7 @@ export function EpistolaryEditor() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishMsg, setPublishMsg] = useState<string | null>(null);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [, setLastSaved] = useState<Date | null>(null);
   const [sync, setSync] = useState<SyncState>('idle');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [castOpen, setCastOpen] = useState(false);

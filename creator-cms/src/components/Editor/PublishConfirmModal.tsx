@@ -15,7 +15,7 @@ interface PublishConfirmModalProps {
   sceneCount: number;
   isResubmit?: boolean;
   publishing?: boolean;
-  /** Soft band + hard max for Serialized Story (e.g. 1500–2500 soft, 3000 hard). */
+  /** Soft band + hard max for Serialized Story (e.g. 800–1,200 words). */
   softWordTarget?: { min: number; max: number; hardMax?: number | null } | null;
   /** When set, modal can load/upload the story cover before publish. */
   storyId?: string;
@@ -266,7 +266,7 @@ export function PublishConfirmModal({
           <p className="katha-publish-confirm__warn">
             {te
               ? `మరిన్ని పదాలు రాయండి — కనీసం ${softWordTarget.min.toLocaleString()} పదాలు కావాలి.`
-              : `Add more content — need at least ${softWordTarget.min.toLocaleString()} words (recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()}, hard max ${(hardMax ?? 3000).toLocaleString()} words).`}
+              : `Add more content — need at least ${softWordTarget.min.toLocaleString()} words (recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()}, hard max ${(hardMax ?? 1200).toLocaleString()} words).`}
           </p>
         )}
         {overHard && hardMax != null && (

@@ -11,12 +11,12 @@ export const UI_CONFIG = {
   },
   editor: {
     /** Hard product limit for chapter plain-text size (also enforced server-side). */
-    /** No character ceiling — length is word-based for serials (1,500–2,500 soft · 3,000 hard). */
+    /** No character ceiling — length is word-based for serials (800–1,200 words). */
     maxChapterChars: Number(import.meta.env.VITE_MAX_CHAPTER_CHARS) || Number.MAX_SAFE_INTEGER,
     /** Show character warning only after this fraction of the limit. */
     charWarnRatio: 0.85,
-    /** Soft upper band for Serialized Story (1,500–2,500 soft · 3,000 hard). */
-    chapterWordGoal: Number(import.meta.env.VITE_CHAPTER_WORD_GOAL) || 2500,
+    /** Soft upper band for Serialized Story (800–1,200 words). */
+    chapterWordGoal: Number(import.meta.env.VITE_CHAPTER_WORD_GOAL) || 1200,
     maxStoryTitleChars: 100,
     maxStoryDescChars: 300,
     autosaveIntervalMs: Number(import.meta.env.VITE_AUTOSAVE_MS) || 2500,

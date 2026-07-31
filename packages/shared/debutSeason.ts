@@ -1,16 +1,15 @@
 /**
  * PRD — Debut Season (అవతరణ కాలం) — first serialized arc evaluation.
- * Day-to-day serialized writing band is soft 1,500–2,500 / hard max 3,000 words
- * (content-types.ts). Debut Season evaluation thresholds below are a separate
- * competition bar and must not replace the editor word band in CMS.
+ * Per-chapter word band matches day-to-day serials: 800–1,200 words
+ * (content-types.ts). Total words = chapterCount × band.
  */
 
 /** Core requirements for a Debut Season manuscript */
 export const DEBUT_SEASON_REQUIREMENTS = {
   chapterCount: 50,
-  wordsPerChapter: { min: 2000, max: 2500 },
-  /** Total word range across all chapters */
-  totalWords: { min: 100_000, max: 125_000 },
+  wordsPerChapter: { min: 800, max: 1200 },
+  /** Total word range across all chapters (50 × 800–1,200) */
+  totalWords: { min: 40_000, max: 60_000 },
   /** Minimum chapters before evaluation eligibility */
   minChaptersForEvaluation: 50,
   /** Days allowed to complete the season arc */

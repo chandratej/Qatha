@@ -14,9 +14,9 @@ This is a **craft template**, not a rulebook. Nothing here blocks publish except
 
 | Guidance | Value |
 |----------|--------|
-| Soft min (publish floor) | **1,500 words** |
-| Soft max (recommended upper) | **2,500 words** |
-| Hard max (publish ceiling) | **3,000 words** |
+| Soft min (publish floor) | **800 words** |
+| Soft max (recommended upper) | **1,200 words** |
+| Hard max (publish ceiling) | **1,200 words** |
 | Full arc length | Often **50–200** chapters |
 | Before first launch | **15–20** chapters written if you can (buffer for cadence) |
 | Update cadence | **3–5** chapters/week while active |
@@ -25,11 +25,11 @@ This is a **craft template**, not a rulebook. Nothing here blocks publish except
 ### Editorial tips
 
 - End chapters on a cliffhanger or open question when it serves the story.
-- Aim for the soft band (1,500–2,500). Below 1,500 or above 3,000 **blocks publish**.
+- Aim for **800–1,200 words**. Below 800 or above 1,200 **blocks publish**.
 
 ### Cadence
 
-> Target **1,500–2,500 words** per chapter, updated about **3–5×/week** while the series is active.
+> Target **800–1,200 words** per chapter, updated about **3–5×/week** while the series is active.
 
 ---
 

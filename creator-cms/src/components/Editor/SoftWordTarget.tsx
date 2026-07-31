@@ -9,7 +9,7 @@ interface SoftWordTargetProps {
 }
 
 /**
- * Serialized Story word band: soft 1,500–2,500 · hard max 3,000 words.
+ * Serialized Story word band: 800–1,200 words.
  */
 export function SoftWordTarget({
   wordCount,

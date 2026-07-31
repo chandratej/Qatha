@@ -23,7 +23,7 @@ const DEFAULT_COMPETITION_RULES_V1 = {
     contentTypes: ['serialized_story', 'short_story', 'short_story_collection'],
     storyStatuses: ['draft', 'ongoing'],
     minChapters: 50,
-    minWordsPerChapter: 2000,
+    minWordsPerChapter: 800,
     notes: [
       'Original Telugu manuscripts only — no machine-translated submissions.',
       'Serialized stories must meet Debut Season chapter and word-count thresholds.',

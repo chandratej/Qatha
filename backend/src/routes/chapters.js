@@ -225,7 +225,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireCreatorConsent(),
     const content = sanitizePublishedContent(rawContent);
     const estimated_read_time_minutes = estimateReadTimeMinutes(content);
 
-    // Serialized word band only: soft 1,500–2,500 · hard max 3,000 words (no character ceiling).
+    // Serialized word band only: 800–1,200 words (min floor · hard max; no character ceiling).
     let storyContentType = 'serialized_story';
     if (!isMockMode()) {
       const { data: storyMeta } = await supabase

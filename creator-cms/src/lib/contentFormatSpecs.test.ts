@@ -10,14 +10,14 @@ import {
 } from '../../../packages/shared/content-types';
 
 describe('content format specs', () => {
-  it('serialized soft 1500–2500 and hard max 3000', () => {
-    expect(SERIALIZED_SOFT_WORD_MIN).toBe(1500);
-    expect(SERIALIZED_SOFT_WORD_MAX).toBe(2500);
-    expect(SERIALIZED_HARD_WORD_MAX).toBe(3000);
+  it('serialized soft 800–1200 and hard max 1200', () => {
+    expect(SERIALIZED_SOFT_WORD_MIN).toBe(800);
+    expect(SERIALIZED_SOFT_WORD_MAX).toBe(1200);
+    expect(SERIALIZED_HARD_WORD_MAX).toBe(1200);
     expect(softWordTargetForContentType('serialized_story')).toEqual({
-      min: 1500,
-      max: 2500,
-      hardMax: 3000,
+      min: 800,
+      max: 1200,
+      hardMax: 1200,
     });
   });
 

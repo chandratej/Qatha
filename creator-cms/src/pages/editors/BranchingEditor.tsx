@@ -92,7 +92,7 @@ export function BranchingEditor() {
   const [activeNodeId, setActiveNodeId] = useState(DEFAULT_NODES[0]!.id);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [, setLastSaved] = useState<Date | null>(null);
   const [cloudSync, setCloudSync] = useState<CloudSyncState>('idle');
   /**
    * Preview open by default — same model as chat fiction side-panel reader.

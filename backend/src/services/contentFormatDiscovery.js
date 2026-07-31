@@ -3,15 +3,15 @@
  * Keep in sync with packages/shared/content-types.ts.
  *
  * Serialized Story:
- *   soft min 1,500 · soft max 2,500 · hard max 3,000 words
+ *   min 800 · max 1,200 words
  * Discovery: ≥20 published chapters → serialized shelf
  */
 
 export const DISCOVERY_SERIALIZED_CHAPTER_FLOOR = 20;
 
-export const SERIALIZED_SOFT_WORD_MIN = 1500;
-export const SERIALIZED_SOFT_WORD_MAX = 2500;
-export const SERIALIZED_HARD_WORD_MAX = 3000;
+export const SERIALIZED_SOFT_WORD_MIN = 800;
+export const SERIALIZED_SOFT_WORD_MAX = 1200;
+export const SERIALIZED_HARD_WORD_MAX = 1200;
 
 /**
  * @param {number} publishedChapterCount

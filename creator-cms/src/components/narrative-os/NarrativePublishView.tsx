@@ -73,11 +73,11 @@ export function NarrativePublishView({
           </p>
         </div>
 
-        {wordCount > 0 && wordCount < 1500 && (
+        {wordCount > 0 && wordCount < 800 && (
           <p className="nos-publish__error" role="status">
             {te
-              ? `ప్రచురణకు కనీసం 1,500 పదాలు అవసరం (ప్రస్తుతం ${wordCount.toLocaleString('te')}). Publish నొక్కితే వివరాలు చూస్తారు.`
-              : `Need at least 1,500 words to publish (you have ${wordCount.toLocaleString()}). Click Publish for details.`}
+              ? `ప్రచురణకు కనీసం 800 పదాలు అవసరం (ప్రస్తుతం ${wordCount.toLocaleString('te')}). Publish నొక్కితే వివరాలు చూస్తారు.`
+              : `Need at least 800 words to publish (you have ${wordCount.toLocaleString()}). Click Publish for details.`}
           </p>
         )}
 
@@ -100,8 +100,8 @@ export function NarrativePublishView({
           }}
           disabled={busy}
           title={
-            wordCount < 1500
-              ? `Need at least 1,500 words (you have ${wordCount})`
+            wordCount < 800
+              ? `Need at least 800 words (you have ${wordCount})`
               : busy
                 ? undefined
                 : 'Submit for review — word limits are checked on click'
@@ -110,11 +110,11 @@ export function NarrativePublishView({
           <Rocket size={16} aria-hidden />
           {publishing ? t('editor.saving') : publishLabel}
         </button>
-        {wordCount > 0 && wordCount < 1500 && (
+        {wordCount > 0 && wordCount < 800 && (
           <p className="nos-publish__error" role="alert" style={{ marginTop: 12 }}>
             {te
-              ? `ప్రచురణ బ్లాక్: కనీసం 1,500 పదాలు (ప్రస్తుతం ${wordCount}). బటన్ నొక్కితే వివరాలు.`
-              : `Publishing blocked: need at least 1,500 words (you have ${wordCount}). Click the button for details.`}
+              ? `ప్రచురణ బ్లాక్: కనీసం 800 పదాలు (ప్రస్తుతం ${wordCount}). బటన్ నొక్కితే వివరాలు.`
+              : `Publishing blocked: need at least 800 words (you have ${wordCount}). Click the button for details.`}
           </p>
         )}
       </div>

@@ -10,6 +10,7 @@ import { mockChapterStore } from '../data/seed.js';
 import {
   DEBUT_CHAPTER_THRESHOLD,
   DEBUT_MIN_WORDS_PER_CHAPTER,
+  DEBUT_MAX_WORDS_PER_CHAPTER,
   debutProgressPct,
   awardLevelForScore,
 } from '../config/debutSeasonConstants.js';
@@ -38,6 +39,7 @@ function seedMockSeasonIfEmpty() {
     status: 'active',
     chapter_threshold: DEBUT_CHAPTER_THRESHOLD,
     min_words_per_chapter: DEBUT_MIN_WORDS_PER_CHAPTER,
+    max_words_per_chapter: DEBUT_MAX_WORDS_PER_CHAPTER,
     created_at: now.toISOString(),
   };
   return mockActiveSeason;
@@ -53,6 +55,7 @@ function rowToSeason(row) {
     status: row.status,
     chapter_threshold: row.chapter_threshold ?? DEBUT_CHAPTER_THRESHOLD,
     min_words_per_chapter: row.min_words_per_chapter ?? DEBUT_MIN_WORDS_PER_CHAPTER,
+    max_words_per_chapter: row.max_words_per_chapter ?? DEBUT_MAX_WORDS_PER_CHAPTER,
     created_at: row.created_at,
   };
 }

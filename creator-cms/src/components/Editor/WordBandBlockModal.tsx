@@ -14,9 +14,9 @@ interface WordBandBlockModalProps {
   locale?: string;
 }
 
-const DEFAULT_MIN = 1500;
-const DEFAULT_MAX = 2500;
-const DEFAULT_HARD = 3000;
+const DEFAULT_MIN = 800;
+const DEFAULT_MAX = 1200;
+const DEFAULT_HARD = 1200;
 
 /**
  * Failsafe publish-block dialog. Uses createPortal + fully inline styles

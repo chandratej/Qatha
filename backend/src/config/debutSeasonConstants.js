@@ -1,7 +1,8 @@
 /** Align with packages/shared/debutSeason.ts — Debut Season PRD */
 
 export const DEBUT_CHAPTER_THRESHOLD = 50;
-export const DEBUT_MIN_WORDS_PER_CHAPTER = 2000;
+export const DEBUT_MIN_WORDS_PER_CHAPTER = 800;
+export const DEBUT_MAX_WORDS_PER_CHAPTER = 1200;
 
 export const DEBUT_ELIGIBILITY_STATUSES = ['active', 'graduated', 'disqualified', 'withdrawn'];
 

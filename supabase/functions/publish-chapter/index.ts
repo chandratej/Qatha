@@ -41,9 +41,9 @@ function estimateReadTimeMinutes(content: string): number {
 }
 
 /** Serialized Story word band — keep in sync with packages/shared/content-types.ts */
-const SERIALIZED_SOFT_WORD_MIN = 1500;
-const SERIALIZED_SOFT_WORD_MAX = 2500;
-const SERIALIZED_HARD_WORD_MAX = 3000;
+const SERIALIZED_SOFT_WORD_MIN = 800;
+const SERIALIZED_SOFT_WORD_MAX = 1200;
+const SERIALIZED_HARD_WORD_MAX = 1200;
 
 function countWordsInContent(html: string): number {
   const plain = String(html || '')

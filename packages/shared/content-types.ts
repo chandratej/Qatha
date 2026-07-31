@@ -66,11 +66,11 @@ export const CONTENT_TYPES = [
     labelTelugu: 'ధారావాహిక కథ',
     maxChapters: null,
     minChapters: null,
-    minWordsPerChapter: 1500,
-    maxWordsPerChapter: 2500,
-    softWordTargetMin: 1500,
-    softWordTargetMax: 2500,
-    hardMaxWordsPerChapter: 3000,
+    minWordsPerChapter: 800,
+    maxWordsPerChapter: 1200,
+    softWordTargetMin: 800,
+    softWordTargetMax: 1200,
+    hardMaxWordsPerChapter: 1200,
     suggestedTotalChaptersMin: 50,
     suggestedTotalChaptersMax: null,
     suggestedLaunchChaptersMin: 15,
@@ -78,13 +78,13 @@ export const CONTENT_TYPES = [
     updateCadenceGuide: '3–5 chapters/week while the series is active',
     discoverySerializedFloor: 20,
     guideTelugu:
-      'ప్రధాన ఆదాయ ఫార్మాట్. 1,500–2,500 పదాలు/అధ్యాయం. లాంచ్‌కు 15–20 అధ్యాయాలు; పోటీ 25 · మానిటైజ్ 50.',
+      'ప్రధాన ఆదాయ ఫార్మాట్. 800–1,200 పదాలు/అధ్యాయం. లాంచ్‌కు 15–20 అధ్యాయాలు; పోటీ 25 · మానిటైజ్ 50.',
     guideEnglish:
-      'Primary revenue format. 1,500–2,500 words/chapter. Launch ~15–20 chapters; contest at 25, monetize at 50.',
+      'Primary revenue format. 800–1,200 words/chapter. Launch ~15–20 chapters; contest at 25, monetize at 50.',
     selectionGuideEnglish:
-      '1,500–2,500 words/chapter (hard max 3,000). Aim 15–20 chapters before launch; grows indefinitely. Contest ≥25 published chapters · monetize ≥50.',
+      '800–1,200 words/chapter. Aim 15–20 chapters before launch; grows indefinitely. Contest ≥25 published chapters · monetize ≥50.',
     selectionGuideTelugu:
-      '1,500–2,500 పదాలు/అధ్యాయం (గరిష్ఠ 3,000). లాంచ్‌కు 15–20; అనంతం పెరుగుతుంది. పోటీ ≥25 · మానిటైజ్ ≥50.',
+      '800–1,200 పదాలు/అధ్యాయం. లాంచ్‌కు 15–20; అనంతం పెరుగుతుంది. పోటీ ≥25 · మానిటైజ్ ≥50.',
     confidence: 'high' as const,
     hideSoftWordTarget: false,
   },
@@ -297,9 +297,9 @@ export function softWordTargetForContentType(id: string | null | undefined): {
 }
 
 /** Default serialized band (importable constants for backend parity). */
-export const SERIALIZED_SOFT_WORD_MIN = 1500;
-export const SERIALIZED_SOFT_WORD_MAX = 2500;
-export const SERIALIZED_HARD_WORD_MAX = 3000;
+export const SERIALIZED_SOFT_WORD_MIN = 800;
+export const SERIALIZED_SOFT_WORD_MAX = 1200;
+export const SERIALIZED_HARD_WORD_MAX = 1200;
 
 /**
  * Backend/metadata discovery routing from published chapter count.

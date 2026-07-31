@@ -10,11 +10,11 @@ import {
 } from './content-types';
 
 describe('content format specs (v1)', () => {
-  it('serialized soft target is 1500–2500 with hard max 3000', () => {
+  it('serialized soft target is 800–1200 with hard max 1200', () => {
     expect(softWordTargetForContentType('serialized_story')).toEqual({
-      min: 1500,
-      max: 2500,
-      hardMax: 3000,
+      min: 800,
+      max: 1200,
+      hardMax: 1200,
     });
   });
 

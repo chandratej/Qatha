@@ -111,7 +111,7 @@ import { softWordTargetForContentType } from '../../../packages/shared/content-t
 const NARRATIVE_OS_ENABLED = FEATURE_FLAGS.narrativeOs;
 
 /**
- * Soft reference upper band for Serialized Story (1,500–2,500 soft · 3,000 hard).
+ * Soft reference upper band for Serialized Story (800–1,200 words).
  * InkProgress uses soft max as the visual goal.
  */
 const CHAPTER_WORD_GOAL = UI_CONFIG.editor.chapterWordGoal;
@@ -669,7 +669,7 @@ export function ChapterEditor() {
   const narrativeFormat: NarrativeFormat = chapterNarrativeFormat;
   const wordCount = getWordCountFromScenes(scenes, locale);
   /**
-   * Serialized: soft 1,500–2,500 · hard max 3,000 words.
+   * Serialized: 800–1,200 words (min floor · hard max).
    * Always resolve a concrete band for serials (hardcoded fallback if shared def missing).
    * Exempt: short_story, flash, collection, chat, branching.
    */
@@ -688,7 +688,7 @@ export function ChapterEditor() {
       'interactive_branching',
     ]);
     if (exempt.has(ct)) return null;
-    const FALLBACK = { min: 1500, max: 2500, hardMax: 3000 as number | null };
+    const FALLBACK = { min: 800, max: 1200, hardMax: 1200 as number | null };
     try {
       return softWordTargetForContentType(ct)
         || softWordTargetForContentType('serialized_story')
@@ -1061,9 +1061,9 @@ export function ChapterEditor() {
   }, [scheduleSuccess]);
 
   const publishWordBand = softWordTarget ?? {
-    min: 1500,
-    max: 2500,
-    hardMax: 3000 as number | null,
+    min: 800,
+    max: 1200,
+    hardMax: 1200 as number | null,
   };
 
   const openWordBandBlock = (reason: WordBandBlockReason, count: number) => {
@@ -1074,14 +1074,14 @@ export function ChapterEditor() {
     const errMsg =
       reason === 'below_min'
         ? `Cannot publish: need at least ${band.min.toLocaleString()} words (you have ${count.toLocaleString()}). Recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}.`
-        : `Cannot publish: hard max is ${(band.hardMax ?? 3000).toLocaleString()} words (you have ${count.toLocaleString()}). Trim before publishing.`;
+        : `Cannot publish: hard max is ${(band.hardMax ?? 1200).toLocaleString()} words (you have ${count.toLocaleString()}). Trim before publishing.`;
     setPublishError(errMsg);
     // Native alert is guaranteed visible even if React portal fails or CMS is stale-bundled oddly.
     try {
       showWordBandBlockedAlert({
         wordCount: count,
         min: band.min,
-        hardMax: band.hardMax ?? 3000,
+        hardMax: band.hardMax ?? 1200,
         reason,
       });
     } catch {
@@ -1094,8 +1094,8 @@ export function ChapterEditor() {
     // softWordTarget null = exempt format only
     if (softWordTarget === null) return true;
     const band = softWordTarget ?? publishWordBand;
-    const min = band.min ?? 1500;
-    const hardMax = band.hardMax ?? 3000;
+    const min = band.min ?? 800;
+    const hardMax = band.hardMax ?? 1200;
     if (count < min) {
       openWordBandBlock('below_min', count);
       return false;
@@ -1110,7 +1110,7 @@ export function ChapterEditor() {
   const assertWordBandOrThrow = (count: number) => {
     if (!checkWordBandOrNotify(count)) {
       throw new Error(
-        `Serialized chapters need ${publishWordBand.min.toLocaleString()}–${(publishWordBand.hardMax ?? 3000).toLocaleString()} words (you have ${count.toLocaleString()}).`,
+        `Serialized chapters need ${publishWordBand.min.toLocaleString()}–${(publishWordBand.hardMax ?? 1200).toLocaleString()} words (you have ${count.toLocaleString()}).`,
       );
     }
   };
@@ -1122,8 +1122,7 @@ export function ChapterEditor() {
       lower.includes('at least') ||
       lower.includes('too short') ||
       lower.includes('need at least') ||
-      lower.includes('1500') ||
-      lower.includes('1,500')
+      lower.includes('800')
     ) {
       openWordBandBlock('below_min', count);
       return true;
@@ -1131,8 +1130,8 @@ export function ChapterEditor() {
     if (
       lower.includes('cannot exceed') ||
       lower.includes('too long') ||
-      lower.includes('3000') ||
-      lower.includes('3,000')
+      lower.includes('1200') ||
+      lower.includes('1,200')
     ) {
       openWordBandBlock('over_hard_max', count);
       return true;
@@ -1268,10 +1267,10 @@ export function ChapterEditor() {
       const liveCount = getWordCountFromScenes(scenes, locale);
       const coverBlocking = /cover/i.test(msg);
       // If under min, always show word-band UI (edge errors often hide the real message).
-      if (liveCount > 0 && liveCount < 1500) {
+      if (liveCount > 0 && liveCount < 800) {
         openWordBandBlock('below_min', liveCount);
         setPublishConfirmOpen(false);
-      } else if (liveCount > 3000) {
+      } else if (liveCount > 1200) {
         openWordBandBlock('over_hard_max', liveCount);
         setPublishConfirmOpen(false);
       } else if (!notifyWordBandFromError(msg, liveCount)) {
@@ -1312,7 +1311,7 @@ export function ChapterEditor() {
       }
       return;
     }
-    // Format Spec v1: use each format's soft/hard word band (not a global 1,500 serial floor).
+    // Format Spec v1: use each format's soft/hard word band (not a global 800 serial floor).
     if (softWordTarget) {
       if (liveCount < softWordTarget.min) {
         openWordBandBlock('below_min', liveCount);
@@ -1325,11 +1324,11 @@ export function ChapterEditor() {
     }
     // Keep a serialized safety net if soft target failed to resolve on serials.
     const ct = (storyContentType || 'serialized_story').trim();
-    if (ct === 'serialized_story' && !softWordTarget && liveCount < 1500) {
+    if (ct === 'serialized_story' && !softWordTarget && liveCount < 800) {
       openWordBandBlock('below_min', liveCount);
       return;
     }
-    if (ct === 'serialized_story' && !softWordTarget && liveCount > 3000) {
+    if (ct === 'serialized_story' && !softWordTarget && liveCount > 1200) {
       openWordBandBlock('over_hard_max', liveCount);
       return;
     }
@@ -1355,7 +1354,7 @@ export function ChapterEditor() {
     if (!checkWordBandOrNotify(wordCount)) {
       setScheduleError(
         softWordTarget
-          ? `Need ${softWordTarget.min.toLocaleString()}–${(softWordTarget.hardMax ?? 3000).toLocaleString()} words to schedule (you have ${wordCount.toLocaleString()}).`
+          ? `Need ${softWordTarget.min.toLocaleString()}–${(softWordTarget.hardMax ?? 1200).toLocaleString()} words to schedule (you have ${wordCount.toLocaleString()}).`
           : 'Chapter length out of range',
       );
       return;
@@ -1508,7 +1507,7 @@ export function ChapterEditor() {
         wordCount={wordCount}
         min={publishWordBand.min}
         max={publishWordBand.max}
-        hardMax={publishWordBand.hardMax ?? 3000}
+        hardMax={publishWordBand.hardMax ?? 1200}
         reason={wordBandBlockReason}
         locale={locale}
       />
@@ -1854,7 +1853,7 @@ export function ChapterEditor() {
         />
       )}
 
-      {/* Serialized word band: soft 1,500–2,500 · hard max 3,000 words (legacy + Narrative OS). */}
+      {/* Serialized word band: 800–1,200 words (legacy + Narrative OS). */}
       {!focusMode && softWordTarget && (
         <div className="chapter-editor__progress" aria-label={t('editor.chapterWordGoal')}>
           <InkProgress
@@ -1862,8 +1861,8 @@ export function ChapterEditor() {
             dailyGoal={softWordGoal}
             label={
               locale === 'te'
-                ? `సిఫార్సు ${softWordTarget.min}–${softWordTarget.max} · కనీసం ${softWordTarget.min} · గరిష్ఠ ${softWordTarget.hardMax ?? 3000} పదాలు`
-                : `Recommended ${softWordTarget.min}–${softWordTarget.max} · min ${softWordTarget.min} · hard max ${softWordTarget.hardMax ?? 3000} words`
+                ? `సిఫార్సు ${softWordTarget.min}–${softWordTarget.max} · కనీసం ${softWordTarget.min} · గరిష్ఠ ${softWordTarget.hardMax ?? 1200} పదాలు`
+                : `Recommended ${softWordTarget.min}–${softWordTarget.max} · min ${softWordTarget.min} · hard max ${softWordTarget.hardMax ?? 1200} words`
             }
           />
         </div>
