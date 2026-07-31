@@ -1,0 +1,1573 @@
+/**
+ * Branching interactive-fiction studio — focused, breathable, Telugu-first.
+ * One scene at a time + optional graph map + live play preview.
+ */
+
+.branching-studio-body {
+  overflow: hidden;
+}
+
+.br-studio {
+  --br-maroon: #6b2338;
+  --br-gold: #b8923e;
+  --br-ink: #14110d;
+  --br-muted: #5c5348;
+  --br-paper: #e4d9c8;
+  --br-surface: color-mix(in srgb, #fff 70%, var(--br-paper));
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 45% at 30% 0%, rgba(107, 35, 56, 0.07), transparent 55%),
+    radial-gradient(ellipse 40% 30% at 100% 80%, rgba(184, 146, 62, 0.06), transparent 50%),
+    var(--br-paper);
+  color: var(--br-ink);
+  font-family: 'Outfit', 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+[data-theme='dark'] .br-studio {
+  --br-ink: #f4efe4;
+  --br-muted: #c4b9a8;
+  --br-paper: #12100e;
+  --br-surface: #1a1612;
+  background:
+    radial-gradient(ellipse 70% 45% at 30% 0%, rgba(212, 180, 110, 0.06), transparent 55%),
+    #12100e;
+  color: var(--br-ink);
+}
+
+.br-studio input,
+.br-studio textarea,
+.br-studio select {
+  -webkit-text-fill-color: unset !important;
+  caret-color: var(--br-maroon);
+  color: var(--br-ink);
+}
+
+/* ── Bar ── */
+.br-studio__bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(28, 22, 16, 0.08);
+  background: color-mix(in srgb, var(--br-surface) 92%, transparent);
+  backdrop-filter: blur(14px);
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.br-studio__bar-left,
+.br-studio__bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.br-studio__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: var(--br-maroon);
+  background: rgba(107, 35, 56, 0.1);
+}
+
+[data-theme='dark'] .br-studio__badge {
+  color: #e0c88a;
+  background: rgba(212, 180, 110, 0.12);
+}
+
+.br-studio__title {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+  border: none !important;
+  background: transparent !important;
+  text-align: center;
+  font-family: 'Noto Serif Telugu', 'Fraunces', Georgia, serif !important;
+  font-size: clamp(1.05rem, 1vw + 0.9rem, 1.35rem) !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  color: var(--br-ink) !important;
+}
+
+.br-studio__title:focus {
+  outline: none !important;
+  background: color-mix(in srgb, #fff 50%, var(--br-surface)) !important;
+  box-shadow: 0 0 0 2px rgba(184, 146, 62, 0.3) !important;
+}
+
+.br-studio__icon-btn {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--br-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.br-studio__icon-btn:hover,
+.br-studio__icon-btn.is-on {
+  background: rgba(28, 22, 16, 0.07);
+}
+
+.br-studio__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: none;
+  background: linear-gradient(165deg, #7a2c44, #5a1c2e);
+  color: #f8f0e6;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+@media (max-width: 720px) {
+  .br-studio__add span {
+    display: none;
+  }
+  .br-studio__add {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  .br-studio__badge {
+    display: none;
+  }
+}
+
+.br-studio__sync {
+  display: none;
+  color: var(--br-muted);
+}
+
+@media (min-width: 900px) {
+  .br-studio__sync {
+    display: inline-flex;
+  }
+}
+
+/* ── Body grid — writing first; rail/preview optional ── */
+.br-studio__body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.br-studio--rail .br-studio__body {
+  grid-template-columns: 168px minmax(0, 1fr);
+}
+
+/* Preview as split panel (desktop) or full stage (narrow) */
+.br-studio--preview .br-studio__body {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+}
+
+.br-studio--rail.br-studio--preview .br-studio__body {
+  grid-template-columns: 152px minmax(0, 1fr) minmax(300px, 380px);
+}
+
+@media (max-width: 1100px) {
+  .br-studio--rail.br-studio--preview .br-studio__body {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  }
+  .br-studio--rail.br-studio--preview .br-studio__rail {
+    display: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .br-studio--preview .br-studio__body {
+    grid-template-columns: 1fr;
+  }
+  /* Full-screen play mode on small screens */
+  .br-studio--preview .br-studio__main {
+    display: none;
+  }
+  .br-studio--preview .br-studio__preview {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+/* ── Scene rail ── */
+.br-studio__rail {
+  border-right: 1px solid rgba(28, 22, 16, 0.07);
+  background: color-mix(in srgb, var(--br-surface) 60%, transparent);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.br-studio__rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--br-muted);
+}
+
+.br-studio__rail-count {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  background: rgba(28, 22, 16, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+}
+
+.br-studio__rail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.br-studio__rail-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--br-ink);
+  font-family: inherit;
+}
+
+.br-studio__rail-item:hover {
+  background: color-mix(in srgb, #fff 40%, transparent);
+}
+
+.br-studio__rail-item.is-active {
+  background: color-mix(in srgb, #fff 72%, var(--br-paper));
+  border-color: color-mix(in srgb, var(--br-maroon) 18%, transparent);
+  box-shadow: 0 1px 4px rgba(28, 22, 16, 0.05);
+}
+
+.br-studio__rail-item.has-issue .br-studio__rail-num {
+  background: color-mix(in srgb, #b45309 18%, #fff);
+  color: #9a3412;
+}
+
+.br-studio__rail-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--br-maroon) 10%, #fff);
+  color: var(--br-maroon);
+}
+
+.br-studio__rail-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.br-studio__rail-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.br-studio__rail-forks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.br-studio__rail-fork {
+  font-size: 0.62rem;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.78;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-studio__rail-fork--a {
+  color: var(--br-maroon);
+}
+
+.br-studio__rail-fork--b {
+  color: #6a5220;
+}
+
+.br-studio__rail-item .br-studio__rail-num {
+  margin-top: 2px;
+}
+
+.br-studio__rail-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border-radius: 11px;
+  border: 1px dashed rgba(28, 22, 16, 0.18);
+  background: transparent;
+  color: var(--br-ink);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+/* ── Main writing — generous empty space ── */
+.br-studio__main {
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(24px, 5vh, 48px) clamp(20px, 4vw, 40px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 36rem;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.br-studio__map-panel {
+  border-radius: 16px;
+  border: 1px solid rgba(28, 22, 16, 0.08);
+  background: color-mix(in srgb, #fff 55%, var(--br-paper));
+  padding: 10px 12px 12px;
+}
+
+.br-studio__map-toggle,
+.br-studio__map-nudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--br-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 4px 2px 8px;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-studio__map-nudge {
+  align-self: flex-start;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #b45309 30%, transparent);
+  background: color-mix(in srgb, #b45309 8%, #fff);
+  color: #9a3412;
+  padding: 6px 12px;
+}
+
+.branch-graph-canvas--compact .branch-graph-canvas__viewport {
+  max-height: 200px;
+  overflow: auto;
+}
+
+.branch-graph-canvas__node {
+  border: 1px solid rgba(28, 22, 16, 0.12);
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.branch-graph-canvas__node--active {
+  border-color: var(--br-maroon);
+  box-shadow: 0 0 0 2px rgba(107, 35, 56, 0.15);
+}
+
+/* Scene card */
+.br-studio__scene {
+  border-radius: 22px;
+  border: 1px solid rgba(28, 22, 16, 0.06);
+  background: color-mix(in srgb, #fff 88%, var(--br-paper));
+  box-shadow: 0 8px 28px rgba(28, 22, 16, 0.05);
+  padding: clamp(20px, 3vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+[data-theme='dark'] .br-studio__scene {
+  background: #1a1612;
+  border-color: rgba(244, 239, 228, 0.1);
+  box-shadow: none;
+}
+
+.br-studio__scene-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.br-studio__scene-index {
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--br-maroon) 12%, #fff);
+  color: var(--br-maroon);
+  flex-shrink: 0;
+}
+
+.br-studio__scene-title {
+  flex: 1;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  font-family: 'Noto Serif Telugu', Georgia, serif !important;
+  font-size: 1.2rem !important;
+  font-weight: 650 !important;
+  padding: 6px 4px !important;
+  color: var(--br-ink) !important;
+}
+
+.br-studio__scene-del {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--br-muted);
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.br-studio__scene-del:hover:not(:disabled) {
+  opacity: 1;
+  background: rgba(28, 22, 16, 0.06);
+  color: #9a1b1b;
+}
+
+.br-studio__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.br-studio__field-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--br-muted);
+}
+
+.br-studio__body {
+  width: 100% !important;
+  min-height: 12rem !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 4px 0 !important;
+  font-size: 1.12rem !important;
+  line-height: 1.8 !important;
+  color: var(--br-ink) !important;
+  resize: vertical;
+  font-family: 'Noto Serif Telugu', Georgia, serif !important;
+}
+
+.br-studio__forks {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.br-studio__forks-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--br-muted);
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-studio__fork-target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--br-muted);
+}
+
+.br-studio__fork-target select {
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(28, 22, 16, 0.12);
+  background: #fff;
+  color: var(--br-ink);
+  cursor: pointer;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+[data-theme='dark'] .br-studio__fork-target select {
+  background: #12100e;
+  border-color: rgba(244, 239, 228, 0.12);
+  color: #f4efe4;
+}
+
+@media (min-width: 640px) {
+  .br-studio__forks {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .br-studio__forks {
+    grid-template-columns: 1fr;
+  }
+}
+
+.br-studio__fork {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(28, 22, 16, 0.08);
+  background: color-mix(in srgb, #fff 40%, transparent);
+}
+
+.br-studio__fork--a {
+  border-color: color-mix(in srgb, var(--br-maroon) 18%, transparent);
+  background: color-mix(in srgb, var(--br-maroon) 5%, #fff);
+}
+
+.br-studio__fork--b {
+  border-color: color-mix(in srgb, var(--br-gold) 28%, transparent);
+  background: color-mix(in srgb, var(--br-gold) 8%, #fff);
+}
+
+.br-studio__fork-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: rgba(28, 22, 16, 0.08);
+  color: var(--br-ink);
+}
+
+.br-studio__fork--a .br-studio__fork-badge {
+  background: color-mix(in srgb, var(--br-maroon) 16%, #fff);
+  color: var(--br-maroon);
+}
+
+.br-studio__fork--b .br-studio__fork-badge {
+  background: color-mix(in srgb, var(--br-gold) 24%, #fff);
+  color: #6a5220;
+}
+
+.br-studio__fork-input {
+  width: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  padding: 4px 0 !important;
+  color: var(--br-ink) !important;
+  font-family: 'Noto Serif Telugu', Georgia, serif !important;
+}
+
+.br-studio__fork-target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  color: var(--br-muted);
+}
+
+.br-studio__fork-target select {
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(28, 22, 16, 0.12);
+  background: color-mix(in srgb, #fff 70%, transparent);
+  padding: 0 8px;
+  font-size: 0.8rem;
+  color: var(--br-ink);
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-studio__scene-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(28, 22, 16, 0.06);
+}
+
+.br-studio__nav {
+  border: 1px solid rgba(28, 22, 16, 0.12);
+  background: transparent;
+  border-radius: 10px;
+  height: 34px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+  color: var(--br-ink);
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-studio__nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.br-studio__scene-pos {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--br-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Preview column */
+.br-studio__preview {
+  border-left: 1px solid rgba(28, 22, 16, 0.08);
+  min-height: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--br-surface) 70%, transparent);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* ── Play panel (A/B always visible — not nested in clipped phone) ── */
+.br-play {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+  color: var(--br-ink);
+}
+
+.br-play--fullscreen {
+  min-height: 70vh;
+}
+
+.br-play__head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(28, 22, 16, 0.08);
+}
+
+.br-play__eyebrow {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--br-muted);
+  margin-bottom: 2px;
+}
+
+.br-play__title {
+  margin: 0;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--br-ink);
+}
+
+.br-play__reset {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(28, 22, 16, 0.06);
+  color: var(--br-muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.br-play__reset:hover {
+  background: rgba(28, 22, 16, 0.1);
+  color: var(--br-ink);
+}
+
+.br-play__thread {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.br-play__empty {
+  padding: 24px 16px;
+  color: var(--br-muted);
+  font-size: 0.9rem;
+}
+
+.br-play__card {
+  border-radius: 14px;
+  padding: 14px 14px 16px;
+  background: #fff;
+  border: 1px solid rgba(28, 22, 16, 0.08);
+  box-shadow: 0 2px 10px rgba(28, 22, 16, 0.06);
+}
+
+[data-theme='dark'] .br-play__card {
+  background: #1a1612;
+  border-color: rgba(244, 239, 228, 0.1);
+}
+
+.br-play__card.is-past {
+  opacity: 0.72;
+}
+
+.br-play__card--end {
+  text-align: center;
+  background: linear-gradient(165deg, #fff9ef, #f3e6c8);
+}
+
+.br-play__badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--br-maroon);
+  background: color-mix(in srgb, var(--br-maroon) 10%, #fff);
+  border-radius: 999px;
+  padding: 3px 9px;
+  margin-bottom: 8px;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.br-play__body {
+  margin: 0;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--br-ink);
+}
+
+.br-play__card--end h3 {
+  margin: 0 0 6px;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+}
+
+.br-play__card--end p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--br-muted);
+}
+
+.br-play__you-chose {
+  align-self: flex-end;
+  display: flex;
+  gap: 8px;
+  max-width: 92%;
+  padding: 10px 12px;
+  border-radius: 14px 14px 4px 14px;
+  background: color-mix(in srgb, var(--br-gold) 18%, #fff);
+  border: 1px solid color-mix(in srgb, var(--br-gold) 35%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.br-play__you-key {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: color-mix(in srgb, var(--br-gold) 28%, #fff);
+  color: #6a5220;
+}
+
+.br-play__you-chose strong {
+  display: block;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+
+.br-play__you-chose p {
+  margin: 2px 0;
+  font-weight: 650;
+}
+
+.br-play__you-chose em {
+  font-style: normal;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.br-play__loading {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--br-muted);
+  font-weight: 650;
+}
+
+/* Choice bar — pinned, never scrolls away */
+.br-play__choices {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid rgba(28, 22, 16, 0.1);
+  background: #faf6ef;
+  box-shadow: 0 -6px 18px rgba(28, 22, 16, 0.06);
+  z-index: 5;
+}
+
+[data-theme='dark'] .br-play__choices {
+  background: #1a1612;
+  border-top-color: rgba(244, 239, 228, 0.12);
+}
+
+.br-play__choices-label {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--br-muted);
+}
+
+.br-play__btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 12px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.br-play__btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.br-play__btn:not(:disabled):hover {
+  filter: brightness(0.97);
+  transform: translateY(-1px);
+}
+
+.br-play__btn--a {
+  background: #f3e4e8;
+  border-color: color-mix(in srgb, var(--br-maroon) 20%, transparent);
+  color: #6b2338;
+}
+
+.br-play__btn--b {
+  background: #f5edd4;
+  border-color: color-mix(in srgb, var(--br-gold) 35%, transparent);
+  color: #6a5220;
+}
+
+.br-play__btn-key {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.br-play__btn-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.br-play__btn-main {
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.br-play__btn-dest {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.br-play__end-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(28, 22, 16, 0.08);
+}
+
+.br-play__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--br-muted);
+}
+
+.br-play__restart {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(28, 22, 16, 0.12);
+  background: #fff;
+  color: var(--br-ink);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+[data-theme='dark'] .br-play__restart {
+  background: #1a1612;
+  border-color: rgba(244, 239, 228, 0.14);
+}
+
+.br-phone__path {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.br-phone__path-pill {
+  border: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  max-width: 8.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-phone__path-pill.is-now {
+  background: rgba(212, 180, 110, 0.35);
+  color: #fff8e8;
+}
+
+.br-phone__path-pill.is-end {
+  background: rgba(212, 180, 110, 0.2);
+  color: #e8d5a0;
+  cursor: default;
+}
+
+.br-phone__scene {
+  align-self: stretch;
+  border-radius: 16px;
+  padding: 14px 14px 16px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1a1510;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  animation: br-phone-enter 0.28s ease;
+}
+
+.br-phone__scene.is-revealing {
+  opacity: 0.55;
+}
+
+.br-phone__scene--ending {
+  background: linear-gradient(165deg, #fff9ef, #f3e6c8);
+  text-align: center;
+}
+
+@keyframes br-phone-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.br-phone__scene-head {
+  margin-bottom: 8px;
+}
+
+.br-phone__scene-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b2338;
+  background: rgba(107, 35, 56, 0.1);
+  border-radius: 999px;
+  padding: 2px 8px;
+  margin-bottom: 6px;
+}
+
+.br-phone__scene-title {
+  margin: 0;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1a1510;
+}
+
+.br-phone__scene-body {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  color: #2a241c;
+}
+
+.br-phone__choices {
+  flex: 0 0 auto !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(28, 22, 16, 0.1);
+  background: #faf6ef;
+  box-shadow: 0 -8px 20px rgba(28, 22, 16, 0.08);
+  z-index: 4;
+  position: relative;
+}
+
+[data-theme='dark'] .br-phone__choices {
+  border-top-color: rgba(244, 239, 228, 0.1);
+  background: #1e1a16;
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.br-phone__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: none;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.4;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 1;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-phone__choice:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.br-phone__choice--a {
+  background: #f3e4e8;
+  color: #6b2338;
+}
+
+.br-phone__choice--b {
+  background: #f5edd4;
+  color: #6a5220;
+}
+
+.br-phone__choice:not(:disabled):hover {
+  filter: brightness(0.97);
+  transform: translateY(-1px);
+}
+
+.br-phone__choice:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.br-phone__choice-key {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.br-phone__choice-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.br-phone__choice-main {
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.br-phone__choice-dest {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.72;
+  line-height: 1.3;
+}
+
+.br-phone__choices-prompt {
+  margin: 0 0 2px;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #5a5248;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+[data-theme='dark'] .br-phone__choices-prompt {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.br-phone__live-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 650;
+  opacity: 0.7;
+  white-space: nowrap;
+  color: #5a5248;
+}
+
+.br-phone__nav-bubble {
+  align-self: flex-end;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 92%;
+  padding: 10px 12px;
+  border-radius: 14px 14px 4px 14px;
+  background: rgba(212, 180, 110, 0.22);
+  border: 1px solid rgba(212, 180, 110, 0.35);
+  color: #fff8e8;
+  animation: br-phone-enter 0.28s ease;
+}
+
+.br-phone__nav-key {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: rgba(212, 180, 110, 0.35);
+  color: #fff8e8;
+}
+
+.br-phone__nav-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-phone__nav-copy strong {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.br-phone__nav-copy em {
+  font-style: normal;
+  font-size: 0.72rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.br-phone__scene.is-past {
+  opacity: 0.72;
+}
+
+.br-phone__scene.is-current {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+}
+
+.br-phone__end-tag {
+  font-style: normal;
+  opacity: 0.7;
+  font-size: 0.8em;
+}
+
+.br-phone__footer-actions {
+  flex-shrink: 0;
+  padding: 10px 12px 12px;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.br-phone__footer-actions .epi-preview__next {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Reader preview surface ── */
+.br-preview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.br-preview__eyebrow {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--br-muted);
+  margin-bottom: 4px;
+}
+
+.br-preview__title {
+  margin: 0;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--br-ink);
+  line-height: 1.35;
+}
+
+.br-preview__reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(28, 22, 16, 0.12);
+  background: transparent;
+  color: var(--br-muted);
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-preview__reset:hover {
+  color: var(--br-maroon);
+  border-color: color-mix(in srgb, var(--br-maroon) 30%, transparent);
+}
+
+.br-preview__empty {
+  margin: 24px 0;
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--br-muted);
+  font-size: 0.9rem;
+  border-radius: 14px;
+  border: 1px dashed rgba(28, 22, 16, 0.14);
+}
+
+.br-preview__path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.br-preview__crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.br-preview__sep {
+  color: var(--br-muted);
+  opacity: 0.5;
+  font-size: 0.75rem;
+}
+
+.br-preview__pill {
+  font-size: 0.68rem;
+  font-weight: 650;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(28, 22, 16, 0.06);
+  color: var(--br-muted);
+  max-width: 9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.br-preview__pill.is-now {
+  background: color-mix(in srgb, var(--br-maroon) 12%, #fff);
+  color: var(--br-maroon);
+}
+
+.br-preview__scene {
+  flex: 1;
+  border-radius: 16px;
+  border: 1px solid rgba(28, 22, 16, 0.08);
+  background: color-mix(in srgb, #fff 85%, var(--br-paper));
+  padding: 16px 16px 18px;
+  box-shadow: 0 4px 16px rgba(28, 22, 16, 0.04);
+}
+
+[data-theme='dark'] .br-preview__scene {
+  background: #1c1814;
+  border-color: rgba(244, 239, 228, 0.1);
+}
+
+.br-preview__scene-title {
+  margin: 0 0 10px;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--br-ink);
+}
+
+.br-preview__body {
+  margin: 0 0 16px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--br-ink);
+  white-space: pre-wrap;
+  font-family: 'Noto Serif Telugu', Georgia, serif;
+}
+
+.br-preview__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.br-preview__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+  line-height: 1.45;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.br-preview__choice:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(28, 22, 16, 0.08);
+}
+
+.br-preview__choice:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.br-preview__choice--a {
+  background: color-mix(in srgb, var(--br-maroon) 10%, #fff);
+  border-color: color-mix(in srgb, var(--br-maroon) 18%, transparent);
+  color: var(--br-maroon);
+}
+
+.br-preview__choice--b {
+  background: color-mix(in srgb, var(--br-gold) 14%, #fff);
+  border-color: color-mix(in srgb, var(--br-gold) 28%, transparent);
+  color: #6a5220;
+}
+
+.br-preview__choice-key {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: rgba(28, 22, 16, 0.08);
+}
+
+.br-preview__choice-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.br-preview__choice-end-tag {
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.65;
+  font-size: 0.78em;
+}
+
+.br-preview__pill {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.br-preview__pill:hover {
+  filter: brightness(0.97);
+}
+
+.br-preview__pill.is-end {
+  background: color-mix(in srgb, var(--br-gold) 22%, #fff);
+  color: #6a5220;
+  cursor: default;
+}
+
+.br-preview__ending-card {
+  text-align: center;
+  padding: 8px 4px 4px;
+}
+
+.br-preview__ending-kicker {
+  margin: 0 0 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--br-gold);
+}
+
+.br-preview__end {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(28, 22, 16, 0.08);
+  text-align: center;
+}
+
+.br-preview__end p {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--br-muted);
+}
+
+.br-preview__restart-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--br-maroon) 25%, transparent);
+  background: color-mix(in srgb, var(--br-maroon) 8%, #fff);
+  color: var(--br-maroon);
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+  font-family: 'Noto Sans Telugu', system-ui, sans-serif;
+}
+
+.br-preview__hint {
+  margin: 14px 0 0;
+  font-size: 0.72rem;
+  text-align: center;
+}

@@ -1039,6 +1039,29 @@
   cursor: not-allowed;
 }
 
+.scene-character-panel__add-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.scene-character-panel__input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-faint);
+  background: var(--dash-paper, #fff);
+  font-size: 0.8125rem;
+  color: var(--ink);
+}
+
+.scene-character-panel__hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
 .katha-proto-sidebar-stack {
   display: flex;
   flex-direction: column;

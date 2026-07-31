@@ -32,8 +32,9 @@ describe('authoringWorkspace', () => {
     expect(layoutForWorkspace('writing').showSceneSidebar).toBe(true);
   });
 
-  it('hides AI notes (brand policy) and hides preview in planning mode', () => {
-    expect(layoutForWorkspace('planning').showAiNotes).toBe(false);
+  it('shows author planning notes in planning mode (never generative) and hides preview', () => {
+    // Craft Moat §1: notes are author-written only; flag name is historical (showAiNotes).
+    expect(layoutForWorkspace('planning').showAiNotes).toBe(true);
     expect(layoutForWorkspace('planning').showPreview).toBe(false);
     expect(layoutForWorkspace('planning').previewCollapsed).toBe(true);
   });

@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  BookOpen,
+  ChevronDown,
+  ChevronUp,
   Clapperboard,
+  Clock3,
   Cloud,
   CloudOff,
   Eye,
   Loader2,
+  PanelLeft,
   Plus,
   Save,
   Send,
@@ -19,7 +22,6 @@ import {
 import { EpistolaryReaderPreview } from '../../components/editors/EpistolaryReaderPreview';
 import { TeluguTextField } from '../../components/TeluguTextField';
 import { useLocale } from '../../context/LocaleContext';
-import { ThemeToggle } from '../../components/ThemeToggle';
 import type { StudioStringKey } from '../../lib/studioLocale';
 import type {
   ChatSpeaker,
@@ -40,6 +42,14 @@ import {
   publishEpistolaryChapter,
   saveEpistolaryCloud,
 } from '../../lib/alternateEditorSync';
+import {
+  applyTimePreset,
+  CHAT_TIME_PRESETS,
+  CHAT_TIME_PRESETS_PRIMARY,
+  type ChatTimePresetId,
+  shouldShowTimeSeparator,
+  suggestNextTimestamp,
+} from '../../lib/chatMessageTime';
 import '../../styles/editor-prototype.css';
 import '../../styles/editor-eye-comfort.css';
 
@@ -55,11 +65,15 @@ const ROLE_KEYS: Record<ChatSpeaker, StudioStringKey> = {
 const DEFAULT_CAST = DEFAULT_EPISTOLARY_CAST.map((c) => ({ ...c }));
 const DEFAULT_BUBBLES = DEFAULT_EPISTOLARY_BUBBLES.map((b) => ({ ...b }));
 
-type SyncState = 'idle' | 'syncing' | 'synced' | 'local' | 'error';
+/** Static — not hooks — so loading early-return can never desync hook order. */
+const PRIMARY_TIME_PRESETS = CHAT_TIME_PRESETS.filter((p) =>
+  CHAT_TIME_PRESETS_PRIMARY.includes(p.id),
+);
+const MORE_TIME_PRESETS = CHAT_TIME_PRESETS.filter(
+  (p) => !CHAT_TIME_PRESETS_PRIMARY.includes(p.id),
+);
 
-function nowTs(): string {
-  return new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
-}
+type SyncState = 'idle' | 'syncing' | 'synced' | 'local' | 'error';
 
 function initial(name: string): string {
   const t = name.trim();
@@ -100,6 +114,10 @@ export function EpistolaryEditor() {
   const [activeSceneId, setActiveSceneId] = useState('scene-1');
   const [activeCastId, setActiveCastId] = useState(DEFAULT_CAST[0]?.id ?? '');
   const [composer, setComposer] = useState('');
+  /** Craft time for the next message — intensity lives between clocks. */
+  const [composerTime, setComposerTime] = useState(() =>
+    suggestNextTimestamp(DEFAULT_BUBBLES[DEFAULT_BUBBLES.length - 1]?.timestamp, 'en', 1),
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -108,6 +126,11 @@ export function EpistolaryEditor() {
   const [sync, setSync] = useState<SyncState>('idle');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [castOpen, setCastOpen] = useState(false);
+  /** Scenes rail starts closed — thread is the hero. */
+  const [scenesOpen, setScenesOpen] = useState(false);
+  /** Timing tools collapsed until author opens them. */
+  const [timeOpen, setTimeOpen] = useState(false);
+  const [timeMoreOpen, setTimeMoreOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EpistolaryCastMember | null>(null);
 
   const localTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,6 +148,16 @@ export function EpistolaryEditor() {
   const activeBubbles = activeScene?.bubbles ?? [];
   const allBubbles = useMemo(() => flattenEpistolaryScenes(scenes), [scenes]);
   const activeMember = cast.find((c) => c.id === activeCastId) ?? cast[0] ?? null;
+  const lastBubbleTime = activeBubbles[activeBubbles.length - 1]?.timestamp;
+  const localeClock = isTe ? 'te' : 'en';
+
+  // On scene switch only — do not clobber a time the author just set for the next line
+  useEffect(() => {
+    const scene = scenes.find((s) => s.id === activeSceneId);
+    const last = scene?.bubbles[scene.bubbles.length - 1]?.timestamp;
+    setComposerTime(suggestNextTimestamp(last, localeClock, 1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- scene id is the trigger
+  }, [activeSceneId, localeClock]);
 
   useEffect(() => {
     document.body.classList.add('epistolary-editor-body');
@@ -147,6 +180,8 @@ export function EpistolaryEditor() {
         setScenes(m.scenes);
         setActiveSceneId(m.scenes[0]?.id ?? 'scene-1');
         setActiveCastId(m.cast[0]?.id ?? DEFAULT_CAST[0]!.id);
+        const lastTs = m.scenes[0]?.bubbles[m.scenes[0].bubbles.length - 1]?.timestamp;
+        setComposerTime(suggestNextTimestamp(lastTs, isTe ? 'te' : 'en', 1));
         if (m.updated_at > 0) {
           const d = new Date(m.updated_at);
           setLastSaved(d);
@@ -243,20 +278,34 @@ export function EpistolaryEditor() {
   const sendMessage = useCallback(() => {
     const text = composer.trim();
     if (!text || !activeMember || !activeScene) return;
+    const stamp = (composerTime.trim()
+      || suggestNextTimestamp(lastBubbleTime, localeClock, 1));
     const bubble: EpistolaryBubble = {
       id: `bubble-${Date.now()}`,
       speaker: activeMember.role,
       speakerName: activeMember.name,
       castId: activeMember.id,
       text,
-      timestamp: nowTs(),
+      timestamp: stamp,
     };
     patchActiveScene((s) => ({ ...s, bubbles: [...s.bubbles, bubble] }));
     setComposer('');
+    setComposerTime(suggestNextTimestamp(stamp, localeClock, 1));
     const next = nextSpeaker(cast, [...activeBubbles, bubble]);
     setActiveCastId(next.id);
     focusComposer();
-  }, [composer, activeMember, activeScene, patchActiveScene, cast, activeBubbles, focusComposer]);
+  }, [
+    composer,
+    composerTime,
+    activeMember,
+    activeScene,
+    patchActiveScene,
+    cast,
+    activeBubbles,
+    focusComposer,
+    lastBubbleTime,
+    localeClock,
+  ]);
 
   const updateBubbleText = useCallback(
     (id: string, text: string) => {
@@ -266,6 +315,23 @@ export function EpistolaryEditor() {
       }));
     },
     [patchActiveScene],
+  );
+
+  const updateBubbleTime = useCallback(
+    (id: string, timestamp: string) => {
+      patchActiveScene((s) => ({
+        ...s,
+        bubbles: s.bubbles.map((b) => (b.id === id ? { ...b, timestamp } : b)),
+      }));
+    },
+    [patchActiveScene],
+  );
+
+  const applyComposerPreset = useCallback(
+    (id: ChatTimePresetId) => {
+      setComposerTime(applyTimePreset(id, lastBubbleTime, localeClock));
+    },
+    [lastBubbleTime, localeClock],
   );
 
   const assignBubble = useCallback(
@@ -405,11 +471,16 @@ export function EpistolaryEditor() {
 
   return (
     <div
-      className={`epi-v4${previewOpen ? ' epi-v4--preview' : ''}${castOpen ? ' epi-v4--cast' : ''}`}
+      className={[
+        'epi-v4',
+        previewOpen ? 'epi-v4--preview' : '',
+        castOpen ? 'epi-v4--cast' : '',
+        scenesOpen ? 'epi-v4--scenes' : 'epi-v4--scenes-collapsed',
+      ].filter(Boolean).join(' ')}
       data-katha-mode="creation"
       lang={isTe ? 'te' : 'en'}
     >
-      {/* ── Top bar ── */}
+      {/* ── Top bar — calm, few primary actions ── */}
       <header className="epi-v4__bar">
         <div className="epi-v4__bar-left">
           <button
@@ -420,7 +491,15 @@ export function EpistolaryEditor() {
           >
             <ArrowLeft size={18} />
           </button>
-          <span className="epi-v4__badge">{t('epistolaryEditor.badge')}</span>
+          <button
+            type="button"
+            className={`epi-v4__icon-btn epi-v4__scenes-toggle${scenesOpen ? ' is-on' : ''}`}
+            onClick={() => setScenesOpen((v) => !v)}
+            aria-pressed={scenesOpen}
+            title={t('epistolaryEditor.scenesLabel')}
+          >
+            <PanelLeft size={16} />
+          </button>
         </div>
 
         <TeluguTextField
@@ -438,22 +517,17 @@ export function EpistolaryEditor() {
             {sync === 'syncing' && <Loader2 size={13} className="cms-loading__spin" />}
             {sync === 'synced' && <Cloud size={13} />}
             {(sync === 'local' || sync === 'error') && <CloudOff size={13} />}
-            {lastSaved && (
-              <span>
-                {t('epistolaryEditor.savedPrefix')}{' '}
-                {lastSaved.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
-              </span>
-            )}
           </span>
 
           <button
             type="button"
-            className={`epi-v4__chip-btn${castOpen ? ' is-on' : ''}`}
+            className={`epi-v4__icon-btn${castOpen ? ' is-on' : ''}`}
             onClick={() => setCastOpen((v) => !v)}
+            aria-pressed={castOpen}
+            title={t('epistolaryEditor.castTitle')}
           >
-            <Users size={15} />
-            {t('epistolaryEditor.castTitle')}
-            <span className="epi-v4__count">{cast.length}</span>
+            <Users size={16} />
+            <span className="epi-v4__count epi-v4__count--on-icon">{cast.length}</span>
           </button>
 
           <button
@@ -466,36 +540,25 @@ export function EpistolaryEditor() {
             <Eye size={16} />
           </button>
 
-          <Link
-            to={`/stories/${storyId}/read/epistolary/${chapter}`}
-            className="epi-v4__icon-btn"
-            target="_blank"
-            rel="noopener noreferrer"
-            title={t('epistolaryEditor.openReader')}
-          >
-            <BookOpen size={16} />
-          </Link>
-
-          <ThemeToggle compact />
-
           <button
             type="button"
-            className="epi-v4__ghost"
+            className="epi-v4__icon-btn"
             disabled={saving || sync === 'syncing'}
             onClick={handleSave}
+            title={t('epistolaryEditor.saveDraft')}
+            aria-label={t('epistolaryEditor.saveDraft')}
           >
-            {saving ? <Loader2 size={14} className="cms-loading__spin" /> : <Save size={14} />}
-            {t('epistolaryEditor.saveDraft')}
+            {saving ? <Loader2 size={16} className="cms-loading__spin" /> : <Save size={16} />}
           </button>
 
           <button
             type="button"
-            className="epi-v4__publish"
+            className="epi-v4__publish epi-v4__publish--compact"
             disabled={publishing}
             onClick={() => void handlePublish()}
+            title={t('epistolaryEditor.publish')}
           >
             {publishing ? <Loader2 size={14} className="cms-loading__spin" /> : <Upload size={14} />}
-            {t('epistolaryEditor.publish')}
           </button>
         </div>
       </header>
@@ -561,106 +624,201 @@ export function EpistolaryEditor() {
 
         {/* ── Writing stage ── */}
         <section className="epi-v4__stage">
-          <p className="epi-v4__pride">{t('epistolaryEditor.prideLine')}</p>
+          {/* Scene title chip — one calm line, not a manifesto */}
+          <div className="epi-v4__stage-head">
+            <span className="epi-v4__stage-scene">{activeScene?.title || t('epistolaryEditor.sceneTitle')}</span>
+            <span className="epi-v4__stage-count">
+              {activeBubbles.length} {isTe ? 'సందేశాలు' : 'messages'}
+            </span>
+          </div>
 
           <div className="epi-v4__thread">
             {activeBubbles.length === 0 && (
               <p className="epi-v4__empty">{t('epistolaryEditor.emptyScene')}</p>
             )}
-            {activeBubbles.map((b) => (
-              <article key={b.id} className={`epi-v4__msg epi-v4__msg--${b.speaker}`}>
-                <div className="epi-v4__msg-meta">
-                  <select
-                    className="epi-v4__msg-who"
-                    value={b.castId && cast.some((c) => c.id === b.castId) ? b.castId : cast[0]?.id}
-                    onChange={(e) => {
-                      const m = cast.find((c) => c.id === e.target.value);
-                      if (m) assignBubble(b.id, m);
+            {activeBubbles.map((b, idx) => {
+              const prevTs = idx > 0 ? activeBubbles[idx - 1]?.timestamp : undefined;
+              const showSep = shouldShowTimeSeparator(prevTs, b.timestamp);
+              return (
+                <div key={b.id} className="epi-v4__msg-wrap">
+                  {showSep && (
+                    <div className="epi-v4__time-sep" role="separator">
+                      <span>{b.timestamp}</span>
+                    </div>
+                  )}
+                  <article className={`epi-v4__msg epi-v4__msg--${b.speaker}`}>
+                    <div className="epi-v4__msg-meta">
+                      <select
+                        className="epi-v4__msg-who"
+                        value={b.castId && cast.some((c) => c.id === b.castId) ? b.castId : cast[0]?.id}
+                        onChange={(e) => {
+                          const m = cast.find((c) => c.id === e.target.value);
+                          if (m) assignBubble(b.id, m);
+                        }}
+                      >
+                        {cast.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <label className="epi-v4__msg-time-label">
+                        <span className="sr-only">{t('epistolaryEditor.messageTime')}</span>
+                        <input
+                          type="text"
+                          className="epi-v4__msg-time"
+                          value={b.timestamp}
+                          onChange={(e) => updateBubbleTime(b.id, e.target.value)}
+                          title={t('epistolaryEditor.messageTimeHint')}
+                          aria-label={t('epistolaryEditor.messageTime')}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="epi-v4__msg-del"
+                        onClick={() => removeBubble(b.id)}
+                        disabled={activeBubbles.length <= 1 && scenes.length === 1}
+                        aria-label={t('epistolaryEditor.removeMessage')}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <TeluguTextField
+                      multiline
+                      className="epi-v4__msg-body"
+                      value={b.text}
+                      onChange={(v) => updateBubbleText(b.id, v)}
+                      phonetic
+                      lang="te"
+                      rows={2}
+                      placeholder={t('epistolaryEditor.messagePlaceholderNamed').replace(
+                        '{name}',
+                        b.speakerName,
+                      )}
+                    />
+                  </article>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Compose — message first; time tools only when opened */}
+          <footer className="epi-v4__composer">
+            <div className="epi-v4__composer-card">
+              <div className="epi-v4__who-row" role="group" aria-label={t('epistolaryEditor.selectCharacter')}>
+                {cast.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={`epi-v4__who-pill epi-v4__who-pill--${m.role}${m.id === activeCastId ? ' is-on' : ''}`}
+                    onClick={() => {
+                      setActiveCastId(m.id);
+                      focusComposer();
                     }}
                   >
-                    {cast.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <time>{b.timestamp}</time>
-                  <button
-                    type="button"
-                    className="epi-v4__msg-del"
-                    onClick={() => removeBubble(b.id)}
-                    disabled={activeBubbles.length <= 1 && scenes.length === 1}
-                    aria-label={t('epistolaryEditor.removeMessage')}
-                  >
-                    <Trash2 size={12} />
+                    <span className="epi-v4__who-av">{initial(m.name)}</span>
+                    <span className="epi-v4__who-name">{m.name}</span>
                   </button>
-                </div>
+                ))}
+              </div>
+
+              <div className="epi-v4__compose-box">
                 <TeluguTextField
                   multiline
-                  className="epi-v4__msg-body"
-                  value={b.text}
-                  onChange={(v) => updateBubbleText(b.id, v)}
+                  className="epi-v4__compose-input"
+                  value={composer}
+                  onChange={setComposer}
                   phonetic
                   lang="te"
                   rows={2}
-                  placeholder={t('epistolaryEditor.messagePlaceholderNamed').replace(
-                    '{name}',
-                    b.speakerName,
-                  )}
-                />
-              </article>
-            ))}
-          </div>
-
-          <footer className="epi-v4__composer">
-            <div className="epi-v4__who-row">
-              {cast.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  className={`epi-v4__who-pill epi-v4__who-pill--${m.role}${m.id === activeCastId ? ' is-on' : ''}`}
-                  onClick={() => {
-                    setActiveCastId(m.id);
-                    focusComposer();
-                  }}
-                >
-                  <span className="epi-v4__who-av">{initial(m.name)}</span>
-                  {m.name}
-                </button>
-              ))}
-            </div>
-            <div className="epi-v4__compose-box">
-              <TeluguTextField
-                multiline
-                className="epi-v4__compose-input"
-                value={composer}
-                onChange={setComposer}
-                phonetic
-                lang="te"
-                rows={2}
-                placeholder={
-                  activeMember
-                    ? t('epistolaryEditor.composerPlaceholder').replace('{name}', activeMember.name)
-                    : t('epistolaryEditor.messagePlaceholder')
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as KeyboardEvent).isComposing) {
-                    e.preventDefault();
-                    sendMessage();
+                  placeholder={
+                    activeMember
+                      ? t('epistolaryEditor.composerPlaceholder').replace('{name}', activeMember.name)
+                      : t('epistolaryEditor.messagePlaceholder')
                   }
-                }}
-              />
-              <button
-                type="button"
-                className="epi-v4__send"
-                onClick={sendMessage}
-                disabled={!composer.trim() || !activeMember}
-                aria-label={t('epistolaryEditor.sendMessage')}
-              >
-                <Send size={18} />
-              </button>
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as KeyboardEvent).isComposing) {
+                      e.preventDefault();
+                      sendMessage();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className={`epi-v4__time-toggle${timeOpen ? ' is-on' : ''}`}
+                  onClick={() => setTimeOpen((v) => !v)}
+                  aria-pressed={timeOpen}
+                  title={t('epistolaryEditor.messageTime')}
+                  aria-label={t('epistolaryEditor.messageTime')}
+                >
+                  <Clock3 size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="epi-v4__send"
+                  onClick={sendMessage}
+                  disabled={!composer.trim() || !activeMember}
+                  aria-label={t('epistolaryEditor.sendMessage')}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+
+              {timeOpen && (
+                <div className="epi-v4__time-rail">
+                  <label className="epi-v4__time-inline" title={t('epistolaryEditor.messageTimeHint')}>
+                    <input
+                      type="text"
+                      className="epi-v4__time-inline-input"
+                      value={composerTime}
+                      onChange={(e) => setComposerTime(e.target.value)}
+                      placeholder="9:41 PM"
+                      aria-label={t('epistolaryEditor.messageTime')}
+                    />
+                  </label>
+                  <div className="epi-v4__time-presets" role="group" aria-label={t('epistolaryEditor.timePresets')}>
+                    {PRIMARY_TIME_PRESETS.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="epi-v4__time-chip"
+                        title={p.hintEn}
+                        onClick={() => applyComposerPreset(p.id)}
+                      >
+                        {isTe ? p.labelTe : p.labelEn}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`epi-v4__time-more${timeMoreOpen ? ' is-on' : ''}`}
+                      onClick={() => setTimeMoreOpen((v) => !v)}
+                      aria-expanded={timeMoreOpen}
+                    >
+                      {isTe ? 'మరిన్ని' : 'More'}
+                      {timeMoreOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                  </div>
+                  {timeMoreOpen && (
+                    <div className="epi-v4__time-presets epi-v4__time-presets--more" role="group">
+                      {MORE_TIME_PRESETS.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className="epi-v4__time-chip"
+                          title={p.hintEn}
+                          onClick={() => {
+                            applyComposerPreset(p.id);
+                            setTimeMoreOpen(false);
+                          }}
+                        >
+                          {isTe ? p.labelTe : p.labelEn}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <p className="epi-v4__compose-hint">{t('epistolaryEditor.composerHint')}</p>
           </footer>
         </section>
 

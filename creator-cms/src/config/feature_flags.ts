@@ -6,12 +6,15 @@
  */
 
 export const FEATURE_FLAGS = {
-  /** Generative AI writing / continue — disabled MVP1. */
+  /**
+   * Generative AI writing / continue — permanently off for craft moat Constitution (§1).
+   * Katha never produces words the author did not write.
+   */
   aiWriter: false,
-  /** AI translation — disabled MVP1. */
+  /** AI translation — disabled (Constitution §1). */
   aiTranslation: false,
-  /** Local planning notes panels (non-generative). */
-  planningNotes: false,
+  /** Local planning notes panels (author-written only; no generative). */
+  planningNotes: true,
   /** Marketplace / reviewer pool surfaces — off until schema + staffing ready (P1-21). */
   marketplace: false,
   /** Audio books — not in MVP1. */
@@ -28,6 +31,21 @@ export const FEATURE_FLAGS = {
   events: false,
   /** Magazine edition placeholder — hide from nav (P1-25). */
   magazine: false,
+  /**
+   * §3.1–3.2 Craft entities (People cast + Story Bible characters/locations/timeline).
+   * On = structured story-linked entities are available in Studio.
+   */
+  craftEntities: true,
+  /**
+   * §3.4 Studio tab integrity — hide incomplete inspector tabs rather than show empties.
+   * When true, People/Notes tabs only render if a functional slot is provided.
+   */
+  hideIncompleteStudioTabs: true,
+  /**
+   * Tier 2 craft surfaces (continuity, cross-story reuse, trust-in-flow, narrative versions).
+   * Permanently gated until behavior trigger in Craft Moat §4 — do not enable for beta.
+   */
+  craftTier2: false,
 } as const;
 
 export type FeatureFlags = typeof FEATURE_FLAGS;

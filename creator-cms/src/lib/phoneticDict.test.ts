@@ -15,7 +15,7 @@ describe('personal phonetic dictionary (moat)', () => {
     }
   });
 
-  it('stores and exports personal corrections', () => {
+  it('stores and exports personal corrections (schema v2 durable memory)', () => {
     setPersonalCorrection('Vaikuntapuram', 'వైకుంఠపురం');
     setPersonalCorrection('lakshmi', 'లక్ష్మి');
     const dict = getPersonalCorrections();
@@ -24,6 +24,8 @@ describe('personal phonetic dictionary (moat)', () => {
     const json = exportPersonalCorrectionsJson();
     expect(json).toContain('vaikuntapuram');
     expect(json).toContain('వైకుంఠపురం');
+    expect(json).toContain('schema_version');
+    expect(json).toContain('records');
   });
 
   it('imports without overwriting when overwrite=false', () => {

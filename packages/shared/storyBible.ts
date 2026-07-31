@@ -13,11 +13,17 @@ export type LoreCategory = (typeof LORE_CATEGORIES)[number];
 
 export interface StoryCharacter {
   id: string;
+  /** §3.2 Story-level — never owned only by the chapter of first mention. */
   story_id: string;
   name: string;
   bio?: string | null;
   arc_summary?: string | null;
   traits?: string[];
+  /**
+   * §3.1 Structured craft attributes (appearance, age_band, role, dialect, …).
+   * Freeform bio is optional; facts that continuity will cross-reference live here.
+   */
+  attributes?: Record<string, string>;
   sort_order?: number;
   created_at?: string;
   updated_at?: string;
@@ -30,6 +36,8 @@ export interface StoryLoreEntry {
   title: string;
   body?: string | null;
   glossary_term?: string | null;
+  /** §3.1 Structured location/world fields. */
+  attributes?: Record<string, string>;
   sort_order?: number;
   created_at?: string;
   updated_at?: string;
@@ -73,6 +81,8 @@ export interface StoryPlotEvent {
   label: string;
   body?: string | null;
   when_label?: string | null;
+  /** §3.1 Structured timeline fields. */
+  attributes?: Record<string, string>;
   sort_order?: number;
   created_at?: string;
   updated_at?: string;

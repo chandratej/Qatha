@@ -5,7 +5,7 @@ describe('versionLabels', () => {
   it('returns semantic labels for version sources', () => {
     expect(versionSourceLabel('autosave')).toBe('Autosave');
     expect(versionSourceLabel('manual')).toBe('Manual edit');
-    expect(versionSourceLabel('ai-rewrite')).toBe('AI rewrite');
+    expect(versionSourceLabel('ai-rewrite')).toBe('Earlier edit');
     expect(versionSourceLabel('published')).toBe('Published version');
   });
 

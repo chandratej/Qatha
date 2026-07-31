@@ -14,6 +14,13 @@
  * Never mid-commit on letter-repeat — that produced అమ్ంఅ when typing "amma".
  */
 
+import type {
+  PhoneticMemoryExport,
+  PhoneticMemoryRecord,
+  PhoneticMemorySource,
+} from '../../../packages/shared/craftMoat';
+import { PHONETIC_MEMORY_SCHEMA_VERSION } from '../../../packages/shared/craftMoat';
+
 const cons: Record<string, string> = {
   kh: 'ఖ', gh: 'ఘ', chh: 'ఛ', jh: 'ఝ',
   th: 'థ', dh: 'ధ', ph: 'ఫ', bh: 'భ',
@@ -998,44 +1005,127 @@ export function getSemanticAlternatives(word: string): Suggestion[] {
   return [];
 }
 
-// Personal phonetic correction dictionary (per-creator; Supabase is source of truth, localStorage is cache)
+/**
+ * Personal phonetic memory (§3.3 Craft Moat).
+ * - In-memory map for O(1) convert path
+ * - Durable records (usage, source, client_updated_at) for LWW multi-device sync
+ * - localStorage = cache; Supabase phonetic_corrections = source of truth
+ */
+const STORAGE_KEY = 'katha-phonetic-corrections';
+const STORAGE_RECORDS_KEY = 'katha-phonetic-corrections-v2';
+
 let personalCorrections: Record<string, string> = {};
+let personalRecords: Record<string, PhoneticMemoryRecord> = {};
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function makeRecord(
+  key: string,
+  value: string,
+  source: PhoneticMemorySource,
+  prev?: PhoneticMemoryRecord,
+): PhoneticMemoryRecord {
+  return {
+    phonetic_input: key,
+    corrected_telugu: value,
+    usage_count: prev?.usage_count ?? 0,
+    last_used_at: prev?.last_used_at ?? null,
+    source,
+    client_updated_at: nowIso(),
+    schema_version: PHONETIC_MEMORY_SCHEMA_VERSION,
+  };
+}
 
 function cachePersonalCorrections() {
   try {
-    localStorage.setItem('katha-phonetic-corrections', JSON.stringify(personalCorrections));
-  } catch {}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(personalCorrections));
+    localStorage.setItem(STORAGE_RECORDS_KEY, JSON.stringify(personalRecords));
+  } catch { /* quota */ }
+}
+
+function hydrateMapFromRecords() {
+  personalCorrections = {};
+  for (const [k, rec] of Object.entries(personalRecords)) {
+    personalCorrections[k] = rec.corrected_telugu;
+  }
 }
 
 export function loadPersonalCorrections() {
   try {
-    const saved = localStorage.getItem('katha-phonetic-corrections');
-    if (saved) personalCorrections = JSON.parse(saved);
-  } catch {}
-}
-
-/** Merge cloud corrections after login (Priority 3 cross-device sync). */
-export async function syncPhoneticCorrectionsFromCloud() {
-  try {
-    const { sbLoadPhoneticCorrections } = await import('./supabaseData');
-    const remote = await sbLoadPhoneticCorrections();
-    if (Object.keys(remote).length) {
-      personalCorrections = { ...personalCorrections, ...remote };
+    const v2 = localStorage.getItem(STORAGE_RECORDS_KEY);
+    if (v2) {
+      const parsed = JSON.parse(v2) as Record<string, PhoneticMemoryRecord>;
+      if (parsed && typeof parsed === 'object') {
+        personalRecords = parsed;
+        hydrateMapFromRecords();
+        return;
+      }
+    }
+    // Legacy v1 map → promote to durable records without losing data
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const map = JSON.parse(saved) as Record<string, string>;
+      personalCorrections = map && typeof map === 'object' ? map : {};
+      personalRecords = {};
+      for (const [k, v] of Object.entries(personalCorrections)) {
+        personalRecords[k] = makeRecord(k, v, 'sync');
+      }
       cachePersonalCorrections();
     }
+  } catch { /* ignore corrupt cache */ }
+}
+
+/** Merge cloud corrections after login (LWW by client_updated_at when present). */
+export async function syncPhoneticCorrectionsFromCloud() {
+  try {
+    const { sbLoadPhoneticCorrectionRecords } = await import('./supabaseData');
+    const remote = await sbLoadPhoneticCorrectionRecords();
+    if (!remote.length) {
+      // Fallback map-only loaders
+      const { sbLoadPhoneticCorrections } = await import('./supabaseData');
+      const map = await sbLoadPhoneticCorrections();
+      for (const [k, v] of Object.entries(map)) {
+        if (!personalRecords[k]) {
+          personalRecords[k] = makeRecord(k, v, 'sync');
+        }
+      }
+      hydrateMapFromRecords();
+      cachePersonalCorrections();
+      return;
+    }
+    for (const rec of remote) {
+      const key = rec.phonetic_input.toLowerCase();
+      const local = personalRecords[key];
+      if (!local || (rec.client_updated_at && local.client_updated_at < rec.client_updated_at)) {
+        personalRecords[key] = {
+          ...rec,
+          schema_version: PHONETIC_MEMORY_SCHEMA_VERSION,
+        };
+      }
+    }
+    hydrateMapFromRecords();
+    cachePersonalCorrections();
   } catch {
     // Non-blocking
   }
 }
 
-export function setPersonalCorrection(phoneticInput: string, correctedTelugu: string) {
+export function setPersonalCorrection(
+  phoneticInput: string,
+  correctedTelugu: string,
+  source: PhoneticMemorySource = 'teach',
+) {
   const key = phoneticInput.toLowerCase().trim();
   const value = correctedTelugu.trim();
   if (!key || !value) return;
+  personalRecords[key] = makeRecord(key, value, source, personalRecords[key]);
   personalCorrections[key] = value;
   cachePersonalCorrections();
   import('./supabaseData')
-    .then(({ sbUpsertPhoneticCorrection }) => sbUpsertPhoneticCorrection(key, value))
+    .then(({ sbUpsertPhoneticCorrection }) =>
+      sbUpsertPhoneticCorrection(key, value, personalRecords[key]))
     .catch(() => {});
 }
 
@@ -1043,6 +1133,7 @@ export function deletePersonalCorrection(phoneticInput: string) {
   const key = phoneticInput.toLowerCase().trim();
   if (!key || !(key in personalCorrections)) return;
   delete personalCorrections[key];
+  delete personalRecords[key];
   cachePersonalCorrections();
   import('./supabaseData')
     .then(({ sbDeletePhoneticCorrection }) => sbDeletePhoneticCorrection(key))
@@ -1058,31 +1149,31 @@ export function importPersonalCorrections(map: Record<string, string>, opts?: { 
     const value = String(rawVal || '').trim();
     if (!key || !value) continue;
     if (!overwrite && personalCorrections[key]) continue;
-    personalCorrections[key] = value;
+    setPersonalCorrection(key, value, 'import');
     added += 1;
-    import('./supabaseData')
-      .then(({ sbUpsertPhoneticCorrection }) => sbUpsertPhoneticCorrection(key, value))
-      .catch(() => {});
   }
-  cachePersonalCorrections();
   return added;
 }
 
-/** Export personal dictionary as JSON (switching-cost asset — portable backup). */
+/** Export personal dictionary as JSON v2 (switching-cost asset — portable backup). */
 export function exportPersonalCorrectionsJson(): string {
-  return JSON.stringify(
-    {
-      version: 1,
-      exported_at: new Date().toISOString(),
-      corrections: getPersonalCorrections(),
-    },
-    null,
-    2,
-  );
+  const payload: PhoneticMemoryExport = {
+    schema_version: PHONETIC_MEMORY_SCHEMA_VERSION,
+    exported_at: nowIso(),
+    corrections: getPersonalCorrections(),
+    records: Object.values(personalRecords),
+  };
+  return JSON.stringify(payload, null, 2);
 }
 
 export function getPersonalCorrections() {
   return { ...personalCorrections };
+}
+
+/** Full durable records for Settings UI / sync diagnostics. */
+export function getPersonalCorrectionRecords(): PhoneticMemoryRecord[] {
+  return Object.values(personalRecords).sort((a, b) =>
+    a.phonetic_input.localeCompare(b.phonetic_input));
 }
 
 export function personalCorrectionCount(): number {

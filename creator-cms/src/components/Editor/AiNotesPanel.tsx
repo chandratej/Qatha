@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { NotebookPen } from 'lucide-react';
 
-const PREFIX = 'katha-ai-notes-';
+const PREFIX = 'katha-ai-notes-'; // storage key kept for existing author notes
 
 const PLANNING_PROMPTS = [
   'Plot beat for the next scene…',
@@ -21,6 +21,10 @@ interface AiNotesPanelProps {
   chapterNum: number;
 }
 
+/**
+ * Author-written planning notes only (Craft Moat Constitution §1).
+ * Never generates or rewrites manuscript text — prompts are local UI seeds the author inserts.
+ */
 export function AiNotesPanel({ storyId, chapterNum }: AiNotesPanelProps) {
   const [notes, setNotes] = useState('');
 
@@ -48,15 +52,15 @@ export function AiNotesPanel({ storyId, chapterNum }: AiNotesPanelProps) {
   };
 
   return (
-    <aside className="katha-ai-notes-panel" aria-label="AI planning notes">
+    <aside className="katha-ai-notes-panel" aria-label="Planning notes">
       <div className="katha-ai-notes-panel__header">
-        <Sparkles size={15} aria-hidden />
-        <span>AI Notes</span>
+        <NotebookPen size={15} aria-hidden />
+        <span>Planning notes</span>
       </div>
 
       {!notes.trim() && (
-        <div className="katha-ai-notes-panel__suggestions" aria-label="Planning prompts">
-          <p className="katha-ai-notes-panel__suggestions-lead">Start with a planning prompt:</p>
+        <div className="katha-ai-notes-panel__suggestions" aria-label="Planning starters">
+          <p className="katha-ai-notes-panel__suggestions-lead">Start with a prompt you write under:</p>
           <div className="katha-ai-notes-panel__chips">
             {PLANNING_PROMPTS.map((prompt) => (
               <button
@@ -76,10 +80,9 @@ export function AiNotesPanel({ storyId, chapterNum }: AiNotesPanelProps) {
         className="katha-ai-notes-panel__input"
         value={notes}
         onChange={(e) => persist(e.target.value)}
-        placeholder="Plot beats, character arcs, scene ideas…"
+        placeholder="Plot beats, character arcs, scene ideas — your words only…"
         rows={12}
       />
-      <p className="katha-ai-notes-panel__hint">Saved locally for this chapter.</p>
     </aside>
   );
 }

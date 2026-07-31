@@ -1123,14 +1123,38 @@ export async function sbCheckHealth() {
 // Phonetic corrections (Priority 3)
 // ---------------------------------------------------------------------------
 
-export async function sbUpsertPhoneticCorrection(phoneticInput: string, correctedTelugu: string) {
+export async function sbUpsertPhoneticCorrection(
+  phoneticInput: string,
+  correctedTelugu: string,
+  record?: {
+    usage_count?: number;
+    last_used_at?: string | null;
+    source?: string;
+    client_updated_at?: string;
+    schema_version?: number;
+  },
+) {
   const user = await requireUser();
   const key = phoneticInput.toLowerCase().trim();
+  const now = new Date().toISOString();
+  // Prefer v2 columns when migration 049 is applied; fall back to base schema.
+  const withMeta = await supabase.from('phonetic_corrections').upsert({
+    creator_id: user.id,
+    phonetic_input: key,
+    corrected_telugu: correctedTelugu,
+    updated_at: now,
+    usage_count: record?.usage_count ?? 0,
+    last_used_at: record?.last_used_at ?? null,
+    source: record?.source ?? 'teach',
+    client_updated_at: record?.client_updated_at ?? now,
+    schema_version: record?.schema_version ?? 2,
+  }, { onConflict: 'creator_id,phonetic_input' });
+  if (!withMeta.error) return;
   await supabase.from('phonetic_corrections').upsert({
     creator_id: user.id,
     phonetic_input: key,
     corrected_telugu: correctedTelugu,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   }, { onConflict: 'creator_id,phonetic_input' });
 }
 
@@ -1156,6 +1180,55 @@ export async function sbLoadPhoneticCorrections(): Promise<Record<string, string
 
   if (error || !data) return {};
   return Object.fromEntries(data.map((r) => [r.phonetic_input, r.corrected_telugu]));
+}
+
+/** §3.3 Full durable records for LWW multi-device merge. */
+export async function sbLoadPhoneticCorrectionRecords(): Promise<Array<{
+  phonetic_input: string;
+  corrected_telugu: string;
+  usage_count: number;
+  last_used_at: string | null;
+  source: 'teach' | 'import' | 'sync' | 'seed';
+  client_updated_at: string;
+  schema_version: number;
+}>> {
+  if (isMockMode) return [];
+  const user = await getSessionUser();
+  if (!user) return [];
+
+  // Try v2 columns first (migration 049). On 400 / missing column, use base pair only.
+  const full = await supabase
+    .from('phonetic_corrections')
+    .select('phonetic_input, corrected_telugu, usage_count, last_used_at, source, client_updated_at, schema_version')
+    .eq('creator_id', user.id);
+
+  if (!full.error && full.data) {
+    return full.data.map((r) => ({
+      phonetic_input: r.phonetic_input,
+      corrected_telugu: r.corrected_telugu,
+      usage_count: r.usage_count ?? 0,
+      last_used_at: r.last_used_at ?? null,
+      source: (r.source as 'teach' | 'import' | 'sync' | 'seed') || 'sync',
+      client_updated_at: r.client_updated_at || new Date().toISOString(),
+      schema_version: r.schema_version ?? 2,
+    }));
+  }
+
+  const basic = await supabase
+    .from('phonetic_corrections')
+    .select('phonetic_input, corrected_telugu, updated_at')
+    .eq('creator_id', user.id);
+
+  if (basic.error || !basic.data) return [];
+  return basic.data.map((r) => ({
+    phonetic_input: r.phonetic_input,
+    corrected_telugu: r.corrected_telugu,
+    usage_count: 0,
+    last_used_at: null,
+    source: 'sync' as const,
+    client_updated_at: r.updated_at || new Date().toISOString(),
+    schema_version: 1,
+  }));
 }
 
 export async function sbMigrateLocalPhoneticCorrections() {

@@ -670,6 +670,9 @@ export type StudioStringKey =
   | 'epistolaryEditor.speakerNamePlaceholder'
   | 'epistolaryEditor.composerPlaceholder'
   | 'epistolaryEditor.composerHint'
+  | 'epistolaryEditor.messageTime'
+  | 'epistolaryEditor.messageTimeHint'
+  | 'epistolaryEditor.timePresets'
   | 'epistolaryEditor.sendMessage'
   | 'epistolaryEditor.prideLine'
   | 'epistolaryEditor.publish'
@@ -1234,7 +1237,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'narrativeOs.phaseWrite': 'రాయడం',
     'narrativeOs.phaseRefine': 'పరిష్కరించు',
     'narrativeOs.phasePublish': 'ప్రచురించు',
-    'narrativeOs.phaseThinkHint': 'కథ గురించి ఆలోచించండి — AI సూచనలు మరియు నోట్స్',
+    'narrativeOs.phaseThinkHint': 'కథ గురించి ఆలోచించండి — మీ స్వంత నోట్స్ మరియు పాత్రలు (AI రచన లేదు)',
     'narrativeOs.phaseRefineHint': 'పాఠకుల వీక్షణ — మీ ప్రచురణకు ముందు చదవండి',
     'narrativeOs.phasePublishHint': 'మీ అధ్యాయం సిద్ధంగా ఉందా? సమీక్షకు సమర్పించండి',
     'narrativeOs.backToWrite': 'రాయడానికి తిరిగి',
@@ -1725,9 +1728,12 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.chapterTitlePlaceholder': 'అధ్యాయం పేరు — తెలుగులో రాయండి…',
     'epistolaryEditor.speakerNamePlaceholder': 'పేరు (తెలుగు / English)',
     'epistolaryEditor.composerPlaceholder': '{name}గా రాయండి…',
-    'epistolaryEditor.composerHint': 'Enter పంపు · Shift+Enter కొత్త లైన్ · తెలుగు / English రెండూ సరే',
+    'epistolaryEditor.composerHint': 'Enter పంపు · Shift+Enter కొత్త లైన్ · సమయం = ఉద్రిక్తత / నిశ్శబ్దం',
+    'epistolaryEditor.messageTime': 'సందేశ సమయం',
+    'epistolaryEditor.messageTimeHint': 'గడియారం లేదా “మరుసటి రోజు” — నిశ్శబ్దం కూడా కథ',
+    'epistolaryEditor.timePresets': 'సమయ ప్రీసెట్లు',
     'epistolaryEditor.sendMessage': 'పంపు',
-    'epistolaryEditor.prideLine': 'మీరు రచయిత. ఈ సంభాషణ — మీ కథ.',
+    'epistolaryEditor.prideLine': 'మీరు రచయిత. ఈ సంభాషణ — మీ కథ. సమయం = ఉద్రిక్తత.',
     'epistolaryEditor.publish': 'ప్రచురించు',
     'epistolaryEditor.publishSuccess': 'అధ్యాయం ప్రచురించబడింది!',
     'epistolaryEditor.publishError': 'ప్రచురణ విఫలమైంది',
@@ -1787,9 +1793,9 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'branchingEditor.previewPath': 'మీ ఎంపికల పాత్',
     'branchingEditor.previewEnd': 'ఈ శాఖ యొక్క చివరి నోడ్.',
     'branchingEditor.graphMapLabel': 'బ్రాంచ్ గ్రాఫ్',
-    'branchingEditor.targetA': 'ఎంపిక A → నోడ్',
-    'branchingEditor.targetB': 'ఎంపిక B → నోడ్',
-    'branchingEditor.targetEnd': 'ముగింపు (లింక్ లేదు)',
+    'branchingEditor.targetA': 'A నొక్కితే వెళ్ళే సీన్',
+    'branchingEditor.targetB': 'B నొక్కితే వెళ్ళే సీన్',
+    'branchingEditor.targetEnd': 'ముగింపు (కథ ఆగుతుంది)',
     'branchingEditor.openReader': 'రీడర్ తెరవండి',
     'branchingEditor.canvasLabel': 'విజువల్ బ్రాంచ్ గ్రాఫ్',
     'branchingEditor.graphValid': 'గ్రాఫ్ స్ట్రక్చర్ సరిగ్గా ఉంది — సైకిల్స్ లేవు.',
@@ -2287,7 +2293,7 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'narrativeOs.phaseWrite': 'Write',
     'narrativeOs.phaseRefine': 'Refine',
     'narrativeOs.phasePublish': 'Publish',
-    'narrativeOs.phaseThinkHint': 'Explore ideas — AI notes and story thinking',
+    'narrativeOs.phaseThinkHint': 'Explore ideas — your notes and cast (Katha never writes for you)',
     'narrativeOs.phaseRefineHint': 'Reader view — read your chapter before it goes live',
     'narrativeOs.phasePublishHint': 'Ready to share? Submit your chapter for review',
     'narrativeOs.backToWrite': 'Back to writing',
@@ -2778,9 +2784,12 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'epistolaryEditor.chapterTitlePlaceholder': 'Chapter title — Telugu or English…',
     'epistolaryEditor.speakerNamePlaceholder': 'Name (తెలుగు / English)',
     'epistolaryEditor.composerPlaceholder': 'Write as {name}…',
-    'epistolaryEditor.composerHint': 'Enter to send · Shift+Enter for new line · Telugu & English both welcome',
+    'epistolaryEditor.composerHint': 'Enter to send · Shift+Enter for new line · Time = intensity & silence',
+    'epistolaryEditor.messageTime': 'Message time',
+    'epistolaryEditor.messageTimeHint': 'Clock or “Next day” — silence is story too',
+    'epistolaryEditor.timePresets': 'Time presets',
     'epistolaryEditor.sendMessage': 'Send',
-    'epistolaryEditor.prideLine': 'You are the author. This conversation is your story.',
+    'epistolaryEditor.prideLine': 'You are the author. Time between messages is craft.',
     'epistolaryEditor.publish': 'Publish',
     'epistolaryEditor.publishSuccess': 'Chapter published!',
     'epistolaryEditor.publishError': 'Publish failed',
@@ -2840,9 +2849,9 @@ const STRINGS: Record<StudioLocale, StudioStrings> = {
     'branchingEditor.previewPath': 'Your choice path',
     'branchingEditor.previewEnd': 'End of this branch path.',
     'branchingEditor.graphMapLabel': 'Branch graph',
-    'branchingEditor.targetA': 'Choice A → node',
-    'branchingEditor.targetB': 'Choice B → node',
-    'branchingEditor.targetEnd': 'End (no link)',
+    'branchingEditor.targetA': 'When reader picks A, open…',
+    'branchingEditor.targetB': 'When reader picks B, open…',
+    'branchingEditor.targetEnd': 'Ending (story stops)',
     'branchingEditor.openReader': 'Open reader',
     'branchingEditor.canvasLabel': 'Visual branch graph',
     'branchingEditor.graphValid': 'Graph structure looks good — no cycles detected.',

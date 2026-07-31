@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { SceneBlock } from '../Editor/SceneSidebar';
 import type { NarrativeFormat } from '../../lib/narrativeOsTypes';
 import { NARRATIVE_FORMAT_LABELS } from '../../lib/narrativeOsTypes';
 import { EditorComfortControls } from '../Editor/EditorComfortControls';
 import type { FontScale } from '../../lib/comfortPrefs';
 import { useLocale } from '../../context/LocaleContext';
+import { FEATURE_FLAGS } from '../../config/feature_flags';
 
 const FORMATS: NarrativeFormat[] = ['novel', 'chat', 'letter'];
 
@@ -57,6 +58,33 @@ export function NarrativeInspectorPanel({
     if (!controlledTab) setInternalTab(id);
   };
 
+  /**
+   * §3.4 Studio tab integrity — never show empty / non-functional tabs to beta writers.
+   * People requires craftEntities + a real slot; notes requires a notes slot when hiding incompletes.
+   */
+  const visibleTabs = useMemo(() => {
+    return TAB_KEYS.filter((id) => {
+      if (id === 'scene' || id === 'settings') return true;
+      if (id === 'people') {
+        if (!FEATURE_FLAGS.craftEntities) return false;
+        if (FEATURE_FLAGS.hideIncompleteStudioTabs && !peopleSlot) return false;
+        return true;
+      }
+      if (id === 'notes') {
+        if (FEATURE_FLAGS.hideIncompleteStudioTabs && !notesSlot) return false;
+        return true;
+      }
+      return true;
+    });
+  }, [peopleSlot, notesSlot]);
+
+  useEffect(() => {
+    if (!visibleTabs.includes(tab)) {
+      setTab(visibleTabs[0] ?? 'scene');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-home when visibility changes
+  }, [visibleTabs.join('|'), tab]);
+
   const tabLabel = (id: InspectorTab) => {
     if (id === 'scene') return t('narrativeOs.inspectorScene');
     if (id === 'people') return t('narrativeOs.inspectorPeople');
@@ -68,7 +96,7 @@ export function NarrativeInspectorPanel({
     <>
       <h4>{t('narrativeOs.inspector')}</h4>
       <div className="nos-insp-tabs" role="tablist" aria-label={t('narrativeOs.inspector')}>
-        {TAB_KEYS.map((id) => (
+        {visibleTabs.map((id) => (
           <button
             key={id}
             type="button"

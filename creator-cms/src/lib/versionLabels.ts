@@ -1,9 +1,11 @@
 export type VersionSource = 'autosave' | 'manual' | 'ai-rewrite' | 'published';
 
+/** Labels never imply generative rewrite (Craft Moat Constitution §1). */
 const VERSION_SOURCE_LABELS: Record<VersionSource, string> = {
   autosave: 'Autosave',
   manual: 'Manual edit',
-  'ai-rewrite': 'AI rewrite',
+  // Legacy source id retained for stored versions; display is non-generative.
+  'ai-rewrite': 'Earlier edit',
   published: 'Published version',
 };
 

@@ -15,9 +15,17 @@ interface Props {
   nodes: BranchNode[];
   activeNodeId?: string | null;
   issues?: Array<{ nodeId?: string; severity: string }>;
+  onSelectNode?: (nodeId: string) => void;
+  compact?: boolean;
 }
 
-export function BranchGraphCanvas({ nodes, activeNodeId, issues = [] }: Props) {
+export function BranchGraphCanvas({
+  nodes,
+  activeNodeId,
+  issues = [],
+  onSelectNode,
+  compact = false,
+}: Props) {
   const { t } = useLocale();
   const normalized = useMemo(() => normalizeBranchNodes(nodes), [nodes]);
   const edges = useMemo(() => buildBranchEdges(normalized), [normalized]);
@@ -38,8 +46,13 @@ export function BranchGraphCanvas({ nodes, activeNodeId, issues = [] }: Props) {
   if (normalized.length === 0) return null;
 
   return (
-    <div className="branch-graph-canvas" aria-label={t('branchingEditor.canvasLabel')}>
-      <p className="branch-graph-canvas__label katha-token-eyebrow">{t('branchingEditor.canvasLabel')}</p>
+    <div
+      className={`branch-graph-canvas${compact ? ' branch-graph-canvas--compact' : ''}`}
+      aria-label={t('branchingEditor.canvasLabel')}
+    >
+      {!compact && (
+        <p className="branch-graph-canvas__label katha-token-eyebrow">{t('branchingEditor.canvasLabel')}</p>
+      )}
       <div className="branch-graph-canvas__viewport">
         <svg className="branch-graph-canvas__lines" width={width} height={height} aria-hidden>
           {edges.map((edge) => {
@@ -76,19 +89,21 @@ export function BranchGraphCanvas({ nodes, activeNodeId, issues = [] }: Props) {
             if (!node) return null;
             const hasIssue = issueNodes.has(pos.id);
             return (
-              <div
+              <button
                 key={pos.id}
+                type="button"
                 className={[
                   'branch-graph-canvas__node',
                   activeNodeId === pos.id ? 'branch-graph-canvas__node--active' : '',
                   hasIssue ? 'branch-graph-canvas__node--issue' : '',
                 ].filter(Boolean).join(' ')}
                 style={{ left: pos.x, top: pos.y, width: NODE_W, height: NODE_H }}
+                onClick={() => onSelectNode?.(pos.id)}
               >
                 <span className="branch-graph-canvas__node-title">
                   {node.title || t('branchingEditor.nodeTitle')}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>

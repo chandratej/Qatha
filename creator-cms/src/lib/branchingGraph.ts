@@ -2,17 +2,26 @@ import type { BranchNode } from './alternateEditorCache';
 
 export type BranchChoice = 'A' | 'B';
 
+function cleanTarget(raw: string | null | undefined): string | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw == null || raw === '') return null;
+  return raw;
+}
+
 /** Ensure every node has explicit graph targets (migrates legacy linear drafts). */
 export function normalizeBranchNodes(nodes: BranchNode[]): BranchNode[] {
-  return nodes.map((node, index) => ({
-    ...node,
-    choiceATarget: node.choiceATarget !== undefined
-      ? node.choiceATarget
-      : (nodes[index + 1]?.id ?? null),
-    choiceBTarget: node.choiceBTarget !== undefined
-      ? node.choiceBTarget
-      : (nodes[index + 2]?.id ?? nodes[index + 1]?.id ?? null),
-  }));
+  return nodes.map((node, index) => {
+    const a = cleanTarget(node.choiceATarget);
+    const b = cleanTarget(node.choiceBTarget);
+    return {
+      ...node,
+      // undefined = never set → default linear next; null = explicit ending
+      choiceATarget: a === undefined ? (nodes[index + 1]?.id ?? null) : a,
+      choiceBTarget: b === undefined
+        ? (nodes[index + 2]?.id ?? nodes[index + 1]?.id ?? null)
+        : b,
+    };
+  });
 }
 
 export function getStartNodeId(nodes: BranchNode[]): string | null {

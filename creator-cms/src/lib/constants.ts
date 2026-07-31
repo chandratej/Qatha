@@ -5,7 +5,10 @@ import { FEATURE_FLAGS } from '../config/feature_flags';
 import { UI_CONFIG } from '../config/ui_config';
 import { API_CONFIG } from '../config/api_config';
 
-/** Generative AI disabled per MVP1 + Brand Identity System */
+/**
+ * Craft Moat Constitution §1: generative writing is never enabled.
+ * planningNotes = author-written local notes only (not AI-generated text).
+ */
 export const CREATOR_AI = {
   generativeEnabled: FEATURE_FLAGS.aiWriter,
   planningNotesEnabled: FEATURE_FLAGS.planningNotes,

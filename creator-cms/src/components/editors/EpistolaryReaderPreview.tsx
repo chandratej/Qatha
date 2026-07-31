@@ -5,6 +5,7 @@ import { StudioIllustration } from '../studio/StudioIllustration';
 import { StudioGlyph } from '../studio/StudioGlyph';
 import type { StudioGlyphId } from '../studio/StudioGlyph';
 import type { ChatSpeaker, EpistolaryBubble } from '../../lib/alternateEditorCache';
+import { shouldShowTimeSeparator } from '../../lib/chatMessageTime';
 
 const SPEAKER_GLYPHS: Record<ChatSpeaker, StudioGlyphId> = {
   protagonist: 'users',
@@ -120,27 +121,37 @@ export function EpistolaryReaderPreview({
           <p className="alternate-reader-preview__empty">{t('epistolaryEditor.previewEmpty')}</p>
         ) : (
           <div ref={threadRef} className="epistolary-reader-preview__thread epi-preview__thread">
-            {shown.map((bubble) => (
-              <div
-                key={bubble.id}
-                className={`epistolary-reader-bubble epistolary-reader-bubble--${bubble.speaker} epistolary-reader-bubble--enter`}
-              >
-                {bubble.speaker !== 'narrator' && (
-                  <span className="epistolary-reader-bubble__avatar" aria-hidden>
-                    <StudioGlyph id={SPEAKER_GLYPHS[bubble.speaker]} variant="soft" size={14} />
-                  </span>
-                )}
-                <div className="epistolary-reader-bubble__content">
-                  {bubble.speaker !== 'narrator' && (
-                    <span className="epistolary-reader-bubble__name">{bubble.speakerName}</span>
+            {shown.map((bubble, idx) => {
+              const prev = idx > 0 ? shown[idx - 1] : undefined;
+              const showSep = shouldShowTimeSeparator(prev?.timestamp, bubble.timestamp);
+              return (
+                <div key={bubble.id} className="epistolary-reader-bubble-wrap">
+                  {showSep && (
+                    <div className="epistolary-reader-daysep" role="separator">
+                      <span>{bubble.timestamp}</span>
+                    </div>
                   )}
-                  <p className="epistolary-reader-bubble__text">{bubble.text}</p>
-                  {bubble.speaker !== 'narrator' && (
-                    <time className="epistolary-reader-bubble__time">{bubble.timestamp}</time>
-                  )}
+                  <div
+                    className={`epistolary-reader-bubble epistolary-reader-bubble--${bubble.speaker} epistolary-reader-bubble--enter`}
+                  >
+                    {bubble.speaker !== 'narrator' && (
+                      <span className="epistolary-reader-bubble__avatar" aria-hidden>
+                        <StudioGlyph id={SPEAKER_GLYPHS[bubble.speaker]} variant="soft" size={14} />
+                      </span>
+                    )}
+                    <div className="epistolary-reader-bubble__content">
+                      {bubble.speaker !== 'narrator' && (
+                        <span className="epistolary-reader-bubble__name">{bubble.speakerName}</span>
+                      )}
+                      <p className="epistolary-reader-bubble__text">{bubble.text}</p>
+                      {bubble.speaker !== 'narrator' && (
+                        <time className="epistolary-reader-bubble__time">{bubble.timestamp}</time>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {isTyping && (
               <div className="epistolary-reader-typing" aria-live="polite">
                 <span className="epistolary-reader-typing__dots" aria-hidden>
