@@ -51,6 +51,7 @@ export {
   SERIALIZED_HARD_WORD_MAX,
   getContentTypeDef,
   softWordTargetForContentType,
+  hardPublishWordBandForContentType,
   discoveryFormatFromPublishedChapters,
 } from './content-types';
 export type {

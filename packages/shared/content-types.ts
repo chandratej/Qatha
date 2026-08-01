@@ -297,15 +297,19 @@ export function softWordTargetForContentType(id: string | null | undefined): {
   };
 }
 
-/** Default serialized band (importable constants for backend parity). */
+/**
+ * Serialized Story hard publish band — single source of truth.
+ * Product rule: minimum to publish is **800 words** (not 1,500).
+ * Recommended range 800–1,200; hard ceiling 1,200.
+ * Keep in sync with backend contentFormatDiscovery + publish-chapter edge function.
+ */
 export const SERIALIZED_SOFT_WORD_MIN = 800;
 export const SERIALIZED_SOFT_WORD_MAX = 1200;
 export const SERIALIZED_HARD_WORD_MAX = 1200;
 
 /**
  * Hard publish word band — Serialized Story (and legacy novel) only.
- * Format Spec: soft targets guide other formats; only serial chapters hard-block at 800–1,200.
- * Keep in sync with backend contentFormatDiscovery + publish-chapter edge function.
+ * Always returns the 800 / 1,200 constants — never soft guidance from other formats.
  */
 export function hardPublishWordBandForContentType(id: string | null | undefined): {
   min: number;

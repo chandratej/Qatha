@@ -14,6 +14,7 @@ interface WordBandBlockModalProps {
   locale?: string;
 }
 
+/** Serialized Story product rule — minimum 800 words (not the legacy 1,500). */
 const DEFAULT_MIN = 800;
 const DEFAULT_MAX = 1200;
 const DEFAULT_HARD = 1200;

@@ -905,9 +905,13 @@ export async function sbPublishChapter(
   const user = await requireUser();
   await assertStoryOwner(storyId, user.id);
 
-  // Client-side gate — hard band for Serialized Story only (match edge/Node).
-  // Soft targets on other formats are guidance, not publish blocks (Format Spec v1).
-  const { hardPublishWordBandForContentType } = await import('../../../packages/shared/content-types');
+  // Client-side gate — Serialized Story only. Product min is always 800 (never legacy 1,500).
+  const {
+    hardPublishWordBandForContentType,
+    SERIALIZED_SOFT_WORD_MIN,
+    SERIALIZED_SOFT_WORD_MAX,
+    SERIALIZED_HARD_WORD_MAX,
+  } = await import('../../../packages/shared/content-types');
   const { countWordsForPublishGate } = await import('./wordCount');
   const { data: storyMeta } = await supabase
     .from('stories')
@@ -916,18 +920,22 @@ export async function sbPublishChapter(
     .maybeSingle();
   const band = hardPublishWordBandForContentType(storyMeta?.content_type || 'serialized_story');
   if (band) {
+    // Pin to constants so a stale soft-target import cannot reintroduce 1,500.
+    const min = SERIALIZED_SOFT_WORD_MIN;
+    const max = SERIALIZED_SOFT_WORD_MAX;
+    const hardMax = SERIALIZED_HARD_WORD_MAX;
     const n = countWordsForPublishGate(body.content || '');
-    if (n < band.min) {
+    if (n < min) {
       throw new Error(
-        `Serialized chapters need at least ${band.min.toLocaleString()} words ` +
-          `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}, hard max ${band.hardMax.toLocaleString()}). ` +
+        `Serialized chapters need at least ${min.toLocaleString()} words ` +
+          `(recommended ${min.toLocaleString()}–${max.toLocaleString()}, hard max ${hardMax.toLocaleString()}). ` +
           `You have ${n}.`,
       );
     }
-    if (n > band.hardMax) {
+    if (n > hardMax) {
       throw new Error(
-        `Serialized chapters cannot exceed ${band.hardMax.toLocaleString()} words ` +
-          `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}). You have ${n}.`,
+        `Serialized chapters cannot exceed ${hardMax.toLocaleString()} words ` +
+          `(recommended ${min.toLocaleString()}–${max.toLocaleString()}). You have ${n}.`,
       );
     }
   }

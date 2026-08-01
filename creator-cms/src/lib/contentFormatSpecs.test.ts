@@ -11,10 +11,11 @@ import {
 } from '../../../packages/shared/content-types';
 
 describe('content format specs', () => {
-  it('serialized soft 800–1200 and hard max 1200', () => {
+  it('serialized soft 800–1200 and hard max 1200 (never legacy 1500)', () => {
     expect(SERIALIZED_SOFT_WORD_MIN).toBe(800);
     expect(SERIALIZED_SOFT_WORD_MAX).toBe(1200);
     expect(SERIALIZED_HARD_WORD_MAX).toBe(1200);
+    expect(SERIALIZED_SOFT_WORD_MIN).toBeLessThan(1500);
     expect(softWordTargetForContentType('serialized_story')).toEqual({
       min: 800,
       max: 1200,
@@ -25,6 +26,10 @@ describe('content format specs', () => {
       max: 1200,
       hardMax: 1200,
     });
+    // 856 words must clear the hard publish floor
+    expect(856).toBeGreaterThanOrEqual(SERIALIZED_SOFT_WORD_MIN);
+    expect(getContentTypeDef('serialized_story')?.softWordTargetMin).toBe(800);
+    expect(getContentTypeDef('serialized_story')?.minWordsPerChapter).toBe(800);
   });
 
   it('short story has soft guidance without a hard publish gate', () => {
