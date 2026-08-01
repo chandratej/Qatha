@@ -905,28 +905,26 @@ export async function sbPublishChapter(
   const user = await requireUser();
   await assertStoryOwner(storyId, user.id);
 
-  // Client-side gate (same band as edge/Node) so short chapters fail before network.
-  const { softWordTargetForContentType } = await import('../../../packages/shared/content-types');
+  // Client-side gate — hard band for Serialized Story only (match edge/Node).
+  // Soft targets on other formats are guidance, not publish blocks (Format Spec v1).
+  const { hardPublishWordBandForContentType } = await import('../../../packages/shared/content-types');
+  const { countWordsForPublishGate } = await import('./wordCount');
   const { data: storyMeta } = await supabase
     .from('stories')
     .select('content_type')
     .eq('id', storyId)
     .maybeSingle();
-  const band = softWordTargetForContentType(storyMeta?.content_type || 'serialized_story');
+  const band = hardPublishWordBandForContentType(storyMeta?.content_type || 'serialized_story');
   if (band) {
-    const plain = String(body.content || '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const n = plain ? plain.split(/\s+/).filter(Boolean).length : 0;
+    const n = countWordsForPublishGate(body.content || '');
     if (n < band.min) {
       throw new Error(
         `Serialized chapters need at least ${band.min.toLocaleString()} words ` +
-          `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}, hard max ${(band.hardMax ?? 3000).toLocaleString()}). ` +
+          `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}, hard max ${band.hardMax.toLocaleString()}). ` +
           `You have ${n}.`,
       );
     }
-    if (band.hardMax != null && n > band.hardMax) {
+    if (n > band.hardMax) {
       throw new Error(
         `Serialized chapters cannot exceed ${band.hardMax.toLocaleString()} words ` +
           `(recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}). You have ${n}.`,

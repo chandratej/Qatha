@@ -19,6 +19,7 @@ import {
 } from '../../../packages/shared/readerTiers';
 import {
   softWordTargetForContentType,
+  hardPublishWordBandForContentType,
   getContentTypeDef,
   discoveryFormatFromPublishedChapters,
 } from '../../../packages/shared/content-types';
@@ -92,6 +93,7 @@ describe('Format Spec v1 content types', () => {
       max: 1200,
       hardMax: 1200,
     });
+    expect(hardPublishWordBandForContentType('serialized_story')?.min).toBe(800);
   });
 
   it('interactive flash exists and is non-monetized', () => {
@@ -99,9 +101,15 @@ describe('Format Spec v1 content types', () => {
     expect(discoveryFormatFromPublishedChapters(1, 'interactive_flash')).toBe('single');
   });
 
-  it('chat soft band 200–500', () => {
+  it('chat soft band 200–500 is guidance only (no hard publish gate)', () => {
     expect(softWordTargetForContentType('epistolary_chat')?.min).toBe(200);
     expect(softWordTargetForContentType('epistolary_chat')?.max).toBe(500);
+    expect(hardPublishWordBandForContentType('epistolary_chat')).toBeNull();
+  });
+
+  it('short story soft 1k–5k is not a hard publish block', () => {
+    expect(softWordTargetForContentType('short_story')?.min).toBe(1000);
+    expect(hardPublishWordBandForContentType('short_story')).toBeNull();
   });
 });
 

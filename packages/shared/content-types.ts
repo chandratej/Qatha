@@ -279,6 +279,7 @@ export function getContentTypeDef(id: string | null | undefined): ContentTypeDef
 
 /**
  * Soft word target for chapter editor when the format defines a band.
+ * Soft guidance only — does NOT imply a publish hard-block.
  * Returns null only when hideSoftWordTarget or no soft band.
  */
 export function softWordTargetForContentType(id: string | null | undefined): {
@@ -300,6 +301,27 @@ export function softWordTargetForContentType(id: string | null | undefined): {
 export const SERIALIZED_SOFT_WORD_MIN = 800;
 export const SERIALIZED_SOFT_WORD_MAX = 1200;
 export const SERIALIZED_HARD_WORD_MAX = 1200;
+
+/**
+ * Hard publish word band — Serialized Story (and legacy novel) only.
+ * Format Spec: soft targets guide other formats; only serial chapters hard-block at 800–1,200.
+ * Keep in sync with backend contentFormatDiscovery + publish-chapter edge function.
+ */
+export function hardPublishWordBandForContentType(id: string | null | undefined): {
+  min: number;
+  max: number;
+  hardMax: number;
+} | null {
+  const ct = (id || 'serialized_story').trim();
+  if (ct === 'serialized_story' || ct === 'novel') {
+    return {
+      min: SERIALIZED_SOFT_WORD_MIN,
+      max: SERIALIZED_SOFT_WORD_MAX,
+      hardMax: SERIALIZED_HARD_WORD_MAX,
+    };
+  }
+  return null;
+}
 
 /**
  * Backend/metadata discovery routing from published chapter count.

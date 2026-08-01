@@ -119,6 +119,8 @@ export interface NarrativeChapterWorkspaceProps {
   /** Story-level content type — format is locked in MVP1. */
   storyContentType?: string | null;
   formatLocked?: boolean;
+  /** Hard publish word band (Serialized Story). Null = no hard gate. */
+  softWordTarget?: { min: number; max: number; hardMax?: number | null } | null;
 }
 
 export function NarrativeChapterWorkspace({
@@ -214,6 +216,7 @@ export function NarrativeChapterWorkspace({
   onSwitchChapter,
   storyContentType = null,
   formatLocked = true,
+  softWordTarget = null,
 }: NarrativeChapterWorkspaceProps) {
   const { t, locale } = useLocale();
   const stageRef = useRef<HTMLDivElement>(null);
@@ -428,6 +431,8 @@ export function NarrativeChapterWorkspace({
           scheduleError={scheduleError}
           scheduleSuccess={scheduleSuccess}
           onBackToWrite={backToWrite}
+          minWords={softWordTarget?.min ?? null}
+          hardMaxWords={softWordTarget?.hardMax ?? null}
         />
       )}
     >

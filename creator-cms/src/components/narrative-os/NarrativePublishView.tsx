@@ -17,6 +17,9 @@ interface NarrativePublishViewProps {
   scheduling?: boolean;
   scheduleError?: string | null;
   scheduleSuccess?: string | null;
+  /** Hard publish min (Serialized Story = 800). Omit when format has no hard gate. */
+  minWords?: number | null;
+  hardMaxWords?: number | null;
 }
 
 /**
@@ -35,6 +38,8 @@ export function NarrativePublishView({
   scheduling = false,
   scheduleError = null,
   scheduleSuccess = null,
+  minWords = null,
+  hardMaxWords = null,
 }: NarrativePublishViewProps) {
   void _publishDisabledIgnored;
   const { t, locale } = useLocale();
@@ -47,6 +52,9 @@ export function NarrativePublishView({
   const scheduleComingSoon = te
     ? 'షెడ్యూల్డ్ ప్రచురణ త్వరలో — ఇప్పుడు ఇప్పుడే ప్రచురించండి.'
     : 'Scheduled publish is coming later — for now, publish when ready.';
+  const belowMin = minWords != null && wordCount > 0 && wordCount < minWords;
+  const overMax = hardMaxWords != null && wordCount > hardMaxWords;
+  const outOfBand = belowMin || overMax;
 
   return (
     <div className="nos-mode-surface nos-publish">
@@ -73,11 +81,18 @@ export function NarrativePublishView({
           </p>
         </div>
 
-        {wordCount > 0 && wordCount < 800 && (
+        {belowMin && minWords != null && (
           <p className="nos-publish__error" role="status">
             {te
-              ? `ప్రచురణకు కనీసం 800 పదాలు అవసరం (ప్రస్తుతం ${wordCount.toLocaleString('te')}). Publish నొక్కితే వివరాలు చూస్తారు.`
-              : `Need at least 800 words to publish (you have ${wordCount.toLocaleString()}). Click Publish for details.`}
+              ? `ప్రచురణకు కనీసం ${minWords.toLocaleString('te')} పదాలు అవసరం (ప్రస్తుతం ${wordCount.toLocaleString('te')}). Publish నొక్కితే వివరాలు చూస్తారు.`
+              : `Need at least ${minWords.toLocaleString()} words to publish (you have ${wordCount.toLocaleString()}). Click Publish for details.`}
+          </p>
+        )}
+        {overMax && hardMaxWords != null && (
+          <p className="nos-publish__error" role="status">
+            {te
+              ? `గరిష్ఠ ${hardMaxWords.toLocaleString('te')} పదాలు (ప్రస్తుతం ${wordCount.toLocaleString('te')}).`
+              : `Hard max is ${hardMaxWords.toLocaleString()} words (you have ${wordCount.toLocaleString()}). Trim before publishing.`}
           </p>
         )}
 
@@ -100,21 +115,23 @@ export function NarrativePublishView({
           }}
           disabled={busy}
           title={
-            wordCount < 800
-              ? `Need at least 800 words (you have ${wordCount})`
-              : busy
-                ? undefined
-                : 'Submit for review — word limits are checked on click'
+            belowMin && minWords != null
+              ? `Need at least ${minWords.toLocaleString()} words (you have ${wordCount})`
+              : overMax && hardMaxWords != null
+                ? `Over hard max ${hardMaxWords.toLocaleString()} words (you have ${wordCount})`
+                : busy
+                  ? undefined
+                  : 'Submit for review — word limits are checked on click'
           }
         >
           <Rocket size={16} aria-hidden />
           {publishing ? t('editor.saving') : publishLabel}
         </button>
-        {wordCount > 0 && wordCount < 800 && (
+        {outOfBand && belowMin && minWords != null && (
           <p className="nos-publish__error" role="alert" style={{ marginTop: 12 }}>
             {te
-              ? `ప్రచురణ బ్లాక్: కనీసం 800 పదాలు (ప్రస్తుతం ${wordCount}). బటన్ నొక్కితే వివరాలు.`
-              : `Publishing blocked: need at least 800 words (you have ${wordCount}). Click the button for details.`}
+              ? `ప్రచురణ బ్లాక్: కనీసం ${minWords.toLocaleString('te')} పదాలు (ప్రస్తుతం ${wordCount}). బటన్ నొక్కితే వివరాలు.`
+              : `Publishing blocked: need at least ${minWords.toLocaleString()} words (you have ${wordCount}). Click the button for details.`}
           </p>
         )}
       </div>

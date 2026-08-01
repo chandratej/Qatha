@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   discoveryFormatFromPublishedChapters,
   softWordTargetForContentType,
+  hardPublishWordBandForContentType,
   DISCOVERY_SERIALIZED_CHAPTER_FLOOR,
   SERIALIZED_SOFT_WORD_MIN,
   SERIALIZED_SOFT_WORD_MAX,
@@ -19,14 +20,30 @@ describe('content format specs', () => {
       max: 1200,
       hardMax: 1200,
     });
+    expect(hardPublishWordBandForContentType('serialized_story')).toEqual({
+      min: 800,
+      max: 1200,
+      hardMax: 1200,
+    });
   });
 
-  it('short story has soft guidance without a hard max', () => {
+  it('short story has soft guidance without a hard publish gate', () => {
     // Format Spec: short_story is guided (1k–5k) but not hard-blocked like serialized chapters.
     expect(softWordTargetForContentType('short_story')).toEqual({
       min: 1000,
       max: 5000,
       hardMax: null,
+    });
+    expect(hardPublishWordBandForContentType('short_story')).toBeNull();
+    expect(hardPublishWordBandForContentType('flash_fiction')).toBeNull();
+    expect(hardPublishWordBandForContentType('epistolary_chat')).toBeNull();
+  });
+
+  it('null content type defaults hard publish band to serialized', () => {
+    expect(hardPublishWordBandForContentType(null)).toEqual({
+      min: 800,
+      max: 1200,
+      hardMax: 1200,
     });
   });
 

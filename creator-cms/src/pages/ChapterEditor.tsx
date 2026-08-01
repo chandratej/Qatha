@@ -95,7 +95,7 @@ import { useLocale } from '../context/LocaleContext';
 import { NarrativeChapterWorkspace } from '../components/narrative-os/NarrativeChapterWorkspace';
 import type { ArrivalMomentum, NarrativeFormat } from '../lib/narrativeOsTypes';
 import '../styles/narrative-os.css';
-import { countWordsInScenes } from '../lib/wordCount';
+import { countPublishWordsInScenes, countWordsForPublishGate } from '../lib/wordCount';
 
 import { FEATURE_FLAGS } from '../config/feature_flags';
 import { UI_CONFIG } from '../config/ui_config';
@@ -106,7 +106,7 @@ import {
   resolveChapterEditorPath,
 } from '../lib/storyContentFormat';
 import { stripHtml } from '../lib/chapterFind';
-import { softWordTargetForContentType } from '../../../packages/shared/content-types';
+import { hardPublishWordBandForContentType } from '../../../packages/shared/content-types';
 
 const NARRATIVE_OS_ENABLED = FEATURE_FLAGS.narrativeOs;
 
@@ -119,8 +119,12 @@ const CHAPTER_WORD_GOAL = UI_CONFIG.editor.chapterWordGoal;
 /** Character ceiling removed — use serialized word band only. */
 const CHAR_LIMIT = Number.MAX_SAFE_INTEGER;
 
-function getWordCountFromScenes(scenes: SceneBlock[], locale = 'en'): number {
-  return countWordsInScenes(scenes, locale);
+/**
+ * Word count used for UI + publish gate. Uses the same whitespace algorithm as
+ * backend/edge so “856 words” in the editor is what publish validates.
+ */
+function getWordCountFromScenes(scenes: SceneBlock[], _locale = 'en'): number {
+  return countPublishWordsInScenes(scenes);
 }
 
 function getPlainCharCountFromScenes(scenes: SceneBlock[]): number {
@@ -222,6 +226,8 @@ export function ChapterEditor() {
   const [publishCoverUrl, setPublishCoverUrl] = useState<string | null>(null);
   const [wordBandBlockOpen, setWordBandBlockOpen] = useState(false);
   const [wordBandBlockReason, setWordBandBlockReason] = useState<WordBandBlockReason>('below_min');
+  /** Count shown in the block modal (must match the count that failed the gate). */
+  const [wordBandBlockCount, setWordBandBlockCount] = useState(0);
   const [scheduling, setScheduling] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSuccess, setScheduleSuccess] = useState<string | null>(null);
@@ -669,32 +675,19 @@ export function ChapterEditor() {
   const narrativeFormat: NarrativeFormat = chapterNarrativeFormat;
   const wordCount = getWordCountFromScenes(scenes, locale);
   /**
-   * Serialized: 800–1,200 words (min floor · hard max).
-   * Always resolve a concrete band for serials (hardcoded fallback if shared def missing).
-   * Exempt: short_story, flash, collection, chat, branching.
-   */
-  /**
-   * Always enforce the serial word band for normal stories.
-   * Only skip for explicit short/flash/collection/experimental formats.
-   * Hardcoded fallback so a bad content_type import can never disable the UI gate.
+   * Hard publish band for Serialized Story only (800–1,200).
+   * Other formats may have soft guidance elsewhere; they are not publish-blocked here.
+   * Matches backend/edge/supabase client gate.
    */
   const softWordTarget = useMemo(() => {
-    const ct = (storyContentType || 'serialized_story').trim();
-    const exempt = new Set([
-      'short_story',
-      'flash_fiction',
-      'short_story_collection',
-      'epistolary_chat',
-      'interactive_branching',
-    ]);
-    if (exempt.has(ct)) return null;
-    const FALLBACK = { min: 800, max: 1200, hardMax: 1200 as number | null };
     try {
-      return softWordTargetForContentType(ct)
-        || softWordTargetForContentType('serialized_story')
-        || FALLBACK;
+      return hardPublishWordBandForContentType(storyContentType || 'serialized_story');
     } catch {
-      return FALLBACK;
+      // Fail closed for serial-like unknown types only when content_type is missing.
+      if (!storyContentType || storyContentType === 'serialized_story' || storyContentType === 'novel') {
+        return { min: 800, max: 1200, hardMax: 1200 as number };
+      }
+      return null;
     }
   }, [storyContentType]);
   const softWordGoal = softWordTarget?.max ?? CHAPTER_WORD_GOAL;
@@ -851,6 +844,8 @@ export function ChapterEditor() {
       // Skip no-op updates — prevents re-render storms that thrash the editor
       if (cur?.content === html) return prev;
       const next = prev.map(s => s.id === id ? { ...s, content: html } : s);
+      // Keep ref in sync immediately so flush → publish does not read stale scenes.
+      scenesRef.current = next;
       const scene = next.find(s => s.id === id);
       if (scene) {
         void saveSceneVersion(id, scene.title, html);
@@ -1063,25 +1058,26 @@ export function ChapterEditor() {
   const publishWordBand = softWordTarget ?? {
     min: 800,
     max: 1200,
-    hardMax: 1200 as number | null,
+    hardMax: 1200 as number,
   };
 
   const openWordBandBlock = (reason: WordBandBlockReason, count: number) => {
-    const band = publishWordBand;
+    const band = softWordTarget ?? publishWordBand;
     setWordBandBlockReason(reason);
+    setWordBandBlockCount(count);
     setWordBandBlockOpen(true);
     setPublishConfirmOpen(false);
     const errMsg =
       reason === 'below_min'
         ? `Cannot publish: need at least ${band.min.toLocaleString()} words (you have ${count.toLocaleString()}). Recommended ${band.min.toLocaleString()}–${band.max.toLocaleString()}.`
-        : `Cannot publish: hard max is ${(band.hardMax ?? 1200).toLocaleString()} words (you have ${count.toLocaleString()}). Trim before publishing.`;
+        : `Cannot publish: hard max is ${band.hardMax.toLocaleString()} words (you have ${count.toLocaleString()}). Trim before publishing.`;
     setPublishError(errMsg);
     // Native alert is guaranteed visible even if React portal fails or CMS is stale-bundled oddly.
     try {
       showWordBandBlockedAlert({
         wordCount: count,
         min: band.min,
-        hardMax: band.hardMax ?? 1200,
+        hardMax: band.hardMax,
         reason,
       });
     } catch {
@@ -1091,16 +1087,15 @@ export function ChapterEditor() {
 
   /** Returns false if blocked (and opens popup). True if OK to continue. */
   const checkWordBandOrNotify = (count: number): boolean => {
-    // softWordTarget null = exempt format only
-    if (softWordTarget === null) return true;
-    const band = softWordTarget ?? publishWordBand;
-    const min = band.min ?? 800;
-    const hardMax = band.hardMax ?? 1200;
+    // null = format has no hard publish word band
+    if (!softWordTarget) return true;
+    const min = softWordTarget.min;
+    const hardMax = softWordTarget.hardMax;
     if (count < min) {
       openWordBandBlock('below_min', count);
       return false;
     }
-    if (count > hardMax) {
+    if (hardMax != null && count > hardMax) {
       openWordBandBlock('over_hard_max', count);
       return false;
     }
@@ -1110,30 +1105,46 @@ export function ChapterEditor() {
   const assertWordBandOrThrow = (count: number) => {
     if (!checkWordBandOrNotify(count)) {
       throw new Error(
-        `Serialized chapters need ${publishWordBand.min.toLocaleString()}–${(publishWordBand.hardMax ?? 1200).toLocaleString()} words (you have ${count.toLocaleString()}).`,
+        `Serialized chapters need ${publishWordBand.min.toLocaleString()}–${publishWordBand.hardMax.toLocaleString()} words (you have ${count.toLocaleString()}).`,
       );
     }
   };
 
-  /** Parse API / edge errors into the word-band popup when possible. */
+  /** Parse API / edge errors into the word-band popup only when count is actually outside band. */
   const notifyWordBandFromError = (message: string, count: number) => {
+    if (!softWordTarget) return false;
     const lower = message.toLowerCase();
-    if (
-      lower.includes('at least') ||
+    const looksShort =
       lower.includes('too short') ||
+      lower.includes('at least') ||
       lower.includes('need at least') ||
-      lower.includes('800')
-    ) {
-      openWordBandBlock('below_min', count);
+      /you have\s+\d+/i.test(message);
+    const looksLong =
+      lower.includes('cannot exceed') ||
+      lower.includes('too long');
+
+    // Prefer server-reported count when present ("You have 412.")
+    const serverCountMatch = message.match(/you have\s+([\d,]+)/i);
+    const serverCount = serverCountMatch
+      ? Number(serverCountMatch[1].replace(/,/g, ''))
+      : count;
+    const effective = Number.isFinite(serverCount) ? serverCount : count;
+
+    if (looksShort && effective < softWordTarget.min) {
+      openWordBandBlock('below_min', effective);
       return true;
     }
-    if (
-      lower.includes('cannot exceed') ||
-      lower.includes('too long') ||
-      lower.includes('1200') ||
-      lower.includes('1,200')
-    ) {
-      openWordBandBlock('over_hard_max', count);
+    if (looksLong && effective > softWordTarget.hardMax) {
+      openWordBandBlock('over_hard_max', effective);
+      return true;
+    }
+    // Only open word-band UI when the chapter is truly outside the band.
+    if (effective < softWordTarget.min) {
+      openWordBandBlock('below_min', effective);
+      return true;
+    }
+    if (effective > softWordTarget.hardMax) {
+      openWordBandBlock('over_hard_max', effective);
       return true;
     }
     return false;
@@ -1145,9 +1156,11 @@ export function ChapterEditor() {
     setPublishSuccess(null);
     try {
       flushEditor();
-      const content = aggregateScenesToHtml(scenes);
-      // Re-count after flush so empty/short body cannot slip past a stale wordCount.
-      const liveWordCount = getWordCountFromScenes(scenes, locale);
+      // Prefer ref: flush updates scenes via setState; ref is synced inside the updater.
+      const liveScenes = scenesRef.current.length ? scenesRef.current : scenes;
+      const content = aggregateScenesToHtml(liveScenes);
+      // Re-count after flush with the same algorithm the API uses.
+      const liveWordCount = getWordCountFromScenes(liveScenes, locale);
       if (!content.trim() || liveWordCount === 0) {
         throw new Error('Add some content before publishing');
       }
@@ -1186,7 +1199,7 @@ export function ChapterEditor() {
           chapter_number: chapterNumber,
           title: chapterTitle,
           content,
-          content_delta: scenesToContentDelta(scenes),
+          content_delta: scenesToContentDelta(liveScenes),
           appeal_note: needsResubmit && appealNote.trim() ? appealNote.trim() : undefined,
         };
 
@@ -1264,14 +1277,21 @@ export function ChapterEditor() {
       setPublishConfirmOpen(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Publish failed';
-      const liveCount = getWordCountFromScenes(scenes, locale);
+      const liveScenes = scenesRef.current.length ? scenesRef.current : scenes;
+      const liveCount = getWordCountFromScenes(liveScenes, locale);
+      const payloadCount = countWordsForPublishGate(
+        aggregateScenesToHtml(liveScenes),
+      );
       const coverBlocking = /cover/i.test(msg);
-      // If under min, always show word-band UI (edge errors often hide the real message).
-      if (liveCount > 0 && liveCount < 800) {
+      // Only show word-band UI when this format has a hard band and count is out of range.
+      if (softWordTarget && liveCount > 0 && liveCount < softWordTarget.min) {
         openWordBandBlock('below_min', liveCount);
         setPublishConfirmOpen(false);
-      } else if (liveCount > 1200) {
+      } else if (softWordTarget && liveCount > softWordTarget.hardMax) {
         openWordBandBlock('over_hard_max', liveCount);
+        setPublishConfirmOpen(false);
+      } else if (softWordTarget && payloadCount < softWordTarget.min) {
+        openWordBandBlock('below_min', payloadCount);
         setPublishConfirmOpen(false);
       } else if (!notifyWordBandFromError(msg, liveCount)) {
         setPublishError(msg);
@@ -1300,7 +1320,8 @@ export function ChapterEditor() {
     } catch {
       /* ignore */
     }
-    const liveCount = getWordCountFromScenes(scenes, locale);
+    const liveScenes = scenesRef.current.length ? scenesRef.current : scenes;
+    const liveCount = getWordCountFromScenes(liveScenes, locale);
     if (liveCount <= 0) {
       setPublishError('Add some content before publishing');
       setWordBandBlockOpen(false);
@@ -1309,27 +1330,6 @@ export function ChapterEditor() {
       } catch {
         /* ignore */
       }
-      return;
-    }
-    // Format Spec v1: use each format's soft/hard word band (not a global 800 serial floor).
-    if (softWordTarget) {
-      if (liveCount < softWordTarget.min) {
-        openWordBandBlock('below_min', liveCount);
-        return;
-      }
-      if (softWordTarget.hardMax != null && liveCount > softWordTarget.hardMax) {
-        openWordBandBlock('over_hard_max', liveCount);
-        return;
-      }
-    }
-    // Keep a serialized safety net if soft target failed to resolve on serials.
-    const ct = (storyContentType || 'serialized_story').trim();
-    if (ct === 'serialized_story' && !softWordTarget && liveCount < 800) {
-      openWordBandBlock('below_min', liveCount);
-      return;
-    }
-    if (ct === 'serialized_story' && !softWordTarget && liveCount > 1200) {
-      openWordBandBlock('over_hard_max', liveCount);
       return;
     }
     if (!checkWordBandOrNotify(liveCount)) {
@@ -1504,10 +1504,10 @@ export function ChapterEditor() {
       <WordBandBlockModal
         open={wordBandBlockOpen}
         onClose={() => setWordBandBlockOpen(false)}
-        wordCount={wordCount}
-        min={publishWordBand.min}
-        max={publishWordBand.max}
-        hardMax={publishWordBand.hardMax ?? 1200}
+        wordCount={wordBandBlockCount || wordCount}
+        min={(softWordTarget ?? publishWordBand).min}
+        max={(softWordTarget ?? publishWordBand).max}
+        hardMax={(softWordTarget ?? publishWordBand).hardMax}
         reason={wordBandBlockReason}
         locale={locale}
       />
@@ -1744,6 +1744,7 @@ export function ChapterEditor() {
           }}
           storyContentType={storyContentType}
           formatLocked
+          softWordTarget={softWordTarget}
           peopleSlot={!isDemo && activeSceneId ? (
             <SceneCharacterPanel
               characters={storyCharacters}
