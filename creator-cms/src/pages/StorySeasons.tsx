@@ -803,8 +803,8 @@ function ChapterRow({
     }
   };
 
-  /** Soft upper band for serials (800–1,200 words). */
-  const wordGoal = 1200;
+  /** Soft upper recommended band for serials (1,000–1,500 words). */
+  const wordGoal = 1500;
   const progressPct = typeof words === 'number' && words > 0
     ? Math.min(100, Math.round((words / wordGoal) * 100))
     : 0;

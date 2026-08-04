@@ -1,21 +1,31 @@
 /**
- * Format Spec v1 content-type surface tests.
+ * Format Spec content-type surface tests.
  */
 import { describe, it, expect } from 'vitest';
 import {
   discoveryFormatFromPublishedChapters,
   softWordTargetForContentType,
+  hardPublishWordBandForContentType,
   DISCOVERY_SERIALIZED_CHAPTER_FLOOR,
+  SERIALIZED_SOFT_WORD_MIN,
+  SERIALIZED_SOFT_WORD_MAX,
+  SERIALIZED_HARD_WORD_MAX,
   getContentTypeDef,
 } from './content-types';
 
 describe('content format specs (v1)', () => {
-  it('serialized soft target is 800–1200 with hard max 1200', () => {
+  it('serialized soft target is 1000–1500 with no hard max', () => {
+    expect(SERIALIZED_SOFT_WORD_MIN).toBe(1000);
+    expect(SERIALIZED_SOFT_WORD_MAX).toBe(1500);
+    expect(SERIALIZED_HARD_WORD_MAX).toBeNull();
     expect(softWordTargetForContentType('serialized_story')).toEqual({
-      min: 800,
-      max: 1200,
-      hardMax: 1200,
+      min: 1000,
+      max: 1500,
+      hardMax: null,
     });
+    // Length is never a publish barrier
+    expect(hardPublishWordBandForContentType('serialized_story')).toBeNull();
+    expect(hardPublishWordBandForContentType(null)).toBeNull();
   });
 
   it('chat and interactive expose soft word bands', () => {

@@ -1,17 +1,18 @@
 /**
- * Discovery-layer content format + serialized word band (creator policy).
+ * Discovery-layer content format + serialized word guidance (creator policy).
  * Keep in sync with packages/shared/content-types.ts.
  *
- * Serialized Story:
- *   min 800 · max 1,200 words
+ * Serialized Story: recommended 1,000–1,500 words/chapter.
+ * Chapter length is never a publish barrier — guidance only.
  * Discovery: ≥20 published chapters → serialized shelf
  */
 
 export const DISCOVERY_SERIALIZED_CHAPTER_FLOOR = 20;
 
-export const SERIALIZED_SOFT_WORD_MIN = 800;
-export const SERIALIZED_SOFT_WORD_MAX = 1200;
-export const SERIALIZED_HARD_WORD_MAX = 1200;
+export const SERIALIZED_SOFT_WORD_MIN = 1000;
+export const SERIALIZED_SOFT_WORD_MAX = 1500;
+/** @deprecated No hard max — publish any length. */
+export const SERIALIZED_HARD_WORD_MAX = null;
 
 /**
  * @param {number} publishedChapterCount
@@ -30,9 +31,9 @@ export function discoveryFormatFromPublishedChapters(publishedChapterCount, cont
 }
 
 /**
- * Soft + hard word band for Serialized Story only.
+ * Soft word guidance for Serialized Story only (never a publish gate).
  * @param {string|null|undefined} contentTypeId
- * @returns {{ min: number, max: number, hardMax: number }|null}
+ * @returns {{ min: number, max: number, hardMax: null }|null}
  */
 export function softWordTargetForContentType(contentTypeId) {
   const ct = contentTypeId || 'serialized_story';
@@ -40,7 +41,7 @@ export function softWordTargetForContentType(contentTypeId) {
     return {
       min: SERIALIZED_SOFT_WORD_MIN,
       max: SERIALIZED_SOFT_WORD_MAX,
-      hardMax: SERIALIZED_HARD_WORD_MAX,
+      hardMax: null,
     };
   }
   return null;

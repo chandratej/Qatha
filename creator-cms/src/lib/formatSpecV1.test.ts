@@ -87,13 +87,13 @@ describe('Format Spec v1 tiers', () => {
 });
 
 describe('Format Spec v1 content types', () => {
-  it('serialized band 800–1200', () => {
+  it('serialized recommended band 1000–1500 with no hard publish gate', () => {
     expect(softWordTargetForContentType('serialized_story')).toEqual({
-      min: 800,
-      max: 1200,
-      hardMax: 1200,
+      min: 1000,
+      max: 1500,
+      hardMax: null,
     });
-    expect(hardPublishWordBandForContentType('serialized_story')?.min).toBe(800);
+    expect(hardPublishWordBandForContentType('serialized_story')).toBeNull();
   });
 
   it('interactive flash exists and is non-monetized', () => {
@@ -110,6 +110,12 @@ describe('Format Spec v1 content types', () => {
   it('short story soft 1k–5k is not a hard publish block', () => {
     expect(softWordTargetForContentType('short_story')?.min).toBe(1000);
     expect(hardPublishWordBandForContentType('short_story')).toBeNull();
+  });
+
+  it('any content type may publish any length', () => {
+    expect(hardPublishWordBandForContentType('serialized_story')).toBeNull();
+    expect(hardPublishWordBandForContentType('novel')).toBeNull();
+    expect(hardPublishWordBandForContentType(null)).toBeNull();
   });
 });
 

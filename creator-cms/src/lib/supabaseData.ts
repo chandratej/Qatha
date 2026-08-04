@@ -905,40 +905,9 @@ export async function sbPublishChapter(
   const user = await requireUser();
   await assertStoryOwner(storyId, user.id);
 
-  // Client-side gate — Serialized Story only. Product min is always 800 (never legacy 1,500).
-  const {
-    hardPublishWordBandForContentType,
-    SERIALIZED_SOFT_WORD_MIN,
-    SERIALIZED_SOFT_WORD_MAX,
-    SERIALIZED_HARD_WORD_MAX,
-  } = await import('../../../packages/shared/content-types');
-  const { countWordsForPublishGate } = await import('./wordCount');
-  const { data: storyMeta } = await supabase
-    .from('stories')
-    .select('content_type')
-    .eq('id', storyId)
-    .maybeSingle();
-  const band = hardPublishWordBandForContentType(storyMeta?.content_type || 'serialized_story');
-  if (band) {
-    // Pin to constants so a stale soft-target import cannot reintroduce 1,500.
-    const min = SERIALIZED_SOFT_WORD_MIN;
-    const max = SERIALIZED_SOFT_WORD_MAX;
-    const hardMax = SERIALIZED_HARD_WORD_MAX;
-    const n = countWordsForPublishGate(body.content || '');
-    if (n < min) {
-      throw new Error(
-        `Serialized chapters need at least ${min.toLocaleString()} words ` +
-          `(recommended ${min.toLocaleString()}–${max.toLocaleString()}, hard max ${hardMax.toLocaleString()}). ` +
-          `You have ${n}.`,
-      );
-    }
-    if (n > hardMax) {
-      throw new Error(
-        `Serialized chapters cannot exceed ${hardMax.toLocaleString()} words ` +
-          `(recommended ${min.toLocaleString()}–${max.toLocaleString()}). You have ${n}.`,
-      );
-    }
-  }
+  // Chapter length is never a publish barrier (recommended 1,000–1,500 for serials).
+  // Do not pre-reject here with a second counter — that caused false "not enough words"
+  // when the client payload count disagreed with the editor display.
 
   const { data, error } = await supabase.functions.invoke('publish-chapter', {
     body: {

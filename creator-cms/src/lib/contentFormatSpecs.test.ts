@@ -11,29 +11,21 @@ import {
 } from '../../../packages/shared/content-types';
 
 describe('content format specs', () => {
-  it('serialized soft 800–1200 and hard max 1200 (never legacy 1500)', () => {
-    expect(SERIALIZED_SOFT_WORD_MIN).toBe(800);
-    expect(SERIALIZED_SOFT_WORD_MAX).toBe(1200);
-    expect(SERIALIZED_HARD_WORD_MAX).toBe(1200);
-    expect(SERIALIZED_SOFT_WORD_MIN).toBeLessThan(1500);
+  it('serialized soft 1000–1500 with no hard publish gate', () => {
+    expect(SERIALIZED_SOFT_WORD_MIN).toBe(1000);
+    expect(SERIALIZED_SOFT_WORD_MAX).toBe(1500);
+    expect(SERIALIZED_HARD_WORD_MAX).toBeNull();
     expect(softWordTargetForContentType('serialized_story')).toEqual({
-      min: 800,
-      max: 1200,
-      hardMax: 1200,
+      min: 1000,
+      max: 1500,
+      hardMax: null,
     });
-    expect(hardPublishWordBandForContentType('serialized_story')).toEqual({
-      min: 800,
-      max: 1200,
-      hardMax: 1200,
-    });
-    // 856 words must clear the hard publish floor
-    expect(856).toBeGreaterThanOrEqual(SERIALIZED_SOFT_WORD_MIN);
-    expect(getContentTypeDef('serialized_story')?.softWordTargetMin).toBe(800);
-    expect(getContentTypeDef('serialized_story')?.minWordsPerChapter).toBe(800);
+    expect(hardPublishWordBandForContentType('serialized_story')).toBeNull();
+    expect(getContentTypeDef('serialized_story')?.softWordTargetMin).toBe(1000);
+    expect(getContentTypeDef('serialized_story')?.minWordsPerChapter).toBe(1000);
   });
 
   it('short story has soft guidance without a hard publish gate', () => {
-    // Format Spec: short_story is guided (1k–5k) but not hard-blocked like serialized chapters.
     expect(softWordTargetForContentType('short_story')).toEqual({
       min: 1000,
       max: 5000,
@@ -44,12 +36,8 @@ describe('content format specs', () => {
     expect(hardPublishWordBandForContentType('epistolary_chat')).toBeNull();
   });
 
-  it('null content type defaults hard publish band to serialized', () => {
-    expect(hardPublishWordBandForContentType(null)).toEqual({
-      min: 800,
-      max: 1200,
-      hardMax: 1200,
-    });
+  it('null content type has no hard publish band (any length OK)', () => {
+    expect(hardPublishWordBandForContentType(null)).toBeNull();
   });
 
   it('discovery routes ≥20 as serialized', () => {

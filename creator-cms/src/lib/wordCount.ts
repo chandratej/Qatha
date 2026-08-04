@@ -20,8 +20,8 @@ export function countWordsInPlainText(text: string, locale = 'en'): number {
 }
 
 /**
- * Publish-gate word count — must match backend/edge (whitespace tokens after HTML strip).
- * Do not use Segmenter here; UI and server must agree on the hard 800–1,200 band.
+ * Consistent word count after HTML strip (whitespace tokens).
+ * Used for UI display; chapter length is not a publish barrier.
  */
 export function countWordsForPublishGate(htmlOrPlain: string): number {
   const plain = String(htmlOrPlain || '')
@@ -62,7 +62,7 @@ export function countWordsInScenes(
   return scenes.reduce((total, scene) => total + countWordsInHtml(scene.content || '', locale), 0);
 }
 
-/** Scene word total using the same algorithm as the publish API. */
+/** Scene word total using the shared whitespace algorithm. */
 export function countPublishWordsInScenes(scenes: Array<{ content?: string }>): number {
   return scenes.reduce(
     (total, scene) => total + countWordsForPublishGate(scene.content || ''),

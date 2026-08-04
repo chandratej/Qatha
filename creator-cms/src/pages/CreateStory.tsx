@@ -441,8 +441,8 @@ export function CreateStory() {
               {selectedContentType.confidence === 'high' && (
                 <p className="cs-v21__format-guide-flag">
                   {locale === 'te'
-                    ? 'Format Spec v1 సూచనలు — మీ కథ, మీరు రాసినట్లు రాయండి. Soft targets publishను block చేయవు (hard max మాత్రమే).'
-                    : 'Format Spec v1 guidance — this is your story. Soft targets never block publish (hard max only where set).'}
+                    ? 'Format Spec v1 సూచనలు — మీ కథ, మీరు రాసినట్లు రాయండి. ఏ పొడవు అయినా ప్రచురించవచ్చు (సిఫార్సు మాత్రమే).'
+                    : 'Format Spec v1 guidance — this is your story. Publish any length; word ranges are recommendations only.'}
                 </p>
               )}
             </div>

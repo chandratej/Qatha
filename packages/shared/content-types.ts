@@ -1,7 +1,8 @@
-/** Content formats — Katha Format Spec v1 (27 Jul 2026).
+/** Content formats — Katha Format Spec v1 (updated Aug 2026).
  *
  * Approved word/chapter guidance + monetization path notes.
- * Soft targets guide the editor; hard max only where historically enforced (serialized).
+ * Soft targets guide the editor only — chapter length is never a publish barrier.
+ * Creators may publish any length; recommended serial chapter band is 1,000–1,500 words.
  */
 
 export type ContentSpecConfidence = 'high' | 'placeholder' | 'none';
@@ -21,7 +22,10 @@ export interface ContentTypeDef {
   /** Soft target band for editor indicator. */
   softWordTargetMin?: number | null;
   softWordTargetMax?: number | null;
-  /** Hard word ceiling when set (Serialized publish rejects above this). */
+  /**
+   * @deprecated Never enforced on publish. Kept for type compat; always treat as guidance-only.
+   * Prefer softWordTargetMin/Max.
+   */
   hardMaxWordsPerChapter?: number | null;
   suggestedTotalChaptersMin?: number | null;
   suggestedTotalChaptersMax?: number | null;
@@ -66,11 +70,11 @@ export const CONTENT_TYPES = [
     labelTelugu: 'ధారావాహిక కథ',
     maxChapters: null,
     minChapters: null,
-    minWordsPerChapter: 800,
-    maxWordsPerChapter: 1200,
-    softWordTargetMin: 800,
-    softWordTargetMax: 1200,
-    hardMaxWordsPerChapter: 1200,
+    minWordsPerChapter: 1000,
+    maxWordsPerChapter: 1500,
+    softWordTargetMin: 1000,
+    softWordTargetMax: 1500,
+    hardMaxWordsPerChapter: null,
     suggestedTotalChaptersMin: 50,
     suggestedTotalChaptersMax: null,
     suggestedLaunchChaptersMin: 15,
@@ -78,13 +82,13 @@ export const CONTENT_TYPES = [
     updateCadenceGuide: '3–5 chapters/week while the series is active',
     discoverySerializedFloor: 20,
     guideTelugu:
-      'ప్రధాన ఆదాయ ఫార్మాట్. 800–1,200 పదాలు/అధ్యాయం. లాంచ్‌కు 15–20 అధ్యాయాలు; పోటీ 25 · మానిటైజ్ 50.',
+      'ప్రధాన ఆదాయ ఫార్మాట్. సిఫార్సు 1,000–1,500 పదాలు/అధ్యాయం (ఏ పొడవు అయినా ప్రచురించవచ్చు). లాంచ్‌కు 15–20; పోటీ 25 · మానిటైజ్ 50.',
     guideEnglish:
-      'Primary revenue format. 800–1,200 words/chapter. Launch ~15–20 chapters; contest at 25, monetize at 50.',
+      'Primary revenue format. Recommended 1,000–1,500 words/chapter (publish any length). Launch ~15–20 chapters; contest at 25, monetize at 50.',
     selectionGuideEnglish:
-      '800–1,200 words/chapter. Aim 15–20 chapters before launch; grows indefinitely. Contest ≥25 published chapters · monetize ≥50.',
+      'Recommended 1,000–1,500 words/chapter — publish any length. Aim 15–20 chapters before launch; grows indefinitely. Contest ≥25 · monetize ≥50.',
     selectionGuideTelugu:
-      '800–1,200 పదాలు/అధ్యాయం. లాంచ్‌కు 15–20; అనంతం పెరుగుతుంది. పోటీ ≥25 · మానిటైజ్ ≥50.',
+      'సిఫార్సు 1,000–1,500 పదాలు/అధ్యాయం — ఏ పొడవు అయినా ప్రచురించవచ్చు. లాంచ్‌కు 15–20. పోటీ ≥25 · మానిటైజ్ ≥50.',
     confidence: 'high' as const,
     hideSoftWordTarget: false,
   },
@@ -293,37 +297,29 @@ export function softWordTargetForContentType(id: string | null | undefined): {
   return {
     min: def.softWordTargetMin,
     max: def.softWordTargetMax,
-    hardMax: def.hardMaxWordsPerChapter ?? null,
+    // Never a publish gate — always null so UI cannot treat length as blocking.
+    hardMax: null,
   };
 }
 
 /**
- * Serialized Story hard publish band — single source of truth.
- * Product rule: minimum to publish is **800 words** (not 1,500).
- * Recommended range 800–1,200; hard ceiling 1,200.
- * Keep in sync with backend contentFormatDiscovery + publish-chapter edge function.
+ * Serialized Story recommended word band — single source of truth.
+ * Recommended 1,000–1,500 words/chapter. Publish any length (no hard min/max).
+ * Keep in sync with backend contentFormatDiscovery + editor soft targets.
  */
-export const SERIALIZED_SOFT_WORD_MIN = 800;
-export const SERIALIZED_SOFT_WORD_MAX = 1200;
-export const SERIALIZED_HARD_WORD_MAX = 1200;
+export const SERIALIZED_SOFT_WORD_MIN = 1000;
+export const SERIALIZED_SOFT_WORD_MAX = 1500;
+/** @deprecated No hard max — publish any length. Always null. */
+export const SERIALIZED_HARD_WORD_MAX: number | null = null;
 
 /**
- * Hard publish word band — Serialized Story (and legacy novel) only.
- * Always returns the 800 / 1,200 constants — never soft guidance from other formats.
+ * Hard publish word band — **disabled**.
+ * Product rule: chapter length is never a barrier to publish.
+ * Always returns null; use softWordTargetForContentType for recommendations only.
  */
-export function hardPublishWordBandForContentType(id: string | null | undefined): {
-  min: number;
-  max: number;
-  hardMax: number;
-} | null {
-  const ct = (id || 'serialized_story').trim();
-  if (ct === 'serialized_story' || ct === 'novel') {
-    return {
-      min: SERIALIZED_SOFT_WORD_MIN,
-      max: SERIALIZED_SOFT_WORD_MAX,
-      hardMax: SERIALIZED_HARD_WORD_MAX,
-    };
-  }
+export function hardPublishWordBandForContentType(
+  _id?: string | null,
+): { min: number; max: number; hardMax: number } | null {
   return null;
 }
 

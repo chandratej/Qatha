@@ -29,10 +29,7 @@ import {
   sanitizePublishedContent,
   estimateReadTimeMinutes,
 } from '../lib/publishContent.js';
-import {
-  softWordTargetForContentType,
-  countWordsInContent,
-} from '../services/contentFormatDiscovery.js';
+// Word count is guidance-only — never a publish barrier (see contentFormatDiscovery.js).
 
 // Lightweight in-memory hot cache for chapter responses (dramatically faster repeat reads)
 const chapterCache = new Map(); // key -> {data, ts, etag}
@@ -225,38 +222,7 @@ chaptersRouter.post('/:storyId/publish', requireAuth(), requireCreatorConsent(),
     const content = sanitizePublishedContent(rawContent);
     const estimated_read_time_minutes = estimateReadTimeMinutes(content);
 
-    // Serialized word band only: 800–1,200 words (min floor · hard max; no character ceiling).
-    let storyContentType = 'serialized_story';
-    if (!isMockMode()) {
-      const { data: storyMeta } = await supabase
-        .from('stories')
-        .select('content_type')
-        .eq('id', storyId)
-        .maybeSingle();
-      if (storyMeta?.content_type) storyContentType = storyMeta.content_type;
-    }
-    const softWords = softWordTargetForContentType(storyContentType);
-    if (softWords) {
-      const wordCount = countWordsInContent(content);
-      if (wordCount < softWords.min) {
-        throw createAppError(
-          'CHAPTER_TOO_SHORT',
-          `Serialized chapters need at least ${softWords.min.toLocaleString()} words ` +
-            `(recommended ${softWords.min.toLocaleString()}–${softWords.max.toLocaleString()}, ` +
-            `hard max ${softWords.hardMax.toLocaleString()}). You have ${wordCount}.`,
-          400,
-        );
-      }
-      if (wordCount > softWords.hardMax) {
-        throw createAppError(
-          'CHAPTER_TOO_LONG',
-          `Serialized chapters cannot exceed ${softWords.hardMax.toLocaleString()} words ` +
-            `(recommended ${softWords.min.toLocaleString()}–${softWords.max.toLocaleString()}). ` +
-            `You have ${wordCount}.`,
-          400,
-        );
-      }
-    }
+    // Chapter length is never a publish barrier — recommended 1,000–1,500 words for serials (guidance only).
 
     if (isMockMode()) {
       const moderation = await moderateContent(content);

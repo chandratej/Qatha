@@ -15,7 +15,7 @@ interface PublishConfirmModalProps {
   sceneCount: number;
   isResubmit?: boolean;
   publishing?: boolean;
-  /** Soft band + hard max for Serialized Story (e.g. 800–1,200 words). */
+  /** Soft recommended word band only (e.g. 1,000–1,500). Never blocks publish. */
   softWordTarget?: { min: number; max: number; hardMax?: number | null } | null;
   /** When set, modal can load/upload the story cover before publish. */
   storyId?: string;
@@ -82,26 +82,22 @@ export function PublishConfirmModal({
 
   if (!open) return null;
 
-  const hardMax = softWordTarget?.hardMax ?? null;
   const inSoftBand =
     softWordTarget != null &&
     wordCount >= softWordTarget.min &&
     wordCount <= softWordTarget.max;
   const underSoftMin = softWordTarget != null && wordCount < softWordTarget.min;
-  const overHard = hardMax != null && wordCount > hardMax;
-  const overSoftOk =
-    softWordTarget != null &&
-    wordCount > softWordTarget.max &&
-    (hardMax == null || wordCount <= hardMax);
+  const overSoft =
+    softWordTarget != null && wordCount > softWordTarget.max;
   let bandLabel = '';
   if (softWordTarget) {
     if (inSoftBand) bandLabel = te ? ' · సిఫార్సు పరిధిలో' : ' · in recommended range';
-    else if (underSoftMin) bandLabel = te ? ' · కనీసం కంటే తక్కువ' : ' · below minimum';
-    else if (overHard) bandLabel = te ? ' · గరిష్టం దాటింది' : ' · over hard max';
-    else if (overSoftOk) bandLabel = te ? ' · సాఫ్ట్ గరిష్టం పైన (సరే)' : ' · above soft max (OK until hard max)';
+    else if (underSoftMin) bandLabel = te ? ' · సిఫార్సు కంటే తక్కువ (ప్రచురించవచ్చు)' : ' · below recommended (still OK)';
+    else if (overSoft) bandLabel = te ? ' · సిఫార్సు కంటే ఎక్కువ (ప్రచురించవచ్చు)' : ' · above recommended (still OK)';
   }
 
-  const canSubmit = !publishing && !coverUploading && !coverLoading && !underSoftMin && !overHard && !needsCover;
+  // Length never blocks publish — only cover/upload/busy state.
+  const canSubmit = !publishing && !coverUploading && !coverLoading && !needsCover;
 
   const handleCoverFile = async (file: File) => {
     if (!storyId) return;
@@ -181,8 +177,9 @@ export function PublishConfirmModal({
                 <>
                   <br />
                   <span className={inSoftBand ? 'katha-publish-confirm__ok' : 'katha-publish-confirm__soft'}>
-                    Soft {softWordTarget.min.toLocaleString()}–{softWordTarget.max.toLocaleString()}
-                    {hardMax != null ? ` · hard max ${hardMax.toLocaleString()}` : ''}
+                    {te
+                      ? `సిఫార్సు ${softWordTarget.min.toLocaleString('te')}–${softWordTarget.max.toLocaleString('te')} పదాలు`
+                      : `Recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()} words`}
                     {bandLabel}
                   </span>
                 </>
@@ -262,18 +259,11 @@ export function PublishConfirmModal({
           </div>
         )}
 
-        {underSoftMin && softWordTarget && (
-          <p className="katha-publish-confirm__warn">
+        {softWordTarget && (underSoftMin || overSoft) && (
+          <p className="katha-publish-confirm__note" role="status">
             {te
-              ? `మరిన్ని పదాలు రాయండి — కనీసం ${softWordTarget.min.toLocaleString()} పదాలు కావాలి.`
-              : `Add more content — need at least ${softWordTarget.min.toLocaleString()} words (recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()}, hard max ${(hardMax ?? 1200).toLocaleString()} words).`}
-          </p>
-        )}
-        {overHard && hardMax != null && (
-          <p className="katha-publish-confirm__warn">
-            {te
-              ? `తగ్గించండి — గరిష్టం ${hardMax.toLocaleString()} పదాలు (మీ వద్ద ${wordCount.toLocaleString()}).`
-              : `Trim this chapter — hard maximum is ${hardMax.toLocaleString()} words (recommended ${softWordTarget!.min.toLocaleString()}–${softWordTarget!.max.toLocaleString()}). You have ${wordCount.toLocaleString()}.`}
+              ? `సిఫార్సు ${softWordTarget.min.toLocaleString('te')}–${softWordTarget.max.toLocaleString('te')} పదాలు — ఏ పొడవు అయినా ప్రచురించవచ్చు.`
+              : `Recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()} words — you can still publish any length.`}
           </p>
         )}
         <p className="katha-publish-confirm__note">

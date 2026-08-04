@@ -14,14 +14,15 @@ interface WordBandBlockModalProps {
   locale?: string;
 }
 
-/** Serialized Story product rule — minimum 800 words (not the legacy 1,500). */
-const DEFAULT_MIN = 800;
-const DEFAULT_MAX = 1200;
-const DEFAULT_HARD = 1200;
+/** Soft recommended band defaults (guidance only — length no longer blocks publish). */
+const DEFAULT_MIN = 1000;
+const DEFAULT_MAX = 1500;
+const DEFAULT_HARD = 1500;
 
 /**
- * Failsafe publish-block dialog. Uses createPortal + fully inline styles
- * so Narrative OS / CSS stacking can never hide it.
+ * @deprecated Chapter length is never a publish barrier.
+ * Kept for call-site compatibility; prefer soft guidance UI instead.
+ * Failsafe dialog uses createPortal + fully inline styles.
  */
 export function WordBandBlockModal({
   open,

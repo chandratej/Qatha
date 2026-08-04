@@ -87,7 +87,8 @@ export const DEFAULT_COMPETITION_RULES_V1: CompetitionRulesDocument = {
     storyStatuses: ['draft', 'ongoing', 'completed'],
     /** Continuous formats (serial / chat / interactive): ≥25 published units. */
     minChapters: 25,
-    minWordsPerChapter: 800,
+    /** Soft guidance only — contests do not hard-block on chapter word count. */
+    minWordsPerChapter: 1000,
     notes: [
       'Original Telugu manuscripts only — no machine-translated submissions.',
       'Serialized / Chat / Interactive Fiction: ≥25 published chapters for contest eligibility (Format Spec v1).',

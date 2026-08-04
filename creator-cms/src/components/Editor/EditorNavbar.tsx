@@ -23,7 +23,7 @@ interface EditorNavbarProps {
   charCount?: number;
   /** @deprecated Character ceiling removed — ignored. */
   charLimit?: number;
-  /** Serialized Story soft band (+ hard max) — never shown for unvalidated formats. */
+  /** Soft recommended word band — guidance only, never blocks publish. */
   softWordTarget?: { min: number; max: number; hardMax?: number | null } | null;
   backTo?: string;
   saving: boolean;
@@ -197,11 +197,9 @@ export function EditorNavbar({
             onClick={onPublish}
             disabled={publishDisabled || publishing}
             title={
-              softWordTarget && wordCount < softWordTarget.min
-                ? `Need at least ${softWordTarget.min.toLocaleString()} words to publish (you have ${wordCount.toLocaleString()})`
-                : softWordTarget?.hardMax != null && wordCount > softWordTarget.hardMax
-                  ? `Over hard max ${softWordTarget.hardMax.toLocaleString()} words — trim before publish`
-                  : `${publishLabel} chapter`
+              softWordTarget
+                ? `${publishLabel} chapter (recommended ${softWordTarget.min.toLocaleString()}–${softWordTarget.max.toLocaleString()} words — any length OK)`
+                : `${publishLabel} chapter`
             }
           >
             {publishing ? (

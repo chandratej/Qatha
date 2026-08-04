@@ -4,32 +4,31 @@
 **Last updated:** 26 July 2026  
 **Source:** Content format specifications (platform guidance)
 
-This is a **craft template**, not a rulebook. Nothing here blocks publish except the technical chapter size ceiling (~50,000 characters) that prevents runaway chapters.
+This is a **craft template**, not a rulebook. **Chapter length never blocks publish** — write as short or long as the story needs. Recommended bands below are guidance only.
 
 ---
 
 ## 1. Serialized Story (primary format)
 
-**Confidence: High** — platform chapter length policy for serials.
+**Confidence: High** — recommended chapter length for serials (not a publish gate).
 
 | Guidance | Value |
 |----------|--------|
-| Soft min (publish floor) | **800 words** |
-| Soft max (recommended upper) | **1,200 words** |
-| Hard max (publish ceiling) | **1,200 words** |
+| Recommended range | **1,000–1,500 words** |
+| Publish floor / ceiling | **None** — any length is allowed |
 | Full arc length | Often **50–200** chapters |
 | Before first launch | **15–20** chapters written if you can (buffer for cadence) |
 | Update cadence | **3–5** chapters/week while active |
-| Character ceiling | **None** — length is word-based only |
+| Character ceiling | **None** |
 
 ### Editorial tips
 
 - End chapters on a cliffhanger or open question when it serves the story.
-- Aim for **800–1,200 words**. Below 800 or above 1,200 **blocks publish**.
+- Aim for **1,000–1,500 words** when it fits the scene — shorter or longer chapters still publish.
 
 ### Cadence
 
-> Target **800–1,200 words** per chapter, updated about **3–5×/week** while the series is active.
+> Target **1,000–1,500 words** per chapter (recommended), updated about **3–5×/week** while the series is active. Publish any length.
 
 ---
 

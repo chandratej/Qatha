@@ -9,7 +9,8 @@ interface SoftWordTargetProps {
 }
 
 /**
- * Serialized Story word band: 800–1,200 words.
+ * Soft chapter-length guidance only (recommended 1,000–1,500 for serials).
+ * Never blocks publish — any length is allowed.
  */
 export function SoftWordTarget({
   wordCount,
@@ -20,9 +21,12 @@ export function SoftWordTarget({
   belowMin = false,
   overHardMax = false,
 }: SoftWordTargetProps) {
+  void hardMax;
+  void overHardMax;
   const te = locale === 'te';
   const inBand = wordCount >= min && wordCount <= max;
-  const overSoft = wordCount > max && (hardMax == null || wordCount <= hardMax);
+  const overSoft = wordCount > max;
+  const underSoft = belowMin || (wordCount > 0 && wordCount < min);
 
   const label = te
     ? `సిఫార్సు: ${min.toLocaleString('te')}–${max.toLocaleString('te')} పదాలు`
@@ -31,40 +35,33 @@ export function SoftWordTarget({
   let status: string;
   if (wordCount === 0) {
     status = te ? 'రాయడం ప్రారంభించండి' : 'Start writing';
-  } else if (overHardMax || (hardMax != null && wordCount > hardMax)) {
+  } else if (underSoft) {
     status = te
-      ? `గరిష్ఠ ${hardMax!.toLocaleString('te')} పదాలు (ప్రస్తుతం ${wordCount})`
-      : `Hard max ${hardMax!.toLocaleString()} words (now ${wordCount})`;
-  } else if (belowMin || wordCount < min) {
-    status = te
-      ? `కనీసం ${min.toLocaleString('te')} పదాలు అవసరం (ప్రస్తుతం ${wordCount})`
-      : `At least ${min.toLocaleString()} words to publish (now ${wordCount})`;
+      ? `సిఫార్సు కంటే తక్కువ (ప్రస్తుతం ${wordCount}) — ప్రచురించవచ్చు`
+      : `Below recommended (now ${wordCount}) — still publishable`;
   } else if (inBand) {
     status = te ? 'సిఫార్సు పరిధిలో' : 'In recommended range';
   } else if (overSoft) {
     status = te
-      ? `సిఫార్సు కంటే ఎక్కువ — ${hardMax ? `గరిష్ఠ ${hardMax.toLocaleString('te')}` : 'సరే'}`
-      : `Above soft max — hard max ${hardMax?.toLocaleString() ?? '—'} words`;
+      ? `సిఫార్సు కంటే ఎక్కువ — ప్రచురించవచ్చు`
+      : 'Above recommended — still publishable';
   } else {
     status = te ? 'మార్గదర్శకం' : 'Guidance';
   }
 
-  const stateClass =
-    overHardMax || (hardMax != null && wordCount > hardMax)
-      ? ' katha-soft-word-target--over-hard'
-      : belowMin || wordCount < min
-        ? ' katha-soft-word-target--below'
-        : inBand
-          ? ' katha-soft-word-target--in-band'
-          : '';
+  const stateClass = inBand
+    ? ' katha-soft-word-target--in-band'
+    : underSoft
+      ? ' katha-soft-word-target--below'
+      : '';
 
   return (
     <span
       className={`katha-soft-word-target${stateClass}`}
       title={
         te
-          ? `సాఫ్ట్ ${min}–${max} · హార్డ్ గరిష్ఠ ${hardMax ?? '—'} పదాలు (characters కాదు)`
-          : `Soft ${min}–${max} · hard max ${hardMax ?? '—'} words (not characters)`
+          ? `సిఫార్సు ${min}–${max} పదాలు · ఏ పొడవు అయినా ప్రచురించవచ్చు`
+          : `Recommended ${min}–${max} words · publish any length`
       }
       role="status"
     >
@@ -72,11 +69,6 @@ export function SoftWordTarget({
         <strong>{wordCount.toLocaleString()}</strong>
         {' · '}
         {label}
-        {hardMax != null && (
-          <span className="katha-soft-word-target__hard">
-            {te ? ` · గరిష్ఠ ${hardMax.toLocaleString('te')}` : ` · hard max ${hardMax.toLocaleString()}`}
-          </span>
-        )}
         <span className="katha-soft-word-target__hint"> · {status}</span>
       </span>
     </span>

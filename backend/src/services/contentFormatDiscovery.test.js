@@ -20,14 +20,14 @@ describe('contentFormatDiscovery', () => {
     );
   });
 
-  it('serialized word band is 800–1200 words', () => {
-    assert.equal(SERIALIZED_SOFT_WORD_MIN, 800);
-    assert.equal(SERIALIZED_SOFT_WORD_MAX, 1200);
-    assert.equal(SERIALIZED_HARD_WORD_MAX, 1200);
+  it('serialized recommended band is 1000–1500 with no hard max', () => {
+    assert.equal(SERIALIZED_SOFT_WORD_MIN, 1000);
+    assert.equal(SERIALIZED_SOFT_WORD_MAX, 1500);
+    assert.equal(SERIALIZED_HARD_WORD_MAX, null);
     assert.deepEqual(softWordTargetForContentType('serialized_story'), {
-      min: 800,
-      max: 1200,
-      hardMax: 1200,
+      min: 1000,
+      max: 1500,
+      hardMax: null,
     });
     assert.equal(softWordTargetForContentType('short_story'), null);
   });

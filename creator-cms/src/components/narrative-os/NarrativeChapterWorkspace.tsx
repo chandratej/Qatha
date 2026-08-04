@@ -83,7 +83,7 @@ export interface NarrativeChapterWorkspaceProps {
   onOpenFind: () => void;
   authorComments: StoryAuthorComment[];
   activeAuthorCommentId: string | null;
-  flushRef: React.MutableRefObject<(() => void) | null>;
+  flushRef: React.MutableRefObject<(() => { sceneId: string; html: string } | null) | null>;
   formatActionRef: React.MutableRefObject<{
     bold: () => void;
     italic: () => void;
@@ -119,7 +119,7 @@ export interface NarrativeChapterWorkspaceProps {
   /** Story-level content type — format is locked in MVP1. */
   storyContentType?: string | null;
   formatLocked?: boolean;
-  /** Hard publish word band (Serialized Story). Null = no hard gate. */
+  /** Soft recommended word band (e.g. 1,000–1,500). Never a publish gate. */
   softWordTarget?: { min: number; max: number; hardMax?: number | null } | null;
 }
 
@@ -432,7 +432,8 @@ export function NarrativeChapterWorkspace({
           scheduleSuccess={scheduleSuccess}
           onBackToWrite={backToWrite}
           minWords={softWordTarget?.min ?? null}
-          hardMaxWords={softWordTarget?.hardMax ?? null}
+          maxWords={softWordTarget?.max ?? null}
+          hardMaxWords={null}
         />
       )}
     >

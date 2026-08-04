@@ -45,7 +45,7 @@ export interface NarrativeManuscriptEditorProps {
   updateSceneContent: (id: string, content: string) => void;
   readOnly?: boolean;
   phoneticLive: boolean;
-  flushRef?: React.MutableRefObject<(() => void) | null>;
+  flushRef?: React.MutableRefObject<(() => { sceneId: string; html: string } | null) | null>;
   formatActionRef?: React.MutableRefObject<{
     bold: () => void;
     italic: () => void;
@@ -190,16 +190,18 @@ export function NarrativeManuscriptEditor({
     else setShowSuggestions(false);
   }, [updateSceneContent, showPhoneticSuggestions]);
 
-  const flushActiveScene = useCallback(() => {
+  const flushActiveScene = useCallback((): { sceneId: string; html: string } | null => {
     const editor = getEditor();
     const sceneId = activeSceneIdRef.current;
-    if (!editor || !sceneId) return;
+    if (!editor || !sceneId) return null;
     let trailing = '';
     if (phoneticLiveRef.current && !composingRef.current) {
       const result = applyLivePhoneticViaQuill(editor, { composing: composingRef.current });
       trailing = result.trailingWord;
     }
-    saveSceneHtml(sceneId, quillRootHtml(editor), trailing);
+    const html = quillRootHtml(editor);
+    saveSceneHtml(sceneId, html, trailing);
+    return { sceneId, html };
   }, [saveSceneHtml]);
 
   useEffect(() => {

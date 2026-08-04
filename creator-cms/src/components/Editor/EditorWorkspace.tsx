@@ -55,7 +55,8 @@ interface EditorWorkspaceProps {
   onNextScene?: () => void;
   containerRef: React.RefObject<HTMLDivElement | null>;
   scrollRef?: React.RefObject<HTMLDivElement | null>;
-  flushRef?: React.MutableRefObject<(() => void) | null>;
+  /** Flush active scene into React state; returns live HTML so publish does not race setState. */
+  flushRef?: React.MutableRefObject<(() => { sceneId: string; html: string } | null) | null>;
   selectionCaptureRef?: React.MutableRefObject<(() => EditorSelectionAnchor | null) | null>;
   storyId?: string;
   readOnly?: boolean;
@@ -262,16 +263,18 @@ export function EditorWorkspace({
     }
   }, [updateSceneContent, showPhoneticSuggestions]);
 
-  const flushActiveScene = useCallback(() => {
+  const flushActiveScene = useCallback((): { sceneId: string; html: string } | null => {
     const editor = getEditor();
     const sceneId = activeSceneIdRef.current;
-    if (!editor || !sceneId) return;
+    if (!editor || !sceneId) return null;
     let trailing = '';
     if (phoneticLiveRef.current && !composingRef.current) {
       const result = applyLivePhoneticViaQuill(editor, { composing: false });
       trailing = result.trailingWord;
     }
-    saveSceneHtml(sceneId, quillRootHtml(editor), trailing);
+    const html = quillRootHtml(editor);
+    saveSceneHtml(sceneId, html, trailing);
+    return { sceneId, html };
   }, [saveSceneHtml]);
 
   useEffect(() => {

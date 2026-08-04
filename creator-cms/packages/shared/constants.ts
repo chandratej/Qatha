@@ -278,7 +278,7 @@ export const PAYWALL = {
   freeChapters: 3,
   otpGateChapter: 4,
   subscriptionGateChapter: 6,
-  /** @deprecated No character ceiling — use serialized word band (800–1,200 words). */
+  /** @deprecated No character ceiling — use soft word guidance (1,000–1,500 recommended). */
   maxChapterChars: Number.MAX_SAFE_INTEGER,
   maxStoryTitleChars: 100,
   maxStoryDescChars: 300,
