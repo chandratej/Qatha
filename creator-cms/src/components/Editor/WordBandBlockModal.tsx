@@ -14,15 +14,14 @@ interface WordBandBlockModalProps {
   locale?: string;
 }
 
-/** Soft recommended band defaults (guidance only — length no longer blocks publish). */
+/** Soft recommended band defaults (guidance only — length never blocks publish). */
 const DEFAULT_MIN = 1000;
 const DEFAULT_MAX = 1500;
-const DEFAULT_HARD = 1500;
 
 /**
  * @deprecated Chapter length is never a publish barrier.
- * Kept for call-site compatibility; prefer soft guidance UI instead.
- * Failsafe dialog uses createPortal + fully inline styles.
+ * Kept for call-site compatibility only. Prefer soft guidance UI.
+ * Do not wire this into publish — production no longer hard-blocks on length.
  */
 export function WordBandBlockModal({
   open,
@@ -30,10 +29,12 @@ export function WordBandBlockModal({
   wordCount,
   min = DEFAULT_MIN,
   max = DEFAULT_MAX,
-  hardMax = DEFAULT_HARD,
+  hardMax,
   reason = 'below_min',
   locale = 'en',
 }: WordBandBlockModalProps) {
+  // No hard max by product rule — only surface a soft recommended upper if a caller passes one.
+  const effectiveHardMax = hardMax ?? null;
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -52,23 +53,28 @@ export function WordBandBlockModal({
 
   const te = locale === 'te';
   const below = reason === 'below_min';
-  const need = below ? Math.max(0, min - wordCount) : Math.max(0, wordCount - hardMax);
+  const need = below
+    ? Math.max(0, min - wordCount)
+    : effectiveHardMax != null
+      ? Math.max(0, wordCount - effectiveHardMax)
+      : Math.max(0, wordCount - max);
 
+  // Soft guidance only — never frame length as a hard publish block.
   const title = below
     ? te
-      ? 'ప్రచురణ బ్లాక్ అయింది — పదాలు సరిపోలేదు'
-      : 'Publishing blocked — not enough words'
+      ? 'సిఫార్సు కంటే తక్కువ పదాలు'
+      : 'Below recommended word count'
     : te
-      ? 'ప్రచురణ బ్లాక్ అయింది — చాలా పొడవు'
-      : 'Publishing blocked — chapter too long';
+      ? 'సిఫార్సు కంటే ఎక్కువ పదాలు'
+      : 'Above recommended word count';
 
   const lead = below
     ? te
-      ? `కనీసం ${min.toLocaleString('te')} పదాలు అవసరం. మీకు ${wordCount.toLocaleString('te')} పదాలు ఉన్నాయి. ఇంకా ~${need.toLocaleString('te')} పదాలు రాయండి. డ్రాఫ్ట్ సేవ్ అయింది — ప్రచురణ జరగలేదు.`
-      : `You need at least ${min.toLocaleString()} words to publish. You have ${wordCount.toLocaleString()} words — write about ${need.toLocaleString()} more. Your draft is saved; publishing did not complete.`
+      ? `సిఫార్సు కనీసం ${min.toLocaleString('te')} పదాలు. మీకు ${wordCount.toLocaleString('te')} ఉన్నాయి (~${need.toLocaleString('te')} తక్కువ). ఏ పొడవు అయినా ప్రచురించవచ్చు.`
+      : `Recommended at least ${min.toLocaleString()} words. You have ${wordCount.toLocaleString()} (~${need.toLocaleString()} short). You can still publish any length.`
     : te
-      ? `గరిష్ఠ ${hardMax.toLocaleString('te')} పదాలు. మీకు ${wordCount.toLocaleString('te')} ఉన్నాయి — ~${need.toLocaleString('te')} తగ్గించండి.`
-      : `Hard maximum is ${hardMax.toLocaleString()} words. You have ${wordCount.toLocaleString()} — trim about ${need.toLocaleString()} words.`;
+      ? `సిఫార్సు గరిష్ఠం ${max.toLocaleString('te')} పదాలు. మీకు ${wordCount.toLocaleString('te')} ఉన్నాయి. ఏ పొడవు అయినా ప్రచురించవచ్చు.`
+      : `Recommended up to ${max.toLocaleString()} words. You have ${wordCount.toLocaleString()}. You can still publish any length.`;
 
   const backdrop: React.CSSProperties = {
     position: 'fixed',
@@ -163,18 +169,18 @@ export function WordBandBlockModal({
           </div>
           <div>
             <div style={{ opacity: 0.7, fontSize: 11, textTransform: 'uppercase' }}>
-              {te ? 'గరిష్ఠం' : 'Hard max'}
+              {te ? 'గరిష్ఠం (సూచన)' : 'Soft max'}
             </div>
-            <div style={{ fontWeight: 600 }}>{hardMax.toLocaleString()}</div>
+            <div style={{ fontWeight: 600 }}>{max.toLocaleString()}</div>
           </div>
         </div>
         <p style={{ margin: '14px 0 0', fontSize: 13, lineHeight: 1.45, opacity: 0.8 }}>
           {te
-            ? 'ఇది characters కాదు — పదాలు. అవసరమైన పదాలు రాసిన తర్వాత Publish మళ్ళీ నొక్కండి.'
-            : 'This is a word count (not characters). Click Publish again after you meet the minimum.'}
+            ? 'ఇది characters కాదు — పదాలు. పొడవు ప్రచురణను బ్లాక్ చేయదు — కావాలంటే Publish నొక్కండి.'
+            : 'This is a word count (not characters). Length does not block publish — you can publish anytime.'}
         </p>
         <button type="button" style={btn} onClick={onClose} autoFocus>
-          {te ? 'సరే — సవరించడం కొనసాగించు' : 'OK — keep editing'}
+          {te ? 'సరే — కొనసాగించు' : 'OK — continue'}
         </button>
       </div>
     </div>,
@@ -182,32 +188,30 @@ export function WordBandBlockModal({
   );
 }
 
-/** Imperative failsafe when React state alone is unreliable. */
+/** @deprecated Length never blocks publish — soft guidance alert only. */
 export function showWordBandBlockedAlert(opts: {
   wordCount: number;
   min?: number;
-  hardMax?: number;
+  hardMax?: number | null;
   reason?: WordBandBlockReason;
 }): void {
   const min = opts.min ?? DEFAULT_MIN;
-  const hardMax = opts.hardMax ?? DEFAULT_HARD;
   const count = opts.wordCount;
   if (opts.reason === 'over_hard_max') {
     window.alert(
-      `Publishing blocked — chapter too long.\n\n` +
-        `Hard maximum: ${hardMax.toLocaleString()} words\n` +
+      `Above recommended range (soft guidance only).\n\n` +
+        `Recommended up to: ${DEFAULT_MAX.toLocaleString()} words\n` +
         `Your words: ${count.toLocaleString()}\n\n` +
-        `Trim the chapter, then publish again. Your draft is saved.`,
+        `You can still publish any length.`,
     );
     return;
   }
   const need = Math.max(0, min - count);
   window.alert(
-    `Publishing blocked — not enough words.\n\n` +
-      `Minimum to publish: ${min.toLocaleString()} words\n` +
+    `Below recommended range (soft guidance only).\n\n` +
       `Recommended: ${min.toLocaleString()}–${DEFAULT_MAX.toLocaleString()} words\n` +
       `Your words: ${count.toLocaleString()}\n` +
-      `Still need about: ${need.toLocaleString()} words\n\n` +
-      `Your draft is saved. Write more, then click Publish again.`,
+      `About ${need.toLocaleString()} words short of the soft minimum\n\n` +
+      `You can still publish any length.`,
   );
 }

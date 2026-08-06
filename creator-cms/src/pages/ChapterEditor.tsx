@@ -781,7 +781,7 @@ export function ChapterEditor() {
 
   const readMins = wordCount === 0 ? 0 : Math.max(1, Math.round(wordCount / 200));
   const workspaceLayout = layoutForWorkspace(authoringWorkspace);
-  /** Character ceiling removed — only word band blocks publish for serials. */
+  /** No character or word ceiling — chapter length never blocks publish. */
   const overLimit = false;
   const hasContent = wordCount > 0;
 
