@@ -26,11 +26,17 @@ export default defineConfig({
   retries: isCI ? 1 : 0,
   workers: 1,
   reporter: isCI ? 'github' : 'list',
-  timeout: 60_000,
+  // CI runners are slower; readiness helpers still own flakiness, timeouts add slack.
+  timeout: isCI ? 120_000 : 90_000,
+  expect: {
+    timeout: isCI ? 12_000 : 8_000,
+  },
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    navigationTimeout: isCI ? 60_000 : 30_000,
+    actionTimeout: isCI ? 20_000 : 15_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },

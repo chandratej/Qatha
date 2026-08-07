@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { loginAsMockUser } from './helpers/studio';
+import { loginAsMockUser, waitForReviewWorkspace } from './helpers/studio';
 
 /**
  * WCAG 2.2 AA CI gate — LRC-18-D5 / LRC-20-D7
@@ -151,6 +151,7 @@ test.describe('Review Workspace accessibility', () => {
 
   test('Review Studio has no serious or critical axe violations', async ({ page }) => {
     await page.goto(`/reviewers/assignments/${ASSIGNMENT_ID}`);
+    await waitForReviewWorkspace(page);
     await expect(page.locator('.rw-shell')).toBeVisible({ timeout: 25_000 });
     await expect(page.getByRole('main')).toBeVisible({ timeout: 25_000 });
     await expect(page.getByText(/Manuscript #A11Y|Chapter 1/i).first()).toBeVisible({ timeout: 15_000 });
@@ -169,6 +170,7 @@ test.describe('Review Workspace accessibility', () => {
 
   test('skip link targets main reading landmark', async ({ page }) => {
     await page.goto(`/reviewers/assignments/${ASSIGNMENT_ID}`);
+    await waitForReviewWorkspace(page);
     await expect(page.locator('#rw-main-reading')).toBeAttached({ timeout: 20_000 });
     const skip = page.getByRole('link', { name: /Skip to manuscript/i });
     await skip.focus();

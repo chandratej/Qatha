@@ -132,31 +132,83 @@ export async function enterStudioViaUi(page: Page, email = 'writer@katha.test') 
 export async function openDemoChapter(page: Page, chapterNum = 1) {
   await enterStudio(page);
   await page.goto(`/stories/demo-valley-te/chapters/${chapterNum}`);
-  await expect(page.locator('.narrative-os-app')).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator('.narrative-stage-shell .canvas')).toBeVisible();
+  await waitForManuscriptEditor(page);
 }
 
-/** Wait until the Quill manuscript is interactive (not the loading skeleton). */
-export async function waitForManuscriptEditor(page: Page): Promise<Locator> {
-  const editor = page.locator('.narrative-os-app .ql-editor').first();
-  await expect(editor).toBeVisible({ timeout: 20_000 });
-  await expect(editor).toBeEditable();
+/**
+ * Wait until Narrative OS shell + Quill manuscript are interactive.
+ * Call after navigating to a chapter route (not Review Workspace — that uses #rw-main-reading).
+ */
+export async function waitForManuscriptEditor(
+  page: Page,
+  timeout = 25_000,
+): Promise<Locator> {
+  const editorSelector = '.narrative-os-app .ql-editor';
+
+  // App shell must mount before the editor attaches
+  await page.locator('.narrative-os-app').waitFor({ state: 'visible', timeout });
+
+  // Optional canvas chrome (some builds omit stage shell briefly)
+  const canvas = page.locator('.narrative-stage-shell .canvas, .narrative-os-app .ql-container');
+  await canvas.first().waitFor({ state: 'attached', timeout }).catch(() => {});
+
+  // Vite HMR / long-polls often never go fully idle — best-effort only
+  await page.waitForLoadState('networkidle', { timeout: Math.min(timeout, 8_000) }).catch(() => {});
+
+  await page.waitForSelector(editorSelector, { state: 'attached', timeout });
+
+  const editor = page.locator(editorSelector).first();
+  await expect(editor).toBeVisible({ timeout });
+  await expect(editor).toBeEditable({ timeout });
+
+  // contentEditable must be live (not a loading skeleton)
+  await page.waitForFunction(
+    (sel) => {
+      const el = document.querySelector(sel) as HTMLElement | null;
+      return Boolean(el && (el.isContentEditable || el.getAttribute('contenteditable') === 'true'));
+    },
+    editorSelector,
+    { timeout },
+  );
+
   // Arrival overlay must not steal focus/clicks
-  await expect(page.locator('.narrative-os-app .arrival:not(.hide)')).toHaveCount(0);
+  await expect(page.locator('.narrative-os-app .arrival:not(.hide)')).toHaveCount(0, {
+    timeout,
+  });
+
   return editor;
+}
+
+/**
+ * Wait for Review Studio shell readiness (assignment workspace, not chapter editor).
+ */
+export async function waitForReviewWorkspace(page: Page, timeout = 25_000) {
+  await page.locator('#rw-main-reading').waitFor({ state: 'attached', timeout }).catch(async () => {
+    await page.getByRole('main').waitFor({ state: 'visible', timeout });
+  });
+  await page.waitForLoadState('networkidle', { timeout: Math.min(timeout, 8_000) }).catch(() => {});
+  await expect(page.locator('#rw-main-reading, .rw-shell').first()).toBeVisible({ timeout });
 }
 
 /**
  * Type into Quill without Ctrl+A / select-all.
  * Chrome-automation Ctrl+A is unreliable against this editor and was a major
  * source of false "keystroke loss" reports (prepend vs replace confusion).
+ *
+ * By default, confirms the typed string landed only when it has no A–Z letters
+ * (digit/symbol markers survive the Telugu phonetic engine). Pass
+ * `confirm: true` to always poll, or `confirm: false` for phonetic roman input.
  */
 export async function typeIntoManuscript(
   editor: Locator,
   text: string,
-  opts?: { clearFirst?: boolean },
+  opts?: { clearFirst?: boolean; confirm?: boolean; timeout?: number },
 ) {
+  const timeout = opts?.timeout ?? 12_000;
+  await editor.waitFor({ state: 'visible', timeout });
   await editor.click();
+  await editor.focus();
+
   if (opts?.clearFirst) {
     // Prefer Quill's own empty state over select-all
     await editor.evaluate((el) => {
@@ -170,5 +222,20 @@ export async function typeIntoManuscript(
       sel?.addRange(range);
     });
   }
-  await editor.pressSequentially(text, { delay: 15 });
+
+  // Small per-key delay so Quill / phonetic handlers do not drop strokes in CI
+  await editor.pressSequentially(text, { delay: 30 });
+
+  const shouldConfirm =
+    opts?.confirm ?? !/[a-zA-Z]/.test(text);
+
+  if (!shouldConfirm) return;
+
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const content = await editor.innerText();
+    if (content.includes(text)) return;
+    await editor.page().waitForTimeout(100);
+  }
+  throw new Error(`Timed out waiting for manuscript editor to contain: ${JSON.stringify(text)}`);
 }

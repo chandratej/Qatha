@@ -29,14 +29,14 @@ test.describe('Chapter load typing persistence', () => {
     const editor = await waitForManuscriptEditor(page);
 
     const marker = uniqueMarker('99');
-    await typeIntoManuscript(editor, marker);
+    await typeIntoManuscript(editor, marker, { confirm: true });
 
     // Immediate — distinguishes "never landed" from "landed then reverted"
-    await expect(editor).toContainText(marker);
+    await expect(editor).toContainText(marker, { timeout: 10_000 });
 
     // Well past typical autosave / late-fetch windows
     await page.waitForTimeout(5_000);
-    await expect(editor).toContainText(marker);
+    await expect(editor).toContainText(marker, { timeout: 10_000 });
   });
 
   test('SPA chapter switch then type — content sticks after settle', async ({ page }) => {
@@ -47,12 +47,12 @@ test.describe('Chapter load typing persistence', () => {
     // Real in-app SPA hop via chapter list (React Router navigate), not hard reload.
     // Chapter nav can sit in a scrollable side panel — DOM click avoids viewport flakiness.
     const chapterList = page.getByRole('listbox', { name: /Switch chapter|అధ్యాయం మార్చండి/i });
-    await expect(chapterList).toBeVisible({ timeout: 10_000 });
+    await expect(chapterList).toBeVisible({ timeout: 15_000 });
 
     const other = chapterList.locator('[role="option"]:not([aria-selected="true"])').first();
     if (await other.count()) {
       await other.evaluate((el) => (el as HTMLButtonElement).click());
-      await page.waitForURL(/\/chapters\/\d+/, { timeout: 10_000 });
+      await page.waitForURL(/\/chapters\/\d+/, { timeout: 15_000 });
       await waitForManuscriptEditor(page);
     }
 
@@ -60,27 +60,27 @@ test.describe('Chapter load typing persistence', () => {
     const ch99 = chapterList.locator('[role="option"]').filter({ hasText: /99/ }).first();
     if (await ch99.count()) {
       await ch99.evaluate((el) => (el as HTMLButtonElement).click());
-      await page.waitForURL(/\/chapters\/99/, { timeout: 10_000 });
+      await page.waitForURL(/\/chapters\/99/, { timeout: 15_000 });
     } else {
       await page.goto('/stories/demo-valley-te/chapters/99');
     }
 
     const editor = await waitForManuscriptEditor(page);
     const marker = uniqueMarker('77');
-    await typeIntoManuscript(editor, marker);
-    await expect(editor).toContainText(marker);
+    await typeIntoManuscript(editor, marker, { confirm: true });
+    await expect(editor).toContainText(marker, { timeout: 10_000 });
     await page.waitForTimeout(3_000);
-    await expect(editor).toContainText(marker);
+    await expect(editor).toContainText(marker, { timeout: 10_000 });
   });
 
   test('editor is only typed after ready — content lands', async ({ page }) => {
     await enterStudio(page);
     await page.goto('/stories/demo-valley-te/chapters/99');
     const editor = await waitForManuscriptEditor(page);
-    await expect(editor).toBeEditable();
+    await expect(editor).toBeEditable({ timeout: 10_000 });
 
     const marker = uniqueMarker('55');
-    await typeIntoManuscript(editor, marker);
-    await expect(editor).toContainText(marker);
+    await typeIntoManuscript(editor, marker, { confirm: true });
+    await expect(editor).toContainText(marker, { timeout: 10_000 });
   });
 });

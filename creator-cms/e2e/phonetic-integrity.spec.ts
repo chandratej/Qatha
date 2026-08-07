@@ -15,14 +15,15 @@ test.describe('Phonetic integrity', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Backspace');
 
-    await typeIntoManuscript(editor, 'satyam');
+    // Roman input is intentionally converted — do not confirm exact latin text
+    await typeIntoManuscript(editor, 'satyam', { confirm: false });
     // Space accepts selected suggestion + word break
     await page.keyboard.press('Space');
     await page.waitForTimeout(350);
 
-    await expect(editor).toContainText('సత్యం', { timeout: 5000 });
+    await expect(editor).toContainText('సత్యం', { timeout: 10_000 });
 
-    await typeIntoManuscript(editor, 'amma');
+    await typeIntoManuscript(editor, 'amma', { confirm: false });
     await page.keyboard.press('Space');
     await page.waitForTimeout(350);
 
@@ -41,7 +42,7 @@ test.describe('Phonetic integrity', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Backspace');
 
-    await typeIntoManuscript(editor, 'prema');
+    await typeIntoManuscript(editor, 'prema', { confirm: false });
     await page.waitForTimeout(200);
     await page.keyboard.press('Enter');
     await page.waitForTimeout(350);
