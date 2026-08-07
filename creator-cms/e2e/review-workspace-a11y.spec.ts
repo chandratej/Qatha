@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { loginAsMockUser } from './helpers/studio';
 
 /**
  * WCAG 2.2 AA CI gate — LRC-18-D5 / LRC-20-D7
@@ -8,20 +9,6 @@ import AxeBuilder from '@axe-core/playwright';
 
 const ASSIGNMENT_ID = 'asgn-a11y-1';
 const REQUEST_ID = 'pr-a11y-1';
-
-async function loginMock(page: Page) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: /Continue with email/i }).click();
-  await page.getByLabel(/Email address/i).fill('a11y.reviewer@katha.test');
-  await page.getByRole('button', { name: /Send verification code/i }).click();
-  await page.getByLabel(/6-digit code/i).fill('123456');
-  await page.getByRole('button', { name: /Enter your studio/i }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
-  await page.evaluate(() => {
-    localStorage.setItem('katha_onboarding_complete', 'true');
-    localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
-  });
-}
 
 async function mockWorkspaceApi(page: Page) {
   await page.route('**/api/platform/**', async (route) => {
@@ -147,15 +134,19 @@ async function mockWorkspaceApi(page: Page) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notifications: [] }) });
     }
 
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    // Do not stub unknown platform endpoints with { ok: true } — that can break auth / health shapes.
+    return route.continue();
   });
 }
 
 test.describe('Review Workspace accessibility', () => {
   test.beforeEach(async ({ page }) => {
     await mockWorkspaceApi(page);
-    await loginMock(page);
-    await page.evaluate(() => localStorage.setItem('katha_linked_reviewer_slot', 'slot-1'));
+    await loginAsMockUser(page, {
+      email: 'a11y.reviewer@katha.test',
+      displayName: 'A11Y Reviewer',
+      navigate: false,
+    });
   });
 
   test('Review Studio has no serious or critical axe violations', async ({ page }) => {

@@ -15,8 +15,11 @@ export const FEATURE_FLAGS = {
   aiTranslation: false,
   /** Local planning notes panels (author-written only; no generative). */
   planningNotes: true,
-  /** Marketplace / reviewer pool surfaces — off until schema + staffing ready (P1-21). */
-  marketplace: false,
+  /**
+   * Marketplace / reviewer pool surfaces — off until schema + staffing ready (P1-21).
+   * E2E (perf / strict platform) can re-enable via VITE_FEATURE_MARKETPLACE=true.
+   */
+  marketplace: import.meta.env.VITE_FEATURE_MARKETPLACE === 'true',
   /** Audio books — not in MVP1. */
   audioBooks: false,
   /** Advanced analytics. */
@@ -27,8 +30,11 @@ export const FEATURE_FLAGS = {
   publishSchedule: true,
   /** Narrative OS editor (false forces legacy when VITE_LEGACY_EDITOR=true). */
   narrativeOs: import.meta.env.VITE_LEGACY_EDITOR !== 'true',
-  /** Contests / events — off for launch until fully staffed (P1-21). */
-  events: false,
+  /**
+   * Contests / events — off for launch until fully staffed (P1-21).
+   * E2E (events-strict) can re-enable via VITE_FEATURE_EVENTS=true.
+   */
+  events: import.meta.env.VITE_FEATURE_EVENTS === 'true',
   /** Magazine edition placeholder — hide from nav (P1-25). */
   magazine: false,
   /**

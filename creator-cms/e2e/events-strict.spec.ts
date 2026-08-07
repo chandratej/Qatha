@@ -1,23 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
+import { loginAsMockUser } from './helpers/studio';
 
 /**
  * ARC-01 events strict path — platform API is system of record for registrations.
  * Run: npm run test:e2e:events-strict
  */
-
-async function loginMock(page: Page) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: /Continue with email/i }).click();
-  await page.getByLabel(/Email address/i).fill('e2e.events@katha.test');
-  await page.getByRole('button', { name: /Send verification code/i }).click();
-  await page.getByLabel(/6-digit code/i).fill('123456');
-  await page.getByRole('button', { name: /Enter your studio/i }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
-  await page.evaluate(() => {
-    localStorage.setItem('katha_onboarding_complete', 'true');
-    localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
-  });
-}
 
 test.describe('Events strict platform path', () => {
   test.beforeEach(async ({ page }) => {
@@ -110,10 +97,15 @@ test.describe('Events strict platform path', () => {
         });
       }
 
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      // Explicit stubs above; do not invent shapes for unmocked platform paths.
+      return route.continue();
     });
 
-    await loginMock(page);
+    await loginAsMockUser(page, {
+      email: 'e2e.events@katha.test',
+      displayName: 'Events E2E',
+      navigate: true,
+    });
   });
 
   test('register via event detail surfaces contest in Your contests', async ({ page }) => {

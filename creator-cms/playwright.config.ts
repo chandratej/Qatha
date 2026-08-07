@@ -10,14 +10,14 @@ import { defineConfig, devices } from '@playwright/test';
  * CI installs chromium+firefox+webkit via --with-deps.
  */
 const isCI = !!process.env.CI;
+const argvJoined = process.argv.join(' ');
 const strictPlatform =
   process.env.E2E_STRICT_PLATFORM === 'true'
-  || process.argv.some((arg) =>
-    arg.includes('reviewer-pool-strict')
-    || arg.includes('events-strict')
-    || arg.includes('review-workspace-a11y')
-    || arg.includes('review-workspace-perf'),
-  );
+  || /reviewer-pool-strict|events-strict|review-workspace-a11y|review-workspace-perf/.test(argvJoined);
+const enableEvents = process.env.VITE_FEATURE_EVENTS === 'true'
+  || /events-strict/.test(argvJoined);
+const enableMarketplace = process.env.VITE_FEATURE_MARKETPLACE === 'true'
+  || strictPlatform;
 
 export default defineConfig({
   testDir: './e2e',
@@ -46,6 +46,9 @@ export default defineConfig({
       ...process.env,
       VITE_MOCK_MODE: 'true',
       VITE_USE_PLATFORM_API: strictPlatform ? 'true' : 'false',
+      // Product-gated surfaces (P1-21) re-enabled only for the e2e suites that need them.
+      VITE_FEATURE_MARKETPLACE: enableMarketplace ? 'true' : 'false',
+      VITE_FEATURE_EVENTS: enableEvents ? 'true' : 'false',
       VITE_API_URL: process.env.VITE_API_URL || 'http://127.0.0.1:3001/api',
       VITE_STUDIO_LABS: 'false',
     },

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { loginAsMockUser } from './helpers/studio';
 
 /**
  * Performance CI gate — LRC-20-D8
@@ -9,20 +10,6 @@ const ASSIGNMENT_ID = 'asgn-perf-1';
 const REQUEST_ID = 'pr-perf-1';
 const WORKSPACE_BUDGET_MS = 8000;
 const DASHBOARD_BUDGET_MS = 5000;
-
-async function loginMock(page: Page) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: /Continue with email/i }).click();
-  await page.getByLabel(/Email address/i).fill('perf.reviewer@katha.test');
-  await page.getByRole('button', { name: /Send verification code/i }).click();
-  await page.getByLabel(/6-digit code/i).fill('123456');
-  await page.getByRole('button', { name: /Enter your studio/i }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
-  await page.evaluate(() => {
-    localStorage.setItem('katha_onboarding_complete', 'true');
-    localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
-  });
-}
 
 async function mockWorkspaceApi(page: Page) {
   await page.route('**/api/platform/**', async (route) => {
@@ -192,15 +179,19 @@ async function mockWorkspaceApi(page: Page) {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notifications: [] }) });
     }
 
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+    // Do not stub unknown platform endpoints with { ok: true } — that can break auth / health shapes.
+    return route.continue();
   });
 }
 
 test.describe('Review Workspace performance', () => {
   test.beforeEach(async ({ page }) => {
     await mockWorkspaceApi(page);
-    await loginMock(page);
-    await page.evaluate(() => localStorage.setItem('katha_linked_reviewer_slot', 'slot-1'));
+    await loginAsMockUser(page, {
+      email: 'perf.reviewer@katha.test',
+      displayName: 'Perf Reviewer',
+      navigate: false,
+    });
   });
 
   test('Review Studio shell loads within performance budget', async ({ page }) => {
@@ -214,7 +205,8 @@ test.describe('Review Workspace performance', () => {
   test('Reviewer dashboard loads within performance budget', async ({ page }) => {
     const start = Date.now();
     await page.goto('/earn/reviews');
-    await expect(page.getByRole('region', { name: /Reviewer dashboard/i })).toBeVisible({ timeout: DASHBOARD_BUDGET_MS });
+    // ReviewerDashboard section is labelled by council level + RQI (not a fixed "Reviewer dashboard" string)
+    await expect(page.locator('section.rpv2-dashboard')).toBeVisible({ timeout: DASHBOARD_BUDGET_MS });
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(DASHBOARD_BUDGET_MS);
   });

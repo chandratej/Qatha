@@ -1,24 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
+import { loginAsMockUser } from './helpers/studio';
 
 /**
  * ARC-01 strict-mode golden path — platform API is system of record.
  * Run: npm run test:e2e:strict
  * Engineering Council: route-mocked /api/platform proves UI wiring without localStorage SoT.
  */
-
-async function loginMock(page: Page) {
-  await page.goto('/login');
-  await page.getByRole('button', { name: /Continue with email/i }).click();
-  await page.getByLabel(/Email address/i).fill('e2e.strict@katha.test');
-  await page.getByRole('button', { name: /Send verification code/i }).click();
-  await page.getByLabel(/6-digit code/i).fill('123456');
-  await page.getByRole('button', { name: /Enter your studio/i }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
-  await page.evaluate(() => {
-    localStorage.setItem('katha_onboarding_complete', 'true');
-    localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
-  });
-}
 
 async function promoteToAdmin(page: Page) {
   await page.evaluate(() => {
@@ -194,10 +181,15 @@ test.describe('Reviewer Pool strict platform path', () => {
         });
       }
 
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      // Explicit stubs above; do not invent shapes for unmocked platform paths.
+      return route.continue();
     });
 
-    await loginMock(page);
+    await loginAsMockUser(page, {
+      email: 'e2e.strict@katha.test',
+      displayName: 'Strict E2E',
+      navigate: true,
+    });
   });
 
   test('moderator approve surfaces in-app notification', async ({ page }) => {

@@ -1,22 +1,131 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
-/** Stable English locale + onboarding bypass for Creator Studio E2E. */
+export type MockLoginOptions = {
+  email?: string;
+  displayName?: string;
+  /** Must match the userId segment of mock-token-${userId}-${issuedAt}. */
+  userId?: string;
+  role?: string;
+  reviewerSlot?: string;
+  /**
+   * When true (default), navigate after seeding so AuthContext hydrates and
+   * localStorage is on the app origin. Set false when only addInitScript is needed
+   * before a later page.goto in the same test.
+   */
+  navigate?: boolean;
+  /** Path used when navigate is true. Default `/`. */
+  path?: string;
+};
+
+/**
+ * Programmatic mock auth for E2E — bypasses flaky UI OTP login.
+ *
+ * Seeds the real AuthContext storage shape (`katha_creator_auth` +
+ * `mock-token-${userId}-${issuedAt}`) via addInitScript so the first app
+ * navigation already hydrates as authenticated (VITE_MOCK_MODE=true).
+ */
+export async function loginAsMockUser(page: Page, opts: MockLoginOptions = {}) {
+  const userId = opts.userId ?? 'demo-creator-001';
+  const email = opts.email ?? 'writer@katha.test';
+  const displayName = opts.displayName ?? (email.split('@')[0] || 'E2E Creator');
+  const role = opts.role ?? 'creator';
+  const reviewerSlot = opts.reviewerSlot ?? 'slot-1';
+  const issuedAt = Date.now();
+  const token = `mock-token-${userId}-${issuedAt}`;
+  const shouldNavigate = opts.navigate !== false;
+  const path = opts.path ?? '/';
+
+  await page.addInitScript(
+    ({ userId: id, email: userEmail, displayName: name, role: userRole, token: sessionToken, reviewerSlot: slot }) => {
+      try {
+        localStorage.setItem('katha_studio_locale', 'en');
+        localStorage.setItem('katha_onboarding_complete', 'true');
+        localStorage.setItem(
+          'katha_creator_legal_consent_v1',
+          'dpdp_privacy_v1|creator_agreement_v1',
+        );
+        // platformStore key (not katha_linked_reviewer_slot)
+        if (!localStorage.getItem('katha_reviewer_slot')) {
+          localStorage.setItem('katha_reviewer_slot', slot);
+        }
+        // Only seed auth when absent so tests can promote role / mutate session and reload.
+        if (!localStorage.getItem('katha_creator_auth')) {
+          localStorage.setItem(
+            'katha_creator_auth',
+            JSON.stringify({
+              user: {
+                id,
+                phone: '',
+                email: userEmail,
+                role: userRole,
+                display_name: name,
+                subscription_status: 'free',
+                phone_verified: false,
+              },
+              token: sessionToken,
+            }),
+          );
+        }
+        sessionStorage.setItem('katha-narrative-os-arrival-dismissed', '1');
+      } catch {
+        // ignore quota / private-mode failures in CI
+      }
+    },
+    { userId, email, displayName, role, token, reviewerSlot },
+  );
+
+  if (shouldNavigate) {
+    await page.goto(path);
+    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
+  }
+}
+
+/**
+ * Stable English locale + mock session for Creator Studio E2E.
+ * Prefer this over UI OTP unless the test is specifically covering the login form.
+ */
 export async function enterStudio(page: Page, email = 'writer@katha.test') {
-  await page.goto('/login');
+  await loginAsMockUser(page, {
+    email,
+    displayName: email.split('@')[0] || 'Writer',
+    path: '/',
+  });
+}
+
+/**
+ * Full mock email OTP UI flow — use only when the test must exercise Login.tsx.
+ * Prefer loginAsMockUser / enterStudio for setup in beforeEach.
+ */
+export async function enterStudioViaUi(page: Page, email = 'writer@katha.test') {
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
     localStorage.setItem('katha_studio_locale', 'en');
     localStorage.setItem('katha_onboarding_complete', 'true');
-    // Legal Wave 0 — pre-accept DPDP + Creator Agreement (versions from packages/shared/creatorAgreement)
     localStorage.setItem('katha_creator_legal_consent_v1', 'dpdp_privacy_v1|creator_agreement_v1');
     sessionStorage.setItem('katha-narrative-os-arrival-dismissed', '1');
   });
-  await page.reload();
+  await page.reload({ waitUntil: 'domcontentloaded' });
 
-  await page.getByRole('button', { name: /Continue with email/i }).click();
-  await page.getByLabel(/Email address/i).fill(email);
-  await page.getByRole('button', { name: /Send verification code/i }).click();
-  await page.getByLabel(/6-digit code/i).fill('123456');
-  await page.getByRole('button', { name: /Enter your studio/i }).click();
+  const continueBtn = page.getByRole('button', { name: /Continue with email/i });
+  await continueBtn.waitFor({ state: 'visible', timeout: 20_000 });
+  await continueBtn.click();
+
+  const emailInput = page.getByLabel(/Email address/i);
+  await emailInput.waitFor({ state: 'visible', timeout: 10_000 });
+  await emailInput.fill(email);
+
+  const sendCodeBtn = page.getByRole('button', { name: /Send verification code/i });
+  await sendCodeBtn.waitFor({ state: 'visible', timeout: 20_000 });
+  await sendCodeBtn.click();
+
+  const codeInput = page.getByLabel(/6-digit code/i);
+  await codeInput.waitFor({ state: 'visible', timeout: 10_000 });
+  await codeInput.fill('123456');
+
+  const enterBtn = page.getByRole('button', { name: /Enter your studio/i });
+  await enterBtn.waitFor({ state: 'visible', timeout: 20_000 });
+  await enterBtn.click();
+
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 20_000 });
 }
 
